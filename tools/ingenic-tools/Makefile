@@ -30,7 +30,7 @@ MBR-$(CONFIG_MBR_CREATOR)		+= mbr_creator mbr.bin
 GPT-$(CONFIG_GPT_CREATOR)		+= mbr-gpt.bin
 SPI-$(CONFIG_SPI_SPL_CHECK)		+= spi_checksum
 SPL-$(CONFIG_SPL_PARAMS_FIXER)		+= spl_params_fixer
-AUDIO-$(CONFIG_AUDIO_CAL_DIV) += audio.h
+AUDIO-$(CONFIG_AUDIO_CAL_DIV) += audio_div_values.h
 #IMG2RLE-$(CONFIG_RLE_LCD_LOGO)          += img2rle
 #BIN2ARRAY-$(CONFIG_RLE_LCD_LOGO)        += bin2array
 LOGO-$(CONFIG_RLE_LCD_LOGO) = $(RLE_BOOT_LOGO_H)
@@ -45,18 +45,34 @@ endif
 TOOLS	= $(DDR-y) $(MBR-y) $(GPT-y) $(SPI-y) $(SPL-y) $(LOGO-y) $(CHARGE_LOGO-y) $(AUDIO-y) #$(IMG2RLE-y) $(BIN2ARRAY-y)
 TOOLS	:= $(addprefix $(obj),$(TOOLS))
 
+ifndef CONFIG_BURNER
+DDR-TYPE-y = ddr_params_creator.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR2) += lpddr2_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR) += lpddr_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_DDR2) += ddr2_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_DDR3) += ddr3_params.o
+
+define PRIVATE_BUILD
+$(1):$(2) $(3)
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -c -o $(1) $(2)
+endef
+
+ALL_INCLUDE_PRIVATE := $(SRCTREE)/include/configs/$(BOARD).h ddr_params_creator.h
 all:	$(obj).depend $(TOOLS)
 
-$(obj)ddr_params_creator:	ddr_params_creator.c $(SRCTREE)/include/configs/$(BOARD).h
+$(obj)ddr_params_creator: $(DDR-TYPE-y)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
+
+$(foreach f,$(DDR-TYPE-y), \
+	$(eval $(call PRIVATE_BUILD,$(f),$(f:.o=.c),$(ALL_INCLUDE_PRIVATE))))
 
 $(obj)ddr_reg_values.h:	$(obj)ddr_params_creator
 	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator > $(OBJTREE)/include/generated/$@
 
-$(obj)audio.h: $(obj)audio.py
-	$(OBJTREE)/tools/ingenic-tools/audio.py $(CONFIG_AUDIO_APLL) $(CONFIG_AUDIO_MPLL) > $(OBJTREE)/include/generated/$@
-
+$(obj)audio_div_values.h: $(obj)audio_params_creator.py
+	$(OBJTREE)/tools/ingenic-tools/audio_params_creator.py $(CONFIG_AUDIO_APLL) $(CONFIG_AUDIO_MPLL) > $(OBJTREE)/include/generated/$@
+endif
 $(obj)mbr_creator:	mbr_creator.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
@@ -101,7 +117,9 @@ clean:
 		$(TOPDIR)/tools/logos/*.rle \
 		$(TOPDIR)/tools/charge_logo/*.rle \
 		$(TOPDIR)/board/$(BOARDDIR)/logo/*.rle \
-		$(TOPDIR)/board/$(BOARDDIR)/charge_logo/*.rle
+		$(TOPDIR)/board/$(BOARDDIR)/charge_logo/*.rle \
+		$(obj)*.o \
+		$(obj)ddr_params_creator
 
 distclean:	clean
 

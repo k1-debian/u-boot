@@ -164,6 +164,8 @@
 
 #define CLKGR_VPU		(0x1<<19)
 
+#define cpm_readl(off)          readl(CPM_BASE + (off))
+#define cpm_writel(val,off)     writel(val, CPM_BASE + (off))
 #define cpm_inl(off)		readl(CPM_BASE + (off))
 #define cpm_outl(val,off)	writel(val, CPM_BASE + (off))
 #define cpm_test_bit(bit,off)	(cpm_inl(off) & 0x1<<(bit))

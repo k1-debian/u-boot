@@ -35,36 +35,36 @@ struct address_line_test {
 
 struct data_line_test {
 	unsigned int enable;
-	unsigned char stat;	
+	unsigned char stat;
 	unsigned int data_line;		/* the error data_line(1: error line, 0: right line) */
 };
 
 struct cache_test {
 	unsigned int enable;
-	unsigned char stat;	
-	unsigned char remap;	
+	unsigned char stat;
+	unsigned char remap;
 };
 
 struct uncache_test {
 	unsigned int enable;
-	unsigned char stat;	
-	unsigned char remap;	
+	unsigned char stat;
+	unsigned char remap;
 };
 
 struct uncache_all_test {
 	unsigned int enable;
-	unsigned char stat;	
-	unsigned char remap;	
+	unsigned char stat;
+	unsigned char remap;
 };
 
 struct dma_test {
 	unsigned int enable;
-	unsigned char stat;	
+	unsigned char stat;
 };
 
 struct cpu_dma_test {
 	unsigned int enable;
-	unsigned char stat;	
+	unsigned char stat;
 };
 
 struct ddr_test_burner {
@@ -86,7 +86,7 @@ struct global_info {
 	uint32_t uart_idx;
 	uint32_t baud_rate;
 #ifdef CONFIG_BURNER
-	struct ddr_params ddr_params;
+//	struct ddr_params ddr_params;
 	uint32_t nr_gpio_func;
 	struct jz_gpio_func_def gpio[0];
 	struct ddr_test_burner ddr_test;

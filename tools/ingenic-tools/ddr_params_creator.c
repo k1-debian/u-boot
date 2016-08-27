@@ -19,72 +19,40 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+#include "ddr_params_creator.h"
 
-#ifndef CONFIG_SPL_BUILD
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#define debug(fmt, ...)
-#else
-#include <common.h>
-#include <generated/ddr_reg_values.h>
-#endif	/* define CONFIG_SPL_BUILD */
-#include <config.h>
-#include <ddr/ddr_common.h>
-#if (CONFIG_DDR_CS1 == 1)
-#ifndef DDR_ROW1
-#error "please define DDR_ROW1"
-#endif /* DDR_ROW1 */
-#ifndef DDR_COL1
-#error "please define DDR_COL1"
-#endif /* DDR_COL1 */
-#endif /* CONFIG_DDR_CS1 */
+unsigned int __ps_per_tck = -1;
+/**
+ * ps2cycle:   translate timing(ps) to clk count
+ *       ps:   timing(ps)
+ *  div_clk:   divider for register.
+ *			   eg:
+ *                    regcount = ps2cycle(x,div_tck) / div_tck.
+ *                    div_tck is divider.
+ */
 
-
-#define BETWEEN(T, MIN, MAX) if (T < MIN) T = MIN; if (T > MAX) T = MAX
-struct tck tck_g = {0, 0};
-
-struct RL_LPDDR2 rl_LPDDR2[] = {
-	{100000000,3},/*memclk xxM, RL*/
-	{150000000,3},
-	{200000000,4},
-	{300000000,5},
-	{400000000,6},
-	{450000000,7},
-	{500000000,8},
-};
-
-struct WL_LPDDR2 wl_LPDDR2[]= {
-	{100000000,1},/*memclk xxM, WL*/
-	{150000000,1},
-	{200000000,2},
-	{300000000,2},
-	{400000000,3},
-	{450000000,4},
-	{500000000,4},
-};
-
-static int calc_nck(int x, int y)
+int ps2cycle_ceil(int ps,int div_tck)
 {
-	int value;
-
-	value = x * 1000 % y == 0 ? x * 1000 / y : x * 1000 / y + 1;
-
-	return value;
+	return (ps + div_tck * __ps_per_tck - 1) / __ps_per_tck;
 }
 
-static void caculate_tck(struct ddr_params *params)
+int ps2cycle_floor(int ps)
 {
-	params->tck.ps = (1000000000 / (params->freq / 1000));
-	params->tck.ns = (1000000000 % params->freq == 0)
-		? (1000000000 / params->freq)
-		: (1000000000 / params->freq + 1);
-	tck_g.ps = params->tck.ps;
-	tck_g.ns = params->tck.ns;
+	return ps / __ps_per_tck;
 }
-
-unsigned int sdram_size(int cs, struct ddr_params *p)
+struct ddr_out_impedance* find_nearby_impedance(struct ddr_out_impedance *table,int table_size,int r_ohm)
+{
+	int i;
+	if(r_ohm >= table[0].r)
+		return &table[0];
+	for(i = 1;i < table_size/sizeof(struct ddr_out_impedance);i++){
+		int diff = (table[i].r + table[i-1].r) / 2;
+		if(r_ohm > diff)
+			return &table[i - 1];
+	}
+	return &table[i - 1];
+}
+static unsigned int sdram_size(int cs, struct ddr_params *p)
 {
 	unsigned int dw;
 	unsigned int banks;
@@ -117,332 +85,118 @@ unsigned int sdram_size(int cs, struct ddr_params *p)
 	return size;
 }
 
-static void ddrc_params_creat(struct ddrc_reg *ddrc, struct ddr_params *p)
+static void ddr_base_params_fill(struct ddr_params *ddr_params)
 {
-	unsigned int tmp = 0, mem_base0 = 0, mem_base1 = 0, mem_mask0 = 0, mem_mask1 = 0;
-	unsigned int memsize_cs0, memsize_cs1, memsize;
-	struct tck *tck = &p->tck;
+	struct ddr_params_common *params = &ddr_params->private_params.ddr_base_params;
+	memset(&ddr_params->private_params, 0, sizeof(union private_params));
+	DDR_PARAMS_FILL(params,tRAS);
+	DDR_PARAMS_FILL(params,tRP);
+	DDR_PARAMS_FILL(params,tRCD);
+	DDR_PARAMS_FILL(params,tRC);
+	DDR_PARAMS_FILL(params,tWR);
+	DDR_PARAMS_FILL(params,tRRD);
+	DDR_PARAMS_FILL(params,tWTR);
+	DDR_PARAMS_FILL(params,tRFC);
+	DDR_PARAMS_FILL(params,tXP);
+	DDR_PARAMS_FILL(params,tCKE);
+	DDR_PARAMS_FILL(params,tREFI);
+	DDR_PARAMS_FILL(params,WL);
+	DDR_PARAMS_FILL(params,RL);
+}
+static int ddr_refi_div(int reftck,int *div)
+{
+	int tmp,factor = 0;
+	do{
+		tmp = reftck;
+		tmp = tmp / (16 << factor);
+		factor++;
+	}while(tmp > 255);
+	*div = (factor - 1);
+	return tmp;
+}
+static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_params *p)
+{
+	int tmp;
+	int div;
+	/* tRP is differ in lpddr & lpddr2 & ddr2 & ddr3*/
+	/* tWTR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
+	/* tWTR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
+	DDRC_TIMING_SET(1,ddr_base_params,tWR,6);
 
-#ifdef CONFIG_DDR_TYPE_DDR3
-	if (p->type == DDR3) {
-		/* TIMING1,2,3,4,5,6 */
-		ddrc->timing1.b.tRTP =
-			calc_nck(p->private_params.ddr3_params.tRTP, tck->ps);
-		ddrc->timing1.b.tWTR =
-			calc_nck(p->private_params.ddr3_params.tWTR, tck->ps)
-			+ p->private_params.ddr3_params.tWL + p->bl / 2; //??
-		ddrc->timing1.b.tWR =
-			calc_nck(p->private_params.ddr3_params.tWR, tck->ps);
-		if (ddrc->timing1.b.tWR < 5)
-			ddrc->timing1.b.tWR = 5;
-		if (ddrc->timing1.b.tWR > 12)
-			ddrc->timing1.b.tWR = 12;
-		ddrc->timing1.b.tWL = p->private_params.ddr3_params.tWL;
+	tmp =ps2cycle_ceil(p->private_params.ddr_base_params.WL,1);
+	ASSERT_MASK(tmp,6);
+	ddrc->timing1.b.tWL = tmp;
+	/* tCCD is differ in lpddr & lpddr2 & ddr2 & ddr3*/
+	DDRC_TIMING_SET(2,ddr_base_params,tRAS,6);
+	DDRC_TIMING_SET(2,ddr_base_params,tRCD,6);
 
-		ddrc->timing2.b.tCCD = p->private_params.ddr3_params.tCCD;
-		ddrc->timing2.b.tRAS =
-			calc_nck(p->private_params.ddr3_params.tRAS, tck->ps);
-		ddrc->timing2.b.tRCD =
-			calc_nck(p->private_params.ddr3_params.tRCD, tck->ps);
-		ddrc->timing2.b.tRL = p->private_params.ddr3_params.tRL;
+	tmp =ps2cycle_ceil(p->private_params.ddr_base_params.RL,1);
+	ASSERT_MASK(tmp,6);
+	ddrc->timing2.b.tRL = tmp;
 
-		ddrc->timing3.b.ONUM = 4;
-#if 0
-		tmp = calc_nck(p->private_params.ddr3_params.tCKSRE, tck->ps) / 8;
-		if (tmp < 1) tmp = 1;
-		ddrc->timing3.b.tCKSRE = tmp;
-#else
-		/* Set DDR_tCKSRE to max to ensafe suspend & resume */
-		ddrc->timing3.b.tCKSRE = 7;
-#endif
-		ddrc->timing3.b.tRP =
-			calc_nck(p->private_params.ddr3_params.tRP, tck->ps);
-		ddrc->timing3.b.tRRD =
-			calc_nck(p->private_params.ddr3_params.tRRD, tck->ps);
-		ddrc->timing3.b.tRC =
-			calc_nck(p->private_params.ddr3_params.tRC, tck->ps);
+	ddrc->timing3.b.ONUM = 4;  //version info.
 
-		ddrc->timing4.b.tRFC =
-			(calc_nck(p->private_params.ddr3_params.tRFC, tck->ps) - 1) / 2;
-		ddrc->timing4.b.tEXTRW = 3;/* Why?*/
-		ddrc->timing4.b.tRWCOV = 3;/* Why?*/
-		ddrc->timing4.b.tCKE =
-			calc_nck(p->private_params.ddr3_params.tCKE, tck->ps) - 1;
-		tmp = p->private_params.ddr3_params.tMINSR;
-		if (tmp < 9)
-			tmp = 9;
-		if (tmp > 129)
-			tmp = 129;
-		tmp = ((tmp - 1) % 8) ? ((tmp - 1) / 8) : ((tmp - 1) / 8 - 1);
-		ddrc->timing4.b.tMINSR = tmp;
-		ddrc->timing4.b.tXP = p->private_params.ddr3_params.tXP;
-		ddrc->timing4.b.tMRD = p->private_params.ddr3_params.tMRD - 1;
+	/* tCKSRE is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 
-		ddrc->timing5.b.tCTLUPD = 0xff; /* 0xff is the default value */
-		ddrc->timing5.b.tRTW = p->private_params.ddr3_params.tRTW;
-		ddrc->timing5.b.tRDLAT = p->private_params.ddr3_params.tRDLAT;
-		ddrc->timing5.b.tWDLAT = p->private_params.ddr3_params.tWDLAT;
+	DDRC_TIMING_SET(3,ddr_base_params,tRP,6);
+	DDRC_TIMING_SET(3,ddr_base_params,tRRD,6);
+	DDRC_TIMING_SET(3,ddr_base_params,tRC,6);
 
-		ddrc->timing6.b.tXSRD = p->private_params.ddr3_params.tXSRD / 4;
-		tmp = calc_nck(p->private_params.ddr3_params.tFAW, tck->ps); /* NOT sure */
-		if (tmp < 1) tmp = 1;
-		ddrc->timing6.b.tFAW = tmp; /* NOT sure */
-		ddrc->timing6.b.tCFGW = 2;
-		ddrc->timing6.b.tCFGR = 2;
+	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tRFC,2) / 2 - 1 ;
+	if(tmp < 0)
+		tmp = 0;
+	ASSERT_MASK(tmp,6);
+	ddrc->timing4.b.tRFC = tmp;
+
+	ddrc->timing4.b.tEXTRW = 1; /* default */
+	ddrc->timing4.b.tRWCOV = 0;  /* default */
+	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tCKE,1) + 1;
+	ASSERT_MASK(tmp,3);
+	ddrc->timing4.b.tCKE = tmp;
+
+	DDRC_TIMING_SET(4,ddr_base_params,tXP,3);
+
+	ddrc->timing5.b.tCTLUPD = 0xff; /* 0xff is the default value */
+
+	/* tRTW is differ in lpddr & lpddr2 & ddr2 & ddr3 */
+	/* tRDLAT is differ in lpddr & lpddr2 & ddr2 & ddr3 */
+	/* tWDLAT is differ in lpddr & lpddr2 & ddr2 & ddr3 */
+
+	/* tXSRD is diff in lpddr & lpddr2 & ddr2 & ddr3. */
+	/* tXSRD is diff in lpddr & lpddr2 & ddr2 & ddr3. */
+
+	ddrc->timing6.b.tCFGW = 5;  // default and controller don't used.
+	ddrc->timing6.b.tCFGR = 5;  // default and controller don't used.
+
+	tmp = ps2cycle_floor(p->private_params.ddr_base_params.tREFI);
+	tmp -= 16; // controller is add 16 cycles.
+	if(tmp < 0){
+		out_error("tREFI[%d] is too small. check %s %d\n",
+			  p->private_params.ddr_base_params.tREFI,
+			  __FILE__,__LINE__);
 	}
-#endif /* CONFIG_DDR_TYPE_DDR3 */
-
-#ifdef CONFIG_DDR_TYPE_LPDDR
-	if (p->type == LPDDR) {
-		/* TIMING1,2,3,4,5,6 */
-		ddrc->timing1.b.tRTP =
-			calc_nck(p->private_params.lpddr_params.tRTP, tck->ps);
-		ddrc->timing1.b.tWTR =
-			calc_nck(p->private_params.lpddr_params.tWTR, tck->ps) +
-			p->private_params.lpddr_params.tWL + p->bl / 2; //??
-		ddrc->timing1.b.tWR =
-			calc_nck(p->private_params.lpddr_params.tWR, tck->ps);
-		if (ddrc->timing1.b.tWR < 5)
-			ddrc->timing1.b.tWR = 5;
-		if (ddrc->timing1.b.tWR > 12)
-			ddrc->timing1.b.tWR = 12;
-		ddrc->timing1.b.tWL = p->private_params.lpddr_params.tWL;
-
-		ddrc->timing2.b.tCCD = p->private_params.lpddr_params.tCCD;
-		ddrc->timing2.b.tRAS =
-			calc_nck(p->private_params.lpddr_params.tRAS, tck->ps);
-		ddrc->timing2.b.tRCD =
-			calc_nck(p->private_params.lpddr_params.tRCD, tck->ps);
-		ddrc->timing2.b.tRL = p->private_params.lpddr_params.tRL;
-
-		ddrc->timing3.b.ONUM = 4;
-#if 0
-		tmp = calc_nck(p->private_params.lpddr_params.tCKSRE, tck->ps) / 8;
-		if (tmp < 1) tmp = 1;
-		ddrc->timing3.b.tCKSRE = tmp;
-#else
-		/* Set DDR_tCKSRE to max to ensafe suspend & resume */
-		ddrc->timing3.b.tCKSRE = 7;
-#endif
-		ddrc->timing3.b.tRP =
-			calc_nck(p->private_params.lpddr_params.tRP, tck->ps);
-		ddrc->timing3.b.tRRD =
-			calc_nck(p->private_params.lpddr_params.tRRD, tck->ps);
-		ddrc->timing3.b.tRC =
-			calc_nck(p->private_params.lpddr_params.tRC, tck->ps);
-
-		ddrc->timing4.b.tRFC =
-			(calc_nck(p->private_params.lpddr_params.tRFC, tck->ps) - 1) / 2;
-		ddrc->timing4.b.tEXTRW = 3;/* Why?*/
-		ddrc->timing4.b.tRWCOV = 3;/* Why?*/
-		ddrc->timing4.b.tCKE =
-			calc_nck(p->private_params.lpddr_params.tCKE, tck->ps) - 1;
-		tmp = p->private_params.lpddr_params.tMINSR;
-		if (tmp < 9)
-			tmp = 9;
-		if (tmp > 129)
-			tmp = 129;
-		tmp = ((tmp - 1) % 8) ? ((tmp - 1) / 8) : ((tmp - 1) / 8 - 1);
-		ddrc->timing4.b.tMINSR = tmp;
-		ddrc->timing4.b.tXP = p->private_params.lpddr_params.tXP;
-		ddrc->timing4.b.tMRD = p->private_params.lpddr_params.tMRD - 1;
-
-		ddrc->timing5.b.tCTLUPD = 0xff; /* 0xff is the default value */
-		ddrc->timing5.b.tRTW = p->private_params.lpddr_params.tRTW;
-		ddrc->timing5.b.tRDLAT = p->private_params.lpddr_params.tRDLAT;
-		ddrc->timing5.b.tWDLAT = p->private_params.lpddr_params.tWDLAT;
-
-		ddrc->timing6.b.tXSRD = p->private_params.lpddr_params.tXSRD / 4;
-		tmp = calc_nck(p->private_params.lpddr_params.tFAW, tck->ps); /* NOT sure */
-		if (tmp < 1) tmp = 1;
-		ddrc->timing6.b.tFAW = tmp; /* NOT sure */
-		ddrc->timing6.b.tCFGW = 2;
-		ddrc->timing6.b.tCFGR = 2;
+	tmp = ddr_refi_div(tmp,&div);
+	if(div > 7){
+		out_error("tREFI[%d] is too large. check %s %d\n",
+			  p->private_params.ddr_base_params.tREFI,
+			  __FILE__,__LINE__);
 	}
-#endif /* CONFIG_DDR_TYPE_LPDDR */
-
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	if (p->type == LPDDR2) {
-		/* TIMING1,2,3,4,5,6 */
-		ddrc->timing1.b.tRTP =
-			calc_nck(p->private_params.lpddr2_params.tRTP, tck->ps);
-		ddrc->timing1.b.tWTR =
-			calc_nck(p->private_params.lpddr2_params.tWTR, tck->ps) +
-			p->private_params.lpddr2_params.tWL + p->bl / 2 + 1; //??
-		ddrc->timing1.b.tWR =
-			calc_nck(p->private_params.lpddr2_params.tWR, tck->ps);
-		if (ddrc->timing1.b.tWR < 5)
-			ddrc->timing1.b.tWR = 5;
-		if (ddrc->timing1.b.tWR > 12)
-			ddrc->timing1.b.tWR = 12;
-		ddrc->timing1.b.tWL = p->private_params.lpddr2_params.tWL;
-
-		ddrc->timing2.b.tCCD = p->private_params.lpddr2_params.tCCD;
-		ddrc->timing2.b.tRAS =
-			calc_nck(p->private_params.lpddr2_params.tRAS, tck->ps);
-		ddrc->timing2.b.tRCD =
-			calc_nck(p->private_params.lpddr2_params.tRCD, tck->ps);
-		ddrc->timing2.b.tRL = p->private_params.lpddr2_params.tRL;
-
-		ddrc->timing3.b.ONUM = 4;
-#if 0
-		tmp = calc_nck(p->private_params.lpddr2_params.tCKSRE, tck->ps) / 8;
-		if (tmp < 1) tmp = 1;
-		ddrc->timing3.b.tCKSRE = tmp;
-#else
-		/* Set DDR_tCKSRE to max to ensafe suspend & resume */
-		ddrc->timing3.b.tCKSRE = 7;
-#endif
-		ddrc->timing3.b.tRP =
-			calc_nck(p->private_params.lpddr2_params.tRP, tck->ps);
-		ddrc->timing3.b.tRRD =
-			calc_nck(p->private_params.lpddr2_params.tRRD, tck->ps);
-		ddrc->timing3.b.tRC =
-			calc_nck(p->private_params.lpddr2_params.tRC, tck->ps);
-
-		ddrc->timing4.b.tRFC =
-			(calc_nck(p->private_params.lpddr2_params.tRFC, tck->ps) - 1) / 2;
-		ddrc->timing4.b.tEXTRW = 3;/* internal use, don't care */
-		ddrc->timing4.b.tRWCOV = 3;/* interanl use, don't care */
-		ddrc->timing4.b.tCKE =
-			calc_nck(p->private_params.lpddr2_params.tCKE, tck->ps);
-		tmp = p->private_params.lpddr2_params.tMINSR;
-		if (tmp < 9)
-			tmp = 9;
-		if (tmp > 129)
-			tmp = 129;
-		tmp = ((tmp - 1) % 8) ? ((tmp - 1) / 8) : ((tmp - 1) / 8 - 1);
-		ddrc->timing4.b.tMINSR = tmp;
-
-		tmp = p->private_params.lpddr2_params.tXP;
-		tmp = calc_nck(tmp, tck->ps);
-		BETWEEN(tmp, 0, 7);
-		ddrc->timing4.b.tXP = tmp;
-
-		ddrc->timing4.b.tMRD = 0; /* LPDDR2 not use. don't care */
-
-		ddrc->timing5.b.tCTLUPD = 0x0; /* 0xff is the default value, unsupport feature. don't care */
-
-		ddrc->timing5.b.tRTW = p->private_params.lpddr2_params.tRTW;
-
-		ddrc->timing5.b.tRDLAT = p->private_params.lpddr2_params.tRDLAT;
-		ddrc->timing5.b.tWDLAT = p->private_params.lpddr2_params.tWL;
-
-		tmp = p->private_params.lpddr2_params.tXSRD;
-		tmp = calc_nck(tmp, tck->ps);
-		tmp = (tmp + 4-1)/4;
-		BETWEEN(tmp, 0, 255);
-		ddrc->timing6.b.tXSRD = tmp;
-
-		tmp = calc_nck(p->private_params.lpddr2_params.tFAW, tck->ps);
-		BETWEEN(tmp, 0, 31);
-		ddrc->timing6.b.tFAW = tmp;
-
-		ddrc->timing6.b.tCFGW = 2; /* internal use. don't care */
-		ddrc->timing6.b.tCFGR = 2; /* internal use. don't care */
-	}
-#endif /*CONFIG_DDR_TYPE_LPDDR2 */
-
-#ifdef CONFIG_DDR_TYPE_DDR2
-	if (p->type == DDR2) {
-		/* TIMING1,2,3,4,5,6 */
-		ddrc->timing1.b.tRTP =
-			calc_nck(p->private_params.ddr2_params.tRTP, tck->ps);
-		ddrc->timing1.b.tWTR =
-			calc_nck(p->private_params.ddr2_params.tWTR, tck->ps) +
-			p->private_params.ddr2_params.tWL + p->bl / 2; //??
-		ddrc->timing1.b.tWR =
-			calc_nck(p->private_params.ddr2_params.tWR, tck->ps);
-		if (ddrc->timing1.b.tWR < 5)
-			ddrc->timing1.b.tWR = 5;
-		if (ddrc->timing1.b.tWR > 12)
-			ddrc->timing1.b.tWR = 12;
-		ddrc->timing1.b.tWL = p->private_params.ddr2_params.tWL;
-
-		ddrc->timing2.b.tCCD = p->private_params.ddr2_params.tCCD;
-		ddrc->timing2.b.tRAS =
-			calc_nck(p->private_params.ddr2_params.tRAS, tck->ps);
-		ddrc->timing2.b.tRCD =
-			calc_nck(p->private_params.ddr2_params.tRCD, tck->ps);
-		ddrc->timing2.b.tRL = p->private_params.ddr2_params.tRL;
-
-		ddrc->timing3.b.ONUM = 4;
-#if 0
-		tmp = calc_nck(p->private_params.ddr2_params.tCKSRE, tck->ps) / 8;
-		if (tmp < 1) tmp = 1;
-		ddrc->timing3.b.tCKSRE = tmp;
-#else
-		/* Set DDR_tCKSRE to max to ensafe suspend & resume */
-		ddrc->timing3.b.tCKSRE = 7;
-#endif
-		ddrc->timing3.b.tRP =
-			calc_nck(p->private_params.ddr2_params.tRP, tck->ps);
-		ddrc->timing3.b.tRRD =
-			calc_nck(p->private_params.ddr2_params.tRRD, tck->ps);
-		ddrc->timing3.b.tRC =
-			calc_nck(p->private_params.ddr2_params.tRC, tck->ps);
-
-		ddrc->timing4.b.tRFC =
-			(calc_nck(p->private_params.ddr2_params.tRFC, tck->ps) - 1) / 2;
-		ddrc->timing4.b.tEXTRW = 3;/* Why?*/
-		ddrc->timing4.b.tRWCOV = 3;/* Why?*/
-		ddrc->timing4.b.tCKE =
-			calc_nck(p->private_params.ddr2_params.tCKE, tck->ps);
-		tmp = p->private_params.ddr2_params.tMINSR;
-		if (tmp < 9)
-			tmp = 9;
-		if (tmp > 129)
-			tmp = 129;
-		tmp = ((tmp - 1) % 8) ? ((tmp - 1) / 8) : ((tmp - 1) / 8 - 1);
-		ddrc->timing4.b.tMINSR = tmp;
-		ddrc->timing4.b.tXP = p->private_params.ddr2_params.tXP;
-		ddrc->timing4.b.tMRD = p->private_params.ddr2_params.tMRD - 1;
-
-		ddrc->timing5.b.tCTLUPD = 0x0; /* 0xff is the default value */
-		ddrc->timing5.b.tRTW = p->private_params.ddr2_params.tRTW;
-		ddrc->timing5.b.tRDLAT = p->private_params.ddr2_params.tRDLAT;
-		ddrc->timing5.b.tWDLAT = p->private_params.ddr2_params.tWL;
-
-		ddrc->timing6.b.tXSRD = p->private_params.ddr2_params.tXSRD / 4;
-		tmp = calc_nck(p->private_params.ddr2_params.tFAW, tck->ps); /* NOT sure */
-		if (tmp < 1) tmp = 1;
-		ddrc->timing6.b.tFAW = tmp; /* NOT sure */
-		ddrc->timing6.b.tCFGW = 2;
-		ddrc->timing6.b.tCFGR = 2;
-
-	}
-#endif /* CONFIG_DDR_TYPE_DDR2 */
-
-	/* REFCNT */
-#ifdef CONFIG_DDR_TYPE_DDR3
-	if (p->type == DDR3) {
-		tmp = p->private_params.ddr3_params.tREFI / tck->ns;
-	}
-#endif
-#ifdef CONFIG_DDR_TYPE_LPDDR
-	if (p->type == LPDDR) {
-		tmp = p->private_params.lpddr_params.tREFI / tck->ns;
-	}
-#endif
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	if (p->type == LPDDR2) {
-		tmp = p->private_params.lpddr2_params.tREFI / tck->ns;
-	}
-#endif
-#ifdef CONFIG_DDR_TYPE_DDR2
-	if (p->type == DDR2) {
-		tmp = p->private_params.ddr2_params.tREFI / tck->ns;
-	}
-#endif
-	tmp = tmp / (16 * (1 << p->div)) - 1;
-	if (tmp < 1)
-		tmp = 1;
-	if (tmp > 0xff)
-		tmp = 0xff;
+	ASSERT_MASK(tmp,8);
 	ddrc->refcnt = (tmp << DDRC_REFCNT_CON_BIT)
-		| (p->div << DDRC_REFCNT_CLK_DIV_BIT)
+		| (div << DDRC_REFCNT_CLK_DIV_BIT)
 		| DDRC_REFCNT_REF_EN;
 
+	ddrc->autosr_en = 0;
+
+#ifdef CONFIG_DDR_AUTO_SELF_REFRESH
+	ddrc->autosr_en = 1;
+#endif
+}
+
+static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
+{
+	unsigned int  mem_base0 = 0, mem_base1 = 0, mem_mask0 = 0, mem_mask1 = 0;
+	unsigned int memsize_cs0, memsize_cs1, memsize;
 	/* CFG */
 	ddrc->cfg.b.ROW1 = p->row1 - 12;
 	ddrc->cfg.b.COL1 = p->col1 - 8;
@@ -457,41 +211,38 @@ static void ddrc_params_creat(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->cfg.b.MISPE = 1;
 	ddrc->cfg.b.ROW0 = p->row - 12;
 	ddrc->cfg.b.COL0 = p->col - 8;
-#ifdef CONFIG_DDR_FORCE_SELECT_CS1
-	ddrc->cfg.b.CS1EN = 1;
-#else
+
 	ddrc->cfg.b.CS1EN = p->cs1;
-#endif
 	ddrc->cfg.b.CS0EN = p->cs0;
-#ifdef CONFIG_DDR_TYPE_DDR3
-	ddrc->cfg.b.CL = 0; /* NOT used in this version */
-#else
-	tmp = p->cl - 1; /* NOT used in this version */
-	if (tmp < 0)
-		tmp = 0;
-	if (tmp > 4)
-		tmp = 4;
-	ddrc->cfg.b.CL = tmp | 0x8; /* NOT used in this version */
-#endif
+
+	ddrc->cfg.b.CL = 0; /* defalt and NOT used in this version */
+
 	ddrc->cfg.b.BA0 = p->bank8;
 	ddrc->cfg.b.DW = p->dw32;
+
 	switch (p->type) {
-#define _CASE(D, P)			\
-	case D:				\
-		ddrc->cfg.b.TYPE = P;	\
-		break
+#define _CASE(D, P)				\
+		case D:				\
+			ddrc->cfg.b.TYPE = P;	\
+			break
 		_CASE(DDR3, 6);		/* DDR3:0b110 */
 		_CASE(LPDDR, 3);	/* LPDDR:0b011 */
 		_CASE(LPDDR2, 5);	/* LPDDR2:0b101 */
 		_CASE(DDR2, 4);	    /* DDR2:0b100 */
 #undef _CASE
 	default:
+		out_error("don't support the ddr type.!");
+		assert(1);
 		break;
 	}
-	/* CTRL */
-	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
+
+	/* CTRL  */
+	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_128 | DDRC_CTRL_ACTSTP
 		| DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN
 		| DDRC_CTRL_ALH | DDRC_CTRL_RDC | DDRC_CTRL_CKE;
+	/* ddrc->ctrl = DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN */
+	/* 	| DDRC_CTRL_ALH | DDRC_CTRL_RDC | DDRC_CTRL_CKE; */
+
 	/* MMAP0,1 */
 	memsize_cs0 = p->size.chip0;
 	memsize_cs1 = p->size.chip1;
@@ -521,365 +272,85 @@ static void ddrc_params_creat(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->mmap[1] = mem_base1 << DDRC_MMAP_BASE_BIT | mem_mask1;
 }
 
-
-static void ddrp_params_creat(struct ddrp_reg *ddrp, struct ddr_params *p)
+static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
-	unsigned int tmp = 0;
-	unsigned int dinit1 = 0;
-	struct tck *tck = &p->tck;
-#if defined(CONFIG_DDR_TYPE_LPDDR) || defined(CONFIG_DDR_TYPE_LPDDR2)
-	unsigned int  count = 0;
-#endif
+	int tmp = 0;
 
-
-#define PNDEF(N, P, T, MIN, MAX, PS, type)	\
-		T = calc_nck(p->private_params.type.P, PS);	\
-		BETWEEN(T, MIN, MAX);	\
-		ddrp->dtpr##N.b.P = T
-
-#ifdef	CONFIG_DDR_TYPE_DDR3
-	if (p->type == DDR3) {
-		/* DCR register */
-		ddrp->dcr = 3 | (p->bank8 << 3);
-
-		/* MRn registers */
-		tmp = calc_nck(p->private_params.ddr3_params.tWR, tck->ps);
-		if (tmp < 5)
-			tmp = 5;
-		if (tmp > 12)
-			tmp = 12;
-		if (tmp < 8)
-			tmp -= 4;
-		else
-			tmp = (tmp + 1) / 2;
-		ddrp->mr0.ddr3.WR = tmp;
-		ddrp->mr0.ddr3.CL_4_6 = p->cl - 4;
-		ddrp->mr0.ddr3.BL = (8 - p->bl) / 2;
-		ddrp->mr1.ddr3.DIC1 = 1; /* Impedance=RZQ/7 */
-#ifdef CONFIG_DDR_CHIP_ODT
-		ddrp->mr1.ddr3.RTT2 = 1; /* Effective resistance of ODT RZQ/4 */
-#endif
-#ifdef CONFIG_DDR_DLL_OFF
-		ddrp->mr1.ddr3.DE = 1; /* DLL disable */
-#endif
-		ddrp->mr2.ddr3.CWL = p->private_params.ddr3_params.tCWL - 5;
-
-		/* PTRn registers */
-		ddrp->ptr0.b.tDLLSRST = calc_nck(p->private_params.ddr3_params.tDLLSRST, tck->ps);
-		ddrp->ptr0.b.tDLLLOCK = calc_nck(5120, tck->ps); /* DDR3 default 5.12us*/
-		ddrp->ptr0.b.tITMSRST = 8;
-
-		ddrp->ptr1.b.tDINIT0 = calc_nck(500000, tck->ps); /* DDR3 default 500us*/
-		if (((p->private_params.ddr3_params.tRFC + 10) * 1000) > (5 * tck->ps))  /* ddr3 only */
-			dinit1 = (p->private_params.ddr3_params.tRFC + 10) * 1000;
-		else
-			dinit1 = 5 * tck->ps;
-		tmp = calc_nck(dinit1 / 1000, tck->ps);
-		ddrp->ptr1.b.tDINIT1 = tmp;
-		ddrp->ptr2.b.tDINIT2 = calc_nck(200000, tck->ps); /* DDR3 default 200us*/
-		ddrp->ptr2.b.tDINIT3 = 512;
-
-		/* DTPR0 registers */
-		ddrp->dtpr0.b.tMRD = p->private_params.ddr3_params.tMRD - 4;
-		PNDEF(0, tRTP, tmp, 2, 6, tck->ps, ddr3_params);
-		PNDEF(0, tWTR, tmp, 1, 6, tck->ps, ddr3_params);
-		PNDEF(0, tRP, tmp, 2, 11, tck->ps, ddr3_params);
-		PNDEF(0, tRCD, tmp, 2, 11, tck->ps, ddr3_params);
-		PNDEF(0, tRAS, tmp, 2, 31, tck->ps, ddr3_params);
-		PNDEF(0, tRRD, tmp, 1, 8, tck->ps, ddr3_params);
-		PNDEF(0, tRC, tmp, 2, 42, tck->ps, ddr3_params);
-		ddrp->dtpr0.b.tCCD = (p->private_params.ddr3_params.tCCD > 4) ? 1 : 0;
-
-		/* DTPR1 registers */
-		PNDEF(1, tFAW, tmp, 2, 31, tck->ps, ddr3_params);
-		PNDEF(1, tMOD, tmp, 12, 15, tck->ps, ddr3_params);
-		ddrp->dtpr1.b.tMOD -= 12;
-		PNDEF(1, tRFC, tmp, 1, 255, tck->ps, ddr3_params);
-		ddrp->dtpr1.b.tRTODT = 1;
-
-		/* DTPR2 registers */
-		tmp = (p->private_params.ddr3_params.tXS > p->private_params.ddr3_params.tXSDLL) ?
-			p->private_params.ddr3_params.tXS : p->private_params.ddr3_params.tXSDLL;
-		tmp = calc_nck(tmp, tck->ps);
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tXS = tmp;
-
-		tmp = (p->private_params.ddr3_params.tXP > p->private_params.ddr3_params.tXPDLL) ?
-			p->private_params.ddr3_params.tXP : p->private_params.ddr3_params.tXPDLL;
-		tmp = calc_nck(tmp, tck->ps);
-		BETWEEN(tmp, 2, 31);
-		ddrp->dtpr2.b.tXP = tmp;
-
-		tmp = p->private_params.ddr3_params.tCKE;
-		BETWEEN(tmp, 2, 15);
-		ddrp->dtpr2.b.tCKE = tmp;
-
-		tmp = p->private_params.ddr3_params.tDLLLOCK;
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tDLLK = tmp;
-
-		/* PGCR registers */
-		ddrp->pgcr = DDRP_PGCR_DQSCFG | 7 << DDRP_PGCR_CKEN_BIT
-			| 2 << DDRP_PGCR_CKDV_BIT
-			| (p->cs0 | p->cs1 << 1) << DDRP_PGCR_RANKEN_BIT
-			| DDRP_PGCR_ZCKSEL_32 | DDRP_PGCR_PDDISDX;
+	switch (p->type) {
+#define _CASE(D, P)				\
+		case D:				\
+			tmp = P;		\
+			break
+		_CASE(DDR3, 3);		/* DDR3:0b110 */
+		_CASE(LPDDR, 0);	/* LPDDR:0b011 */
+		_CASE(LPDDR2, 4);	/* LPDDR2:0b101 */
+		_CASE(DDR2, 2);	    /* DDR2:0b100 */
+#undef _CASE
+	default:
+		break;
 	}
-#endif /* CONFIG_DDR_TYPE_DDR3 */
+	ddrp->dcr = tmp | (p->bank8 << 3);
 
-#ifdef CONFIG_DDR_TYPE_LPDDR
-	if (p->type == LPDDR) {
-		ddrp->dcr = 0 | (p->bank8 << 3);
+	/* MR0'Register is differ in lpddr ddr2 lpddr2 ddr3 */
 
-		/* MRn registers */
+	/* DTPR0 registers */
+	/* tMRD is differ in lpddr ddr2 lpddr2 ddr3 */
+	/* tRTP is differ for ddr2 */
+	DDRP_TIMING_SET(0,ddr_base_params,tWTR,3,1,6);
+	DDRP_TIMING_SET(0,ddr_base_params,tRP,4,2,11);
+	DDRP_TIMING_SET(0,ddr_base_params,tRCD,4,2,11);
+	DDRP_TIMING_SET(0,ddr_base_params,tRAS,5,2,31);
+	DDRP_TIMING_SET(0,ddr_base_params,tRRD,4,1,8);
+	DDRP_TIMING_SET(0,ddr_base_params,tRC,6,2,42);
+	/* tCCD is differ in lpddr ddr2 lpddr2 ddr3 */
 
-		ddrp->mr0.lpddr.CL = p->cl;
-		tmp = p->bl;
-		while (tmp >>= 1) count++;
-		ddrp->mr0.lpddr.BL = count;
+	/* DTPR1 registers */
+	/* tAOND is only used by DDR2. */
+	/* tRTW is differ in lpddr ddr2 lpddr2 ddr3 */
+	/* tFAW is differ in lpddr ddr2 lpddr2 ddr3 */
 
-		/* PTRn registers */
-		ddrp->ptr0.b.tDLLSRST = calc_nck(p->private_params.lpddr_params.tDLLSRST, tck->ps);
-		ddrp->ptr0.b.tDLLLOCK = calc_nck(5120, tck->ps); /* LPDDR default 5.12us*/
-		ddrp->ptr0.b.tITMSRST = 8;
+	//DDRP_TIMING_SET(1,ddr_base_params,tFAW,6,2,31);
 
-		ddrp->ptr1.b.tDINIT0 = calc_nck(200000, tck->ps); /* LPDDR default 200us*/
-		tmp = calc_nck(100, tck->ps);
-		ddrp->ptr1.b.tDINIT1 = tmp;
 
-		ddrp->ptr2.b.tDINIT2 = calc_nck(100, tck->ps); /* DDR3 default 200us*/
-		ddrp->ptr2.b.tDINIT3 = calc_nck(100, tck->ps);
+	/* tMOD is used by ddr3 */
+	/* tRTODT is used by ddr3 */
+	DDRP_TIMING_SET(1,ddr_base_params,tRFC,8,0,255);
+	/* tDQSCKmin is used by lpddr2 */
+	/* tDQSCKmax is used by lpddr2 */
 
-		/* DTPR0 registers */
-		ddrp->dtpr0.b.tMRD = p->private_params.lpddr_params.tMRD;
-		PNDEF(0, tRTP, tmp, 2, 6, tck->ps, lpddr_params);
-		PNDEF(0, tWTR, tmp, 1, 6, tck->ps, lpddr_params);
-		PNDEF(0, tRP, tmp, 2, 11, tck->ps, lpddr_params);
-		PNDEF(0, tRCD, tmp, 2, 11, tck->ps, lpddr_params);
-		PNDEF(0, tRAS, tmp, 2, 31, tck->ps, lpddr_params);
-		PNDEF(0, tRRD, tmp, 1, 8, tck->ps, lpddr_params);
-		PNDEF(0, tRC, tmp, 2, 42, tck->ps, lpddr_params);
-		ddrp->dtpr0.b.tCCD = (p->private_params.lpddr_params.tCCD > (p->bl / 2)) ? 1 : 0;
+	/* DTPR2 registers */
+	/* tXS is differ in lpddr2 ddr3 */
+	/* tXP is differ in lpddr2 ddr3 */
+	/* tCKE is differ in ddr3 */
 
-		/* DTPR1 registers */
-		PNDEF(1, tFAW, tmp, 2, 31, tck->ps, lpddr_params);
-		PNDEF(1, tRFC, tmp, 1, 255, tck->ps, lpddr_params);
+	/* PTRn registers */
+	tmp = ps2cycle_ceil(50 * 1000,1);   /* default 50 ns and min clk is 8 cycle */
+	ASSERT_MASK(tmp,6);
+	if(tmp < 8) tmp = 8;
+	ddrp->ptr0.b.tDLLSRST = tmp;
 
-		/* DTPR2 registers */
-		tmp = calc_nck(p->private_params.lpddr_params.tXS, tck->ps);
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tXS = tmp;
 
-//		tmp = calc_nck(p->private_params.lpddr_params.tXP, tck->ps);
-		tmp = p->private_params.lpddr_params.tXP;
-//		BETWEEN(tmp, 2, 31);
-		ddrp->dtpr2.b.tXP = tmp;
+	tmp = ps2cycle_ceil(5120*1000, 1); /* default 5.12 us*/
+	ASSERT_MASK(tmp,12);
+	ddrp->ptr0.b.tDLLLOCK = tmp;
 
-#if 0
-		tmp = p->private_params.lpddr_params.tCKE;
-		BETWEEN(tmp, 2, 15);
-		ddrp->dtpr2.b.tCKE = tmp;
-#endif
+	ddrp->ptr0.b.tITMSRST = 8;    /* default 8 cycle & more than 8 */
 
-		tmp = calc_nck(5120, tck->ps);
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tDLLK = tmp;
-
-		/* PGCR registers */
-		ddrp->pgcr = DDRP_PGCR_ITMDMD | DDRP_PGCR_DQSCFG | 7 << DDRP_PGCR_CKEN_BIT
-			| 2 << DDRP_PGCR_CKDV_BIT
-			| (p->cs0 | p->cs1 << 1) << DDRP_PGCR_RANKEN_BIT
-			| DDRP_PGCR_PDDISDX;
-	}
-#endif /* CONFIG_DDR_TYPE_LPDDR */
-
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	if (p->type == LPDDR2) {
-		/* DCR register */
-		ddrp->dcr = 4 | (p->bank8 << 3);
-
-		/* MRn registers */
-		ddrp->mr0.d32 = 0x852;
-
-		tmp = calc_nck(p->private_params.lpddr2_params.tWR, tck->ps);
-		if (tmp < 3)
-			tmp = 3;
-		ddrp->mr1.lpddr2.nWR = tmp - 2;
-		tmp = p->bl;
-		while (tmp >>= 1) count++;
-		ddrp->mr1.lpddr2.BL = count;
-
-		ddrp->mr2.lpddr2.RL_WL = p->private_params.lpddr2_params.tRL - 2;
-
-		ddrp->mr3.lpddr2.DS = 2;
-
-		/* PTRn registers */
-		ddrp->ptr0.b.tDLLSRST = calc_nck(p->private_params.lpddr2_params.tDLLSRST, tck->ps);
-		ddrp->ptr0.b.tDLLLOCK = calc_nck(5120, tck->ps); /* DDR3 default 5.12us*/
-		ddrp->ptr0.b.tITMSRST = 8;
-
-		ddrp->ptr1.b.tDINIT0 = calc_nck(200000, tck->ps); /* LPDDR default 200us*/
-		tmp = calc_nck(100, tck->ps);
-		ddrp->ptr1.b.tDINIT1 = tmp;
-
-		ddrp->ptr2.b.tDINIT2 = calc_nck(11000, tck->ps); /* DDR3 default 200us*/
-		ddrp->ptr2.b.tDINIT3 = calc_nck(1000, tck->ps);
-
-		/* DTPR0 registers */
-		ddrp->dtpr0.b.tMRD = 0; /* LPDDR2 no use, don't care */
-		PNDEF(0, tRTP, tmp, 2, 6, tck->ps, lpddr2_params);
-		PNDEF(0, tWTR, tmp, 1, 6, tck->ps, lpddr2_params);
-		PNDEF(0, tRP, tmp, 2, 11, tck->ps, lpddr2_params);
-		PNDEF(0, tRCD, tmp, 2, 11, tck->ps, lpddr2_params);
-		PNDEF(0, tRAS, tmp, 2, 31, tck->ps, lpddr2_params);
-		PNDEF(0, tRRD, tmp, 1, 8, tck->ps, lpddr2_params);
-		PNDEF(0, tRC, tmp, 2, 42, tck->ps, lpddr2_params);
-		ddrp->dtpr0.b.tCCD = (p->private_params.lpddr2_params.tCCD > (p->bl / 2)) ? 1 : 0;
-
-		/* DTPR1 registers */
-		PNDEF(1, tFAW, tmp, 2, 31, tck->ps, lpddr2_params);
-		PNDEF(1, tRFC, tmp, 1, 255, tck->ps, lpddr2_params);
-		PNDEF(1, tDQSCK, tmp, 1, 7, tck->ps, lpddr2_params);
-		PNDEF(1, tDQSCKmax, tmp, 1, 7, tck->ps, lpddr2_params);
-
-		/* DTPR2 registers */
-		tmp = calc_nck(p->private_params.lpddr2_params.tXS, tck->ps);
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tXS = tmp;
-
-		tmp = calc_nck(p->private_params.lpddr2_params.tXP, tck->ps);
-		BETWEEN(tmp, 2, 31);
-		ddrp->dtpr2.b.tXP = tmp;
-
-		tmp = p->private_params.lpddr2_params.tCKE;
-		BETWEEN(tmp, 2, 15);
-		ddrp->dtpr2.b.tCKE = tmp;
-
-		tmp = p->private_params.lpddr2_params.tDLLLOCK;
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tDLLK = tmp;
-		/* PGCR registers */
-		ddrp->pgcr = DDRP_PGCR_DQSCFG | 7 << DDRP_PGCR_CKEN_BIT
-			| 2 << DDRP_PGCR_CKDV_BIT
-			| (p->cs0 | p->cs1 << 1) << DDRP_PGCR_RANKEN_BIT
-			| DDRP_PGCR_ZCKSEL_32 | DDRP_PGCR_PDDISDX;
-	}
-#endif /* CONFIG_DDR_TYPE_LPDDR2 */
-
-#ifdef	CONFIG_DDR_TYPE_DDR2
-	if (p->type == DDR2) {
-		/* DCR register */
-		ddrp->dcr = 2 | (p->bank8 << 3);
-
-		/* MRn registers */
-		tmp = calc_nck(p->private_params.ddr2_params.tWR, tck->ps);
-		if (tmp < 2)
-			tmp = 2;
-		if (tmp > 6)
-			tmp = 6;
-
-		ddrp->mr0.ddr2.WR = tmp - 1;
-		ddrp->mr0.ddr2.CL = p->cl;
-		ddrp->mr0.ddr2.BL = ((p->bl == 4) ? 2 : 3);
-		ddrp->mr1.ddr2.DIC = 1; /* Impedance=RZQ/7 */
-#ifdef CONFIG_DDR_CHIP_ODT
-		ddrp->mr1.ddr2.RTT2 = 1; /* Effective resistance of ODT RZQ/4 */
-#endif
-		/* PTRn registers */
-		ddrp->ptr0.b.tDLLSRST = calc_nck(p->private_params.ddr2_params.tDLLSRST, tck->ps);
-		ddrp->ptr0.b.tDLLLOCK = calc_nck(5120, tck->ps); /* DDR3 default 5.12us*/
-		ddrp->ptr0.b.tITMSRST = 8;
-
-		ddrp->ptr1.b.tDINIT0 = calc_nck(200000, tck->ps); /* DDR3 default 500us*/
-
-		tmp = calc_nck(400, tck->ps);
-		ddrp->ptr1.b.tDINIT1 = tmp;
-#if 0
-		ddrp->ptr2.b.tDINIT2 = calc_nck(100000, tck->ps); /* DDR3 default 200us*/
-		ddrp->ptr2.b.tDINIT3 = calc_nck(100000, tck->ps);
-#endif
-		/* DTPR0 registers */
-		ddrp->dtpr0.b.tMRD = (p->private_params.ddr2_params.tMRD > 2) ? 3 : 2;
-		PNDEF(0, tRTP, tmp, 2, 6, tck->ps, ddr2_params);
-		PNDEF(0, tWTR, tmp, 1, 6, tck->ps, ddr2_params);
-		PNDEF(0, tRP, tmp, 2, 11, tck->ps, ddr2_params);
-		PNDEF(0, tRCD, tmp, 2, 11, tck->ps, ddr2_params);
-		PNDEF(0, tRAS, tmp, 2, 31, tck->ps, ddr2_params);
-		PNDEF(0, tRRD, tmp, 1, 8, tck->ps, ddr2_params);
-		PNDEF(0, tRC, tmp, 2, 42, tck->ps, ddr2_params);
-
-		/* DTPR1 registers */
-		PNDEF(1, tFAW, tmp, 2, 31, tck->ps, ddr2_params);
-		PNDEF(1, tRFC, tmp, 1, 255, tck->ps, ddr2_params);
-
-		/* DTPR2 registers */
-		tmp = calc_nck(p->private_params.ddr2_params.tXS, tck->ps);
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tXS = tmp;
-
-		tmp = calc_nck(p->private_params.ddr2_params.tXP, tck->ps);
-		BETWEEN(tmp, 2, 31);
-		ddrp->dtpr2.b.tXP = tmp;
-
-		tmp = p->private_params.ddr2_params.tCKE;
-		BETWEEN(tmp, 2, 15);
-		ddrp->dtpr2.b.tCKE = tmp;
-
-		tmp = p->private_params.ddr2_params.tDLLLOCK;
-		BETWEEN(tmp, 2, 1023);
-		ddrp->dtpr2.b.tDLLK = tmp;
-
-		/* PGCR registers */
-		ddrp->pgcr = DDRP_PGCR_DQSCFG | 7 << DDRP_PGCR_CKEN_BIT
-			| 2 << DDRP_PGCR_CKDV_BIT
-			| (p->cs0 | p->cs1 << 1) << DDRP_PGCR_RANKEN_BIT
-			| DDRP_PGCR_ZCKSEL_32 | DDRP_PGCR_PDDISDX;
-	}
-#endif /* CONFIG_DDR_TYPE_DDR3 */
-#undef BETWEEN
-#undef PNDEF
+	//BETWEEN(tmp, 2, 1023);
+	ddrp->dtpr2.b.tDLLK = 512;
+	/* PGCR'Register is differ in lpddr ddr2 lpddr2 ddr3 */
 }
-
-void fill_in_params(struct ddr_params *ddr_params, int type)
+void init_ddr_params_common(struct ddr_params *ddr_params,int type)
 {
-#ifndef CONFIG_DDR_TYPE_VARIABLE
-#ifdef CONFIG_DDR_TYPE_DDR3
-	struct ddr3_params *params = NULL;
-	if (type == DDR3)
-		params = &ddr_params->private_params.ddr3_params;
-#endif /* CONFIG_DDR_TYPE_DDR3 */
-#ifdef CONFIG_DDR_TYPE_LPDDR
-	struct lpddr_params *params = NULL;
-	if (type == LPDDR)
-		params = &ddr_params->private_params.lpddr_params;
-#endif /* CONFIG_DDR_TYPE_LPDDR */
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	struct lpddr2_params *params = NULL;
-	if (type == LPDDR2)
-		params = &ddr_params->private_params.lpddr2_params;
-#endif /* CONFIG_DDR_TYPE_LPDDR2 */
-#ifdef CONFIG_DDR_TYPE_DDR2
-	struct ddr2_params *params = NULL;
-	if (type == DDR2)
-		params = &ddr_params->private_params.ddr2_params;
-#endif /* CONFIG_DDR_TYPE_DDR2 */
-#endif /* !CONFIG_DDR_TYPE_VARIABLE */
-
-#ifndef CONFIG_DDR_TYPE_VARIABLE
-	memset(params, 0, sizeof(union private_params));
-
 	ddr_params->type = type;
 	ddr_params->freq = CONFIG_SYS_MEM_FREQ;
-#endif /* !CONFIG_DDR_TYPE_VARIABLE */
-	caculate_tck(ddr_params);
-#ifndef CONFIG_DDR_TYPE_VARIABLE
-	ddr_params->div = DDR_CLK_DIV;
 	ddr_params->cs0 = CONFIG_DDR_CS0;
 	ddr_params->cs1 = CONFIG_DDR_CS1;
 	ddr_params->dw32 = CONFIG_DDR_DW32;
-	ddr_params->cl = DDR_CL;
 	ddr_params->bl = DDR_BL;
 	ddr_params->col = DDR_COL;
 	ddr_params->row = DDR_ROW;
+
 #ifdef DDR_COL1
 	ddr_params->col1 = DDR_COL1;
 #endif
@@ -887,98 +358,51 @@ void fill_in_params(struct ddr_params *ddr_params, int type)
 	ddr_params->row1 = DDR_ROW1;
 #endif
 	ddr_params->bank8 = DDR_BANK8;
-	params->tRAS = DDR_tRAS;
-	params->tRP = DDR_tRP;
-	params->tRCD = DDR_tRCD;
-	params->tRC = DDR_tRC;
-	params->tWR = DDR_tWR;
-	params->tRRD = DDR_tRRD;
-	params->tRTP = DDR_tRTP;
-	params->tWTR = DDR_tWTR;
-	params->tRFC = DDR_tRFC;
-	params->tMINSR = DDR_tMINSR;
-	params->tXP = DDR_tXP;
-	params->tMRD = DDR_tMRD;
-	params->tCCD = DDR_tCCD;
-	params->tFAW = DDR_tFAW;
-	params->tCKE = DDR_tCKE;
-	params->tRL = DDR_tRL;
-	params->tWL = DDR_tWL;
-	params->tRDLAT = DDR_tRDLAT;
-	params->tWDLAT = DDR_tWDLAT;
-	params->tRTW = DDR_tRTW;
-	params->tRAS = DDR_tRAS;
-	params->tCKSRE = DDR_tCKSRE;
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	params->tDQSCK = DDR_tDQSCK;
-	params->tDQSCKmax = DDR_tDQSCKMAX;
-	params->tDLLLOCK = DDR_tDLLLOCK;
-#endif /* CONFIG_DDR_TYPE_LPDDR2 */
-#ifdef CONFIG_DDR_TYPE_DDR3
-	params->tCWL = DDR_tCWL;
-	params->tDLLLOCK = DDR_tDLLLOCK;
-	params->tXSDLL = DDR_tXSDLL;
-	params->tMOD = DDR_tMOD;
-	params->tXPDLL = DDR_tXPDLL;
-#endif /* CONFIG_DDR_TYPE_DDR3 */
-	params->tXS = DDR_tXS;
-	params->tXSRD = DDR_tXSRD;
-	params->tREFI = DDR_tREFI;
-	params->tDLLSRST = 50; /* default 50ns */
-#endif /* !CONFIG_DDR_TYPE_VARIABLE */
 	ddr_params->size.chip0 = sdram_size(0, ddr_params);
 	ddr_params->size.chip1 = sdram_size(1, ddr_params);
 }
 
-void ddr_params_creator(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp,
-			struct ddr_params *ddr_params)
-{
-			struct ddr_params *ddr_params_p = ddr_params;
-	memset(ddrc, 0, sizeof(struct ddrc_reg));
-	memset(ddrp, 0, sizeof(struct ddrp_reg));
 
-	ddrc_params_creat(ddrc, ddr_params);
-	ddrp_params_creat(ddrp, ddr_params);
-}
 
-#ifdef CONFIG_SPL_BUILD
-void ddr_params_assign(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp, struct ddr_params *p)
+/* #define CONFIG_DDR_CHIP_IMPEDANCE */
+
+static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
+	int i;
+	unsigned char rzq[]={
+		0x00,0x01,0x02,0x03,0x06,0x07,0x04,0x05,
+		0x0C,0x0D,0x0E,0x0F,0x0A,0x0B,0x08,0x09,
+		0x18,0x19,0x1A,0x1B,0x1E,0x1F,0x1C,0x1D,
+		0x14,0x15,0x16,0x17,0x12,0x13,0x10,0x11
+	};  //from ddr multiphy page 158.
+	ddrp->odtcr.d32 = 0;
+#ifdef CONFIG_DDR_CHIP_ODT
+	ddrp->odtcr.d32 = 0x84210000;   //power on default.
+#endif
 	/* DDRC registers assign */
-	DDRC_CFG_VALUE		= ddrc->cfg.d32;
-	DDRC_CTRL_VALUE		= ddrc->ctrl;
-	DDRC_MMAP0_VALUE	= ddrc->mmap[0];
-	DDRC_MMAP1_VALUE	= ddrc->mmap[1];
-	DDRC_REFCNT_VALUE	= ddrc->refcnt;
-	DDRC_TIMING1_VALUE	= ddrc->timing1.d32;
-	DDRC_TIMING2_VALUE	= ddrc->timing2.d32;
-	DDRC_TIMING3_VALUE	= ddrc->timing3.d32;
-	DDRC_TIMING4_VALUE	= ddrc->timing4.d32;
-	DDRC_TIMING5_VALUE	= ddrc->timing5.d32;
-	DDRC_TIMING6_VALUE	= ddrc->timing6.d32;
-
-	/* DDRP registers assign */
-	DDRP_DCR_VALUE		= ddrp->dcr;
-	DDRP_MR0_VALUE		= ddrp->mr0.d32;
-	DDRP_MR1_VALUE		= ddrp->mr1.d32;
-	DDRP_MR2_VALUE		= ddrp->mr2.d32;
-	DDRP_MR3_VALUE		= ddrp->mr3.d32;
-	DDRP_PTR0_VALUE		= ddrp->ptr0.d32;
-	DDRP_PTR1_VALUE		= ddrp->ptr1.d32;
-	DDRP_PTR2_VALUE		= ddrp->ptr2.d32;
-	DDRP_DTPR0_VALUE	= ddrp->dtpr0.d32;
-	DDRP_DTPR1_VALUE	= ddrp->dtpr1.d32;
-	DDRP_DTPR2_VALUE	= ddrp->dtpr2.d32;
-	DDRP_PGCR_VALUE		= ddrp->pgcr;
-
-	DDR_CHIP_0_SIZE		= p->size.chip0;
-	DDR_CHIP_1_SIZE		= p->size.chip1;
+	for(i = 0;i < 4;i++)
+		ddrp->dxngcrt[i].d32 = 0x00090e80;
+	i = 0;
+#ifdef CONFIG_DDR_PHY_ODT
+	for(i = 0;i < (CONFIG_DDR_DW32 + 1) * 2;i++){
+		ddrp->dxngcrt[i].b.dqsrtt = 1;
+		ddrp->dxngcrt[i].b.dqrtt = 1;
+		ddrp->dxngcrt[i].b.dqsodt = 1;
+		ddrp->dxngcrt[i].b.dqodt = 1;
+	}
+#else
+	for(i = 0;i < (CONFIG_DDR_DW32 + 1) * 2;i++){
+		ddrp->dxngcrt[i].b.dqsrtt = 0;
+		ddrp->dxngcrt[i].b.dqrtt = 0;
+		ddrp->dxngcrt[i].b.dxen = 1;
+	}
+#endif
+	for(i = 0;i<sizeof(rzq);i++)
+		    ddrp->rzq_table[i] = rzq[i];
 }
-#else /* CONFIG_SPL_BUILD */
-
-#ifdef CONFIG_DDR_HOST_CC
 static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 {
+	int i;
 	/* DDRC registers print */
 	printf("#define DDRC_CFG_VALUE			0x%08x\n", ddrc->cfg.d32);
 	printf("#define DDRC_CTRL_VALUE			0x%08x\n", ddrc->ctrl);
@@ -991,6 +415,7 @@ static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 	printf("#define DDRC_TIMING4_VALUE		0x%08x\n", ddrc->timing4.d32);
 	printf("#define DDRC_TIMING5_VALUE		0x%08x\n", ddrc->timing5.d32);
 	printf("#define DDRC_TIMING6_VALUE		0x%08x\n", ddrc->timing6.d32);
+	printf("#define DDRC_AUTOSR_EN_VALUE		0x%08x\n", ddrc->autosr_en);
 
 	/* DDRP registers print */
 	printf("#define DDRP_DCR_VALUE			0x%08x\n", ddrp->dcr);
@@ -1005,6 +430,18 @@ static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 	printf("#define	DDRP_DTPR1_VALUE		0x%08x\n", ddrp->dtpr1.d32);
 	printf("#define	DDRP_DTPR2_VALUE		0x%08x\n", ddrp->dtpr2.d32);
 	printf("#define	DDRP_PGCR_VALUE			0x%08x\n", ddrp->pgcr);
+	printf("#define DDRP_ODTCR_VALUE                0x%08x\n", ddrp->odtcr.d32);
+	for(i = 0;i < 4;i++){
+		printf("#define DDRP_DX%dGCR_VALUE              0x%08x\n",i,ddrp->dxngcrt[i].d32);
+	}
+	printf("#define DDRP_ZQNCR1_VALUE               0x%08x\n", ddrp->zqncr1);
+	printf("#define DDRP_IMPANDCE_ARRAY             {0x%08x,0x%08x} //0-cal_value 1-req_value\n", ddrp->impedance[0],ddrp->impedance[1]);
+	printf("#define DDRP_ODT_IMPANDCE_ARRAY         {0x%08x,0x%08x} //0-cal_value 1-req_value\n", ddrp->odt_impedance[0],ddrp->odt_impedance[1]);
+	printf("#define DDRP_RZQ_TABLE  {0x%02x",ddrp->rzq_table[0]);
+	for(i = 1;i < sizeof(ddrp->rzq_table);i++){
+		printf(",0x%02x",ddrp->rzq_table[i]);
+	}
+	printf("}\n");
 }
 
 static void sdram_size_print(struct ddr_params *p)
@@ -1012,44 +449,77 @@ static void sdram_size_print(struct ddr_params *p)
 	printf("#define	DDR_CHIP_0_SIZE			%u\n", p->size.chip0);
 	printf("#define	DDR_CHIP_1_SIZE			%u\n", p->size.chip1);
 }
-#else /* CONFIG_DDR_HOST_CC */
-static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
+static unsigned int frandom(int max)
 {
-	/* DDRC registers print */
-	printf("uint32_t DDRC_CFG_VALUE;\n");
-	printf("uint32_t DDRC_CTRL_VALUE;\n");
-	printf("uint32_t DDRC_MMAP0_VALUE;\n");
-	printf("uint32_t DDRC_MMAP1_VALUE;\n");
-	printf("uint32_t DDRC_REFCNT_VALUE;\n");
-	printf("uint32_t DDRC_TIMING1_VALUE;\n");
-	printf("uint32_t DDRC_TIMING2_VALUE;\n");
-	printf("uint32_t DDRC_TIMING3_VALUE;\n");
-	printf("uint32_t DDRC_TIMING4_VALUE;\n");
-	printf("uint32_t DDRC_TIMING5_VALUE;\n");
-	printf("uint32_t DDRC_TIMING6_VALUE;\n");
-
-	/* DDRP registers print */
-	printf("uint32_t DDRP_DCR_VALUE;\n");
-	printf("uint32_t DDRP_MR0_VALUE;\n");
-	printf("uint32_t DDRP_MR1_VALUE;\n");
-	printf("uint32_t DDRP_MR2_VALUE;\n");
-	printf("uint32_t DDRP_MR3_VALUE;\n");
-	printf("uint32_t DDRP_PTR0_VALUE;\n");
-	printf("uint32_t DDRP_PTR1_VALUE;\n");
-	printf("uint32_t DDRP_PTR2_VALUE;\n");
-	printf("uint32_t DDRP_DTPR0_VALUE;\n");
-	printf("uint32_t DDRP_DTPR1_VALUE;\n");
-	printf("uint32_t DDRP_DTPR2_VALUE;\n");
-	printf("uint32_t DDRP_PGCR_VALUE;\n");
+	return max;
 }
-
-static void sdram_size_print(struct ddr_params *p)
+static void mem_remap_print(struct ddr_params *p)
 {
-	printf("uint32_t DDR_CHIP_0_SIZE;\n");
-	printf("uint32_t DDR_CHIP_1_SIZE;\n");
-}
-#endif /* CONFIG_DDR_HOST_CC */
+	int address_bits;
+	int swap_bits;
+	int bank_bits;
+	int startA, startB;
+	int bit_width;
+	unsigned int remap_array[5];
+	unsigned char *s;
+	int i,width;
+	s = (unsigned char *)remap_array;
+	for(i = 0;i < sizeof(remap_array);i++)
+		s[i] = i;
 
+	if(p->size.chip1 && (p->size.chip0 != p->size.chip1))
+		return;
+
+	bank_bits = DDR_BANK8 == 1 ? 3 : 2;
+	bit_width = CONFIG_DDR_DW32 == 1 ? 2 : 1;
+
+	/*
+	 * count the chips's address space bits.
+	 */
+	address_bits =  bit_width + DDR_COL + DDR_ROW + bank_bits + (CONFIG_DDR_CS0 + CONFIG_DDR_CS1 - 1);
+	/*
+	 * count address space bits for swap.
+	 */
+	swap_bits = bank_bits + (CONFIG_DDR_CS0 + CONFIG_DDR_CS1 - 1);
+
+	startA = bit_width + DDR_COL > 12 ? bit_width + DDR_COL : 12;
+
+	startB = address_bits - swap_bits - startA;
+	startA = startA - 12;
+
+#define swap_bytes(buf,b1,b2) do{		\
+		unsigned char swap;		\
+		swap = buf[b1];			\
+		buf[b1] = buf[b2];		\
+		buf[b2] = swap;			\
+	}while(0)
+
+        /*
+	 * bank and cs swap with row.
+	 */
+	for(i = startA;i < swap_bits;i++)
+		swap_bytes(s,startA + i,startB + i);
+        /*
+	 * random high address for securing.
+	 */
+	for(i = 0;i < swap_bits / 2;i++){
+		int sw = frandom(swap_bits - 1 - i);
+		swap_bytes(s,startA + i,startA + sw);
+	}
+
+	width = startB + startA;
+	startA = startA + swap_bits;
+	for(i = 0;i < width / 2;i++){
+		int sw = frandom(width - 1 - i);
+		swap_bytes(s,startA + i,startA + sw);
+	}
+	printf("#define REMMAP_ARRAY {\\\n");
+	for(i = 0;i <sizeof(remap_array) / sizeof(remap_array[0]);i++)
+	{
+		printf("\t0x%08x,\\\n",remap_array[i]);
+	}
+	printf("};\n");
+}
 static void file_head_print(void)
 {
 	printf("/*\n");
@@ -1069,33 +539,50 @@ static void file_end_print(void)
 	printf("\n#endif /* __DDR_REG_VALUES_H__ */\n");
 }
 
+static struct ddr_creator_ops *p_ddr_creator = NULL;
+static int ops_count = 0;
+void register_ddr_creator(struct ddr_creator_ops *ops)
+{
+	if(ops_count++ == 0){
+		p_ddr_creator = ops;
+	}else{
+		out_error("Error: DDR CREATEOR cann't register %d\n",ops->type);
+	}
+}
+/**
+ * ddr parameter prev setting :
+ *    1.  the ddr chip parameter is filled.
+ *    2.  the ddr controller parameter is generated.
+ *    3.  the ddr phy paramerter is generated.
+ *    4.  all parameter is outputted.
+ */
 int main(int argc, char *argv[])
 {
 	struct ddrc_reg ddrc;
 	struct ddrp_reg ddrp;
 	struct ddr_params ddr_params;
+	__ps_per_tck = (1000000000 / (CONFIG_SYS_MEM_FREQ / 1000));
+	memset(&ddrc, 0, sizeof(struct ddrc_reg));
+	memset(&ddrp, 0, sizeof(struct ddrp_reg));
+	memset(&ddr_params, 0, sizeof(struct ddr_params));
+	ddr_creator_init();
 
-#ifdef CONFIG_DDR_HOST_CC
-#ifdef CONFIG_DDR_TYPE_DDR3
-	fill_in_params(&ddr_params, DDR3);
-#elif defined(CONFIG_DDR_TYPE_LPDDR)
-	fill_in_params(&ddr_params, LPDDR);
-#elif defined(CONFIG_DDR_TYPE_LPDDR2)
-	fill_in_params(&ddr_params, LPDDR2);
-#elif defined(CONFIG_DDR_TYPE_DDR2)
-	fill_in_params(&ddr_params, DDR2);
-#elif defined(CONFIG_DDR_TYPE_VARIABLE)
-	/* params were created by burn tool. */
-#error "VARIABLE can NOT be created by ddr_params_creator"
-#endif /* CONFIG_DDR_TYPE_DDR3 */
-	ddr_params_creator(&ddrc, &ddrp, &ddr_params);
-#endif /* CONFIG_DDR_HOST_CC */
+	init_ddr_params_common(&ddr_params,p_ddr_creator->type);
+	ddr_base_params_fill(&ddr_params);
+	p_ddr_creator->fill_in_params(&ddr_params);
 
+	ddrc_base_params_creator_common(&ddrc, &ddr_params);
+	p_ddr_creator->ddrc_params_creator(&ddrc, &ddr_params);
+	ddrc_config_creator(&ddrc,&ddr_params);
+
+	ddrp_base_params_creator_common(&ddrp, &ddr_params);
+	p_ddr_creator->ddrp_params_creator(&ddrp, &ddr_params);
+	ddrp_config_creator(&ddrp,&ddr_params);
 	file_head_print();
 	params_print(&ddrc, &ddrp);
 	sdram_size_print(&ddr_params);
+	mem_remap_print(&ddr_params);
 	file_end_print();
 
 	return 0;
 }
-#endif /* CONFIG_SPL_BUILD */

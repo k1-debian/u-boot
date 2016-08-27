@@ -25,6 +25,7 @@
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
+#include <asm/mipsregs.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
 #include <spl.h>
@@ -101,7 +102,8 @@ void board_init_f(ulong dummy)
 #ifndef CONFIG_CMD_BURN
 	gd->arch.gi = &ginfo;
 #else
-	gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
+	burner_param_info();
+	/* gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE; */
 #endif
 	gpio_init();
 
@@ -117,6 +119,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 
 #ifndef CONFIG_FPGA
 	debug("Timer init\n");

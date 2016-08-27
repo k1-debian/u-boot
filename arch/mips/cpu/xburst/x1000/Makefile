@@ -34,7 +34,7 @@ COBJS-$(CONFIG_JZ_SLT) += dym_pll.o
 
 ifndef CONFIG_BURNER
 ifndef CONFIG_JZ_SLT
-COBJS-y += pll.o
+COBJS-y += pllsetting.o
 endif
 endif
 
@@ -42,8 +42,7 @@ COBJS-y += clk.o
 COBJS-y += ddr_set_dll.o
 COBJS-y += ../ddr_dwc.o
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
-COBJS-$(CONFIG_SPL_DDR_SOFT_TRAINING) += ../ddr_dqs_training.o
-COBJS-$(CONFIG_DDR_FORCE_SOFT_TRAINING) += ../ddr_dqs_training.o
+COBJS-$(CONFIG_BURNER) += ../param_manage.o
 
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
@@ -53,6 +52,18 @@ all:	$(obj).depend $(LIB)
 
 $(LIB):	$(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
+
+.depend.pllsetting:$(TOPDIR)/include/generated/pll_reg_values.h
+ifndef CONFIG_BURNER
+$(SPLTREE)/$(dir)/../ddr_dwc.o:$(TOPDIR)/include/generated/ddr_reg_values.h
+endif
+$(obj)pllsetting.o:$(TOPDIR)/include/generated/pll_reg_values.h
+
+$(TOPDIR)/include/generated/pll_reg_values.h:$(TOPDIR)/$(dir)/pll_params_creator.exe
+	$< > $@
+
+$(TOPDIR)/$(dir)/pll_params_creator.exe:$(OBJTREE)/$(dir)/pll_params_creator.c | $(SRCTREE)/include/configs/$(BOARD).h
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -I$(SRCTREE)/include/ -o $@ $^
 
 #########################################################################
 

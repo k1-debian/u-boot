@@ -36,7 +36,6 @@
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #endif //endif CONFIG_DORADO_V30
 
-#define CONFIG_SPL_DDR_SOFT_TRAINING
 #define CONFIG_RTC_JZ47XX
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		600000000	/*If MPLL not use mast be set 0*/
@@ -76,6 +75,7 @@
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32         1   /* 1-32bit-width, 0-16bit-width */
+#define CONFIG_DDR_PHY_IMPEDANCE 60000
 
 /* #define CONFIG_DDR_DLL_OFF */
 /*

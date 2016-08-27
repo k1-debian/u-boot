@@ -29,7 +29,6 @@
  *************************************************************************/
 #define DDR_MEM_PHY_BASE		0x20000000
 
-#define CPM_DRCG			0xb00000d0
 
 #define DDRC_STATUS			0x0
 #define DDRC_CFG			0x4
@@ -40,9 +39,10 @@
 #define DDRC_MMAP1			0x28
 #define DDRC_DLP			0xbc
 #define DDRC_STRB			0x34
-#define DDRC_AUTOSR_CNT     0x308
-#define DDRC_AUTOSR_EN		0x304
+#define DDRC_AUTOSR_CNT                 0x308
+#define DDRC_AUTOSR_EN		        0x304
 
+#define DDRC_CLKSTP_CFG                 (DDR_PHY_OFFSET + 0x1000 + 0x68)
 
 #define DDRC_TIMING(n)			(0x60 + 4 * (n - 1))
 #define DDRC_REMAP(n)			(0x9c + 4 * (n - 1))
@@ -144,9 +144,9 @@
 //#define DDRC_CFG_COL_11	(3 << DDRC_CFG_COL_BIT) /* 11-bit Column address is used */
 #define DDRC_CFG_CS1EN_BIT	7 /* DDR Chip-Select-1 Enable */
 #define DDRC_CFG_CS0EN_BIT	6 /* DDR Chip-Select-0 Enable */
-//#define DDRC_CFG_CS1EN		(1 << 7) /* 0 DDR Pin CS1 un-used
+#define DDRC_CFG_CS1EN		(1 << 7) /* 0 DDR Pin CS1 un-used
 //					    1 There're DDR memory connected to CS1 */
-//#define DDRC_CFG_CS0EN		(1 << 6) /* 0 DDR Pin CS0 un-used
+#define DDRC_CFG_CS0EN		(1 << 6) /* 0 DDR Pin CS0 un-used
 //					    1 There're DDR memory connected to CS0 */
 #define DDRC_CFG_CL_BIT		2 /* CAS Latency */
 //#define DDRC_CFG_CL_MASK	(0xf << DDRC_CFG_CL_BIT)
@@ -369,6 +369,7 @@
 #define DDRP_PIR_QSTRN   	(1 << 7)
 #define DDRP_PIR_EYETRN   	(1 << 8)
 #define DDRP_PIR_DLLBYP   	(1 << 17)
+#define DDRP_PIR_LOCKBYP        (1 << 29)
 /* DDRP PHY General Configurate Register */
 #define DDRP_PGCR_ITMDMD	(1 << 0)
 #define DDRP_PGCR_DQSCFG	(1 << 1)
@@ -380,6 +381,7 @@
 #define DDRP_PGCR_CKINV		(1 << 14)
 #define DDRP_PGCR_RANKEN_BIT	18
 #define DDRP_PGCR_ZCKSEL_32	(2 << 22)
+#define DDRP_PGCR_ZCKSEL_64	(3 << 22)
 #define DDRP_PGCR_PDDISDX	(1 << 24)
 /* DDRP PHY General Status Register */
 #define DDRP_PGSR_IDONE		(1 << 0)
@@ -575,53 +577,44 @@
 #define DDRC_MDELAY_MAUTO_BIT (6)
 #define DDRC_MDELAY_MAUTO  (1 << DDRC_MDELAY_MAUTO_BIT)
 
+#if 0
 #define DDR_GET_VALUE(x, y) (((x * 1000)% y == 0) ?	\
 		((x * 1000)/ y) : ((x * 1000) / y + 1))
+#endif
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+//#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 #define ddr_writel(value, reg)	writel((value), DDRC_BASE + reg)
 #define ddr_readl(reg)		readl(DDRC_BASE + reg)
 
-#ifdef MAX
-#undef MAX
+extern unsigned int __ps_per_tck;
+
+#define DDR_SELECT_MAX__tCK_ps(tck, ps)									\
+	({																	\
+		unsigned int value;												\
+		value = (tck * __ps_per_tck > ps) ? (tck * __ps_per_tck) : ps;	\
+		value;															\
+	})
+
+#define DDR__ns(ns)   (ns * 1000)
+#define DDR__ps(ps)   (ps)
+#define DDR__tck(tck) (tck * __ps_per_tck)
+
+#if 0
+
+#define DDR_GET_VALUE(x, y)										\
+	({															\
+		unsigned long value, temp;								\
+		temp = x * 1000;										\
+		value = (temp % y == 0) ? (temp / y) : (temp / y + 1);	\
+		value;													\
+	})
 #endif
-#define MAX(tck, time)								\
-({										\
-	unsigned long value;							\
-	value = (tck * tck_g.ps > time) ? (tck * tck_g.ps) : time;		\
-	value = (value % 1000 == 0) ? (value / 1000) : (value / 1000 + 1);	\
-	value;									\
-})
 
-#define DDR_GET_VALUE(x, y)					\
-({								\
-	unsigned long value, temp;		                \
-	 temp = x * 1000;					\
-	 value = (temp % y == 0) ? (temp / y) : (temp / y + 1); \
-	 value;							\
- })
-
-/*only for lpddr2 tRL and tWL*/
-#define MATCH(clk,type)								\
-({										\
-	unsigned long value,i;							\
-	if(type == 0){    \
-		for(i = 0; i < ARRAY_SIZE(rl_LPDDR2);i++){		\
-			if(rl_LPDDR2[i].memclk > clk){				\
-				value = rl_LPDDR2[i-1].RL;				\
-				break;                                  \
-			}							\
-		}									\
-	}else{	\
-		for(i = 0; i < ARRAY_SIZE(wl_LPDDR2);i++){		\
-			if(wl_LPDDR2[i].memclk > clk){				\
-				value = wl_LPDDR2[i-1].WL;	\
-				break;              \
-			}				\
-		}			\
-	}			\
-	value;              \
-})
-
+struct jzsoc_ddr_hook
+{
+	void (*prev_ddr_init)(int bypass,enum ddr_type type);
+	void (*post_ddr_init)(int bypass,enum ddr_type type);
+};
+void register_ddr_hook(struct jzsoc_ddr_hook * hook);
 #endif /* __DDR_H__ */

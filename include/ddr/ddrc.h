@@ -148,7 +148,17 @@ typedef union ddrc_cfg {
 		unsigned reserved30_31:2;
 	} b;
 } ddrc_cfg_t;
-
+typedef union ddrc_clkstp_cfg{
+	uint32_t d32;
+	struct {
+		unsigned dly_time:12;
+		unsigned reserved:16;
+		unsigned sr_cond_en:1;
+		unsigned lp_cond_en:1;
+		unsigned idle_cond_en:1;
+		unsigned clkstp_en:1;
+	} b;
+} ddrc_clkstp_cfg_t;
 struct ddrc_reg {
 	ddrc_cfg_t cfg;
 	uint32_t ctrl;
@@ -161,6 +171,8 @@ struct ddrc_reg {
 	ddrc_timing4_t timing4;
 	ddrc_timing5_t timing5;
 	ddrc_timing6_t timing6;
+	uint32_t autosr_en;
+	ddrc_clkstp_cfg_t clkstp_cfg;
 };
 
 #endif /* __DDRC_H__ */

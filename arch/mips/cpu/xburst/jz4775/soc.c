@@ -63,7 +63,8 @@ void board_init_f(ulong dummy)
 #ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
 #else
-	gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
+	//gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
+	burner_param_info();
 #endif
 	gd->arch.gi->ddr_div = ((gd->arch.gi->cpufreq % gd->arch.gi->ddrfreq) == 0)
 		? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq)
@@ -80,7 +81,7 @@ void board_init_f(ulong dummy)
 	printf("Boot Select Is %d\n", *(volatile unsigned int *)0xf4000110);
 #endif
 #endif
-
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 	debug("Timer init\n");
 	timer_init();
 

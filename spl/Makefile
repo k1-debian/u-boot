@@ -108,9 +108,6 @@ ifeq ($(SOC),exynos)
 LIBS-y += $(CPUDIR)/s5p-common/libs5p-common.o
 endif
 
-ifndef CONFIG_DDR_HOST_CC
-LIBS-y += tools/ingenic-tools/lib_ddr_params_creator.o
-endif
 
 # Add GCC lib
 ifeq ("$(USE_PRIVATE_LIBGCC)", "yes")

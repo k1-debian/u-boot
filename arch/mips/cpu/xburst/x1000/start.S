@@ -63,8 +63,8 @@ _start:
 
 #if 0
 loop:
-	la      v0, 0xb0010100
-	li      t0, 0x1
+	la      v0, 0xb0010000
+	li      t0, 0x200
 	sw      t0, 0x74(v0)
 	sw      t0, 0x18(v0)
 	sw      t0, 0x24(v0)
@@ -111,6 +111,7 @@ loop3:
 	ori	t1, t1, 0x22
 	sw	t1, 0x24(t0)
 
+	.set push
 	.set	mips32
 init_caches:
 	li	t0, CONF_CM_CACHABLE_NONCOHERENT
@@ -133,11 +134,14 @@ cache_clear_a_line:
 	addiu   t1, t1, CONFIG_SYS_CACHELINE_SIZE
 	bne     t1, t2, cache_clear_a_line
 	nop
+	.set pop
+
+#if 0
 
 	li	t1, KSEG0		/* Start address */
 	ori     t2, t1, CACHE_ALLOC_END	/* End address */
 	la      t3, 0x1ffff000		/* Physical address and 4KB page mask */
-#if 0
+
 cache_alloc_a_line:
 	and     t4, t1, t3
 	ori     t4, t4, 1		/* V bit of the physical tag */

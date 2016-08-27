@@ -46,6 +46,7 @@ static inline u32 spl_boot_device(void)
 #ifdef CONFIG_SPL_SPI_NAND
 	return BOOT_DEVICE_SPI_NAND;
 #endif
+	return -1;
 }
 
 static inline u32 spl_boot_mode(void)

@@ -224,7 +224,7 @@ typedef union ddrp_dtpr1 {
 		unsigned reserved12_15:4;
 		unsigned tRFC:8;
 		unsigned tDQSCK:3;
-		unsigned tDQSCKmax:3;
+		unsigned tDQSCKMAX:3;
 		unsigned reserved30_31:2;
 	} b;
 } ddrp_dtpr1_t;
@@ -242,13 +242,49 @@ typedef union ddrp_dtpr2 {
 	} b;
 } ddrp_dtpr2_t;
 
+typedef union ddrp_odtcr {
+	/** odtcr configure odt for read & write ctrl. */
+	uint32_t d32;
+	struct{
+		unsigned int RDODT0:4;
+		unsigned int RDODT1:4;
+		unsigned int RDODT2:4;
+		unsigned int RDODT3:4;
+		unsigned int WDODT0:4;
+		unsigned int WDODT1:4;
+		unsigned int WDODT2:4;
+		unsigned int WDODT3:4;
+	}b;
+}ddrp_odtcr_t;
+typedef union ddrp_dxngcr{
+	uint32_t d32;
+	struct {
+		unsigned int dxen:1;
+		unsigned int dqsodt:1;
+		unsigned int dqodt:1;
+		unsigned int dxiom:1;
+		unsigned int dxpdr:1;
+		unsigned int dxpdd:1;
+		unsigned int dqsrpd:1;
+		unsigned int dsen:2;
+		unsigned int dqsrtt:1;
+		unsigned int dqrtt:1;
+		unsigned int rttoh:2;
+		unsigned int rttoal:1;
+		unsigned int r0rvsl:4;
+		unsigned int r1rvsl:4;
+		unsigned int r2rvsl:4;
+		unsigned int r3rvsl:4;
+		unsigned int reserved:5;
+	}b;
+}ddrp_dxngcr_t;
+
 struct ddrp_reg {
 	uint32_t dcr;
 	ddrp_mr0_t mr0;
 	ddrp_mr1_t mr1;
 	ddrp_mr2_t mr2;
 	ddrp_mr3_t mr3;
-	uint32_t odtcr;
 	uint32_t pgcr;
 	ddrp_ptr0_t ptr0;
 	ddrp_ptr1_t ptr1;
@@ -256,6 +292,12 @@ struct ddrp_reg {
 	ddrp_dtpr0_t dtpr0;
 	ddrp_dtpr1_t dtpr1;
 	ddrp_dtpr2_t dtpr2;
+	ddrp_odtcr_t odtcr;
+	ddrp_dxngcr_t dxngcrt[4];
+	unsigned int zqncr1;
+	unsigned int impedance[2]; //0-cal_value 1-req_value
+	unsigned int odt_impedance[2]; //0-cal_value 1-req_value
+	unsigned char rzq_table[32];
 };
 
 #endif /* __DDRP_DWC_H__ */

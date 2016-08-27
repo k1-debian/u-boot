@@ -32,7 +32,7 @@
 #include <spl.h>
 #include <regulator.h>
 #ifdef CONFIG_AUDIO_CAL_DIV
-#include <generated/audio.h>
+#include <generated/audio_div_values.h>
 #endif
 #ifdef CONFIG_SPL_BUILD
 
@@ -64,7 +64,8 @@ void board_init_f(ulong dummy)
 #ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
 #else
-	gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
+	burner_param_info();
+	//gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
 #endif
 	/* gd->arch.gi->ddr_div = ((gd->arch.gi->cpufreq % gd->arch.gi->ddrfreq) == 0) */
 	/* 	? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq) */
@@ -78,6 +79,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 
 	debug("Timer init\n");
 	timer_init();
@@ -111,10 +113,16 @@ void board_init_f(ulong dummy)
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
-
-	memcpy((void*)0xf4000000,audio_div_apll,256);
-	memcpy((void*)0xf4000000+256,audio_div_mpll,256);
-
+#ifdef CONFIG_AUDIO_CAL_DIV
+	{
+		struct audio_div_values {
+			unsigned int savem:8;
+			unsigned int saven:24;
+		};
+		struct audio_div_values divvalues [] = AUDIO_DIV_VALUES;
+		memcpy((void*)0xf4000000,divvalues,sizeof(divvalues));
+	}
+#endif
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
 #else
