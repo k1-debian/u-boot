@@ -22,8 +22,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __CONFIG_PHOENIX_H__
-#define __CONFIG_PHOENIX_H__
+#ifndef __CONFIG_PANSY_H__
+#define __CONFIG_PANSY_H__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -32,6 +32,8 @@
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1000
+#define CONFIG_DDR_AUTO_SELF_REFRESH
+#define CONFIG_CHECK_SOCID
 
 #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		600000000	/*If MPLL not use mast be set 0*/
@@ -70,28 +72,6 @@
 #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
 
 /* CONFIG_CMD_FASTBOOT */
-#ifdef CONFIG_ARDUINO
-#define CONFIG_CMD_FASTBOOT
-#define CONFIG_USB_GADGET
-#define CONFIG_USB_GADGET_DUALSPEED
-#define CONFIG_USB_JZ_DWC2_UDC_V1_1
-#define CONFIG_FASTBOOT_GADGET
-#define CONFIG_FASTBOOT_FUNCTION
-#define CONFIG_G_FASTBOOT_VENDOR_NUM	(0x18d1)
-#define CONFIG_G_FASTBOOT_PRODUCT_NUM	(0xdddd)
-#define CONFIG_USB_GADGET_VBUS_DRAW 500
-#endif
-
-/*pmu slp pin*/
-#define CONFIG_REGULATOR
-#ifdef  CONFIG_REGULATOR
-#define CONFIG_JZ_PMU_SLP_OUTPUT1
-#define CONFIG_INGENIC_SOFT_I2C
-#define CONFIG_PMU_RICOH6x
-#define CONFIG_RICOH61X_I2C_SCL	GPIO_PC(26)
-#define CONFIG_RICOH61X_I2C_SDA	GPIO_PC(27)
-#define CONFIG_SOFT_I2C_READ_REPEATED_START
-#endif
 
 /* #define CONFIG_DDR_DLL_OFF */
 /*
@@ -110,7 +90,7 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=31M@0x0 "
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=63M@0x0 "
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
 		#if defined(CONFIG_SPL_SFC_NOR)
@@ -144,15 +124,8 @@
 		#define CONFIG_BOOTCOMMAND "spinand read 0x100000 0x400000 0x80600000 ;bootm 0x80600000"
 #elif defined(CONFIG_SPL_JZMMC_SUPPORT)
 	#ifdef CONFIG_JZ_MMC_MSC0
-		#ifdef CONFIG_BOOT_ANDROID
-			#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/init androidboot.hardware=phoenix"
-			#define CONFIG_BOOTCOMMAND "cls; boota mmc 0 0x80f00000 6144"
-			#define CONFIG_NORMAL_BOOT CONFIG_BOOTCOMMAND
-			#define CONFIG_RECOVERY_BOOT "boota nand 0 0x80f00000 24576"
-		#else
-			#define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/mmcblk0p7 rootfstype=ext4 rootdelay=1 rw"
-			#define CONFIG_BOOTCOMMAND "mmc dev 0;mmc read 0x80600000 0x1800 0x3000; bootm 0x80600000"
-		#endif
+		#define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/mmcblk0p7 rootfstype=ext4 rootdelay=1 rw"
+		#define CONFIG_BOOTCOMMAND "mmc dev 0;mmc read 0x80600000 0x1800 0x3000; bootm 0x80600000"
 	#else
 		#define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/mmcblk1p7 rootfstype=ext4 rootdelay=1 rw"
 		#define CONFIG_BOOTCOMMAND "mmc dev 1;mmc read 0x80600000 0x1800 0x3000; bootm 0x80600000"
@@ -178,8 +151,6 @@
 #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
 #endif	/* CONFIG_SPL_OS_BOOT */
 
-
-#define PARTITION_NUM 10
 
 /**
  * Boot command definitions.
@@ -235,74 +206,6 @@
 #define CONFIG_USE_ARCH_MEMCPY
 #endif
 /* DEBUG ETHERNET */
-
-#define CONFIG_SERVERIP     192.168.4.13
-#define CONFIG_IPADDR       192.168.4.90
-#define CONFIG_GATEWAYIP    192.168.4.1
-#define CONFIG_NETMASK      255.255.255.0
-#define CONFIG_ETHADDR      00:11:22:33:44:55
-
-#define GMAC_PHY_MII	1
-#define GMAC_PHY_RMII	2
-#define GMAC_PHY_GMII	3
-#define GMAC_PHY_RGMII	4
-#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RMII
-
-#define PHY_TYPE_DM9161      1
-#define PHY_TYPE_88E1111     2
-#define CONFIG_NET_PHY_TYPE   PHY_TYPE_DM9161
-
-#define CONFIG_NET_GMAC
-#define CONFIG_GPIO_DM9161_RESET   GPIO_PB(3)
-#define CONFIG_GPIO_DM9161_RESET_ENLEVEL   0
-#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_B
-#define CONFIG_GMAC_CRLT_PORT_PINS (0x7 << 7)
-#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_1
-#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_OUTPUT0
-
-/* LCD */
-#define CONFIG_LCD
-
-#define CONFIG_GPIO_PWR_WAKE		GPIO_PB(31)
-#define CONFIG_GPIO_PWR_WAKE_ENLEVEL	0
-
-#ifdef CONFIG_LCD
-/*#define CONFIG_LCD_FORMAT_X8B8G8R8*/
-#define LCD_BPP             5
-#define CONFIG_GPIO_LCD_PWM     GPIO_PC(25)
-
-#define CONFIG_LCD_LOGO
-/*#define CONFIG_RLE_LCD_LOGO*/
-/*#define CONFIG_LCD_INFO_BELOW_LOGO      //display the console info on lcd panel for debugg*/
-#define CONFIG_SYS_WHITE_ON_BLACK
-#define CONFIG_SYS_PWM_PERIOD       10000 /* Pwm period in ns */
-#define CONFIG_SYS_PWM_CHN      0  /* Pwm channel ok*/
-#define CONFIG_SYS_PWM_FULL     256
-#define CONFIG_SYS_BACKLIGHT_LEVEL  80 /* Backlight brightness is (80 / 256) */
-#define CONFIG_JZ_LCD_V13
-#define SOC_X1000
-#define CONFIG_JZ_PWM
-#define CONFIG_SYS_CONSOLE_INFO_QUIET
-#define CONFIG_SYS_CONSOLE_IS_IN_ENV
-/*#define CONFIG_SLCDC_CONTINUA*/
-/*#define CONFIG_LCD_GPIO_FUNC0_24BIT*/
-#define CONFIG_LCD_GPIO_FUNC1_SLCD
-/*#define CONFIG_VIDEO_BM347WV_F_8991FTGF*/
-#define CONFIG_VIDEO_TRULY_TFT240240_2_E
-
-#ifdef CONFIG_VIDEO_TRULY_TFT240240_2_E
-#define CONFIG_GPIO_LCD_RD GPIO_PB(16)
-#define CONFIG_GPIO_LCD_RST GPIO_PD(0)
-#define CONFIG_GPIO_LCD_CS GPIO_PB(18)
-#define CONFIG_GPIO_LCD_BL GPIO_PD(1)
-#endif	/* CONFIG_VIDEO_TRULY_TFT240240_2_E */
-
-#ifdef CONFIG_RLE_LCD_LOGO
-#define CONFIG_CMD_BATTERYDET       /* detect battery and show charge logo */
-#define CONFIG_CMD_LOGO_RLE /*display the logo using rle command*/
-#endif
-
-#endif /* CONFIG_LCD */
 
 /* MMC */
 #define CONFIG_CMD_MMC
@@ -571,13 +474,6 @@
 #define CONFIG_GPT_TABLE_PATH	"$(TOPDIR)/board/$(BOARDDIR)"
 #endif
 
-/* Wrong keys. */
-#define CONFIG_GPIO_RECOVERY           GPIO_PB(31)     /* SW4 */
-#define CONFIG_GPIO_RECOVERY_ENLEVEL   0
-
-/* Wrong keys. */
-#define CONFIG_GPIO_FASTBOOT            GPIO_PB(31)     /* SW4 */
-#define CONFIG_GPIO_FASTBOOT_ENLEVEL    0
 
 /*
 * MTD support

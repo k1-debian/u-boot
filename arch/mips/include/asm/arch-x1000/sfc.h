@@ -4,9 +4,9 @@
 #include <asm/arch-x1000/base.h>
 #include <asm/io.h>
 
-static int column_bak;
+/* static int column_bak;
 static int page_addr_bak;
-
+*/
 typedef enum{
 	TRANSFER,
 	RECEIVE,
@@ -66,6 +66,7 @@ struct norflash_partitions {
 
 //For SFC_GLB
 #define	TRAN_DIR		(1 << 13)
+#define	TRAN_DIR_OFFSET		(13)
 #define GLB_TRAN_DIR_WRITE      (1)
 #define GLB_TRAN_DIR_READ       (0)
 #define	THRESHOLD_OFFSET	(7)
@@ -107,10 +108,12 @@ struct norflash_partitions {
 #define TRAN_SPI_QUAD   (0x5)
 #define TRAN_SPI_IO_QUAD   (0x6)
 #define POLLEN			(1 << 25)
+#define TRAN_CMDEN_OFFSET	(24)
 #define CMDEN			(1 << 24)
 #define FMAT			(1 << 23)
 #define DMYBITS_OFFSET		(17)
 #define DMYBITS_MSK		(0x3f << DMYBITS_OFFSET)
+#define TRAN_DATEEN_OFFSET	(16)
 #define DATEEN			(1 << 16)
 #define	CMD_OFFSET		(0)
 #define	CMD_MSK			(0xffff << CMD_OFFSET)
@@ -161,7 +164,7 @@ struct norflash_partitions {
 #define CG_EN			(1 << 0)
 
 #define SFC_FIFO_LEN	(63)
-#define THRESHOLD	(31)
+#define THRESHOLD	(32)
 
 #endif
 

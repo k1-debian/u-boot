@@ -13,6 +13,13 @@
 #include "./chips/MDDR_ECM220ACBCN_50.h"
 #endif
 
+#ifdef CONFIG_MDDR_EMD56164PC_50I
+#include "./chips/MDDR_EMD56164PC_50I.h"
+#endif
+#ifdef CONFIG_MDDR_JSD12164PAI_KGD
+#include "./chips/MDDR_JSD12164PAI_KGD.h"
+#endif
+
 #ifdef CONFIG_DDR3_H5TQ1G83DFR_H9C
 #include "./chips/DDR3_H5TQ1G83DFR_H9C.h"
 #endif

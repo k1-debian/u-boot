@@ -492,7 +492,8 @@ int sfc_init(void )
 	tmp = jz_sfc_readl(SFC_DEV_CONF);
 	tmp &= ~(CMD_TYPE | CPHA | CPOL | SMP_DELAY_MSK |
 			THOLD_MSK | TSETUP_MSK | TSH_MSK);
-	tmp |= (CEDL | HOLDDL | WPDL | 1 << SMP_DELAY_OFFSET);
+	tmp |= (CEDL | HOLDDL | WPDL | 1 << SMP_DELAY_OFFSET | 3 << TSH_OFFSET);
+
 	jz_sfc_writel(tmp,SFC_DEV_CONF);
 
 	for (i = 0; i < 6; i++) {

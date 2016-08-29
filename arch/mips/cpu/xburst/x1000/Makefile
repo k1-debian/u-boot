@@ -30,12 +30,9 @@ SOBJS-y	=
 COBJS-y	= soc.o
 
 COBJS-$(CONFIG_BURNER) += dym_pll.o
-COBJS-$(CONFIG_JZ_SLT) += dym_pll.o
 
 ifndef CONFIG_BURNER
-ifndef CONFIG_JZ_SLT
 COBJS-y += pllsetting.o
-endif
 endif
 
 COBJS-y += clk.o
@@ -43,6 +40,7 @@ COBJS-y += ddr_set_dll.o
 COBJS-y += ../ddr_dwc.o
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
 COBJS-$(CONFIG_BURNER) += ../param_manage.o
+COBJS-$(CONFIG_CHECK_SOCID) += check_socid.o
 
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
@@ -63,6 +61,16 @@ $(TOPDIR)/include/generated/pll_reg_values.h:$(TOPDIR)/$(dir)/pll_params_creator
 	$< > $@
 
 $(TOPDIR)/$(dir)/pll_params_creator.exe:$(OBJTREE)/$(dir)/pll_params_creator.c | $(SRCTREE)/include/configs/$(BOARD).h
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -I$(SRCTREE)/include/ -o $@ $^
+
+.depend.clk:$(TOPDIR)/include/generated/clk_reg_values.h
+
+$(obj)clk.o:$(TOPDIR)/include/generated/clk_reg_values.h
+
+$(TOPDIR)/include/generated/clk_reg_values.h:$(TOPDIR)/$(dir)/clk_params_creator.exe
+	$< > $@
+
+$(TOPDIR)/$(dir)/clk_params_creator.exe:$(OBJTREE)/$(dir)/clk_params_creator.c | $(SRCTREE)/include/configs/$(BOARD).h
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -I$(SRCTREE)/include/ -o $@ $^
 
 #########################################################################

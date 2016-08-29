@@ -1,8 +1,10 @@
 #
-# Copyright (C) 2011 Xiangfu Liu <xiangfu@openmobilefree.net>
+# Ingenic mensa makefile
 #
-# See file CREDITS for list of people who contributed to this
-# project.
+# Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
+# Author: Zoro <ykli@ingenic.cn>
+# Based on: board/reliableIPTV/urboard/Makefile
+#           Written by Paul Burton <paul.burton@imgtec.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -22,32 +24,16 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(CPU).o
+LIB	= $(obj)lib$(BOARD).o
 
-START	= start.o
-SOBJS-y	=
-COBJS-y	= jz_serial.o
-ifdef CONFIG_SPL_BUILD
-COBJS-y	+= spl_cpu.o spl_timer.o
-else
-COBJS-y	+= cpu.o timer.o
-endif
-COBJS-$(CONFIG_XBURST_TRAPS) += traps.o
-COBJS-$(CONFIG_SPL_OS_BOOT) += os_boot.o
+COBJS-y	:= board.o
+COBJS-$(CONFIG_CMD_FASTBOOT) += fastboot.o
 
-ifdef	CONFIG_SPL_BUILD
-ifdef	CONFIG_SPL_NO_CPU_SUPPORT_CODE
-START	:=
-endif
-endif
+SRCS	:= $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
+OBJS	:= $(addprefix $(obj),$(COBJS-y))
+SOBJS   := $(addprefix $(obj),$(SOBJS-y))
 
-SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
-OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
-START	:= $(addprefix $(obj),$(START))
-
-all:	$(obj).depend $(START) $(LIB)
-
-$(LIB):	$(OBJS)
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
 	$(call cmd_link_o_target, $(OBJS))
 
 #########################################################################

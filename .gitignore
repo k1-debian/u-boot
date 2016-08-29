@@ -11,6 +11,7 @@
 *.a
 *.o
 *.su
+*.exe
 *~
 *.swp
 *.patch

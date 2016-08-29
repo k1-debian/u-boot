@@ -44,26 +44,20 @@ enum clk_id {
 	MPLL,
 	EXCLK,
 };
-
-struct cgu {
-	unsigned en:8;
-	unsigned off:8;
-	unsigned sel_bit:8;
+struct clk_cgu_setting {
+	unsigned int addr;
+	unsigned int val;
+	unsigned ce:8;
+	unsigned busy:8;
+	unsigned stop:8;
 	unsigned sel_src:8;
-	unsigned char sel[4];
-	unsigned ce;
-	unsigned busy;
-	unsigned stop;
-};
-struct cgu_clk_src {
-	unsigned int cgu_clk;
-	unsigned int src;
+	unsigned sel_val;
 };
 #define SRC_EOF -1
 
 typedef union cpm_cpapcr {
 	/** raw register data */
-	uint32_t d32;
+	unsigned int d32;
 	/** register bits */
 	struct {
 		unsigned PLLST:8;
@@ -82,7 +76,6 @@ typedef union cpm_cpapcr {
 
 unsigned int clk_get_rate(int clk);
 void clk_set_rate(int clk, unsigned long rate);
-void cgu_clks_init(struct cgu *cgu_sel, int nr_cgu_clks);
 void clk_init(void);
 void enable_uart_clk(void);
 enum otg_mode_t {

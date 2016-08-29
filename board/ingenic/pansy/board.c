@@ -29,29 +29,6 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/mmc.h>
 
-
-extern int jz_net_initialize(bd_t *bis);
-#ifdef CONFIG_BOOT_ANDROID
-extern void boot_mode_select(void);
-#endif
-
-#if defined(CONFIG_CMD_BATTERYDET) && defined(CONFIG_BATTERY_INIT_GPIO)
-static void battery_init_gpio(void)
-{
-}
-#endif
-
-#ifdef CONFIG_REGULATOR
-int regulator_init(void)
-{
-	int ret;
-#ifdef CONFIG_PMU_RICOH6x
-	ret = ricoh61x_regulator_init();
-#endif
-	return ret;
-}
-#endif /* CONFIG_REGULATOR */
-
 int board_early_init_f(void)
 {
 	return 0;
@@ -59,12 +36,7 @@ int board_early_init_f(void)
 
 int board_early_init_r(void)
 {
-
-#ifdef CONFIG_REGULATOR
-	regulator_init();
-#endif
 	return 0;
-
 }
 
 #ifdef CONFIG_USB_GADGET
@@ -84,13 +56,7 @@ int misc_init_r(void)
 	/* set MAC address */
 	eth_setenv_enetaddr("ethaddr", mac);
 #endif
-#ifdef CONFIG_BOOT_ANDROID
-	boot_mode_select();
-#endif
 
-#if defined(CONFIG_CMD_BATTERYDET) && defined(CONFIG_BATTERY_INIT_GPIO)
-	battery_init_gpio();
-#endif
 	return 0;
 }
 
@@ -111,15 +77,7 @@ void board_nand_init(void)
 
 int board_eth_init(bd_t *bis)
 {
-	int rv;
-#ifndef  CONFIG_USB_ETHER
-	/* reset grus DM9000 */
-#ifdef CONFIG_NET_GMAC
-	rv = jz_net_initialize(bis);
-#endif
-#else
-	rv = usb_eth_initialize(bis);
-#endif
+	int rv = 0;
 	return rv;
 }
 
@@ -133,7 +91,7 @@ int spl_start_uboot(void)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: Phoenix (Ingenic XBurst X1000 SoC)\n");
+	puts("Board: pansy (Ingenic XBurst X1000 SoC)\n");
 	return 0;
 }
 

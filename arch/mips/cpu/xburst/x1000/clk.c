@@ -27,6 +27,7 @@
 #include <asm/gpio.h>
 #include <asm/arch/cpm.h>
 #include <asm/arch/clk.h>
+#include <generated/clk_reg_values.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -48,97 +49,45 @@ static char * cgu_name(int clk) {
 }
 #endif
 
-struct cgu cgu_clk_sel[CGU_CNT] = {
-	[DDR] = {1, CPM_DDRCDR, 30, CONFIG_DDR_SEL_PLL, {0, APLL, MPLL, -1}, 29, 28, 27},
-	[MACPHY] = {1, CPM_MACCDR, 31, CONFIG_DDR_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
-	[MSC0] = {1, CPM_MSC0CDR, 31, CONFIG_DDR_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
-#ifndef CONFIG_BURNER
-	[OTG] = {1, CPM_USBCDR, 30, EXCLK, {EXCLK, EXCLK, APLL, MPLL}, 29, 28, 27},
-#endif
-	[I2S] = {1, CPM_I2SCDR, 30, EXCLK, {APLL, MPLL, EXCLK, -1}, 29, 0, 0},
-	[LCD] = {1, CPM_LPCDR,  31, CONFIG_DDR_SEL_PLL, {APLL, MPLL, -1, -1}, 28, 27, 26},
-	[MSC1] = {0, CPM_MSC1CDR, 0, 0, {-1, -1, -1, -1}, 29, 28, 27},
-	[SFC] = {1, CPM_SSICDR, 31, CONFIG_DDR_SEL_PLL, {APLL, MPLL, EXCLK, -1}, 29, 28, 27},
-	[CIM] = {1, CPM_CIMCDR, 31, CONFIG_DDR_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
-	[PCM] = {1, CPM_PCMCDR, 30, EXCLK, {APLL, EXCLK, MPLL, -1}, 29, 0, 0},
-};
-
+struct clk_cgu_setting cgusetting[] = CGU_REG_VALUE;
 void clk_prepare(void)
 {
 	/*stop clk and set div max*/
-	int id;
-	struct cgu *cgu = NULL;
+	int i;
 	unsigned regval = 0, reg = 0;
-	for (id = 0; id < CGU_CNT; id++) {
-		cgu = &(cgu_clk_sel[id]);
-		reg = CPM_BASE + cgu->off;
+	unsigned int size = ARRAY_SIZE(cgusetting);
 
-#ifdef CONFIG_BURNER
-		if (id == OTG)
-			continue;
-#endif
-		if(id == I2S || id == PCM)
-			goto dis_aic;
-		if (id != OTG) {
-			regval = readl(reg);
+	for (i = 0; i < size; i++) {
+		reg = cgusetting[i].addr;
+		regval = readl(reg);
+		if(cgusetting[i].busy) {
 			/*set div max*/
-			regval |= 0xfe | (1 << cgu->ce);
-			while (readl(reg) & (1 << cgu->busy));
+			regval |= cgusetting[i].val;
+			writel(regval, reg);
+			while (readl(reg) & (1 << cgusetting[i].busy));
+		} else {
+			regval &= ~(1 << cgusetting[i].ce);
 			writel(regval, reg);
 		}
-#ifndef CONFIG_FPGA
-		/*stop clk*/
-		while (readl(reg) & (1 << cgu->busy));
-#endif
-		regval = readl(reg);
-		regval |= ((1 << cgu->stop) | (1 << cgu->ce));
-		writel(regval, reg);
-#ifndef CONFIG_FPGA
-		while (readl(reg) & (1 << cgu->busy));
-#endif
-	dis_aic:
-		/*clear ce*/
-		regval = readl(reg);
-		regval &= ~(1 << cgu->ce);
-		writel(regval, reg);
-
 #ifdef DUMP_CGU_SELECT
 		printf("%s(0x%x) :0x%x\n",clk_name[id] ,reg,  readl(reg));
 #endif
 	}
 }
-
-void cgu_clks_set(struct cgu *cgu_clks, int nr_cgu_clks)
+static inline void cgu_clks_set(void)
 {
-	int i, j, id;
-	unsigned int xcdr = 0;
-	unsigned int reg = 0;
-	extern struct cgu_clk_src cgu_clk_src[];
+	int i;
+	unsigned regval = 0, reg = 0;
+	unsigned int size = ARRAY_SIZE(cgusetting);
 
-	for (i = 0; cgu_clk_src[i].cgu_clk != SRC_EOF; i++) {
-		id = cgu_clk_src[i].cgu_clk;
-		cgu_clks[id].sel_src = cgu_clk_src[i].src;
-	}
-
-	for(i = 0; i < nr_cgu_clks; i++) {
-		for (j = 0; j < 4; j++) {
-			if (cgu_clks[i].sel_src == cgu_clks[i].sel[j] &&
-					cgu_clks[i].en == 1) {
-				reg = CPM_BASE + cgu_clks[i].off;
-				xcdr = readl(reg);
-				xcdr &= ~(3 << 30);
-				xcdr |= j << cgu_clks[i].sel_bit;
-				writel(xcdr, reg);
-#ifdef DUMP_CGU_SELECT
-				printf("%s: 0x%X: value=0x%X\n", cgu_name(i), reg, readl(reg));
-#endif
-				break;
-			}
-		}
-
+	for (i = 0; i < size; i++) {
+		reg = cgusetting[i].addr;
+		regval = readl(reg);
+		regval &= ~(3 << 30);
+		regval |= cgusetting[i].sel_val;
+		writel(regval, reg);
 	}
 }
-
 static unsigned int pll_get_rate(int pll)
 {
 	unsigned int cpxpcr = 0;
@@ -190,7 +139,7 @@ static unsigned int get_cclk_rate(void)
 	}
 	return 0;
 }
-
+#if defined(CONFIG_JZ_MMC_MSC0) || defined(CONFIG_JZ_MMC_MSC1)
 static unsigned int get_msc_rate(unsigned int xcdr)
 {
 	unsigned int msc0cdr  = cpm_inl(CPM_MSC0CDR);
@@ -210,6 +159,7 @@ static unsigned int get_msc_rate(unsigned int xcdr)
 
 	return ret;
 }
+#endif
 
 unsigned int cpm_get_h2clk(void)
 {
@@ -224,27 +174,30 @@ unsigned int cpm_get_h2clk(void)
 		case 2:
 			return pll_get_rate(MPLL) / (h2clk_div + 1);
 	}
-
+	return 0;
 }
 
 unsigned int clk_get_rate(int clk)
 {
 	switch (clk) {
+	case APLL:
+		return pll_get_rate(APLL);
+	case MPLL:
+		return pll_get_rate(MPLL);
 	case DDR:
 		return get_ddr_rate();
 	case CPU:
 		return get_cclk_rate();
 	case H2CLK:
 		return cpm_get_h2clk();
+#ifdef CONFIG_JZ_MMC_MSC0
 	case MSC0:
 		return get_msc_rate(CPM_MSC0CDR);
+#endif
+#ifdef CONFIG_JZ_MMC_MSC1
 	case MSC1:
 		return get_msc_rate(CPM_MSC1CDR);
-	case APLL:
-		return pll_get_rate(APLL);
-	case MPLL:
-		return pll_get_rate(MPLL);
-
+#endif
 	}
 
 	return 0;
@@ -252,18 +205,18 @@ unsigned int clk_get_rate(int clk)
 
 void clk_set_rate(int clk_id, unsigned long rate)
 {
-	unsigned int cdr, src_id;
+	unsigned int cdr;
 	unsigned int pll_rate;
-	struct cgu *cgu = NULL;
+	struct clk_cgu_setting *cgu = NULL;
 	unsigned regval = 0, reg = 0;
 
 	if(clk_id >= CGU_CNT) {
-		printf("set clk id error\n");
+		/* printf("set clk id error\n"); */
 		return;
 	}
 
-	cgu = &(cgu_clk_sel[clk_id]);
-	regval = cpm_inl(cgu->off);
+	cgu = &cgusetting[clk_id];
+	reg = cgu->addr;
 	pll_rate = pll_get_rate(cgu->sel_src);
 
 	if(!pll_rate) {
@@ -275,14 +228,16 @@ void clk_set_rate(int clk_id, unsigned long rate)
 		cdr = (((pll_rate + rate - 1)/rate)/2 - 1)& 0xff;
 	else
 		cdr = ((pll_rate + rate - 1)/rate - 1 ) & 0xff;
-	debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr);
+	/* debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr); */
+
+	regval = readl(reg);
 	if(clk_id == DDR)
 		regval &= ~(0xf | 0x3f << 24);
 	else
 		regval &= ~(3 << cgu->stop | 0xff);
 	regval |= ((1 << cgu->ce) | cdr);
-	cpm_outl(regval, cgu->off);
-	while (cpm_inl(cgu->off) & (1 << cgu->busy))
+	writel(regval, reg);
+	while (readl(reg) & (1 << cgu->busy))
 		;
 #ifdef DUMP_CGU_SELECT
 	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  cpm_inl(cgu->off));
@@ -315,7 +270,7 @@ void clk_init(void)
 
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR);
-	cgu_clks_set(cgu_clk_sel, ARRAY_SIZE(cgu_clk_sel));
+	cgu_clks_set();
 }
 
 void enable_uart_clk(void)
@@ -464,7 +419,7 @@ void print_clock()
 /* 	       gd->arch.gi->ddrfreq, gd->arch.gi->cpufreq, l2clk); */
 /* 	printf("AHB0freq= %d\nAHB2freq= %d\npclk %d\n",h0clk,h2clk,pclk); */
 /* #else */
-	printf("apll = %d\n mpll = %d\n", pll_get_rate(APLL), pll_get_rate(MPLL));
-	printf("cpccr = %x\n", cpm_inl(CPM_CPCCR));
+	/* printf("apll = %d\n mpll = %d\n", pll_get_rate(APLL), pll_get_rate(MPLL)); */
+	/* printf("cpccr = %x\n", cpm_inl(CPM_CPCCR)); */
 /* #endif */
 }

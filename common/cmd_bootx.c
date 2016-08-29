@@ -69,12 +69,12 @@ static void sfc_boot(unsigned int mem_address,unsigned int sfc_addr)
 	struct image_header *header;
 	unsigned int header_size;
 	unsigned int entry_point, load_addr, size;
-	unsigned int user_offset, updatefs_size;
 
 	printf("Enter SFC_boot routine ...%x\n", sfc_addr);
 #ifdef CONFIG_OTA_VERSION20
 	{
 		struct norflash_partitions partition;
+		unsigned int user_offset = 0, updatefs_size = 0;
 		int i;
 		if(sfc_addr == 0) {
 			sfc_nor_read(CONFIG_SPI_NORFLASH_PART_OFFSET,

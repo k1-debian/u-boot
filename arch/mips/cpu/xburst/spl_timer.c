@@ -55,19 +55,15 @@ int timer_init(void)
 	multiple = CONFIG_SYS_EXTAL / USEC_IN_1SEC / OST_DIV;
 #endif
 
-	reset_timer();
+	tcu_writel(0, TCU_OSTCNTH);
+	tcu_writel(0, TCU_OSTCNTL);
+	tcu_writel(0, TCU_OSTDR);
 	tcu_writel(OSTCSR_CNT_MD | OSTCSR_PRESCALE | OSTCSR_EXT_EN, TCU_OSTCSR);
 	tcu_writew(TER_OSTEN, TCU_TESR);
 
 	return 0;
 }
 
-void reset_timer(void)
-{
-	tcu_writel(0, TCU_OSTCNTH);
-	tcu_writel(0, TCU_OSTCNTL);
-	tcu_writel(0, TCU_OSTDR);
-}
 
 static uint64_t get_timer64(void)
 {
@@ -86,14 +82,4 @@ void __udelay(unsigned long usec)
 ulong get_timer(ulong base)
 {
 	return lldiv(get_timer64(), (USEC_IN_1SEC/CONFIG_SYS_HZ) * multiple) - base;
-}
-
-unsigned long long get_ticks(void)
-{
-	return get_timer64();
-}
-
-ulong get_tbclk(void)
-{
-	return CONFIG_SYS_HZ;
 }

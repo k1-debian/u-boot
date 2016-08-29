@@ -1,8 +1,11 @@
 #
-# Copyright (C) 2011 Xiangfu Liu <xiangfu@openmobilefree.net>
+# Ingenic mensa configuration
 #
-# See file CREDITS for list of people who contributed to this
-# project.
+#
+# Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
+# Author: Zoro <ykli@ingenic.cn>
+# Based on: board/reliableIPTV/urboard/config.mk
+#           Written by Paul Burton <paul.burton@imgtec.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -20,12 +23,10 @@
 # MA 02111-1307 USA
 #
 
-PLATFORM_CPPFLAGS += -march=mips32r2
-PLATFORM_CPPFLAGS += -mabi=32 -DCONFIG_32BIT
-ifdef CONFIG_SYS_BIG_ENDIAN
-PLATFORM_LDFLAGS  += -m elf32btsmip
-else
-PLATFORM_LDFLAGS  += -m elf32ltsmip
-endif
+ifndef TEXT_BASE
+# ROM version
+# TEXT_BASE = 0x88000000
 
-CONFIG_STANDALONE_LOAD_ADDR ?= 0x80200000 -T mips.lds
+# RAM version
+TEXT_BASE = 0x80100000
+endif

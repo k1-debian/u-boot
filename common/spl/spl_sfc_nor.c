@@ -8,204 +8,311 @@
 #include <asm/arch/spi.h>
 #include <asm/arch/clk.h>
 
-#define ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
+#include "../../drivers/spi/jz_spi.h"
 
-static uint32_t jz_sfc_readl(unsigned int offset)
+static struct spi_quad_mode *quad_mode = NULL;
+/* Borrow the uboot space */
+static struct nor_sharing_params *pdata = CONFIG_SYS_TEXT_BASE;
+
+unsigned int quad_mode_is_set = 0;
+
+#ifdef CONFIG_SPI_QUAD
+#define SFC_QUAD_MODE 1
+#else
+#define SFC_QUAD_MODE 0
+#endif
+
+struct jz_sfc {
+	unsigned int  addr;
+	unsigned int  len;
+	unsigned int  cmd;
+	unsigned int  addr_plus;
+	unsigned char channel;
+	unsigned char dir;	/* read or write */
+	unsigned char mode;
+	unsigned char daten;
+	unsigned char addr_size;
+	unsigned char pollen;
+	unsigned char phase;
+	unsigned char dummy_byte;
+};
+
+static inline uint32_t jz_sfc_readl(unsigned int offset)
 {
 	return readl(SFC_BASE + offset);
 }
 
-static void jz_sfc_writel(unsigned int value, unsigned int offset)
+static inline void jz_sfc_writel(unsigned int value, unsigned int offset)
 {
 	writel(value, SFC_BASE + offset);
 }
-
-void sfc_set_mode(int channel, int value)
+static inline void is_end_and_clear(void)
 {
-	unsigned int tmp;
-	tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
-	tmp &= ~(TRAN_MODE_MSK);
-	tmp |= (value << TRAN_MODE_OFFSET);
-	jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
-}
-
-
-void sfc_dev_addr_dummy_bytes(int channel, unsigned int value)
-{
-	unsigned int tmp;
-	tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
-	tmp &= ~TRAN_CONF_DMYBITS_MSK;
-	tmp |= (value << TRAN_CONF_DMYBITS_OFFSET);
-	jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
-}
-
-int reset_flag = 0;
-static void sfc_set_read_reg(unsigned int cmd, unsigned int addr,
-		unsigned int addr_plus, unsigned int addr_len, unsigned int data_en, unsigned int len, unsigned int dir)
-{
-	volatile unsigned int tmp;
-	unsigned int timeout = 0xffff;
-
-	tmp = jz_sfc_readl(SFC_GLB);
-	tmp &= ~PHASE_NUM_MSK;
-	tmp |= (0x1 << PHASE_NUM_OFFSET);
-	jz_sfc_writel(tmp,SFC_GLB);
-
-	tmp = jz_sfc_readl(SFC_TRAN_CONF(0));
-	tmp &= ~(ADDR_WIDTH_MSK | DMYBITS_MSK | CMD_MSK | FMAT | DATEEN);
-	if (data_en) {
-		tmp |= (addr_len << ADDR_WIDTH_OFFSET) | CMDEN |
-			DATEEN | (cmd << CMD_OFFSET);
-	} else {
-		tmp |= (addr_len << ADDR_WIDTH_OFFSET) | CMDEN |
-			(cmd << CMD_OFFSET);
+	unsigned int val;
+	val = jz_sfc_readl(SFC_SR);
+	while (!(val & END)){
+		val = jz_sfc_readl(SFC_SR);
 	}
-	jz_sfc_writel(tmp,SFC_TRAN_CONF(0));
-
-	jz_sfc_writel(addr,SFC_DEV_ADDR(0));
-	jz_sfc_writel(addr_plus,SFC_DEV_ADDR_PLUS(0));
-
-#if defined (CONFIG_SPI_QUAD) || defined(CONFIG_SPI_DUAL)
-	sfc_dev_addr_dummy_bytes(0,8);
-	sfc_set_mode(0,TRAN_SPI_DUAL);
-#else
-	sfc_dev_addr_dummy_bytes(0,0);
-	sfc_set_mode(0,0);
-#endif
-
-	if(reset_flag) {
-		sfc_dev_addr_dummy_bytes(0,0);
-		sfc_set_mode(0,0);
-	}
-
-	jz_sfc_writel(len, SFC_TRAN_LEN);
-	tmp = jz_sfc_readl(SFC_GLB);
-	if(dir == 1)
-		tmp |= TRAN_DIR;
-	else
-		tmp &= ~TRAN_DIR;
-	jz_sfc_writel(tmp, SFC_GLB);
-
-
-	jz_sfc_writel(START,SFC_TRIG);
-}
-
-static int sfc_read_data(unsigned int *data, unsigned int len)
-{
-	unsigned int tmp_len = 0;
-	unsigned int fifo_num = 0;
-	unsigned int i;
-	unsigned int reg_tmp;
-
-	while (1) {
-		reg_tmp = jz_sfc_readl(SFC_SR);
-		if (reg_tmp & RECE_REQ) {
-			jz_sfc_writel(CLR_RREQ,SFC_SCR);
-			if ((len - tmp_len) / 4 > THRESHOLD)
-				fifo_num = THRESHOLD;
-			else {
-				fifo_num = (len - tmp_len) / 4;
-			}
-
-			for (i = 0; i < fifo_num; i++) {
-				*data = jz_sfc_readl(SFC_DR);
-				data++;
-				tmp_len += 4;
-			}
-		}
-		if (tmp_len == len)
-			break;
-	}
-
 	if ((jz_sfc_readl(SFC_SR)) & END)
 		jz_sfc_writel(CLR_END,SFC_SCR);
+}
+static void read_fifo_data(unsigned int *data, unsigned int length)
+{
+	unsigned int n;
+	while(!(jz_sfc_readl(SFC_SR) & RECE_REQ))
+		;
+	jz_sfc_writel(CLR_RREQ, SFC_SCR);
+	for(n =0 ; n < length; n ++) {
+		*data = jz_sfc_readl(SFC_DR);
+		data++;
+	}
+}
+static void write_fifo_data(unsigned int *data, unsigned int length)
+{
+	unsigned int n;
+	while(!(jz_sfc_readl(SFC_SR) & TRAN_REQ))
+		;
+	jz_sfc_writel(CLR_TREQ, SFC_SCR);
+	for(n =0 ; n < length; n ++) {
+		jz_sfc_writel(*data, SFC_DR);
+		data++;
+	}
+}
+static int sfc_data_ops(unsigned int *data, unsigned int size, void (*ops)(unsigned int*, unsigned int))
+{
+	unsigned int *end = data + (size + 3) / 4;
 
+	while(data < end - THRESHOLD) {
+		ops(data, THRESHOLD);
+		data += THRESHOLD;
+	}
+	if(data < end) {
+		ops(data, end - data);
+	}
+	is_end_and_clear();
 	return 0;
 }
 
-static int sfc_read(unsigned int addr, unsigned int addr_plus,
-		unsigned int addr_len, unsigned int *data, unsigned int len)
+static inline void sfc_set_transfer(struct jz_sfc *hw)
 {
-	int ret;
-	int cmd = 0;
+	unsigned int val;
 
-#if defined (CONFIG_SPI_QUAD) || defined (CONFIG_SPI_DUAL)
-	cmd  = CMD_DUAL_READ;
-#else
-	cmd  = CMD_READ;
-#endif
+	val = jz_sfc_readl(SFC_GLB);
+	val &= ~TRAN_DIR;
+	val |= hw->dir << TRAN_DIR_OFFSET;
+	jz_sfc_writel(val,SFC_GLB);
 
-	sfc_set_read_reg(cmd, addr, addr_plus, addr_len, 1, len, 0);
+	jz_sfc_writel(hw->len, SFC_TRAN_LEN);
 
-	ret = sfc_read_data(data, len);
-	if (ret)
-		return ret;
-	else
-		return 0;
+	val = jz_sfc_readl(SFC_TRAN_CONF(hw->channel));
+	val &= ~(ADDR_WIDTH_MSK | CMDEN | DATEEN | CMD_MSK \
+		 | TRAN_CONF_DMYBITS_MSK | TRAN_MODE_MSK);
+	val |= (hw->addr_size << ADDR_WIDTH_OFFSET | CMDEN \
+		| hw->daten << TRAN_DATEEN_OFFSET | hw->cmd << CMD_OFFSET \
+		| hw->dummy_byte << TRAN_CONF_DMYBITS_OFFSET \
+		| hw->mode << TRAN_MODE_OFFSET);
+	jz_sfc_writel(val,SFC_TRAN_CONF(hw->channel));
+
+	jz_sfc_writel(hw->addr, SFC_DEV_ADDR(hw->channel));
+	jz_sfc_writel(hw->addr_plus,SFC_DEV_ADDR_PLUS(hw->channel));
 }
 
+static inline void sfc_send_cmd(struct jz_sfc *sfc)
+{
+	sfc_set_transfer(sfc);
+	jz_sfc_writel(1 << 2,SFC_TRIG);
+	jz_sfc_writel(START,SFC_TRIG);
+
+	/*this must judge the end status*/
+	if(sfc->daten == 0)
+		is_end_and_clear();
+}
+static void sfc_set_quad_mode(void)
+{
+	unsigned char cmd[4];
+	unsigned int buf = 0;
+	unsigned int tmp = 0;
+	int i = 10;
+	struct jz_sfc sfc;
+
+	if(quad_mode != NULL){
+		cmd[0] = CMD_WREN;
+		cmd[1] = quad_mode->WRSR_CMD;
+		cmd[2] = quad_mode->RDSR_CMD;
+		cmd[3] = CMD_RDSR;
+
+		sfc.cmd = cmd[0];
+		sfc.addr = 0;
+		sfc.addr_size = 0;
+		sfc.addr_plus = 0;
+		sfc.dummy_byte = 0;
+		sfc.daten = 0;
+		sfc.len = 0;
+		sfc.dir = GLB_TRAN_DIR_WRITE;
+		sfc.channel = 0;
+		sfc.mode = TRAN_SPI_STANDARD;
+		sfc_send_cmd(&sfc);
+
+		sfc.cmd = cmd[1];
+		sfc.len = quad_mode->WD_DATE_SIZE;
+		sfc.daten = 1;
+		sfc_send_cmd(&sfc);
+		sfc_data_ops(&quad_mode->WRSR_DATE,1, write_fifo_data);
+
+		sfc.cmd = cmd[3];
+		sfc.len = 1;
+		sfc.daten = 1;
+		sfc.dir = GLB_TRAN_DIR_READ;
+		sfc_send_cmd(&sfc);
+		sfc_data_ops(&tmp, 1, read_fifo_data);
+
+		while(tmp & CMD_SR_WIP) {
+			sfc.cmd = cmd[3];
+			sfc.len = 1;
+			sfc.daten = 1;
+			sfc.dir = GLB_TRAN_DIR_READ;
+			sfc_send_cmd(&sfc);
+			sfc_data_ops(&tmp, 1, read_fifo_data);
+		}
+		sfc.cmd = cmd[2];
+		sfc.len = quad_mode->WD_DATE_SIZE;
+		sfc.daten = 1;
+		sfc_send_cmd(&sfc);
+		sfc_data_ops(&buf, 1, read_fifo_data);
+		while(!(buf & quad_mode->RDSR_DATE)&&((i--) > 0)) {
+			sfc.cmd = cmd[2];
+			sfc.len = quad_mode->WD_DATE_SIZE;
+			sfc.daten = 1;
+			sfc_send_cmd(&sfc);
+			sfc_data_ops(&buf, 1, read_fifo_data);
+		}
+		quad_mode_is_set = 1;
+		/* printf("set quad mode is enable.the buf = %x\n",buf); */
+	} else {
+		printf("WARN!!!: the nor flash not support quad_mode\n");
+	}
+}
+
+static void sfc_nor_read_params(unsigned int offset)
+{
+	unsigned int len;
+	struct jz_sfc sfc;
+
+	len = sizeof(struct nor_sharing_params);
+	sfc.cmd = CMD_READ;
+	sfc.addr = offset;
+	sfc.addr_size = 3;
+	sfc.addr_plus = 0;
+	sfc.dummy_byte = 0;
+	sfc.daten = 1;
+	sfc.len = len;
+	sfc.dir = GLB_TRAN_DIR_READ;
+	sfc.channel = 0;
+	sfc.mode = TRAN_SPI_STANDARD;
+
+	sfc_send_cmd(&sfc);
+	sfc_data_ops((unsigned int *)pdata, len, read_fifo_data);
+}
+
+static inline int get_nor_info(unsigned int offset)
+{
+#ifndef CONFIG_BURNER
+	sfc_nor_read_params(offset);
+	if(pdata->magic == NOR_MAGIC) {
+		if(pdata->version == CONFIG_NOR_VERSION){
+			quad_mode = &pdata->norflash_params.quad_mode;
+			if(pdata->norflash_params.addrsize == 4)
+				printf("WARNNING: xImage not support addr > 16M\n");
+			return 0;
+		}
+	}
+#endif
+	return -1;
+}
+
+static void reset_nor()
+{
+	struct jz_sfc sfc;
+
+	sfc.cmd = 0x66;
+	sfc.addr = 0;
+	sfc.addr_size = 0;
+	sfc.addr_plus = 0;
+	sfc.dummy_byte = 0;
+	sfc.daten = 0;
+	sfc.len = 0;
+	sfc.dir = GLB_TRAN_DIR_READ;
+	sfc.channel = 0;
+	sfc.mode = TRAN_SPI_STANDARD;
+	sfc_send_cmd(&sfc);
+	sfc.cmd = 0x99;
+	sfc_send_cmd(&sfc);
+	udelay(60);
+}
 
 void sfc_init()
 {
-	unsigned int i;
-	volatile unsigned int tmp;
+	int err;
+	unsigned int val;
 
+	/*the sfc clk is 1/2 ssi clk */
+	clk_set_rate(SSI, 150000000);
 
-	tmp = jz_sfc_readl(SFC_GLB);
-	tmp &= ~(TRAN_DIR | OP_MODE);
-	tmp |= WP_EN;
-	jz_sfc_writel(tmp,SFC_GLB);
+	jz_sfc_writel(3 << 1 ,SFC_TRIG);
 
-	tmp = jz_sfc_readl(SFC_DEV_CONF);
-	tmp &= ~(CMD_TYPE | CPHA | CPOL | SMP_DELAY_MSK |
-			THOLD_MSK | TSETUP_MSK | TSH_MSK);
-	tmp |= (CEDL | HOLDDL | WPDL);
-	jz_sfc_writel(tmp,SFC_DEV_CONF);
+	val = jz_sfc_readl(SFC_GLB);
+	val &= ~(TRAN_DIR | OP_MODE | THRESHOLD_MSK);
+	val |= (WP_EN | THRESHOLD << THRESHOLD_OFFSET);
+	jz_sfc_writel(val,SFC_GLB);
 
-	for (i = 0; i < 6; i++) {
-		jz_sfc_writel((jz_sfc_readl(SFC_TRAN_CONF(i))& (~(TRAN_MODE_MSK | FMAT))),SFC_TRAN_CONF(i));
-	}
+	val = jz_sfc_readl(SFC_DEV_CONF);
+	val &= ~(CMD_TYPE | CPHA | CPOL | SMP_DELAY_MSK |
+		 THOLD_MSK | TSETUP_MSK | TSH_MSK);
+	val |= (CEDL | HOLDDL | WPDL | (1 << TSETUP_OFFSET) | (1 << SMP_DELAY_OFFSET));
+	jz_sfc_writel(val,SFC_DEV_CONF);
 
-	jz_sfc_writel((CLR_END | CLR_TREQ | CLR_RREQ | CLR_OVER | CLR_UNDER),SFC_INTC);
-
+	val = CLR_END | CLR_TREQ | CLR_RREQ | CLR_OVER | CLR_UNDER;
+	jz_sfc_writel(val,SFC_INTC);
 	jz_sfc_writel(0,SFC_CGE);
 
-	tmp = jz_sfc_readl(SFC_GLB);
-	tmp &= ~(THRESHOLD_MSK);
-	tmp |= (THRESHOLD << THRESHOLD_OFFSET);
-	jz_sfc_writel(tmp,SFC_GLB);
+	reset_nor();
 
-}
-
-
-void sfc_nor_load(unsigned int src_addr, unsigned int count,unsigned int dst_addr)
-{
-
-	int i,j;
-	unsigned char *data;
-	unsigned int temp;
-	int sfc_mode = 0;
-	int ret = 0;
-	unsigned int spl_len = 0,words_of_spl = 0;
-	int addr_len = 3;
-
-	if ((count % 4) == 0) {
-		words_of_spl = count / 4;
+	err = get_nor_info(CONFIG_SPIFLASH_PART_OFFSET);
+	if(err < 0){
+		printf("the sfc quad mode err,check your soft code\n");
 	} else {
-		words_of_spl = count / 4 + 1;
+		sfc_set_quad_mode();
+	}
+}
+void sfc_read_data(unsigned int offset, unsigned int size, unsigned int data)
+{
+	unsigned char cmd;
+	struct jz_sfc sfc;
+
+	cmd = CMD_READ;
+	sfc.addr = offset;
+	sfc.addr_size = 3;//pdata.norflash_params.addrsize;
+	sfc.addr_plus = 0;
+	sfc.daten = 1;
+	sfc.len = size;
+	sfc.dir = GLB_TRAN_DIR_READ;
+	sfc.channel = 0;
+	sfc.mode = TRAN_SPI_STANDARD;
+	sfc.dummy_byte = 0;
+
+	if(SFC_QUAD_MODE == 1){
+		cmd  = quad_mode->cmd_read;
+		sfc.mode = quad_mode->sfc_mode;
+		sfc.dummy_byte = quad_mode->dummy_byte;
 	}
 
-	jz_sfc_writel(1 << 2,SFC_TRIG);
-
-	ret = sfc_read(src_addr, 0x0, addr_len, (unsigned int *)(dst_addr), ALIGN(count, 4));
-	if (ret) {
-		printf("sfc read error\n");
-	}
-
-	return ;
+	sfc.cmd = cmd;
+	sfc_send_cmd(&sfc);
+	sfc_data_ops((unsigned int *)data, size, read_fifo_data);
 }
 
-#ifdef CONFIG_SPL_OS_BOOT
+
+#ifdef CONFIG_OTA_VERSION20
 static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int blocksize)
 {
 	unsigned int buf[3][2];
@@ -215,11 +322,11 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 
 	for(i = 0; i < 3; i++) {
 		addr = nv_addr + i * blocksize;
-		sfc_nor_load(addr, 4, buf[i]);
+		sfc_read_data(addr, 4, buf[i]);
 		if(buf[i][0] == 0x5a5a5a5a) {
-			sfc_nor_load(addr + 1 *1024,  16, tmp_buf);
+			sfc_read_data(addr + 1 *1024,  16, tmp_buf);
 			addr += blocksize - 8;
-			sfc_nor_load(addr, 8, buf[i]);
+			sfc_read_data(addr, 8, buf[i]);
 			if(buf[i][1] == 0xa5a5a5a5) {
 				if(nv_count < buf[i][0]) {
 					nv_count = buf[i][0];
@@ -228,93 +335,61 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 			}
 		}
 	}
-#ifdef CONFIG_OTA_VERSION20
+
 	*base_addr = nv_addr + nv_num * blocksize;
-#else
-	*base_addr = nv_addr + nv_num * blocksize + 1024;
-#endif
 }
 #endif
-
-static void sfc_nor_reset()
-{
-	reset_flag = 1;
-	sfc_set_read_reg(0x66, 0, 0, 0, 0, 0, 1);
-	sfc_set_read_reg(0x99, 0, 0, 0, 0, 0, 1);
-	reset_flag = 0;
-	udelay(60);
-
-}
-
 void spl_sfc_nor_load_image(void)
 {
 	struct image_header *header;
-
 #ifdef CONFIG_SPL_OS_BOOT
-	unsigned int bootimg_addr;
+	unsigned int bootimg_addr = 0;
+	struct norflash_partitions partition;
+	int i;
+#ifdef CONFIG_OTA_VERSION20
 	unsigned int nv_rw_addr;
 	unsigned int nor_blocksize;
 	unsigned int src_addr, updata_flag;
-#ifdef CONFIG_OTA_VERSION20
-	struct norflash_partitions partition;
 	unsigned nv_buf[2];
-	int count = 8, i;
-#else
-	unsigned nv_buf[4];
-	int count = 16;
-	nv_rw_addr = 288 * 1024;
-	nor_blocksize = 32 *1024;
-	bootimg_addr = CONFIG_SPL_OS_OFFSET;
+	int count = 8;
 #endif
 #endif
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
-
-	/*the sfc clk is 1/2 ssi clk */
-	clk_set_rate(SSI,70000000);
-
-	jz_sfc_writel(0,SFC_TRIG);
-	jz_sfc_writel(1 << 2,SFC_TRIG);
-
+	memset(header, 0, sizeof(struct image_header));
 	sfc_init();
-	sfc_nor_reset();
-
 #ifdef CONFIG_SPL_OS_BOOT
-#ifdef CONFIG_NOR_SPL_BOOT_OS /* norflash spl boot kernel */
-	sfc_nor_load(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
-	spl_parse_image_header(header);
-	sfc_nor_load(bootimg_addr, spl_image.size, spl_image.load_addr);
-	return ;
-#else //not defined CONFIG_NOR_SPL_BOOT_OS
-#ifdef CONFIG_OTA_VERSION20
-	sfc_nor_load(CONFIG_SPI_NORFLASH_PART_OFFSET, sizeof(struct norflash_partitions), &partition);
+	sfc_read_data(CONFIG_SPI_NORFLASH_PART_OFFSET, sizeof(struct norflash_partitions), (unsigned int*)&partition);
 	for (i = 0 ; i < partition.num_partition_info; i ++) {
 		if (!strncmp(partition.nor_partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
 			bootimg_addr = partition.nor_partition[i].offset;
 		}
+#ifdef CONFIG_OTA_VERSION20
 		if (!strncmp(partition.nor_partition[i].name, CONFIG_PAR_NV_NAME, sizeof(CONFIG_PAR_NV_NAME))) {
 			nv_rw_addr = partition.nor_partition[i].offset;
 			nor_blocksize = partition.nor_partition[i].size / CONFIG_PAR_NV_NUM;
 		}
-	}
-	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nor_blocksize);
-	sfc_nor_load(src_addr, count, nv_buf);
-	updata_flag = nv_buf[1];
-#else
-	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nor_blocksize);
-	sfc_nor_load(src_addr, count, nv_buf);
-	updata_flag = nv_buf[3];
 #endif
+	}
+#ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
+	sfc_read_data(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+	spl_parse_image_header(header);
+	sfc_read_data(bootimg_addr, spl_image.size, spl_image.load_addr);
+	return ;
+#else //not defined CONFIG_NOR_SPL_BOOT_OS
+	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nor_blocksize);
+	sfc_read_data(src_addr, count, nv_buf);
+	updata_flag = nv_buf[1];
 	if((updata_flag & 0x3) != 0x3)
 	{
-		sfc_nor_load(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+		sfc_read_data(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
 		spl_parse_image_header(header);
-		sfc_nor_load(bootimg_addr, spl_image.size, spl_image.load_addr);
+		sfc_read_data(bootimg_addr, spl_image.size, spl_image.load_addr);
 	} else
-#endif
-#endif
+#endif	/* CONFIG_OTA_VERSION20 */
+#endif	/* CONFIG_SPL_OS_BOOT */
 	{
 		spl_parse_image_header(header);
-		sfc_nor_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,CONFIG_SYS_TEXT_BASE);
+		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,CONFIG_SYS_TEXT_BASE);
 	}
 	return ;
 

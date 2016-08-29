@@ -53,8 +53,26 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 extern void gpio_init(void);
 extern void pll_init(void);
 extern void sdram_init(void);
-extern void validate_cache(void);
+#ifndef CONFIG_CHECK_SOCID
+extern int check_socid();
+#endif
 
+static void jz_burner_boot(void)
+{
+	unsigned int val = 'b' << 24 | 'u' << 16 | 'r' << 8 | 'n';
+	unsigned int reg;
+
+	reg = cpm_inl(CPM_SLPC);
+
+	if(reg == val) {
+		typedef void __noreturn (*image_entry_noargs_t)(void);
+
+		image_entry_noargs_t image_entry =
+			(image_entry_noargs_t) (0xbfc0320c);
+		cpm_outl(0, CPM_SLPC);
+		image_entry();
+	}
+}
 void board_init_f(ulong dummy)
 {
 	/* Set global data pointer */
@@ -65,11 +83,13 @@ void board_init_f(ulong dummy)
 	gd->arch.gi = &ginfo;
 #else
 	burner_param_info();
-	//gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
 #endif
-	/* gd->arch.gi->ddr_div = ((gd->arch.gi->cpufreq % gd->arch.gi->ddrfreq) == 0) */
-	/* 	? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq) */
-	/* 	: (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq + 1); */
+
+	jz_burner_boot();
+#ifdef CONFIG_CHECK_SOCID
+	if(check_socid() < 0)
+		return;
+#endif
 
 	gpio_init();
 
@@ -94,9 +114,10 @@ void board_init_f(ulong dummy)
 	spl_regulator_set_voltage(REGULATOR_MEM, CONFIG_SPL_MEM_VOLTAGE);
 #endif
 #endif
+#ifndef CONFIG_BURNER
 	debug("CLK stop\n");
 	clk_prepare();
-
+#endif
 	debug("PLL init\n");
 	pll_init();
 
