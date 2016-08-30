@@ -114,9 +114,9 @@
  * Boot arguments definitions.
  */
 #ifdef  CONFIG_DDR_64M
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=63M@0x0 "
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 "
 #else
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=31M@0x0 "
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=32M@0x0 "
 #endif
 
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
