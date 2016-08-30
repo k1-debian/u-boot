@@ -28,7 +28,7 @@
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
-#define CONFIG_MIPS32		/* MIPS32 CPU core */
+#define CONFIG_MIPS32R2		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1000
@@ -48,15 +48,10 @@
 #define CONFIG_SYS_ICACHE_SIZE		16384
 #define CONFIG_SYS_CACHELINE_SIZE	32
 
-#ifdef CONFIG_FPGA
-#define CONFIG_SYS_UART_INDEX		0
-#define CONFIG_BAUDRATE			57600
-#else
 #define CONFIG_SYS_UART_INDEX		2
-/*#define CONFIG_SYS_UART2_PD*/
+/* #define CONFIG_SYS_UART2_PD */
 #define CONFIG_SYS_UART2_PC
 #define CONFIG_BAUDRATE			115200
-#endif
 
 /*#define CONFIG_DDR_TEST*/
 #define CONFIG_DDR_PARAMS_CREATOR
@@ -65,9 +60,13 @@
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-#define CONFIG_MDDR_H5MS5122DFR_J3M			/* 32M DDR */
-/* #define CONFIG_MDDR_ECM220ACBCN_50 */  /* 256M DDR */
+#define DDR_DRIVER_STRENGTH             4
 
+#ifdef  CONFIG_DDR_64M
+#define CONFIG_MDDR_JSD12164PAI_KGD
+#else
+#define CONFIG_MDDR_EMD56164PC_50I
+#endif
 
 #define CONFIG_AUDIO_CAL_DIV
 #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
@@ -114,7 +113,12 @@
 /**
  * Boot arguments definitions.
  */
+#ifdef  CONFIG_DDR_64M
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=63M@0x0 "
+#else
 #define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=31M@0x0 "
+#endif
+
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
 		#if defined(CONFIG_SPL_SFC_NOR)
@@ -155,35 +159,21 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
-#ifdef CONFIG_NOR_SPL_BOOT_OS /* norflash spl boot kernel */
-#ifndef CONFIG_OTA_VERSION20
-#define CONFIG_SPL_OS_OFFSET        (0x40000) /* spi offset of xImage being loaded */
-#endif
-#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
-#else/* ota */
-#ifndef CONFIG_OTA_VERSION20
-#define CONFIG_SPL_OS_OFFSET        (0x100000) /* spi offset of xImage being loaded */
-#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock3 rw"
-#else
-#define CONFIG_PAR_NV_NAME        "NV_RW"
-#define CONFIG_PAR_NV_NUM        (3)
-#define CONFIG_PAT_USERFS_NAME   "userfs"
-#define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
-#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
-#endif	/* CONFIG_OTA_VERSION20 */
-#endif /*CONFIG_NOR_SPL_BOOT_OS*/
-#ifndef CONFIG_OTA_VERSION20
-#define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
-#define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock4 rw"
-#undef  CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000 0xd00000"
-#else
-#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
-#define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
-#define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
-#undef  CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
-#endif	/* CONFIG_OTA_VERSION20 */
+      #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+      #ifdef CONFIG_OTA_VERSION20
+             #define CONFIG_PAR_NV_NAME        "NV_RW"
+             #define CONFIG_PAR_NV_NUM        (3)
+             #define CONFIG_PAT_USERFS_NAME   "userfs"
+             #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
+             #undef CONFIG_SPL_BOOTARGS
+             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+     #endif /*CONFIG_OTA_VERSION20*/
+
+     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+     #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+     #undef  CONFIG_BOOTCOMMAND
+     #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
 #endif	/* CONFIG_SPL_OS_BOOT */
 
 
@@ -194,7 +184,17 @@
  */
 #define CONFIG_BOOTDELAY 1
 
-
+/* CLK CGU */
+#define  CGU_CLK_SRC {				\
+		{OTG, EXCLK},			\
+		{LCD, MPLL},			\
+		{MSC, MPLL},			\
+		{SFC, MPLL},			\
+		{CIM, MPLL},			\
+		{PCM, MPLL},			\
+		{I2S, EXCLK},			\
+		{SRC_EOF,SRC_EOF}		\
+	}
 /* GPIO */
 #define CONFIG_JZ_GPIO
 

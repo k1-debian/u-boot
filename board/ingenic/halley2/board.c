@@ -29,16 +29,6 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/mmc.h>
 
-struct cgu_clk_src cgu_clk_src[] = {
-	{OTG, EXCLK},
-	{LCD, MPLL},
-	{MSC, MPLL},
-	{SFC, MPLL},
-	{CIM, MPLL},
-	{PCM, MPLL},
-	{I2S, EXCLK},
-	{SRC_EOF,SRC_EOF}
-};
 extern int jz_net_initialize(bd_t *bis);
 #ifdef CONFIG_BOOT_ANDROID
 extern void boot_mode_select(void);

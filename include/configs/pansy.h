@@ -64,8 +64,11 @@
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define DDR_DRIVER_STRENGTH             4
 
+#ifdef  CONFIG_DDR_64M
 #define CONFIG_MDDR_JSD12164PAI_KGD
-/* #define CONFIG_MDDR_EMD56164PC_50I */
+#else
+#define CONFIG_MDDR_EMD56164PC_50I
+#endif
 
 #define CONFIG_AUDIO_CAL_DIV
 #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
@@ -90,7 +93,12 @@
 /**
  * Boot arguments definitions.
  */
+#ifdef  CONFIG_DDR_64M
 #define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=63M@0x0 "
+#else
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=31M@0x0 "
+#endif
+
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
 		#if defined(CONFIG_SPL_SFC_NOR)
@@ -133,22 +141,21 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
-#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+      #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+      #ifdef CONFIG_OTA_VERSION20
+             #define CONFIG_PAR_NV_NAME        "NV_RW"
+             #define CONFIG_PAR_NV_NUM        (3)
+             #define CONFIG_PAT_USERFS_NAME   "userfs"
+             #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
+             #undef CONFIG_SPL_BOOTARGS
+             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+     #endif /*CONFIG_OTA_VERSION20*/
 
-#ifdef CONFIG_OTA_VERSION20
-#define CONFIG_PAR_NV_NAME        "NV_RW"
-#define CONFIG_PAR_NV_NUM        (3)
-#define CONFIG_PAT_USERFS_NAME   "userfs"
-#define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
-#undef CONFIG_SPL_BOOTARGS
-#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
-#endif /*CONFIG_NOR_SPL_BOOT_OS*/
-
-#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
-#define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
-#define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
-#undef  CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
+     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+     #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+     #undef  CONFIG_BOOTCOMMAND
+     #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
 #endif	/* CONFIG_SPL_OS_BOOT */
 
 
