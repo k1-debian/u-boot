@@ -65,6 +65,7 @@
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32         1   /* 1-32bit-width, 0-16bit-width */
+#define CONFIG_DDR_PHY_IMPEDANCE 60000
 
 /* #define CONFIG_DDR_DLL_OFF */
 /*
