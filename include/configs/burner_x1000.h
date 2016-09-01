@@ -121,6 +121,18 @@
 /* GPIO */
 #define CONFIG_JZ_GPIO
 
+/* CLK CGU */
+#define  CGU_CLK_SRC {				\
+		{OTG, EXCLK},			\
+		{LCD, MPLL},			\
+		{MSC, MPLL},			\
+		{SFC, MPLL},			\
+		{CIM, MPLL},			\
+		{PCM, MPLL},			\
+		{I2S, EXCLK},			\
+		{SRC_EOF,SRC_EOF}		\
+	}
+
 /**
  * Command configuration.
  */

@@ -36,11 +36,6 @@ struct global_info ginfo __attribute__ ((section(".data")));
 extern struct jz_uart *uart;
 #endif
 
-struct cgu_clk_src cgu_clk_src[] = {
-	{MSC, MPLL},
-	{SFC, MPLL},
-	{SRC_EOF,SRC_EOF}
-};
 void board_nand_init(void)
 {
 	    return 0;
