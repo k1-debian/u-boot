@@ -485,11 +485,11 @@ static int sfcnand_read(struct mtd_info *mtd,loff_t addr,size_t len,size_t *retl
 
 	ret = sfc_nand_read(mtd,addr,0,len,buf);
 	if(ret)
-		*retlen += ret;
+		*retlen = ret;
 	else
-		*retlen += len;
+		*retlen = len;
 
-	return 0;
+	return ret;
 }
 static int sfcnand_write(struct mtd_info *mtd,loff_t addr,size_t len,size_t *retlen, u_char *buf)
 {
