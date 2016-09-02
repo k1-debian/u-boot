@@ -141,7 +141,7 @@ void ddr_controller_init(int bypass,enum ddr_type type)
 	ddr_writel(DDRC_CTRL_CKE | DDRC_CTRL_ALH, DDRC_CTRL);
 	ddr_writel(DDRC_REFCNT_VALUE, DDRC_REFCNT);
 	ddr_writel(DDRC_CTRL_VALUE, DDRC_CTRL);
-	//mem_remap();
+	mem_remap();
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
 	ddr_writel(ddr_readl(DDRC_STATUS) & ~DDRC_DSTATUS_MISS, DDRC_STATUS);
 	if(DDRC_AUTOSR_EN_VALUE){
