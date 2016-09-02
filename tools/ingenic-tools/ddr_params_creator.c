@@ -502,17 +502,17 @@ static void mem_remap_print(struct ddr_params *p)
         /*
 	 * random high address for securing.
 	 */
-	for(i = 0;i < swap_bits / 2;i++){
-		int sw = frandom(swap_bits - 1 - i);
-		swap_bytes(s,startA + i,startA + sw);
-	}
+	/* for(i = 0;i < swap_bits / 2;i++){ */
+	/* 	int sw = frandom(swap_bits - 1 - i); */
+	/* 	swap_bytes(s,startA + i,startA + sw); */
+	/* } */
 
-	width = startB + startA;
-	startA = startA + swap_bits;
-	for(i = 0;i < width / 2;i++){
-		int sw = frandom(width - 1 - i);
-		swap_bytes(s,startA + i,startA + sw);
-	}
+	/* width = startB + startA; */
+	/* startA = startA + swap_bits; */
+	/* for(i = 0;i < width / 2;i++){ */
+	/* 	int sw = frandom(width - 1 - i); */
+	/* 	swap_bytes(s,startA + i,startA + sw); */
+	/* } */
 	printf("#define REMMAP_ARRAY {\\\n");
 	for(i = 0;i <sizeof(remap_array) / sizeof(remap_array[0]);i++)
 	{
