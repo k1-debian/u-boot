@@ -31,6 +31,9 @@
 #include <asm/arch/cpm.h>
 #include <spl.h>
 #include <regulator.h>
+#ifdef CONFIG_HW_WATCHDOG
+#include <watchdog.h>
+#endif
 #ifdef CONFIG_AUDIO_CAL_DIV
 #include <generated/audio_div_values.h>
 #endif
@@ -124,6 +127,10 @@ void board_init_f(ulong dummy)
 	debug("CLK init\n");
 	clk_init();
 
+#ifdef CONFIG_HW_WATCHDOG
+	debug("WATCHDOG init\n");
+	hw_watchdog_init();
+#endif
 	debug("SDRAM init\n");
 	sdram_init();
 
