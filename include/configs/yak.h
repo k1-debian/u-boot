@@ -48,7 +48,7 @@
 #define CONFIG_SYS_ICACHE_SIZE		16384
 #define CONFIG_SYS_CACHELINE_SIZE	32
 
-#define CONFIG_SYS_UART_INDEX		1
+#define CONFIG_SYS_UART_INDEX		2
 #define CONFIG_SYS_UART1_PA
 #define CONFIG_BAUDRATE			115200
 
@@ -104,7 +104,7 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS1,115200n8 mem=32M@0x0 loglevel=7 "
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=32M@0x0 loglevel=7 "
 
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
