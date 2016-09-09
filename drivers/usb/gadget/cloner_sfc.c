@@ -72,8 +72,7 @@ int sfc_program(struct cloner *cloner)
 	if (length%blk_size == 0){
 		len = length;
 		BURNNER_PRI("the length = %x\n",len);
-	}
-	else{
+	}else{
 		BURNNER_PRI("the length = %x, is no enough %x\n",length,blk_size);
 		len = (length/blk_size)*blk_size + blk_size;
 	}
@@ -81,6 +80,10 @@ int sfc_program(struct cloner *cloner)
 	pt_index = get_partition_index(offset, &pt_offset, &pt_size);
 
 	if(pt_index < 0){
+		if(length < blk_size){
+			BURNNER_PRI("the length = %x, is no enough %x\n",length,blk_size);
+			len = length;
+		}
 		int index_offset = check_offset(offset,len);
 		if(index_offset < 0){
 			BURNNER_PRI("the offset + len is greater than the partition offset,please check it\n");
