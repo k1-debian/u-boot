@@ -139,7 +139,7 @@ int sfc_nand_erase(struct mtd_info *mtd,int addr)
 
 	return 0;
 }
-static int sfc_nand_write(struct mtd_info *mtd,loff_t addr,int column,size_t len,u_char *buf)
+static int sfc_nand_write(struct mtd_info *mtd,loff_t addr,int column,size_t len,u_char *buf,size_t *retlen)
 {
 	unsigned char state, cmd[COMMAND_MAX_LENGTH];
 	int page_size = mtd->writesize;
@@ -202,9 +202,10 @@ static int sfc_nand_write(struct mtd_info *mtd,loff_t addr,int column,size_t len
 
 		if(state & P_FAIL){
 			printf("WARNING: write fail !\n");
-			return (len - i * wlen);
+			*retlen = i * wlen;
+			return -EIO;
 		}
-
+		*retlen = len;
 		len -= wlen;
 		page++;
 	}
@@ -322,17 +323,17 @@ static int sfcnand_write_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops
 	unsigned char cmd[COMMAND_MAX_LENGTH];
 	int page = addr / mtd->writesize;
 	int ret;
+	size_t retlen
 
 	cmd[0]=CMD_PARD;//get feature
 	sfc_send_cmd(&cmd[0],0,page,3,0,0,0);
 	udelay(t_read);
 
-	ret = sfc_nand_write(mtd,addr,mtd->writesize,ops->ooblen,ops->oobbuf);
+	ret = sfc_nand_write(mtd,addr,mtd->writesize,ops->ooblen,ops->oobbuf,&retlen);
 	if(ret){
 		printf("WARNING: Mark bad block fail !\n");
-		return -1;
+		return ret;
 	}
-
 	return 0;
 }
 static int sfcnand_block_isbad(struct mtd_info *mtd,loff_t ofs) ;
@@ -495,8 +496,7 @@ static int sfcnand_write(struct mtd_info *mtd,loff_t addr,size_t len,size_t *ret
 {
 	int ret,i,n=0;
 	int readv;
-	ret = sfc_nand_write(mtd,addr,0,len,buf);
-	*retlen = ret;
+	ret = sfc_nand_write(mtd,addr,0,len,buf,retlen);
 
 	return ret;
 }
