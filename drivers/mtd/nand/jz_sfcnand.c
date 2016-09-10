@@ -323,7 +323,7 @@ static int sfcnand_write_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops
 	unsigned char cmd[COMMAND_MAX_LENGTH];
 	int page = addr / mtd->writesize;
 	int ret;
-	size_t retlen
+	size_t retlen;
 
 	cmd[0]=CMD_PARD;//get feature
 	sfc_send_cmd(&cmd[0],0,page,3,0,0,0);
