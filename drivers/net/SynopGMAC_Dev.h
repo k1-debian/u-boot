@@ -44,7 +44,7 @@
 
 static inline void plat_delay(u32 delay)
 {
-	while (delay--);
+	udelay(delay);
 	return;
 }
 
