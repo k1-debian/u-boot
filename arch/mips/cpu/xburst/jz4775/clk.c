@@ -185,12 +185,10 @@ unsigned int cpm_get_h2clk(void)
 unsigned int clk_get_rate(int clk)
 {
 	switch (clk) {
-#ifndef CONFIG_SPL_BUILD
 	case DDR:
 		return get_ddr_rate();
 	case CPU:
 		return get_cclk_rate();
-#endif
 #if !defined(CONFIG_SPL_BUILD) || (defined(CONFIG_MTD_NAND_JZ) && !defined(CONFIG_BURNER))
 	case H2CLK:
 		return cpm_get_h2clk();
