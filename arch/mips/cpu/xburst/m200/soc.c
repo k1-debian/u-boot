@@ -28,6 +28,7 @@
 #include <asm/mipsregs.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
+#include <asm/arch-m200/tcu.h>
 #include <spl.h>
 
 #ifdef CONFIG_SPL_BUILD
@@ -95,6 +96,9 @@ void mmc_clk_nopull(void)
 
 void board_init_f(ulong dummy)
 {
+	/***wdt stop**/
+	writel(readl(TCU_TSSR) | TCU_TSSR_WDTSS, TCU_TSSR);
+
 	/* Set global data pointer */
 	gd = &gdata;
 
