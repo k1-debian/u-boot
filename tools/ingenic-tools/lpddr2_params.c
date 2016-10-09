@@ -198,8 +198,8 @@ static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params 
 	}
 	ddrp->mr2.lpddr2.RL_WL = tmp;
 
-#ifdef DDR_DRIVER_STRENGTH
-	ddrp->mr3.lpddr2.DS = DDR_DRIVER_STRENGTH;
+#ifdef CONFIG_DDR_DRIVER_STRENGTH
+	ddrp->mr3.lpddr2.DS = CONFIG_DDR_DRIVER_STRENGTH;
 #else
 	ddrp->mr3.lpddr2.DS = 2;
 	out_warn("Warnning: Please set ddr driver strength.");

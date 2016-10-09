@@ -59,7 +59,7 @@
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-#define DDR_DRIVER_STRENGTH             4
+#define CONFIG_DDR_DRIVER_STRENGTH             1
 
 #define CONFIG_MDDR_EMD56164PC_50I
 

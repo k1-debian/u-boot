@@ -51,5 +51,5 @@
 /*
  * MDDR controller refcnt register
  */
-#define DDR_tREFI	        DDR__ns(7800)	/* Refresh period: 4096 refresh cycles/64ms */
+#define DDR_tREFI	        DDR__ns(3900)	/* Refresh period: 4096 refresh cycles/64ms */
 #endif /* __MDDR_CONFIG_H */

@@ -102,6 +102,9 @@ static void ddr_base_params_fill(struct ddr_params *ddr_params)
 	DDR_PARAMS_FILL(params,tREFI);
 	DDR_PARAMS_FILL(params,WL);
 	DDR_PARAMS_FILL(params,RL);
+#ifdef CONFIG_DDR_tREFI
+	params->tREFI = CONFIG_DDR_tREFI;
+#endif
 }
 static int ddr_refi_div(int reftck,int *div)
 {
@@ -237,12 +240,15 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	}
 
 	/* CTRL  */
-	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_128 | DDRC_CTRL_ACTSTP
+	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
 		| DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN
 		| DDRC_CTRL_ALH | DDRC_CTRL_RDC | DDRC_CTRL_CKE;
 	/* ddrc->ctrl = DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN */
 	/* 	| DDRC_CTRL_ALH | DDRC_CTRL_RDC | DDRC_CTRL_CKE; */
-
+#ifdef CONFIG_DDRC_CTRL_PDT
+	ddrc->ctrl &= ~(DDRC_CTRL_PDT_MASK);
+	ddrc->ctrl |= CONFIG_DDRC_CTRL_PDT;
+#endif
 	/* MMAP0,1 */
 	memsize_cs0 = p->size.chip0;
 	memsize_cs1 = p->size.chip1;

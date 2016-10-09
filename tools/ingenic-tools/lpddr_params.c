@@ -53,8 +53,6 @@ static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *
 	ASSERT_MASK(tmp,8);
 	ddrc->timing6.b.tXSRD = tmp;
 
-	ddrc->timing6.b.tXSRD = 0x80;
-
 	tmp = ps2cycle_ceil(p->private_params.lpddr_params.tRFC,8) / 8 - 1;
 	if(tmp < 0)
 		tmp = 0;
@@ -86,8 +84,8 @@ static void ddrp_params_creator_lpddr(struct ddrp_reg *ddrp, struct ddr_params *
 
 	ddrp->mr2.lpddr.PASR = 0;
 	ddrp->mr2.lpddr.TCSR = 3;  //85 degree centigrade.
-#ifdef DDR_DRIVER_STRENGTH
-	ddrp->mr2.lpddr.DS = DDR_DRIVER_STRENGTH;
+#ifdef CONFIG_DDR_DRIVER_STRENGTH
+	ddrp->mr2.lpddr.DS = CONFIG_DDR_DRIVER_STRENGTH;
 #endif
 
 	ddrp->ptr1.b.tDINIT0 = ps2cycle_ceil(200000000, 1); /* LPDDR default 200us*/
