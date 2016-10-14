@@ -62,10 +62,13 @@
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			1	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDR3_H5TQ2G83CFR_H9C
-#define CONFIG_DDR_CHIP_ODT
-#define CONFIG_DDR_PHY_ODT
-#define CONFIG_DDR_PHY_DQ_ODT
-#define CONFIG_DDR_PHY_DQS_ODT
+#define CONFIG_DDR_PHY_IMPEDANCE 60000
+#define CONFIG_DDR_PHY_ODT_IMPEDANCE 60000
+/*#define CONFIG_DDR_CHIP_ODT
+ *#define CONFIG_DDR_PHY_ODT
+ *#define CONFIG_DDR_PHY_DQ_ODT
+ *#define CONFIG_DDR_PHY_DQS_ODT
+ **/
 
 /* #define CONFIG_DDR_DLL_OFF */
 /*
@@ -80,13 +83,13 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS3,57600 mem=256M@0x0 mem=768M@0x30000000"
+#define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000"
 #ifdef CONFIG_BOOT_ANDROID
   #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/init"
 #else
   #ifdef CONFIG_SPL_MMC_SUPPORT
 /*    #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
-    #define CONFIG_BOOTARGS BOOTARGS_COMMON " root=root=/dev/mmcblk0p1"
+    #define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/mmcblk0p1"
   #else
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 root=ubi0:root rootfstype=ubifs rw"
   #endif

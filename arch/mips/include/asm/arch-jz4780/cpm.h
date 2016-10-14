@@ -58,6 +58,8 @@
 #define CPM_HDMICDR		(0x8C) /* GPU clock divider register		*/
 #define CPM_BCHCDR		(0xAC) /* BCH clock divider register		*/
 
+#define CPM_DRCG    (0xd0)
+
 #define CPM_LCR			(0x04)
 #define CPM_SPCR0		(0xb8) /* SRAM Power Control Register0 */
 #define CPM_SPCR1		(0xbc) /* SRAM Power Control Register1 */
@@ -135,6 +137,8 @@
 #define CPM_CLKGR1_TSSI1	(1 << 1)
 #define CPM_CLKGR1_SMB3		(1 << 0)
 
+#define cpm_readl(off)          readl(CPM_BASE + (off))
+#define cpm_writel(val,off)     writel(val, CPM_BASE + (off))
 #define cpm_inl(off)		readl(CPM_BASE + (off))
 #define cpm_outl(val,off)	writel(val, CPM_BASE + (off))
 #define cpm_test_bit(bit,off)	(cpm_inl(off) & 0x1<<(bit))
