@@ -132,7 +132,7 @@ int spl_start_uboot(void)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: Phoenix (Ingenic XBurst X1000 SoC)\n");
+	puts("Board: Halley2 (Ingenic XBurst X1000 SoC)\n");
 	return 0;
 }
 
