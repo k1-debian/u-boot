@@ -242,6 +242,10 @@ void gpio_ack_irq(unsigned gpio)
 }
 
 void dump_gpio_func( unsigned int gpio);
+void gpio_uart_enable_pull(unsigned int port, unsigned int pin)
+{
+	writel(pin, GPIO_PXPEC(port));
+}
 void gpio_init(void)
 {
 	int i, n;
@@ -264,6 +268,7 @@ void gpio_init(void)
 	g = &uart_gpio_func[gd->arch.gi->uart_idx];
 #endif
 	gpio_set_func(g->port, g->func, g->pins);
+	gpio_uart_enable_pull(g->port, g->pins);
 
 #ifndef CONFIG_SPL_BUILD
 #ifdef CONFIG_JZ_PCA953X
