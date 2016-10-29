@@ -360,13 +360,15 @@ static int jz_recv(struct eth_device* dev)
 			return -1;
 		}
 #endif
+                invalidate_dcache_range((ulong)NetRxPackets[next_rx], (ulong)NetRxPackets[next_rx] + length);
+
 		NetReceive(NetRxPackets[next_rx], length - 4);
 		/* after got data, make sure the dma owns desc to recv data from MII */
 		desc->status = DescOwnByDma;
 
 		synopGMAC_resume_dma_rx(gmacdev);
 
-		flush_dcache_all();
+		/* flush_dcache_all(); */
 
 		next_rx++;
 		if (next_rx >= NUM_RX_DESCS)
