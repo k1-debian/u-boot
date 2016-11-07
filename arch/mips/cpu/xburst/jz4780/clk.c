@@ -137,14 +137,12 @@ unsigned int cpm_get_h2clk(void)
 unsigned int clk_get_rate(int clk)
 {
 	switch (clk) {
-#ifndef CONFIG_SPL_BUILD
 	case DDR:
 		return get_ddr_rate();
 	case CPU:
 		return get_cclk_rate();
 	case H2CLK:
 		return cpm_get_h2clk();
-#endif
 	case MSC0:
 		return get_msc_rate(CPM_MSC0CDR);
 	case MSC1:
@@ -201,7 +199,6 @@ static unsigned int set_msc_rate(int clk, unsigned long rate)
 	return 0;
 }
 
-#ifndef CONFIG_SPL_BUILD
 static unsigned int set_bch_rate(int clk, unsigned long rate)
 {
 	unsigned int pll_rate = pll_get_rate(MPLL);
@@ -216,19 +213,44 @@ static unsigned int set_bch_rate(int clk, unsigned long rate)
 
 	return 0;
 }
-#endif
 
-#ifndef CONFIG_SPL_BUILD
 static unsigned int set_ssi_rate(int clk, unsigned long rate)
 {
 	return 0;
 }
-#endif
+
+static unsigned int set_ddr_rate(int clk, unsigned long rate)
+{
+	unsigned int ddrcdr = cpm_inl(CPM_DDRCDR);
+	unsigned int pll_rate;
+	unsigned int cdr;
+	 switch (ddrcdr >> 30) {
+	 case 1:
+	         pll_rate = pll_get_rate(APLL);
+	     break;
+	 case 2:
+	         pll_rate = pll_get_rate(MPLL);
+	     break;
+	 case 0:
+	         printf("ddr clk is stop\n");
+	 default:
+	         return 0;
+	 }
+	 cdr = ((pll_rate + rate - 1)/rate - 1) & 0xf;
+     ddrcdr &= ~(0xf | 0x3f << 24);
+	 ddrcdr |= (cdr | (1 << 29));
+	 cpm_outl(ddrcdr , CPM_DDRCDR);
+	 while (cpm_inl(CPM_DDRCDR) & (1 << 28));
+	 debug("CPM_DDRCDR(%x) = %x\n",CPM_DDRCDR, cpm_inl(CPM_DDRCDR));
+	 return 0;
+}
 
 void clk_set_rate(int clk, unsigned long rate)
 {
-#ifndef CONFIG_SPL_BUILD
 	switch (clk) {
+	case DDR:
+		set_ddr_rate(clk, rate);
+		return;
 	case MSC0:
 	case MSC1:
 	case MSC2:
@@ -244,7 +266,6 @@ void clk_set_rate(int clk, unsigned long rate)
 	}
 
 	printf("%s: clk%d is not supported\n", __func__, clk);
-#endif
 }
 
 struct cgu __attribute__((weak)) spl_cgu_clksel[] = {

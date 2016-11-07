@@ -28,22 +28,18 @@ LIB	= $(obj)lib$(SOC).o
 
 SOBJS-y	=
 COBJS-y	= soc.o
+
+COBJS-$(CONFIG_BURNER) += dym_pll.o
+
+ifndef CONFIG_BURNER
+COBJS-y += pll.o
+endif
+
 COBJS-y += clk.o
 COBJS-y += ddr_set_dll.o
 COBJS-y += ../ddr_dwc.o
-ifdef CONFIG_SPL_DDR_SOFT_TRAINING
-COBJS-y += ../ddr_dqs_training.o
-else
-ifdef CONFIG_DDR_FORCE_SOFT_TRAINING
-COBJS-y += ../ddr_dqs_training.o
-endif
-endif
-
-ifdef CONFIG_BURNER
-COBJS-y += dym_pll.o
-else
-COBJS-y += pll.o
-endif
+COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
+COBJS-$(CONFIG_BURNER) += ../param_manage.o
 
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
