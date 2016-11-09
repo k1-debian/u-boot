@@ -48,7 +48,11 @@ struct cgu spl_cgu_clksel[] = {
 #if defined(CONFIG_VIDEO_JZ4775) || defined(CONFIG_JZ47xx_EPD)
 	{CPM_LPCDR, 0, 31, 28, 27, CGU_LCD_DIV},
 #endif
+#if CONFIG_SYS_EXTAL == (24000000)
+	{CPM_I2SCDR, 0, 30, 0, 0, 0},
+#else
 	{CPM_I2SCDR, 2, 30, 0, 0, 0},
+#endif
 };
 
 #if defined(CONFIG_BURNER) || defined(CONFIG_JZ_SLT)
