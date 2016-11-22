@@ -49,6 +49,7 @@
 #define PARTITION_NUM 16
 #endif
 #define	CMD_BUFF_SIZE 128
+#define FASTBOOT_PAGE 2048
 
 #define _DEBUG	0
 
@@ -1100,10 +1101,14 @@ static void explain_cmd_continue(struct fastboot_dev *fastboot)
 static int handle_cmd_boot(struct fastboot_dev *fastboot)
 {
 	printf("please add the boot cmd explain roution\n");
-	memcpy((char *)(BOOT_START_ADDRESS),fastboot->data_buf,fastboot->data_length);
-
 	memset(boot_kernel_cmd,0,CMD_BUFF_SIZE);
+#ifdef CONFIG_BOOT_ANDROID
+	memcpy((char *)(BOOT_START_ADDRESS),fastboot->data_buf,fastboot->data_length);
 	sprintf(boot_kernel_cmd,"boota mem %x",BOOT_START_ADDRESS);
+#else
+	memcpy((char *)(BOOT_START_ADDRESS),fastboot->data_buf + FASTBOOT_PAGE,fastboot->data_length - FASTBOOT_PAGE);
+	sprintf(boot_kernel_cmd,"bootm 0x%x",BOOT_START_ADDRESS);
+#endif
 	printf("boot_kernel_cmd:%s\n",boot_kernel_cmd);
 
 	return 0;
