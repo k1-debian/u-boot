@@ -473,7 +473,6 @@
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE    0xb3441000
-#define CONFIG_SYS_MAXARGS	6
 
 /*SFCNAND env*/
 /* spi nand environment */
