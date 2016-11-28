@@ -185,7 +185,7 @@ struct jzfb_config_info jzfb1_init_data = {
 	.num_modes = 1,
 	.modes = &jzfb1_videomode,
 	.lcd_type = LCD_TYPE_SLCD,
-	.bpp    = 18,
+	.bpp    = 16,
 	.pinmd  = 0,
 
 	.smart_config.rsply_cmd_high       = 0,
