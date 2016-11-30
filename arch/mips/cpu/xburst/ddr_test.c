@@ -37,6 +37,7 @@
 #include <asm/arch/cpm.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+extern phys_size_t initdram(int);
 extern struct ddr_params *ddr_params_p;
 static void restore_remap(unsigned int *remap1, unsigned int *remap2, unsigned int *remap3,
 		unsigned int *remap4, unsigned int *remap5)
@@ -130,7 +131,7 @@ static void addrline_test(void)
 	row = DDR_ROW;
 	col = DDR_COL;
 	bank = (DDR_BANK8 ? 8 : 4) * (CONFIG_DDR_CS0 + CONFIG_DDR_CS1);
-	memsize = (unsigned int)(DDR_CHIP_0_SIZE) + (unsigned int)(DDR_CHIP_1_SIZE);
+	memsize = initdram(0);
 #else /* CONFIG_DDR_HOST_CC */
 	row = ddr_params_p->row;
 	col = ddr_params_p->col;
@@ -290,7 +291,7 @@ static int ddr_test(unsigned int cache_flag, unsigned int test_flag, unsigned in
 	}
 
 #ifdef CONFIG_DDR_HOST_CC
-	mem_size = (unsigned int)(DDR_CHIP_0_SIZE) + (unsigned int)(DDR_CHIP_1_SIZE);
+	mem_size = initdram(0);
 #else
 	mem_size = ddr_params_p->size.chip0 + ddr_params_p->size.chip1;
 #endif
@@ -447,7 +448,7 @@ static int ddr_dma_test(void)
 
 #ifdef CONFIG_DDR_HOST_CC
 	banks = (DDR_BANK8 ? 8 : 4) * (CONFIG_DDR_CS0 + CONFIG_DDR_CS1);
-	memsize = (unsigned int)(DDR_CHIP_0_SIZE) + (unsigned int)(DDR_CHIP_1_SIZE);
+	memsize = initdram(0);
 #else /* CONFIG_DDR_HOST_CC */
 	banks = (ddr_params_p->bank8 ? 8 : 4) * (ddr_params_p->cs0 + ddr_params_p->cs1);
 	memsize = ddr_params_p->size.chip0 + ddr_params_p->size.chip1;
@@ -584,7 +585,7 @@ static int cpu_and_dma(void)
 
 	debug("cpu_and_dma ...\n");
 #ifdef CONFIG_DDR_HOST_CC
-	memsize = (unsigned int)(DDR_CHIP_0_SIZE) + (unsigned int)(DDR_CHIP_1_SIZE);
+	memsize = initdram(0);
 #else /* CONFIG_DDR_HOST_CC */
 	memsize = ddr_params_p->size.chip0 + ddr_params_p->size.chip1;
 #endif /* CONFIG_DDR_HOST_CC */

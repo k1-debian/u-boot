@@ -32,7 +32,7 @@
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1000
-#define CONFIG_DDR_AUTO_SELF_REFRESH
+/*#define CONFIG_DDR_AUTO_SELF_REFRESH*/
 #define CONFIG_CHECK_SOCID
 
 #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
@@ -72,11 +72,10 @@
 */
 #define CONFIG_DDR_DRIVER_STRENGTH             1
 
-#ifdef  CONFIG_DDR_64M
-#define CONFIG_MDDR_JSD12164PAI_KGD
-#else
+#define	CONFIG_DDR_64M	    64
+#define	CONFIG_DDR_32M	    32
+/*#define CONFIG_MDDR_JSD12164PAI_KGD*/     /*DDR 64M param file*/
 #define CONFIG_MDDR_EMD56164PC_50I
-#endif
 
 #define CONFIG_AUDIO_CAL_DIV
 #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
@@ -101,11 +100,7 @@
 /**
  * Boot arguments definitions.
  */
-#ifdef  CONFIG_DDR_64M
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 loglevel=7 "
-#else
 #define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=32M@0x0 loglevel=7 "
-#endif
 
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)

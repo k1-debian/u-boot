@@ -91,6 +91,18 @@ struct global_info {
 	struct jz_gpio_func_def gpio[0];
 	struct ddr_test_burner ddr_test;
 #endif
+
+#ifdef	CONFIG_X1000
+	struct {
+		uint32_t ddr_cfg;
+		uint32_t ddr_mmap0;
+		uint32_t ddr_mmap1;
+		uint32_t ddr_timing4;
+		uint32_t ddr_autosr;
+		uint32_t ddr_remap_array[5];
+	} ddr_change_param;
+
+#endif
 };
 
 #endif /* __GLOBAL_INFO_H__ */

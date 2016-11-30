@@ -524,7 +524,7 @@ static void mem_remap_print(struct ddr_params *p)
 	{
 		printf("\t0x%08x,\\\n",remap_array[i]);
 	}
-	printf("};\n");
+	printf("}\n");
 }
 static void file_head_print(void)
 {

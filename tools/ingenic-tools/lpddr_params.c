@@ -60,7 +60,6 @@ static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *
 	ASSERT_MASK(tmp,4);
 	ddrc->timing4.b.tMINSR = tmp;
 //debug.
-	ddrc->timing4.b.tMINSR = 0xf;
 	ddrc->timing6.b.tFAW = 0;
 
 }

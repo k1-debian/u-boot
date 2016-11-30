@@ -30,10 +30,21 @@
 
 #ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
+#undef	DDRC_CFG_VALUE
+#undef  DDRC_MMAP0_VALUE
+#undef	DDRC_MMAP1_VALUE
+#undef	DDRC_TIMING4_VALUE
+#undef  DDRC_AUTOSR_EN_VALUE
+#undef	DDR_CHIP_0_SIZE
+#define DDRC_CFG_VALUE	(gd->arch.gi->ddr_change_param.ddr_cfg)
+#define	DDRC_MMAP0_VALUE (gd->arch.gi->ddr_change_param.ddr_mmap0)
+#define DDRC_MMAP1_VALUE (gd->arch.gi->ddr_change_param.ddr_mmap1)
+#define DDRC_TIMING4_VALUE (gd->arch.gi->ddr_change_param.ddr_timing4)
+#define DDRC_AUTOSR_EN_VALUE (gd->arch.gi->ddr_change_param.ddr_autosr)
+#define remap_array (gd->arch.gi->ddr_change_param.ddr_remap_array)
 static unsigned int out_imp_table[] = DDRP_IMPANDCE_ARRAY;
 static unsigned int odt_imp_table[] = DDRP_ODT_IMPANDCE_ARRAY;
 static unsigned char rzq_table[] = DDRP_RZQ_TABLE;
-static unsigned int remap_array[] = REMMAP_ARRAY;
 #else
 #include "ddr_reg_data.h"
 #define out_imp_table DDRP_IMPANDCE_ARRAY
@@ -42,7 +53,7 @@ static unsigned int remap_array[] = REMMAP_ARRAY;
 #define remap_array REMMAP_ARRAY
 #endif
 
-//#define CONFIG_DWC_DEBUG 1
+/*#define CONFIG_DWC_DEBUG 1*/
 #include "ddr_debug.h"
 #define ddr_hang() do{								\
 		printf("%s %d\n",__FUNCTION__,__LINE__);	\
@@ -144,6 +155,7 @@ void ddr_controller_init(int bypass,enum ddr_type type)
 	mem_remap();
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
 	ddr_writel(ddr_readl(DDRC_STATUS) & ~DDRC_DSTATUS_MISS, DDRC_STATUS);
+
 	if(DDRC_AUTOSR_EN_VALUE){
 		if(!bypass) {
 			ddr_writel(0, DDRC_DLP);
@@ -152,7 +164,7 @@ void ddr_controller_init(int bypass,enum ddr_type type)
 			ddr_writel((9 << 28) | 0xf,DDRC_CLKSTP_CFG);
 		}
 	}
-	ddr_writel(DDRC_AUTOSR_EN_VALUE ,DDRC_AUTOSR_EN);
+	ddr_writel(DDRC_AUTOSR_EN_VALUE, DDRC_AUTOSR_EN);
 	FUNC_EXIT();
 }
 static void wait_ddrp_pgsr(unsigned int wait_val,int timeout)
@@ -192,6 +204,7 @@ static enum ddr_type get_ddr_type(void)
 	int type;
 	ddrc_cfg_t ddrc_cfg;
 	ddrc_cfg.d32 = DDRC_CFG_VALUE;
+
 	switch(ddrc_cfg.b.TYPE){
 	case 3:
 		type = LPDDR;
@@ -436,6 +449,7 @@ void sdram_init(void)
 	dump_ddrc_register();
 	/* DDRC address remap configure*/
 	debug("sdram init finished\n");
+
 }
 phys_size_t initdram(int board_type)
 {
@@ -445,8 +459,11 @@ phys_size_t initdram(int board_type)
 #endif /* EMC_LOW_SDRAM_SPACE_SIZE */
 
 	unsigned int ram_size;
-	ram_size = (unsigned int)(DDR_CHIP_0_SIZE) + (unsigned int)(DDR_CHIP_1_SIZE);
-
+	ddrc_cfg_t ddrc_cfg = {.d32 = ddr_readl(DDRC_CFG)};
+	uint16_t col0 = ddrc_cfg.b.COL0 + 8, row0 = ddrc_cfg.b.ROW0 + 12;
+	uint8_t dw = ddrc_cfg.b.DW ? 4 : 2, ba0 = ddrc_cfg.b.BA0 ? 8 : 4;
+	uint32_t chip_0_szie = (uint32_t)(1 << (col0 + row0)) * dw * ba0;
+	ram_size = chip_0_szie + (unsigned int)(DDR_CHIP_1_SIZE);
 	if (ram_size > EMC_LOW_SDRAM_SPACE_SIZE)
 		ram_size = EMC_LOW_SDRAM_SPACE_SIZE;
 
