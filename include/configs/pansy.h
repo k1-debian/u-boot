@@ -70,7 +70,7 @@
   111 = Octant strength driver
   100 = Three-quarters strength driver
 */
-#define CONFIG_DDR_DRIVER_STRENGTH             1
+#define CONFIG_DDR_DRIVER_STRENGTH             4
 
 #define	CONFIG_DDR_64M	    64
 #define	CONFIG_DDR_32M	    32
