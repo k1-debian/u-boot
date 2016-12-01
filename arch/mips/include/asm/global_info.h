@@ -92,7 +92,6 @@ struct global_info {
 	struct ddr_test_burner ddr_test;
 #endif
 
-#ifdef	CONFIG_X1000
 	struct {
 		uint32_t ddr_cfg;
 		uint32_t ddr_mmap0;
@@ -102,7 +101,6 @@ struct global_info {
 		uint32_t ddr_remap_array[5];
 	} ddr_change_param;
 
-#endif
 };
 
 #endif /* __GLOBAL_INFO_H__ */
