@@ -74,9 +74,6 @@
 
 /*#define CONFIG_MDDR_JSD12164PAI_KGD*/     /*DDR 64M param file*/
 #define CONFIG_MDDR_EMD56164PC_50I
-#define CONFIG_AUDIO_CAL_DIV
-#define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
-#define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
 
 /* CONFIG_CMD_FASTBOOT */
 #ifdef CONFIG_ARDUINO
@@ -182,6 +179,11 @@
              #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
              #undef CONFIG_SPL_BOOTARGS
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+      #else
+             #define CONFIG_SOFT_BURNER
+             #define CONFIG_AUDIO_CAL_DIV
+             #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
+             #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
      #endif /*CONFIG_OTA_VERSION20*/
 
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
