@@ -74,14 +74,19 @@ void __attribute__ ((noreturn)) print_exp(void)
 		__asm__ __volatile__("wait\n\t");
 }
 
-
 int traps_init(void)
 {
+	unsigned int status, ebase;
 	*((volatile unsigned int *)(0x80000000)) = print_exp;
 	set_handler(0x180, &handle_exception, 180);
 	flush_cache_all();
-	write_c0_cause(0x0 | 0x1<<23);
-	write_c0_status(0x1000ff01);
+	write_c0_cause(0x0);
+
+	status = read_c0_status();
+	status &= ~(1 << 22);	//clear BEV
+	write_c0_status(status);
+	ebase = read_c0_ebase();
+	printf("ebase at 0x%x\n", ebase);
 	return 0;
 }
 
