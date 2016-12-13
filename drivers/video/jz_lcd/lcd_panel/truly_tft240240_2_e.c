@@ -25,7 +25,6 @@
 #include <common.h>
 #include <lcd.h>
 #include <linux/list.h>
-#include <linux/fb.h>
 #include <asm/types.h>
 #include <asm/arch-m200/tcu.h>
 #include <asm/arch-m200/lcdc.h>
@@ -35,7 +34,10 @@
 #include <asm/arch-x1000/gpio.h>
 #include <regulator.h>
 #include <jz_lcd/truly_tft240240_2_e.h>
+#include <jz_lcd/jz_lcd_v13.h>
 
+extern struct jzfb_config_info lcd_config_info;
+extern struct smart_lcd_data_table new_truly_tft240240_data_table[];
 struct truly_tft240240_2_e_data truly_tft240240_2_e_pdata;
 
 vidinfo_t panel_info = { 240, 240, LCD_BPP, };
@@ -65,6 +67,39 @@ void panel_pin_init(void)
 	serial_puts("truly_tft240240_2_e panel display pin init\n");
 }
 
+#ifdef CONFIG_GPIO_LCD_FLAG
+void panel_power_on(void)
+{
+	unsigned int value=0;
+	unsigned int pull_value;
+
+	pull_value = *((volatile unsigned int*)(0xb0010300+0x70)) &(1 << 3);
+	if(!pull_value)
+		gpio_enable_pull(CONFIG_GPIO_LCD_FLAG);
+
+	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_cs, 1);
+	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rd, 1);
+
+	/*power reset*/
+        gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rst, 0);
+        mdelay(20);
+	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rst, 1);
+	mdelay(10);
+
+	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_cs, 0);
+	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_bl, 1);
+
+	value = gpio_get_value(CONFIG_GPIO_LCD_FLAG);
+	if(!value) {
+		lcd_config_info.smart_config.length_data_table += 1;
+		lcd_config_info.smart_config.data_table = new_truly_tft240240_data_table;
+	}
+	if(!pull_value)
+		gpio_disable_pull(CONFIG_GPIO_LCD_FLAG);
+
+	serial_puts("truly_tft240240_2_e panel display on\n");
+}
+#else
 void panel_power_on(void)
 {
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_cs, 1);
@@ -81,6 +116,7 @@ void panel_power_on(void)
 
 	serial_puts("truly_tft240240_2_e panel display on\n");
 }
+#endif
 
 void panel_power_off(void)
 {
