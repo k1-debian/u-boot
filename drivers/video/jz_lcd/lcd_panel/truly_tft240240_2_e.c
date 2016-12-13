@@ -74,7 +74,7 @@ void panel_power_on(void)
 	unsigned int pull_value;
 
 	pull_value = *((volatile unsigned int*)(0xb0010300+0x70)) &(1 << 3);
-	if(!pull_value)
+	if(pull_value)
 		gpio_enable_pull(CONFIG_GPIO_LCD_FLAG);
 
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_cs, 1);
@@ -94,7 +94,7 @@ void panel_power_on(void)
 		lcd_config_info.smart_config.length_data_table += 1;
 		lcd_config_info.smart_config.data_table = new_truly_tft240240_data_table;
 	}
-	if(!pull_value)
+	if(pull_value)
 		gpio_disable_pull(CONFIG_GPIO_LCD_FLAG);
 
 	serial_puts("truly_tft240240_2_e panel display on\n");
