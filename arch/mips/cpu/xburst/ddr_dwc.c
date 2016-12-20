@@ -433,7 +433,7 @@ void sdram_init(void)
 	type = get_ddr_type();
 	clk_set_rate(DDR, gd->arch.gi->ddrfreq);
 	rate = clk_get_rate(DDR);
-	if(rate <= 200000000)
+	if(rate < 300000000)
 		bypass = 1;
 	if(ddr_hook && ddr_hook->prev_ddr_init)
 		ddr_hook->prev_ddr_init(bypass,type);

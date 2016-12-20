@@ -104,6 +104,25 @@ void mmc_clk_nopull(void)
 }
 #endif
 
+#ifdef CONFIG_SOFT_BURNER
+static void jz_burner_boot(void)
+{
+	unsigned int val = 'b' << 24 | 'u' << 16 | 'r' << 8 | 'n';
+	unsigned int reg;
+
+	reg = cpm_inl(CPM_SLPC);
+
+	if(reg == val) {
+		typedef void __noreturn (*image_entry_noargs_t)(void);
+
+		image_entry_noargs_t image_entry =
+			(image_entry_noargs_t) (0xbfc03cf8);
+		cpm_outl(0, CPM_SLPC);
+		image_entry();
+	}
+}
+#endif
+
 void board_init_f(ulong dummy)
 {
 	/***wdt stop**/
@@ -119,6 +138,11 @@ void board_init_f(ulong dummy)
 	burner_param_info();
 	/* gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE; */
 #endif
+
+#ifdef CONFIG_SOFT_BURNER
+	jz_burner_boot();
+#endif
+
 	gpio_init();
 
 #ifdef CONFIG_BURNER
