@@ -89,7 +89,7 @@
   #ifdef CONFIG_SPL_MMC_SUPPORT
 /*    #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.205:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.8.3:/home/nfsroot/bliu/buildroot rw" */
 /*	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc" */
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootdelay=0 init=/linuxrc root=/dev/mmcblk0p7 rw"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootdelay=0 init=/linuxrc root=/dev/mmcblk0p7 ro"
   #else
     /*#define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/ndsystem rw"*/
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/ram0 rw rdinit=/linuxrc"
