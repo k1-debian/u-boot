@@ -60,10 +60,11 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 extern void gpio_init(void);
 extern void pll_init(void);
 extern void sdram_init(void);
-#ifndef CONFIG_CHECK_SOCID
+#ifdef CONFIG_CHECK_SOCID
 extern int check_socid();
 #endif
 
+#ifdef CONFIG_SOFT_BURNER
 static void jz_burner_boot(void)
 {
 	unsigned int val = 'b' << 24 | 'u' << 16 | 'r' << 8 | 'n';
@@ -80,6 +81,7 @@ static void jz_burner_boot(void)
 		image_entry();
 	}
 }
+#endif
 void board_init_f(ulong dummy)
 {
 	/* Set global data pointer */
@@ -91,8 +93,9 @@ void board_init_f(ulong dummy)
 #else
 	burner_param_info();
 #endif
-
+#ifdef CONFIG_SOFT_BURNER
 	jz_burner_boot();
+#endif
 #ifdef CONFIG_CHECK_SOCID
 	if(check_socid() < 0)
 		return;

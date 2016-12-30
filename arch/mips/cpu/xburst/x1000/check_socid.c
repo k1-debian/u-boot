@@ -10,10 +10,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #define EFUSE_STATE	    0xb3540008
 #define EFUSE_DATA0	    0xb354000C
 
+#define DDR_TIMING4	    0x07230f21
 #define DDR_64M_CFG	    0x0a668a40
 #define DDR_64M_MMAP0	    0x000020fc
 #define DDR_64M_MMAP1	    0x00002400
-#define DDR_64M_TIMING4     0x07230f21
 #define DDR_64M_REMMAP0	    0x03020d0c
 #define DDR_64M_REMMAP2	    0x0b0a0908
 #define DDR_64M_REMMAP3	    0x0f0e0100
@@ -70,6 +70,7 @@ int check_socid()
 	read_socid(&socid);
 	switch(socid) {
 	case X1000_NEW:
+	case X1500_NEW:
 		gd->arch.gi->ddr_change_param.ddr_autosr = 1;
 		break;
 	case X1000E:
@@ -77,11 +78,10 @@ int check_socid()
 		ddr_change_64M();
 		gd->arch.gi->ddr_change_param.ddr_autosr = 1;
 		break;
-	case X1500_NEW:
 	case X1500:
 	case X1000:
 	case 0:
-		gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_64M_TIMING4;
+		gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
 		break;
 	default:
 		socid = -1;

@@ -32,6 +32,7 @@
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1000
+#define CONFIG_CHECK_SOCID
 
 #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		600000000	/*If MPLL not use mast be set 0*/
@@ -61,6 +62,7 @@
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDR_DRIVER_STRENGTH             4
 
+/*#define CONFIG_MDDR_JSD12164PAI_KGD*/     /*DDR 64M param file*/
 #define CONFIG_MDDR_EMD56164PC_50I
 
 /* CONFIG_CMD_FASTBOOT */
@@ -104,6 +106,11 @@
 /**
  * Boot arguments definitions.
  */
+
+
+#define CONFIG_DDR_64M      64	    /*DDR size 64M*/
+#define CONFIG_DDR_32M      32	    /*DDR size 32M*/
+
 #define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=32M@0x0 loglevel=7 "
 
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
@@ -163,7 +170,9 @@
              #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
              #undef CONFIG_SPL_BOOTARGS
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
-     #endif /*CONFIG_OTA_VERSION20*/
+      #else
+             #define CONFIG_SOFT_BURNER
+      #endif /*CONFIG_OTA_VERSION20*/
 
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
