@@ -53,7 +53,7 @@ static unsigned char rzq_table[] = DDRP_RZQ_TABLE;
 #define remap_array REMMAP_ARRAY
 #endif
 
-/*#define CONFIG_DWC_DEBUG 1*/
+/* #define CONFIG_DWC_DEBUG 1 */
 #include "ddr_debug.h"
 #define ddr_hang() do{								\
 		printf("%s %d\n",__FUNCTION__,__LINE__);	\
@@ -218,6 +218,9 @@ static enum ddr_type get_ddr_type(void)
 	case 6:
 		type = DDR3;
 		break;
+	case 7:
+		type = LPDDR3;
+		break;
 	default:
 		type = UNKOWN;
 		debug("unsupport ddr type!\n");
@@ -277,6 +280,12 @@ static void ddr_phy_param_config(int bypass,enum ddr_type type)
 		ddr_writel(DDRP_MR2_VALUE, DDRP_MR2);
 		break;
 	case LPDDR2:
+		ddr_writel(0x910, DDRP_DXCCR);
+		ddr_writel(DDRP_MR3_VALUE, DDRP_MR3);
+		ddr_writel(DDRP_MR1_VALUE, DDRP_MR1);
+		ddr_writel(DDRP_MR2_VALUE, DDRP_MR2);
+		break;
+	case LPDDR3:
 		ddr_writel(0x910, DDRP_DXCCR);
 		ddr_writel(DDRP_MR3_VALUE, DDRP_MR3);
 		ddr_writel(DDRP_MR1_VALUE, DDRP_MR1);

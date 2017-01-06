@@ -4,21 +4,21 @@ struct ddr_latency_table
 	unsigned int freq;
 	int latency;
 };
-static struct ddr_latency_table rl_LPDDR2[] = {
+static struct ddr_latency_table rl_LPDDR3[] = {
 	{100000000,3},/*memclk xxM, RL*/
 	{150000000,3},
-	{200000000,4},
-	{300000000,5},
+	{200000000,6},
+	{300000000,6},
 	{400000000,6},
-	{450000000,7},
+	{450000000,8},
 	{500000000,8},
 };
 
-static struct ddr_latency_table wl_LPDDR2[]= {
+static struct ddr_latency_table wl_LPDDR3[]= {
 	{100000000,1},/*memclk xxM, WL*/
 	{150000000,1},
-	{200000000,2},
-	{300000000,2},
+	{200000000,3},
+	{300000000,3},
 	{400000000,3},
 	{450000000,4},
 	{500000000,4},
@@ -42,10 +42,10 @@ static int find_ddr_lattency(struct ddr_latency_table *table,int size,unsigned i
 	}
 	return -1;
 }
-static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
+static void fill_in_params_lpddr3(struct ddr_params *ddr_params)
 {
 	int tmp;
-	struct lpddr2_params *params = &ddr_params->private_params.lpddr2_params;
+	struct lpddr3_params *params = &ddr_params->private_params.lpddr3_params;
 
 
 	params->tDQSCK = DDR_tDQSCK;
@@ -57,7 +57,7 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
 	params->tFAW = DDR_tFAW;
 	if(params->RL == -1)
 	{
-		tmp = find_ddr_lattency(rl_LPDDR2,sizeof(rl_LPDDR2),ddr_params->freq);
+		tmp = find_ddr_lattency(rl_LPDDR3,sizeof(rl_LPDDR3),ddr_params->freq);
 		if(tmp == -1) {
 			out_error("it cann't find RL latency,when ddr frequancy is %d.check %s %d\n",
 				  ddr_params->freq,__FILE__,__LINE__);
@@ -67,7 +67,7 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
 	}
 	if(params->WL == -1)
 	{
-		tmp = find_ddr_lattency(wl_LPDDR2,sizeof(wl_LPDDR2),ddr_params->freq);
+		tmp = find_ddr_lattency(wl_LPDDR3,sizeof(wl_LPDDR3),ddr_params->freq);
 		if(tmp == -1) {
 			out_error("it cann't find WL latency,when ddr frequancy is %d. check %s %d\n",
 				  ddr_params->freq,__FILE__,__LINE__);
@@ -78,12 +78,12 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
 
 }
 
-static void ddrc_params_creator_lpddr2(struct ddrc_reg *ddrc, struct ddr_params *p)
+static void ddrc_params_creator_lpddr3(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	int tmp;
-	struct lpddr2_params *params = &p->private_params.lpddr2_params;
+	struct lpddr3_params *params = &p->private_params.lpddr3_params;
 
-	ddrc->timing3.b.tCKSRE = 0; // lpddr2 not used.
+	ddrc->timing3.b.tCKSRE = 0; // lpddr3 not used.
 
 	tmp = ps2cycle_ceil(params->tRTP,1);
 	ASSERT_MASK(tmp,6);
@@ -132,26 +132,30 @@ static void ddrc_params_creator_lpddr2(struct ddrc_reg *ddrc, struct ddr_params 
 }
 
 
-static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params *p)
+static void ddrp_params_creator_lpddr3(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp;
 	int rl = 0,wl = 0;
 	int  count = 0;
 	struct ddr_out_impedance *impedance;
-	struct lpddr2_params *params = &p->private_params.lpddr2_params;
+	struct lpddr3_params *params = &p->private_params.lpddr3_params;
 
 	/* MRn registers */
 	tmp = ps2cycle_ceil(params->tWR, 1);
 	ASSERT_MASK(tmp,3);
-	BETWEEN(tmp,3,8);
-	ddrp->mr1.lpddr2.nWR = tmp - 2;
+	if(tmp != 3 && tmp != 6 && tmp != 8 && tmp != 9) {
+		out_error("WR(%d) should is 3 or 6 or 8 or 9\n", tmp);
+		assert(1);
+	}
+	ddrp->mr1.lpddr3.nWR = tmp - 2;
+
 	if(!(p->bl == 4 || p->bl == 8 || p->bl == 16)) {
 		out_error("BL(%d) should is 4 or 8 or 16\n", p->bl);
 		assert(1);
 	}
 	tmp = p->bl;
 	while (tmp >>= 1) count++;
-	ddrp->mr1.lpddr2.BL = count;
+	ddrp->mr1.lpddr3.BL = count;
 	tmp = ps2cycle_ceil(params->RL,1);
 	if(tmp < 3 ||
 	   tmp > 8)
@@ -177,51 +181,64 @@ static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params 
 	case 0x31:
 		tmp = 1;
 		break;
-	case 0x42:
-		tmp = 2;
-		break;
-	case 0x52:
-		tmp = 3;
-		break;
 	case 0x63:
 		tmp = 4;
-		break;
-	case 0x74:
-		tmp = 5;
 		break;
 	case 0x84:
 		tmp = 6;
 		break;
+	case 0x95:
+		tmp = 7;
+		break;
+	case 0xa6:
+		tmp = 8;
+		break;
+	case 0xb6:
+		tmp = 9;
+		break;
+	case 0xc6:
+		tmp = 0xa;
+		break;
+	case 0xe8:
+		tmp = 0xc;
+		break;
+	case 0x108:
+		tmp = 0xe;
+		break;
 	default:
 		out_error("the PHY don't support the WL(%d) or RL(%d)\n",
-			  params->WL,params->RL);
+				  params->WL,params->RL);
 		assert(1);
 	}
-	ddrp->mr2.lpddr2.RL_WL = tmp;
+
+	ddrp->mr2.lpddr3.RL_WL = tmp;
+	ddrp->mr2.lpddr3.WRE = 0;
+	ddrp->mr2.lpddr3.WL_S = 0;
+	ddrp->mr2.lpddr3.WR_L = 0;
 
 #ifdef CONFIG_DDR_DRIVER_STRENGTH
-	ddrp->mr3.lpddr2.DS = CONFIG_DDR_DRIVER_STRENGTH;
+	ddrp->mr3.lpddr3.DS = CONFIG_DDR_DRIVER_STRENGTH;
 #else
-	ddrp->mr3.lpddr2.DS = 2;
+	ddrp->mr3.lpddr3.DS = 2;
 	out_warn("Warnning: Please set ddr driver strength.");
 #endif
 
-	ddrp->ptr1.b.tDINIT0 = ps2cycle_ceil(200000 * 1000, 1); /* LPDDR2 default 200us*/
-	tmp = ps2cycle_ceil(100 * 1000, 1); /* LPDDR2 default 100 ns*/
+	ddrp->ptr1.b.tDINIT0 = ps2cycle_ceil(200000 * 1000, 1); /* LPDDR3 default 200us*/
+	tmp = ps2cycle_ceil(100 * 1000, 1); /* LPDDR3 default 100 ns*/
 	ddrp->ptr1.b.tDINIT1 = tmp;
 
-	ddrp->ptr2.b.tDINIT2 = ps2cycle_ceil(11000 * 1000, 1); /* LPDDR2 default 11 us*/
-	ddrp->ptr2.b.tDINIT3 = ps2cycle_ceil(1000 *1000, 1); /* LPDDR2 default 1 us*/
+	ddrp->ptr2.b.tDINIT2 = ps2cycle_ceil(11000 * 1000, 1); /* LPDDR3 default 11 us*/
+	ddrp->ptr2.b.tDINIT3 = ps2cycle_ceil(1000 *1000, 1); /* LPDDR3 default 1 us*/
 
 	/* DTPR0 registers */
-	ddrp->dtpr0.b.tMRD = 0; /* LPDDR2 no use, don't care */
-	DDRP_TIMING_SET(0,lpddr2_params,tRTP,3,2,6);
-	ddrp->dtpr0.b.tCCD = 0; /* LPDDR2 no use, don't care */
+	ddrp->dtpr0.b.tMRD = 0; /* LPDDR3 no use, don't care */
+	DDRP_TIMING_SET(0,lpddr3_params,tRTP,3,2,6);
+	ddrp->dtpr0.b.tCCD = 0; /* LPDDR3 no use, don't care */
 	/* DTPR1 registers */
 //	ddrp->dtpr1.b.tRTW = 1; /* add 1 tck for test */
-	DDRP_TIMING_SET(1,lpddr2_params,tDQSCK,3,0,7);
-	DDRP_TIMING_SET(1,lpddr2_params,tDQSCKMAX,3,1,7);
-	DDRP_TIMING_SET(1,lpddr2_params,tFAW,6,2,31);
+	DDRP_TIMING_SET(1,lpddr3_params,tDQSCK,3,0,7);
+	DDRP_TIMING_SET(1,lpddr3_params,tDQSCKMAX,3,1,7);
+	DDRP_TIMING_SET(1,lpddr3_params,tFAW,6,2,31);
 
 	/* DTPR2 registers */
 	tmp = ps2cycle_ceil(params->tXSR, 1);  // the controller is same.
@@ -229,9 +246,10 @@ static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params 
 	BETWEEN(tmp, 2, 1023);
 	ddrp->dtpr2.b.tXS = tmp;
 
-	DDRP_TIMING_SET(2,lpddr2_params,tXP,5,2,31);
+	DDRP_TIMING_SET(2,lpddr3_params,tXP,5,2,31);
 	tmp = MAX(ps2cycle_ceil(params->tCKESR,1),
-			  ps2cycle_ceil(params->tCKE,1));
+			  ps2cycle_ceil(params->tCKE,1)
+		);
 
 	BETWEEN(tmp, 2, 15);
 	ddrp->dtpr2.b.tCKE = tmp;
@@ -251,14 +269,14 @@ static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params 
 
 	ddrp->zqncr1 = (0xb << 4) | impedance->index;//7 - is odt impedance default.
 }
-static struct ddr_creator_ops lpddr2_creator_ops = {
-	.type = LPDDR2,
-	.fill_in_params = fill_in_params_lpddr2,
-	.ddrc_params_creator = ddrc_params_creator_lpddr2,
-	.ddrp_params_creator = ddrp_params_creator_lpddr2,
+static struct ddr_creator_ops lpddr3_creator_ops = {
+	.type = LPDDR3,
+	.fill_in_params = fill_in_params_lpddr3,
+	.ddrc_params_creator = ddrc_params_creator_lpddr3,
+	.ddrp_params_creator = ddrp_params_creator_lpddr3,
 
 };
 void ddr_creator_init(void)
 {
-	register_ddr_creator(&lpddr2_creator_ops);
+	register_ddr_creator(&lpddr3_creator_ops);
 }

@@ -11,6 +11,7 @@ static void fill_in_params_lpddr(struct ddr_params *ddr_params)
 static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	int tmp;
+	struct lpddr_params *params = &p->private_params.lpddr_params;
 
 	ddrc->timing3.b.tCKSRE = 0;
 	ddrc->timing1.b.tWL = 1;
@@ -20,7 +21,7 @@ static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *
 	ASSERT_MASK(tmp,6);
 	ddrc->timing1.b.tRTP = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.lpddr_params.tMRD,1) - 1;
+	tmp = ps2cycle_ceil(params->tMRD,1) - 1;
 	ASSERT_MASK(tmp,2);
 	ddrc->timing4.b.tMRD = tmp;
 
@@ -28,8 +29,7 @@ static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *
 	ASSERT_MASK(tmp,6);
 	ddrc->timing2.b.tCCD = tmp;
 
-	ddrc->timing1.b.tWTR =
-		ps2cycle_ceil(p->private_params.lpddr_params.tWTR + p->private_params.lpddr_params.tDQSSMAX,1) +
+	ddrc->timing1.b.tWTR = ps2cycle_ceil(params->tWTR + params->tDQSSMAX,1) +
 		p->bl / 2; // write to read for our controller
 	ASSERT_MASK(ddrc->timing1.b.tWTR,6);
 
@@ -49,12 +49,12 @@ static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *
 		out_error("DDR_tRL too small! check %s %d\n",__FILE__,__LINE__);
 	}
 
-	tmp = ps2cycle_ceil(p->private_params.lpddr_params.tXSR,4) / 4;
+	tmp = ps2cycle_ceil(params->tXSR,4) / 4;
 	ASSERT_MASK(tmp,8);
 	ddrc->timing6.b.tXSRD = tmp;
 	ddrc->timing6.b.tXSRD = 0x80;
 
-	tmp = ps2cycle_ceil(p->private_params.lpddr_params.tRFC,8) / 8 - 1;
+	tmp = ps2cycle_ceil(params->tRFC,8) / 8 - 1;
 	if(tmp < 0)
 		tmp = 0;
 
@@ -69,6 +69,7 @@ static void ddrp_params_creator_lpddr(struct ddrp_reg *ddrp, struct ddr_params *
 {
 	int tmp;
 	int  count = 0;
+	struct lpddr_params *params = &p->private_params.lpddr_params;
 
 	/* MRn registers */
 	tmp = p->cl;
@@ -107,14 +108,14 @@ static void ddrp_params_creator_lpddr(struct ddrp_reg *ddrp, struct ddr_params *
 	ddrp->dtpr1.b.tFAW = 18;
 
 	/* DTPR2 registers */
-	tmp = ps2cycle_ceil(p->private_params.lpddr_params.tXSR, 1);  // the controller is same.
+	tmp = ps2cycle_ceil(params->tXSR, 1);  // the controller is same.
 	ASSERT_MASK(tmp,10);
 	BETWEEN(tmp, 2, 1023);
 	ddrp->dtpr2.b.tXS = tmp;
 
 	DDRP_TIMING_SET(2,lpddr_params,tXP,5,2,31);
 
-	tmp = ps2cycle_ceil(p->private_params.lpddr_params.tCKE,1);
+	tmp = ps2cycle_ceil(params->tCKE,1);
 	BETWEEN(tmp, 2, 15);
 	ddrp->dtpr2.b.tCKE = tmp;
 
@@ -132,9 +133,8 @@ static struct ddr_creator_ops lpddr_creator_ops = {
 	.ddrc_params_creator = ddrc_timing_creator_lpddr,
 	.ddrp_params_creator = ddrp_params_creator_lpddr,
 };
-#ifdef CONFIG_DDR_TYPE_LPDDR
+
 void ddr_creator_init(void)
 {
 	register_ddr_creator(&lpddr_creator_ops);
 }
-#endif

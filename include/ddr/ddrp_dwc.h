@@ -92,6 +92,12 @@ typedef union ddrp_mr1 {
 		unsigned reserved8_31:24;
 	} lpddr2; /* MR1 */
 	struct {
+		unsigned BL:3;
+		unsigned RSVD13_4:2;
+		unsigned nWR:3;
+		unsigned reserved8_31:24;
+	} lpddr3; /* MR1 */
+	struct {
 		unsigned DE:1;
 		unsigned DIC:1;
 		unsigned RTT2:1;
@@ -136,6 +142,13 @@ typedef union ddrp_mr2 {
 		unsigned reserved8_31:24;
 	} lpddr2; /* MR2 */
 	struct {
+		unsigned RL_WL:4;
+		unsigned WRE:1;
+		unsigned WL_S:1;
+		unsigned WR_L:1;
+		unsigned reserved8_31:24;
+	} lpddr3; /* MR2 */
+	struct {
 		unsigned unsupported:31;
 	} ddr2; /* EMR2 */
 } ddrp_mr2_t;
@@ -155,6 +168,11 @@ typedef union ddrp_mr3 {
 		unsigned RSVD4_7:4;
 		unsigned reserved8_31:24;
 	} lpddr2; /* MR2 */
+	struct {
+		unsigned DS:4;
+		unsigned RSVD4_7:4;
+		unsigned reserved8_31:24;
+	} lpddr3; /* MR2 */
 	struct {
 		unsigned unsupported:31;
 	} ddr2; /* EMR3 */

@@ -28,13 +28,14 @@ static void fill_in_params_ddr2(struct ddr_params *ddr_params)
 static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	unsigned int tmp;
+	struct ddr2_params *params = &p->private_params.ddr2_params;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr2_params.tRTP,1);
+	tmp = ps2cycle_ceil(params->tRTP,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing1.b.tRTP = tmp;
 
 	ddrc->timing1.b.tWTR = p->cl + p->bl / 2 +
-		ps2cycle_ceil(p->private_params.ddr2_params.tWTR,1) - 1;// write to read for our controller
+		ps2cycle_ceil(params->tWTR,1) - 1;// write to read for our controller
 	ASSERT_MASK(ddrc->timing1.b.tWTR,6);
 
 	if(p->bl == 4)
@@ -59,29 +60,29 @@ static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p
 		assert(1);
 	}
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tCCD,1);
+	tmp = ps2cycle_ceil(params->tCCD,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing2.b.tCCD = tmp;
 
 	ddrc->timing3.b.tCKSRE = 0;
-	tmp = ps2cycle_ceil(p->private_params.ddr2_params.tMRD,1) - 1;
+	tmp = ps2cycle_ceil(params->tMRD,1) - 1;
 	ASSERT_MASK(tmp,2);
 	ddrc->timing4.b.tMRD = tmp;
 
-	tmp = MAX(ps2cycle_ceil(p->private_params.ddr2_params.tXSNR,4),
-		ps2cycle_ceil(p->private_params.ddr2_params.tXSRD,4));
+	tmp = MAX(ps2cycle_ceil(params->tXSNR,4),
+			  ps2cycle_ceil(params->tXSRD,4));
 
 	tmp = tmp / 4;
 	ASSERT_MASK(tmp,8);
 	ddrc->timing6.b.tXSRD = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr2_params.tCKESR,8) / 8 - 1 ;
+	tmp = ps2cycle_ceil(params->tCKESR,8) / 8 - 1 ;
 	if(tmp < 0)
 		tmp = 0;
 	ASSERT_MASK(tmp,4);
 	ddrc->timing4.b.tMINSR = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr2_params.tFAW,1);
+	tmp = ps2cycle_ceil(params->tFAW,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing6.b.tFAW = tmp;
 }
@@ -90,6 +91,8 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	unsigned int tmp = 0;
 	struct ddr_out_impedance *impedance;
 	struct ddr_out_impedance *odt_impedance;
+	struct ddr2_params *params = &p->private_params.ddr2_params;
+
 	/* MRn registers */
 	if(p->bl == 4)
 		ddrp->mr0.ddr2.BL = 2;
@@ -106,7 +109,7 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 		assert(1);
 	}
 
-	tmp = ps2cycle_ceil(p->private_params.ddr2_params.tWR, 1);
+	tmp = ps2cycle_ceil(params->tWR, 1);
 	BETWEEN(tmp,2,8);  // debug, BETWEEN(tmp,2,6)
 	ddrp->mr0.ddr2.WR = tmp - 1;
 
@@ -124,17 +127,17 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	ddrp->ptr1.b.tDINIT1 = ps2cycle_ceil(400 * 1000, 1); /* DDR2 default 400ns*/
 
 	/* DTPR0 registers */
-	tmp = ps2cycle_ceil(p->private_params.ddr2_params.tMRD,1);
+	tmp = ps2cycle_ceil(params->tMRD,1);
 	if(!((tmp == 2) || (tmp == 3))){
 		out_error("DDR2_tMRD(%d) error, tMRD is only 2 or 3 for DDR2. check %s,%d\n",
-			  p->private_params.ddr2_params.tMRD,__FILE__,__LINE__);
+				  params->tMRD,__FILE__,__LINE__);
 		assert(1);
 	}
 	ddrp->dtpr0.b.tMRD = tmp;
 
 	/* AL = 0,other's cann't support by controller. */
 	tmp = p->bl / 2 +
-		MAX(ps2cycle_ceil(p->private_params.ddr2_params.tRTP,1),2) - 2;
+		MAX(ps2cycle_ceil(params->tRTP,1),2) - 2;
 	BETWEEN(tmp,2,6);
 	ddrp->dtpr0.b.tRTP = tmp;
 	ddrp->dtpr0.b.tCCD = 0;
@@ -145,27 +148,19 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	DDRP_TIMING_SET(1,ddr2_params,tFAW,6,2,31);
 
 	/* DTPR2 registers */
-	tmp = MAX(
-		ps2cycle_ceil(p->private_params.ddr2_params.tXSNR,1),
-		ps2cycle_ceil(p->private_params.ddr2_params.tXSRD,1));
+	tmp = MAX(ps2cycle_ceil(params->tXSNR,1),
+			  ps2cycle_ceil(params->tXSRD,1));
 	BETWEEN(tmp,2,1023);
 	ddrp->dtpr2.b.tXS = tmp;
 
-	tmp = MAX(
-		ps2cycle_ceil(p->private_params.ddr2_params.tXP,1),
-		ps2cycle_ceil(p->private_params.ddr2_params.tXARD,1)
-		);
-	tmp = MAX(
-		tmp,
-		ps2cycle_ceil(p->private_params.ddr2_params.tXARDS,1)
-		);
+	tmp = MAX(ps2cycle_ceil(params->tXP,1),
+			  ps2cycle_ceil(params->tXARD,1));
+	tmp = MAX(tmp, ps2cycle_ceil(params->tXARDS,1));
 	BETWEEN(tmp, 2, 31);
 	ddrp->dtpr2.b.tXP = tmp;
 
-	tmp = MAX(
-		ps2cycle_ceil(p->private_params.ddr2_params.tCKESR,1),
-		ps2cycle_ceil(p->private_params.ddr2_params.tCKE,1)
-		);
+	tmp = MAX(ps2cycle_ceil(params->tCKESR,1),
+			  ps2cycle_ceil(params->tCKE,1));
 
 	BETWEEN(tmp, 2, 15);
 	ddrp->dtpr2.b.tCKE = tmp;
@@ -192,9 +187,8 @@ static struct ddr_creator_ops ddr2_creator_ops = {
 	.ddrp_params_creator = ddrp_params_creator_ddr2,
 
 };
-#ifdef CONFIG_DDR_TYPE_DDR2
+
 void ddr_creator_init(void)
 {
 	register_ddr_creator(&ddr2_creator_ops);
 }
-#endif

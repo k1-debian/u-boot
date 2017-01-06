@@ -27,6 +27,7 @@ enum ddr_type{
 	DDR3,
 	LPDDR,
 	LPDDR2,
+	LPDDR3,
 	DDR2,
 	VARIABLE,
 	UNKOWN,
@@ -81,6 +82,18 @@ struct ddr2_params {
 	uint32_t tMRD;
 };
 
+struct lpddr3_params {
+	ddr_common_params;
+	uint32_t tCKESR;
+	uint32_t tXSR;
+	uint32_t tMOD;
+	uint32_t tDQSCK;
+	uint32_t tDQSCKMAX;
+	uint32_t tRTP;
+	uint32_t tCCD;
+	uint32_t tFAW;
+};
+
 struct lpddr2_params {
 	ddr_common_params;
 	uint32_t tCKESR;
@@ -92,6 +105,7 @@ struct lpddr2_params {
 	uint32_t tCCD;
 	uint32_t tFAW;
 };
+
 struct lpddr_params {
 	ddr_common_params;
 	uint32_t tMRD;
@@ -109,6 +123,7 @@ union private_params {
 	struct ddr3_params ddr3_params;
 	struct lpddr_params lpddr_params;
 	struct lpddr2_params lpddr2_params;
+	struct lpddr3_params lpddr3_params;
 	struct ddr2_params  ddr2_params;
 };
 

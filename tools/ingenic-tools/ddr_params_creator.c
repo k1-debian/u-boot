@@ -231,6 +231,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 		_CASE(DDR3, 6);		/* DDR3:0b110 */
 		_CASE(LPDDR, 3);	/* LPDDR:0b011 */
 		_CASE(LPDDR2, 5);	/* LPDDR2:0b101 */
+		_CASE(LPDDR3, 5);	/* LPDDR3:0b111 current ddr control support LPDDR2 */
 		_CASE(DDR2, 4);	    /* DDR2:0b100 */
 #undef _CASE
 	default:
@@ -287,10 +288,11 @@ static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_pa
 		case D:				\
 			tmp = P;		\
 			break
-		_CASE(DDR3, 3);		/* DDR3:0b110 */
-		_CASE(LPDDR, 0);	/* LPDDR:0b011 */
-		_CASE(LPDDR2, 4);	/* LPDDR2:0b101 */
-		_CASE(DDR2, 2);	    /* DDR2:0b100 */
+		_CASE(DDR3, 3);		/* DDR3:0b011 */
+		_CASE(LPDDR, 0);	/* LPDDR:0b000 */
+		_CASE(LPDDR2, 4);	/* LPDDR2:0b100 */
+		_CASE(LPDDR3, 4);	/* LPDDR2:0b010 */
+		_CASE(DDR2, 2);	    /* DDR2:0b010 */
 #undef _CASE
 	default:
 		break;

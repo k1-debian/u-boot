@@ -51,6 +51,10 @@
 #include "./chips/MCP_SAMSUNG_KMN5X000ZM_LPDDR2.h"
 #endif
 
+#ifdef CONFIG_MCP_H9CKNNN8GTMPLR_NUH_LPDDR3
+#include "./chips/MCP_H9CKNNN8GTMPLR_NUH_LPDDR3.h"
+#endif
+
 #ifdef CONFIG_DDR2_PWE809416BBR_E7DN
 #include "./chips/DDR2_PWE809416BBR-E7DN.h"
 #endif

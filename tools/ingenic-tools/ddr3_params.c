@@ -32,65 +32,61 @@ static void fill_in_params_ddr3(struct ddr_params *ddr_params)
 static void ddrc_params_creator_ddr3(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	int tmp;
+	struct ddr3_params *params = &p->private_params.ddr3_params;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tRTP,1);
+	tmp = ps2cycle_ceil(params->tRTP,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing1.b.tRTP = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tCCD,1);
+	tmp = ps2cycle_ceil(params->tCCD,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing2.b.tCCD = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tCKSRE,8) / 8;
+	tmp = ps2cycle_ceil(params->tCKSRE,8) / 8;
 	ASSERT_MASK(tmp,3);
 	ddrc->timing3.b.tCKSRE = tmp;
 
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tMRD,1) - 1;
+	tmp = ps2cycle_ceil(params->tMRD,1) - 1;
 	ASSERT_MASK(tmp,2);
 	ddrc->timing4.b.tMRD = tmp;
 
-	ddrc->timing1.b.tWTR =
-		ps2cycle_ceil(p->private_params.ddr3_params.WL,1) +
-		+ p->bl / 2 + ps2cycle_ceil(p->private_params.ddr3_params.tWTR,1); // write to read for our controller
+	ddrc->timing1.b.tWTR = ps2cycle_ceil(params->WL,1) +
+		+ p->bl / 2 + ps2cycle_ceil(params->tWTR,1); // write to read for our controller
 	ASSERT_MASK(ddrc->timing1.b.tWTR,6);
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.RL +
-			    p->private_params.ddr3_params.tCCD -
-			    p->private_params.ddr3_params.WL,1) + 2;
-
+	tmp = ps2cycle_ceil(params->RL + params->tCCD - params->WL,1) + 2;
 	ASSERT_MASK(tmp,6);
 	ddrc->timing5.b.tRTW = tmp;
 
 	ddrc->timing5.b.tWDLAT = ddrc->timing1.b.tWL - 1;
 	ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 2;
 
-	tmp = MAX(ps2cycle_ceil(p->private_params.ddr3_params.tXS,4),
-		ps2cycle_ceil(p->private_params.ddr3_params.tXSDLL,4));
+	tmp = MAX(ps2cycle_ceil(params->tXS,4),
+		ps2cycle_ceil(params->tXSDLL,4));
 	tmp = MAX(tmp,
-		ps2cycle_ceil(p->private_params.ddr3_params.tXPDLL,4));
+		ps2cycle_ceil(params->tXPDLL,4));
 	tmp = tmp / 4;
 	ASSERT_MASK(tmp,8);
 	ddrc->timing6.b.tXSRD = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tCKESR,8) / 8 - 1 ;
+	tmp = ps2cycle_ceil(params->tCKESR,8) / 8 - 1 ;
 	if(tmp < 0)
 		tmp = 0;
 	ASSERT_MASK(tmp,4);
 	ddrc->timing4.b.tMINSR = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tFAW,1);
+	tmp = ps2cycle_ceil(params->tFAW,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing6.b.tFAW = tmp;
-
 }
-
 
 static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp = 0;
 	struct ddr_out_impedance *impedance;
 	struct ddr_out_impedance *odt_impedance;
+	struct ddr3_params *params = &p->private_params.ddr3_params;
 
 	/* MRn registers */
 	/* BL: 1 is on the fly,???? */
@@ -107,7 +103,7 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 	BETWEEN(p->cl,5,11);
 	ddrp->mr0.ddr3.CL_4_6 = p->cl - 4;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tWR, 1);
+	tmp = ps2cycle_ceil(params->tWR, 1);
 	switch(tmp)
 	{
 	case 5 ... 8:
@@ -118,7 +114,7 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 		break;
 	default:
 		out_error("tWR(%d) is error, valid value is between from 5 to 12.\n",
-		       p->private_params.ddr3_params.tWR);
+		       params->tWR);
 		assert(1);
 	}
 
@@ -177,9 +173,7 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 
 	ddrp->ptr1.b.tDINIT0 = ps2cycle_ceil(500*1000*1000, 1); /* DDR3 default 500us*/
 
-	tmp = MAX(
-		ps2cycle_ceil(p->private_params.ddr3_params.tRFC + 10*1000,1),  /* tRFC + 10ns */
-		5);
+	tmp = MAX(ps2cycle_ceil(params->tRFC + 10*1000,1),5);  /* tRFC + 10ns */
 	ASSERT_MASK(tmp,8);
 	ddrp->ptr1.b.tDINIT1 = tmp;
 
@@ -189,13 +183,13 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 
 	/* DTPR_COMMON_SETTING(ddr3_params); */
 /* DTPR0 registers */
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tMRD,1);
+	tmp = ps2cycle_ceil(params->tMRD,1);
 	BETWEEN(tmp,4,7);
 	ddrp->dtpr0.b.tMRD = tmp - 4;
 
 	DDRP_TIMING_SET(0,ddr3_params,tRTP,3,2,6);
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tCCD,1);
+	tmp = ps2cycle_ceil(params->tCCD,1);
 	ASSERT_MASK(tmp - 4, 1);
 	BETWEEN(tmp,4,5);
 	ddrp->dtpr0.b.tCCD = tmp - 4;
@@ -203,7 +197,7 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 	DDRP_TIMING_SET(1,ddr3_params,tFAW,6,2,31);
 
 /* DTPR1 registers */
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tMOD,1);
+	tmp = ps2cycle_ceil(params->tMOD,1);
 	BETWEEN(tmp,12,15);
 	ddrp->dtpr1.b.tMOD = tmp - 12;
 	DDRP_TIMING_SET(1,ddr3_params,tRFC,8,0,255);
@@ -213,26 +207,22 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 #endif
 
 /* DTPR2 registers */
-	tmp = MAX(
-		ps2cycle_ceil(p->private_params.ddr3_params.tXSDLL,1),
-		ps2cycle_ceil(p->private_params.ddr3_params.tXS,1)
-		);
+	tmp = MAX(ps2cycle_ceil(params->tXSDLL,1),
+			  ps2cycle_ceil(params->tXS,1));
 	BETWEEN(tmp, 2, 1023);
 	ddrp->dtpr2.b.tXS = tmp;
 
-	tmp = MAX(
-		ps2cycle_ceil(p->private_params.ddr3_params.tXPDLL,1),
-		ps2cycle_ceil(p->private_params.ddr3_params.tXP,1)
-		);
+	tmp = MAX(ps2cycle_ceil(params->tXPDLL,1),
+			  ps2cycle_ceil(params->tXP,1));
 	BETWEEN(tmp, 2, 31);
 	ddrp->dtpr2.b.tXP = tmp;
 
-	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tCKESR,1);
-	if(tmp < ps2cycle_ceil(p->private_params.ddr3_params.tCKE,1))
+	tmp = ps2cycle_ceil(params->tCKESR,1);
+	if(tmp < ps2cycle_ceil(params->tCKE,1))
 	{
 		out_error("tCKESR(%d) should be great or equal tCKE (%d).\n",
-		       p->private_params.ddr3_params.tCKESR,
-		       p->private_params.ddr3_params.tCKE);
+		       params->tCKESR,
+		       params->tCKE);
 		assert(1);
 	}
 	BETWEEN(tmp, 2, 15);
@@ -259,9 +249,8 @@ static struct ddr_creator_ops ddr3_creator_ops = {
 	.ddrp_params_creator = ddrp_params_creator_ddr3,
 
 };
-#ifdef CONFIG_DDR_TYPE_DDR3
+
 void ddr_creator_init(void)
 {
 	register_ddr_creator(&ddr3_creator_ops);
 }
-#endif

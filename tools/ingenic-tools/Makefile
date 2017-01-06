@@ -47,6 +47,7 @@ TOOLS	:= $(addprefix $(obj),$(TOOLS))
 
 ifndef CONFIG_BURNER
 DDR-TYPE-y = ddr_params_creator.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR3) += lpddr3_params.o
 DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR2) += lpddr2_params.o
 DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR) += lpddr_params.o
 DDR-TYPE-$(CONFIG_DDR_TYPE_DDR2) += ddr2_params.o
