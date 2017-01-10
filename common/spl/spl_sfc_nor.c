@@ -174,6 +174,7 @@ static void sfc_set_quad_mode(void)
 			sfc_send_cmd(&sfc);
 			sfc_data_ops(&tmp, 1, read_fifo_data);
 		}
+#if 0
 		sfc.cmd = cmd[2];
 		sfc.len = quad_mode->WD_DATE_SIZE;
 		sfc.daten = 1;
@@ -186,6 +187,7 @@ static void sfc_set_quad_mode(void)
 			sfc_send_cmd(&sfc);
 			sfc_data_ops(&buf, 1, read_fifo_data);
 		}
+#endif
 		quad_mode_is_set = 1;
 		/* printf("set quad mode is enable.the buf = %x\n",buf); */
 	} else {
