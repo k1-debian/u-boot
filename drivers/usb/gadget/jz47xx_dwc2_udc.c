@@ -851,18 +851,31 @@ static void udc_fetch_data_packet(struct dwc2_ep *dep, int flush_fifo)
 		dat = udc_read_reg(EP_FIFO(epnum));
 		//printf("%x,",dat);
 		if (!flush_fifo || request) {
-			if (request->xfersize > 0) {
+			if (request->xfersize == 1){
+				*((u8 *)(request->req.buf + request->req.actual + 0)) = dat & 0xff;
+			}
+			else if (request->xfersize == 2){
+				*((u8 *)(request->req.buf + request->req.actual + 0)) = dat & 0xff;
+				*((u8 *)(request->req.buf + request->req.actual + 1)) = (dat >> 8) & 0xff;
+			}
+			else if (request->xfersize == 3){
+				*((u8 *)(request->req.buf + request->req.actual + 0)) = dat & 0xff;
+				*((u8 *)(request->req.buf + request->req.actual + 1)) = (dat >> 8) & 0xff;
+				*((u8 *)(request->req.buf + request->req.actual + 2)) = (dat >> 16) & 0xff;
+			}
+			else if (request->xfersize >= 4) {
 				*((u8 *)(request->req.buf + request->req.actual + 0)) = dat & 0xff;
 				*((u8 *)(request->req.buf + request->req.actual + 1)) = (dat >> 8) & 0xff;
 				*((u8 *)(request->req.buf + request->req.actual + 2)) = (dat >> 16) & 0xff;
 				*((u8 *)(request->req.buf + request->req.actual + 3)) = (dat >> 24) & 0xff;
-				if (request->xfersize >= 4) {
-					request->xfersize -= 4;
-					request->req.actual += 4;
-				} else {
-					request->req.actual += request->xfersize;
-					request->xfersize = 0;
-				}
+			}
+
+			if (request->xfersize >= 4) {
+				request->xfersize -= 4;
+				request->req.actual += 4;
+			} else {
+				request->req.actual += request->xfersize;
+				request->xfersize = 0;
 			}
 		}
 	}

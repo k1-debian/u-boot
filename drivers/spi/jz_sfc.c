@@ -1086,13 +1086,13 @@ static void write_norflash_params_to_spl(unsigned int addr)
 	memcpy(addr+CONFIG_SPIFLASH_PART_OFFSET,&pdata,sizeof(struct nor_sharing_params));
 }
 
-unsigned int get_partition_index(u32 offset, int *pt_offset, int *pt_size)
+unsigned int get_partition_index(u32 offset,u32 length, int *pt_offset, int *pt_size)
 {
 	int i;
 
 	for(i = 0; i < pdata.norflash_partitions.num_partition_info; i++){
 		if(offset >= pdata.norflash_partitions.nor_partition[i].offset && \
-				offset < (pdata.norflash_partitions.nor_partition[i].offset + \
+				(offset + length) <= (pdata.norflash_partitions.nor_partition[i].offset + \
 				pdata.norflash_partitions.nor_partition[i].size)){
 			*pt_offset = pdata.norflash_partitions.nor_partition[i].offset;
 			*pt_size = pdata.norflash_partitions.nor_partition[i].size;
@@ -1101,13 +1101,14 @@ unsigned int get_partition_index(u32 offset, int *pt_offset, int *pt_size)
 				offset < (pdata.norflash_params.chipsize) && \
 				(pdata.norflash_partitions.nor_partition[i].size == 0xffffffff)){ /*size == -1*/
 			*pt_offset = pdata.norflash_partitions.nor_partition[i].offset;
-			*pt_size = pdata.norflash_params.chipsize -  pdata.norflash_partitions.nor_partition[i].offset;
+			*pt_size = pdata.norflash_params.chipsize - pdata.norflash_partitions.nor_partition[i].offset;
 			break;
 		}
 	}
 	if(i == pdata.norflash_partitions.num_partition_info){
 		*pt_offset = -1;
 		*pt_size = -1;
+		printf("partition size not align with write transfer size \n");
 		return -1;
 	}
 	return i;

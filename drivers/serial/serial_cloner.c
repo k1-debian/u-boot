@@ -117,7 +117,7 @@ extern union cmd {
 	}update;
 
 	struct write {
-		uint64_t partation;
+		uint64_t partition;
 		uint32_t ops;
 		uint32_t offset;
 		uint32_t length;
@@ -125,7 +125,7 @@ extern union cmd {
 	}write;
 
 	struct read {
-		uint64_t partation;
+		uint64_t partition;
 		uint32_t ops;
 		uint32_t offset;
 		uint32_t length;
@@ -515,12 +515,12 @@ static int efuse_program_serial(struct serial_cloner *serial_cloner)
 		efuse_init(serial_cloner->args->efuse_gpio);
 		enabled = 1;
 	}
-	u32 partation = atoi(ptemp[4]);
+	u32 partition = atoi(ptemp[4]);
 	u32 length = atoi(ptemp[8]);
 	void *addr = (void *)data_addr;
 	u32 r = 0;
 
-	if (r = efuse_write(addr, length, partation)) {
+	if (r = efuse_write(addr, length, partition)) {
 		printf("efuse write error\n");
 		return r;
 	}

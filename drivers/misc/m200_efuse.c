@@ -7,6 +7,7 @@
 #include <asm/errno.h>
 #include <asm/arch/base.h>
 #include <asm/arch/clk.h>
+#include <efuse.h>
 //#include <asm/arch/sc_rom.h>
 
 //#define EFU_NO_REG_OPS
@@ -18,7 +19,7 @@
 #define readl(addr)	0
 #endif
 
-static int efuse_debug = 0;
+static int efuse_debug = 1;
 static int efuse_gpio = -1;
 
 #define EFUCTRL		0x00
@@ -59,6 +60,23 @@ static int efuse_gpio = -1;
 #define WR_ADJ_10TIME	65
 #define WR_WR_STROBE_1TIME	10000
 #define WR_WR_STROBE_1TIME_MAX	11000
+
+static inline unsigned int max_integral_multiple(unsigned int val, unsigned int base)
+{
+	unsigned int max_int;
+	max_int = val / base;
+	max_int += val % base ? 1 : 0;
+	return max_int;
+}
+static uint32_t efuse_readl(uint32_t reg_off)
+{
+	return readl(EFUSE_BASE + reg_off);
+}
+
+static void efuse_writel(uint32_t val, uint32_t reg_off)
+{
+	writel(val, EFUSE_BASE + reg_off);
+}
 
 int adjust_efuse(int is_wirte)
 {
@@ -127,71 +145,6 @@ void reduce_vddq(int gpio)
 	} while (!val);
 }
 
-int efuse_read_data(void *buf, int length, off_t offset)
-{
-	int i = 0, ret = 0;
-	int len = length;
-	int xlen = 0;
-	int off = offset;
-	char *tmp_buf = NULL;
-	int32_t *ptmp_buf = NULL;
-	char * pbuf =buf;
-	uint32_t tmp_reg = 0;
-
-	debug_cond(efuse_debug, "efuse read length %d from offset 0x%x\n",length,(int)offset);
-	/*step 1 : Set config register*/
-	ret = adjust_efuse(0);
-	if (ret)
-		return ret;
-
-	if (efuse_gpio >= 0)
-		reduce_vddq(efuse_gpio);
-
-	tmp_buf = malloc((len+3/4)* sizeof(int32_t));
-	if (!tmp_buf)
-		return -ENOMEM;
-	memset(tmp_buf , 0 , (len+3/4) * sizeof(int32_t));
-	ptmp_buf = (int32_t *)tmp_buf;
-
-	while (len > 0) {
-		writel(0,(EFUSE_BASE+EFUSTATE));
-		/*step 2 : Set control register to indicate what to read data address, read data numbers and read enable.*/
-		xlen  = len > (EFUDATA_REG_NUM * 4) ? EFUDATA_REG_NUM * 4 : len;
-		tmp_reg = (off&0x1ff)<<21| (xlen - 1) << 16|(1 << 0);
-		debug_cond(efuse_debug,"EFUCTRL(0x%x):0x%x\n",(EFUSE_BASE+EFUCTRL),tmp_reg);
-		writel(tmp_reg ,(EFUSE_BASE+EFUCTRL));
-		off += xlen;
-		len -= xlen;
-		/*step 3 : Wait status register RD_DONE set to 1 or EFUSE interrupted*/
-#ifndef EFU_NO_REG_OPS
-		while(!(readl((EFUSE_BASE+EFUSTATE))&(1 << 0))) {
-			debug_cond(efuse_debug, "EFUSTATE %x\n",readl(EFUSE_BASE+EFUSTATE));
-		}
-#endif
-		/*step 4 : Software read EFUSE data buffer 0 ? 8 registers*/
-		for (i = 0 ; i < (xlen + 3)/4 ; i++) {
-			*ptmp_buf =  readl((EFUSE_BASE+EFUDATA(i)));
-			debug_cond(efuse_debug,"EFUDATA[0x%x]:0x%x\n",(EFUSE_BASE+EFUDATA(i)),
-					*ptmp_buf);
-			ptmp_buf++;
-		}
-	}
-
-	for (i = 0 ; i < length ; i++)
-		pbuf[i] = tmp_buf[i];
-
-	if (efuse_debug) {
-		int i = 0;
-		printf("====read data infomation====\n");
-		for (i = 0; i < length; i++) {
-			printf("0x%03x:0x%02x\n", i, pbuf[i]);
-		}
-		printf("============================\n");
-	}
-
-	return ret;
-}
-
 int efuse_read_sc_key(unsigned int offset)
 {
 	int start = offset + EFU_ROM_BASE;
@@ -218,92 +171,155 @@ out:
 	return ret;
 }
 
-#define EFUSE_CHECK
-#define EFUSE_W_TIMEOUT	(100*800)
-int efuse_write_data(void *buf, int length, off_t offset)
+static int efuse_read_data(void *buf, int length, uint32_t start_addr)
 {
-	int i = 0, ret = 0;
+	int i = 0;
 	char *tmp_buf = NULL;
 	int32_t *ptmp_buf = NULL;
-	char *pbuf = buf;
-	int off = offset;
-	int xlen = 0;
-	int len = length;
-	uint32_t tmp_reg = 0;
+	char * pbuf =buf;
+	uint32_t data_length = length - 1;
+	uint32_t word_num,val;
+	unsigned int addr = start_addr - EFU_ROM_BASE;
+
+	debug_cond(efuse_debug, "efuse read length %d from offset 0x%x\n",length, start_addr);
+
+	if (efuse_gpio >= 0)
+		reduce_vddq(efuse_gpio);
+
+	word_num = max_integral_multiple(length, 4);
+
+	tmp_buf = malloc(word_num * sizeof(int32_t));
+	if (!tmp_buf)
+		return -ENOMEM;
+	memset(tmp_buf , 0 , word_num * sizeof(int32_t));
+	ptmp_buf = (int32_t *)tmp_buf;
+
+	/* clear read done staus */
+	efuse_writel(0, EFUSTATE);
+
+	val = addr << 21 | data_length << 16;
+	efuse_writel(val, EFUCTRL);
+	/* enable read */
+	val = efuse_readl(EFUCTRL);
+	val |= 1;
+	efuse_writel(val, EFUCTRL);
+		printf("ctl == %x\n",efuse_readl(EFUCTRL));
+	/* wait read done status */
+	while(!(efuse_readl(EFUSTATE) & 1));
+		printf("state == %x\n",efuse_readl(EFUSTATE));
+	for(i = 0; i < word_num; i ++) {
+		val = efuse_readl(EFUDATA(i));
+		debug_cond(efuse_debug,"EFUDATA[0x%x]:0x%08x\n",(EFUSE_BASE+EFUDATA(i)),
+			   val);
+		*(ptmp_buf + i) = val;
+	}
+
+	/* clear read done staus */
+	efuse_writel(0, EFUSTATE);
+
+	for (i = 0 ; i < length; i++) {
+		pbuf[i] = tmp_buf[i];
+		/* printf("0x%02x, 0x%02x\n", pbuf[i],tmp_buf[i]); */
+	}
+	if (efuse_debug) {
+		int i = 0;
+		printf("====read data infomation====\n");
+		for (i = 0; i < word_num; i++) {
+			printf("0x%03x:0x%08x\n", i, *((int32_t *)pbuf + i));
+		}
+		printf("============================\n");
+	}
+
+	free(tmp_buf);
+	return word_num;
+}
+
+#define EFUSE_CHECK
+#define EFUSE_W_TIMEOUT	(100*800)
+
+/**
+* @brief write data to efuse at offset, with data length.
+*
+* @param buf			stores hex value.
+* @param start_addr
+* @param length
+*
+* @return
+*/
+static int efuse_write_data(void *buf, int length, uint32_t start_addr)
+{
+	int i = 0, ret = 0;
+	unsigned int * pbuf = buf;
+	uint32_t data_length = length - 1;
+	unsigned long long tmp_data;
+	uint32_t word_num, val;
+	unsigned int addr = start_addr - EFU_ROM_BASE;
 	int timeout = EFUSE_W_TIMEOUT;		//vddq high is less than 1 sec
+
+	printf("write data to start_addr: %x, length: %d\n", start_addr, length);
 
 	if  (efuse_gpio < 0) {
 		error("efuse gpio is not init");
-		ret = -ENODEV;
+		return -ENODEV;
+	}
+
+	word_num = max_integral_multiple(length, 4);
+
+	for (i = 0; i < word_num; i++) {
+		printf("0x%08x\n", pbuf[i]);
+	}
+
+
+	if(word_num > 8) {
+		printf("strongly recommend operate each segment separately\n");
+	} else {
+		for(i = 0; i < word_num; i++) {
+			val = pbuf[i];
+			debug_cond(efuse_debug,"====write data to register====\n");
+			debug_cond(efuse_debug,"%d(0x%x):0x%x\n",i,(EFUSE_BASE+EFUDATA(i)),val);
+			printf("%d(0x%x):0x%08x\n",i,(EFUSE_BASE+EFUDATA(i)),val);
+			efuse_writel(val, EFUDATA(i));
+		}
+	}
+
+
+
+	/*
+	 * set write Programming address and data length
+	 */
+	val = 0;
+	val = addr  << 21 | data_length << 16 | 1 << 15;
+	efuse_writel(val, EFUCTRL);
+	/* Connect VDDQ pin from 2.5V */
+	boost_vddq(efuse_gpio);
+	/*
+	 * Programming EFUSE enable
+	 */
+	val = efuse_readl(EFUCTRL);
+	val |= 1 << 15;
+	efuse_writel(val, EFUCTRL);
+	/* enable write */
+	val = efuse_readl(EFUCTRL);
+	val |= 2;
+	efuse_writel(val, EFUCTRL);
+		printf("ctl == %x\n",efuse_readl(EFUCTRL));
+	/* wait write done status */
+	while(!(efuse_readl(EFUSTATE) & 0x2) &&  --timeout);
+
+		printf("state == %x\n",efuse_readl(EFUSTATE));
+	/* Disconnect VDDQ pin from 2.5V. */
+	reduce_vddq(efuse_gpio);
+	efuse_writel(0, EFUCTRL);
+	if(!timeout) {
+		error("write efuse failed");
+		ret = -EFAULT;
 		goto out;
 	}
-	/*step 1 : Set config register*/
-	ret = adjust_efuse(1);
-	if (ret) goto out;
 
-	tmp_buf = (char *)malloc(len + sizeof(int32_t));
-	if (!tmp_buf)
-		return  -ENOMEM;
-	memset(tmp_buf, 0, len + sizeof(int32_t));
-	ptmp_buf = (int32_t *)tmp_buf;
-
-	for (i = 0; i < length; i++)
-		tmp_buf[i] = pbuf[i];
-
-	while (len > 0 && timeout) {
-		timeout = EFUSE_W_TIMEOUT;
-		writel(0, (EFUSE_BASE+EFUSTATE));
-		/*step 2 : Write want program data to EFUSE data buffer 0-7 registers*/	//FIXME
-		debug_cond(efuse_debug, "off = %x\n",(int)off);
-		xlen = len > EFUDATA_REG_NUM * 4 ? EFUDATA_REG_NUM * 4 : len;
-		for (i = 0; i < (xlen + 3)/4 ; i++ ,ptmp_buf++) {
-			if (i == 0)
-				debug_cond(efuse_debug,"====write data to register====\n");
-			debug_cond(efuse_debug,"%d(0x%x):0x%x\n",i,(EFUSE_BASE+EFUDATA(i)),*ptmp_buf);
-			writel(*ptmp_buf ,(EFUSE_BASE+EFUDATA(i)));
-		}
-		/*step 3: Set control register, indicate want to program address, data length*/
-		/*step 4: Write control register PG_EN bit to 1*/
-		tmp_reg = ((off&0x1ff)<<21)|((xlen-1)<<16)|(1<<15);
-		writel(tmp_reg,(EFUSE_BASE+EFUCTRL));
-		len -= xlen;
-		off += xlen;
-		/*step 5: Connect VDDQ pin to 2.5V*/
-		boost_vddq(efuse_gpio);
-		/*step 6: Write control register WR_EN bit*/
-		tmp_reg = readl((EFUSE_BASE+EFUCTRL));
-		tmp_reg |= (1 << 1);
-		debug_cond(efuse_debug,"EFUCTRL(0x%x):0x%x\n",(EFUSE_BASE+EFUCTRL),tmp_reg);
-		writel(tmp_reg ,(EFUSE_BASE+EFUCTRL));
-		/*step 7:Wait status register WR_DONE set to 1.*/
-		while(!(readl((EFUSE_BASE+EFUSTATE))&(1 << 1)) && --timeout) {
-			debug_cond(efuse_debug, "EFUSTATE %x\n",readl(EFUSE_BASE+EFUSTATE));
-			udelay(10);
-		}
-		/*step 8:Disconnect VDDQ pin from 2.5V.*/
-		reduce_vddq(efuse_gpio);
-		/*step 9:Write control register PG_EN bit to 0.*/
-		writel(0,(EFUSE_BASE+EFUCTRL));
-	}
-#ifdef EFUSE_CHECK
-	timeout = 0;
-#endif
-	if (!timeout) {
-		ptmp_buf = (int32_t *)tmp_buf;
-		memset(ptmp_buf, 0, (length + sizeof(int32_t)));
-		ret = efuse_read_data(ptmp_buf, length , offset);
-		if (ret)
-			goto out;
-		if (memcmp(ptmp_buf, buf, length)) {
-			error("write efuse failed");
-			ret = -EFAULT;
-			goto out;
-		}
-	}
 out:
-	free(tmp_buf);
 	return ret;
 }
+
 
 int efuse_write_sc_key(unsigned int offset)
 {
@@ -349,6 +365,59 @@ int efuse_write(void *buf, int length, off_t offset)
 	int end = (offset + length + EFU_ROM_BASE - 1);
 	int ret = -EPERM;
 
+	char *pbuf = NULL;
+	unsigned int start_read = start;
+	unsigned int data_length;
+	unsigned long long *data_buf = NULL;
+	int word_num;
+	unsigned int hex;
+	int i;
+
+
+	data_length = max_integral_multiple(length, 2);
+	word_num = max_integral_multiple(data_length, 4);
+
+	unsigned int *read_data = NULL;
+	read_data = malloc(word_num * 4);
+	if(read_data == NULL) {
+		printf("error allocate read data!\n");
+		return ret;
+	}
+
+	memset(read_data, 0, word_num * 4);
+	ret = efuse_read_data(read_data, data_length, start_read);
+	if (ret < 0)
+		return ret;
+	else
+		ret = 0;
+
+	printf("read_data = %x\n",*read_data);
+	if (*read_data & 0xffffffff) {
+		error("The position has been written data, write efuse failed!\n");
+		return -EINVAL;
+	}
+
+
+	data_buf = malloc(word_num * 4);
+	if(data_buf == NULL) {
+		printf("error allocate data_buf!\n");
+		return -EINVAL;
+	}
+	memset(data_buf, 0, word_num * 4);
+
+	printf("length = %d\n", length);
+	printf("offset = %x\n", (unsigned int)offset);
+
+	printf("data_length = %d\n", data_length);
+
+	pbuf = malloc(length);
+	memset(pbuf, 0, length);
+	memcpy(pbuf, buf, length);
+	*data_buf = simple_strtoull(pbuf, NULL, 16);
+	for(i = 0; i < word_num; i++) {
+		printf("databuf[%d]: %x\n", i, data_buf[i]);
+	}
+
 	if (end > EFU_ROM_END)
 		return -EINVAL;
 	printf("offset %x length %x start %x end %x\n", offset, length ,start, end);
@@ -356,10 +425,27 @@ int efuse_write(void *buf, int length, off_t offset)
 			(start > EFU_MD5_BASE && end <= EFU_MD5_END) ||
 			(start > EFU_FIX_BT_BASE && end <= EFU_FIX_BT_END) ||
 			(start > EFU_PROT_BIT_BASE && end <= EFU_PROT_BIT_END))
-		ret = efuse_write_data(buf,length,offset);
+		ret = efuse_write_data(data_buf,data_length,start);
 	else if (buf == NULL && length == 0) {
 		ret = efuse_write_sc_key(offset);
 	}
+
+#ifdef EFUSE_CHECK
+	memset(read_data, 0, word_num * 4);
+	ret = efuse_read_data(read_data, data_length, start_read);
+	if (ret < 0)
+		return ret;
+	else
+		ret = 0;
+
+	if (memcmp(read_data, data_buf, data_length)) {
+		error(" compare error . write efuse failed");
+		ret = -EFAULT;
+	}
+
+#endif
+	free(read_data);
+	free(data_buf);
 	return ret;
 }
 
@@ -385,6 +471,34 @@ int efuse_read(void *buf, int length, off_t offset)
 	return ret;
 }
 
+int efuse_read_id(void *buf, int length, int id)
+{
+	uint32_t *ptmp_buf = (uint32_t *)buf;
+	int ret = -EPERM;
+	int offset = 0;
+	switch(id) {
+		case EFUSE_R_CHIP_ID:
+			offset = EFU_CHIP_ID_BASE;
+			break;
+		case EFUSE_R_USER_ID:
+			offset = EFU_COMS_ID_BASE;
+			break;
+		default:
+			printf("Unkown id !\n");
+			return -EPERM;
+			break;
+	}
+
+	offset = offset - EFU_ROM_BASE;
+
+	ret = efuse_read(buf, length, offset);
+	if(ret < 0) {
+		printf("efuse_read_id: read id error\n");
+		return ret;
+	}
+
+	return ret;
+}
 int efuse_init(int gpio_pin)
 {
 	if (gpio_pin >= 0) {

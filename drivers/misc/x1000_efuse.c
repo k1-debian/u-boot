@@ -244,7 +244,7 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 	if(word_num > 8) {
 		printf("strongly recommend operate each segment separately\n");
 	} else {
-		for(i = 0; i < word_num; i ++) {
+		for(i = 0; i < word_num; i++) {
 			val = pbuf[i];
 			debug_cond(efuse_debug,"====write data to register====\n");
 			debug_cond(efuse_debug,"%d(0x%x):0x%x\n",i,(EFUSE_BASE+EFUSE_DATA(i)),val);
@@ -412,14 +412,32 @@ int efuse_write(void *buf, int length, off_t offset)
 
 	int ret = -EPERM;
 	unsigned int data_length;
-	unsigned int *data_buf = NULL;
+	unsigned long long *data_buf = NULL;
 	int word_num;
 	unsigned int hex;
 	int i;
+	char *pbuf = NULL;
 
 
 	data_length = max_integral_multiple(length, 2);
 	word_num = max_integral_multiple(data_length, 4);
+
+	unsigned int *read_data = NULL;
+	read_data = malloc(word_num * 4);
+	if(read_data == NULL) {
+		printf("error allocate read data!\n");
+		return ret;
+	}
+	memset(read_data, 0, word_num * 4);
+	ret = efuse_read_data(read_data, start_read, data_length);
+	if (ret < 0)
+		return ret;
+	else
+		ret = 0;
+	if(*read_data & 0xffffffff){
+		error("The position has been written data, write efuse failed!\n");
+		return -EINVAL;
+	}
 
 	data_buf = malloc(word_num * 4);
 	if(data_buf == NULL) {
@@ -436,8 +454,11 @@ int efuse_write(void *buf, int length, off_t offset)
 	if (check_vaild_addr(WRITE_EFUSE, start, data_length))
 		return -EINVAL;
 
+	pbuf = malloc(length);
+	memset(pbuf, 0, length);
+	memcpy(pbuf, buf, length);
 	/* convert hex str to hex value */
-	hex2bin(buf, data_buf, data_length);
+	*data_buf = simple_strtoull(pbuf, NULL, 16);
 	for(i = 0; i < word_num; i++) {
 		printf("databuf[%d]: %x\n", i, data_buf[i]);
 	}
@@ -484,12 +505,6 @@ int efuse_write(void *buf, int length, off_t offset)
 
 
 #ifdef EFUSE_CHECK
-	unsigned int *read_data = NULL;
-	read_data = malloc(word_num * 4);
-	if(read_data == NULL) {
-		printf("error allocate read data!\n");
-		return ret;
-	}
 	memset(read_data, 0, word_num * 4);
 	ret = efuse_read_data(read_data, start_read, data_length);
 	if (ret < 0)
@@ -502,9 +517,8 @@ int efuse_write(void *buf, int length, off_t offset)
 		ret = -EFAULT;
 	}
 
-	free(read_data);
 #endif
-
+	free(read_data);
 	free(data_buf);
 	return ret;
 }
@@ -562,7 +576,7 @@ int efuse_read_id(void *buf, int length, int id)
 
 	ret = efuse_read(buf, length, offset);
 	if(ret < 0) {
-		printf("efuse_read_chipid: read chip id error\n");
+		printf("efuse_read_id: read id error\n");
 		return ret;
 	}
 

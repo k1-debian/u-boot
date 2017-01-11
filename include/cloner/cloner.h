@@ -153,7 +153,7 @@ union cmd {
 	}update;
 
 	struct write {
-		uint64_t partation;
+		uint64_t partition;
 		uint32_t ops;
 		uint32_t offset;
 		uint32_t length;
@@ -161,14 +161,14 @@ union cmd {
 	}write;
 
 	struct read {
-		uint64_t partation;
+		uint64_t partition;
 		uint32_t ops;
 		uint32_t offset;
 		uint32_t length;
 	}read;
 
 	struct check {
-		uint64_t partation;
+		uint64_t partition;
 		uint32_t ops;
 		uint32_t offset;
 		uint32_t check;

@@ -10,7 +10,7 @@ int efuse_read_id(void *buf, int length, int id)
 int efuse_program(struct cloner *cloner)
 {
 	static int enabled = 0;
-	u32 partation, length;
+	u32 partition, length;
 	void *addr;
 	int r = 0;
 	int id = 0, flag = 0;
@@ -35,11 +35,11 @@ int efuse_program(struct cloner *cloner)
 		break;
 
 	default:	/* write request */
-		partation = cloner->cmd->write.partation;
+		partition = cloner->cmd->write.partition;
 		length = cloner->cmd->write.length;
 		addr = (void *)cloner->write_req->buf;
 
-		if (!!(r = efuse_write(addr, length, partation))) {
+		if (!!(r = efuse_write(addr, length, partition))) {
 			printf("efuse write error\n");
 			return r;
 		}

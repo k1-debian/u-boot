@@ -85,7 +85,7 @@ int mmc_program(struct cloner *cloner,int mmc_index)
 #define MMC_BYTE_PER_BLOCK 512
 	int curr_device = mmc_index;
 	struct mmc *mmc = find_mmc_device(mmc_index);
-	u32 blk = (cloner->cmd->write.partation + cloner->cmd->write.offset)/MMC_BYTE_PER_BLOCK;
+	u32 blk = (cloner->cmd->write.partition + cloner->cmd->write.offset)/MMC_BYTE_PER_BLOCK;
 	u32 cnt = (cloner->cmd->write.length + MMC_BYTE_PER_BLOCK - 1)/MMC_BYTE_PER_BLOCK;
 	void *addr = (void *)cloner->write_req->buf;
 	u32 n;

@@ -775,37 +775,38 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 }
 static int mtd_sfcnand_partition_analysis(unsigned int blk_sz,int partcount,struct jz_spinand_partition *jz_mtd_spinand_partition)
 {
-        char mtdparts_env[X_ENV_LENGTH];
-        char command[X_COMMAND_LENGTH];
-        int ptcount = partcount;
-        int part, ret;
+	char mtdparts_env[X_ENV_LENGTH];
+	char command[X_COMMAND_LENGTH];
+	int ptcount = partcount;
+	int part, ret;
 
-        memset(mtdparts_env, 0, X_ENV_LENGTH);
-        memset(command, 0, X_COMMAND_LENGTH);
+	memset(mtdparts_env, 0, X_ENV_LENGTH);
+	memset(command, 0, X_COMMAND_LENGTH);
 
-        /*MTD part*/
-        sprintf(mtdparts_env, "mtdparts=nand:");
-        for (part = 0; part < ptcount; part++) {
-                if (jz_mtd_spinand_partition[part].size == -1) {
-                        sprintf(mtdparts_env,"%s-(%s)", mtdparts_env,
-                                        jz_mtd_spinand_partition[part].name);
-                        break;
-                } else if (jz_mtd_spinand_partition[part].size  != 0) {
-                        if(jz_mtd_spinand_partition[part].size % blk_sz != 0)
-                                    printf("ERROR:the partition [%s] don't algin as block size [0x%08x] ,it will be error !\n",jz_mtd_spinand_partition[part].name,blk_sz);
+	/*MTD part*/
+	sprintf(mtdparts_env, "mtdparts=nand:");
+	for (part = 0; part < ptcount; part++) {
+		if (jz_mtd_spinand_partition[part].size == -1) {
+			sprintf(mtdparts_env,"%s-(%s)", mtdparts_env,
+					jz_mtd_spinand_partition[part].name);
+			break;
+		} else if (jz_mtd_spinand_partition[part].size  != 0) {
+			if(jz_mtd_spinand_partition[part].size % blk_sz != 0)
+				printf("ERROR:the partition [%s] don't algin as block size [0x%08x] ,it will be error !\n",jz_mtd_spinand_partition[part].name,blk_sz);
 
-                        sprintf(mtdparts_env,"%s%dK(%s),", mtdparts_env,
-                                        jz_mtd_spinand_partition[part].size / 0x400,
-                                        jz_mtd_spinand_partition[part].name);
-                } else
-                        break;
-        }
-        debug("env:mtdparts=%s\n", mtdparts_env);
-        setenv("mtdids", mtdids_default);
-        setenv("mtdparts", mtdparts_env);
-        setenv("partition", NULL);
+			sprintf(mtdparts_env,"%s%dK@%d(%s),", mtdparts_env,
+					jz_mtd_spinand_partition[part].size / 0x400,
+					jz_mtd_spinand_partition[part].offset,
+					jz_mtd_spinand_partition[part].name);
+		} else
+			break;
+	}
+	debug("env:mtdparts=%s\n", mtdparts_env);
+	setenv("mtdids", mtdids_default);
+	setenv("mtdparts", mtdparts_env);
+	setenv("partition", NULL);
 }
-extern struct jz_spinand_partition *get_partion_index(u32 startaddr,int *pt_index);
+extern struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
 
 int mtd_sfcnand_probe_burner(/*MTDPartitionInfo *pinfo,*/int *erase_mode,int sfc_quad_mode,struct nand_param_from_burner *param)
 {

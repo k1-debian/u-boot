@@ -23,7 +23,7 @@ int epmg_write(struct cloner *cloner, int sub_type, void *ops_data)
 	if (!cloner)
 		return -EINVAL;
 
-	magic = (cloner->cmd->write.partation & 0xffffffff);
+	magic = (cloner->cmd->write.partition & 0xffffffff);
 	expy = find_extend_policy(magic);
 	if (!expy)
 		return -ENOSYS;
@@ -38,7 +38,7 @@ int epmg_read(struct cloner *cloner, int sub_type, void *ops_data)
 	if (!cloner)
 		return -EINVAL;
 
-	magic = (cloner->cmd->write.partation & 0xffffffff);
+	magic = (cloner->cmd->write.partition & 0xffffffff);
 	expy = find_extend_policy(magic);
 	if (!expy)
 		return -ENOSYS;

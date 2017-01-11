@@ -40,7 +40,7 @@ int spi_program(struct cloner *cloner)
 	unsigned int cs = CONFIG_SF_DEFAULT_CS;
 	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
-	u32 offset = cloner->cmd->write.partation + cloner->cmd->write.offset;
+	u32 offset = cloner->cmd->write.partition + cloner->cmd->write.offset;
 	u32 length = cloner->cmd->write.length;
 	int blk_size = cloner->args->spi_erase_block_siz;
 	void *addr = (void *)cloner->write_req->buf;
@@ -75,7 +75,7 @@ int spi_program(struct cloner *cloner)
 	BURNNER_PRI("the length = %x\n",length);
 
 
-	if (length%blk_size == 0){
+	if (length < blk_size || length%blk_size == 0){
 		len = length;
 		BURNNER_PRI("the length = %x,blk_size = %x\n",length,blk_size);
 	}

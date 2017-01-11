@@ -7,7 +7,8 @@
 
 #include <nand.h>
 
-extern struct jz_spinand_partition *get_partion_index(u32 startaddr,int *pt_index);
+
+extern struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
 extern struct nand_param_from_burner nand_param_from_burner;
 /*******************************************************************************
  * in burner init,we find spinand information from stage2_arg
@@ -33,7 +34,6 @@ void get_burner_nandinfo(struct cloner *cloner,struct nand_param_from_burner *pa
         param->partition=member_addr;
 }
 
-
 extern nand_info_t nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
 static unsigned int bad_len = 0;
 
@@ -43,6 +43,7 @@ static int sfc_nand_write_skip_bad(unsigned int addr, char *buffer, unsigned int
 	nand = &nand_info[0];
 	unsigned int offset;
 	unsigned int block_size = nand->erasesize;
+	int ret;
 
 	offset = addr + bad_len;
 
@@ -52,9 +53,9 @@ static int sfc_nand_write_skip_bad(unsigned int addr, char *buffer, unsigned int
 		offset += block_size;
 	}
 
-	nand_write(nand, offset, &len, buffer);
+	ret = nand_write(nand, offset, &len, buffer);
 
-	return 0;
+	return ret;
 }
 
 
@@ -63,10 +64,10 @@ int spinand_program(struct cloner *cloner)
 	u32 length = cloner->cmd->write.length;
 	u32 full_size = cloner->full_size;
 	void *databuf = (void *)cloner->write_req->buf;
-	u32 startaddr = cloner->cmd->write.partation + (cloner->cmd->write.offset);
+	u32 startaddr = cloner->cmd->write.partition + (cloner->cmd->write.offset);
 	char command[128];
-	volatile int pt_index;
-	struct jz_spinand_partition *partation;
+	volatile int pt_index = -1;
+	struct jz_spinand_partition *partition;
 	int ret;
 
 	static int pt_index_bak = -1;
@@ -74,15 +75,17 @@ int spinand_program(struct cloner *cloner)
 	nand_info_t *nand;
 	nand = &nand_info[0];
 
-	partation = get_partion_index(startaddr,&pt_index);
+	partition = get_partion_index(startaddr,length,&pt_index);
+	if(pt_index < 0)
+		return -EIO;
 	if(startaddr==0){
 		add_information_to_spl(databuf);
 	}
-	if((!cloner->args->spi_erase) && (partation->manager_mode != UBI_MANAGER)){
-		if(pt_index != pt_index_bak){/* erase part partation */
+	if((!cloner->args->spi_erase) && (partition->manager_mode != UBI_MANAGER)){
+		if(pt_index != pt_index_bak){/* erase part partition */
 			pt_index_bak = pt_index;
 			memset(command, 0 , 128);
-			sprintf(command, "nand erase 0x%x 0x%x", partation->offset,partation->size);
+			sprintf(command, "nand erase 0x%x 0x%x", partition->offset,partition->size);
 			printf("%s\n", command);
 			ret = run_command(command, 0);
 			if (ret) goto out;
@@ -91,34 +94,48 @@ int spinand_program(struct cloner *cloner)
 
 	memset(command, 0 , 128);
 
-	if(partation->manager_mode == MTD_MODE){
+	if(partition->manager_mode == MTD_MODE){
 
-		if ((startaddr + length) < (partation->size + partation->offset)) {
-			sfc_nand_write_skip_bad(startaddr, databuf, length);
+		if ((startaddr + length) <= (partition->size + partition->offset)) {
+			ret = sfc_nand_write_skip_bad(startaddr, databuf, length);
+			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
+					startaddr, length, ret ? "ERROR" : "OK");
 		} else {
-			printk("ERROR : out of partation !!!\n");
+			BURNNER_PRI("ERROR : out of partition !!!\n");
+		}
+		if(cloner->args->write_back_chk){
+			if(!readbuf){
+				readbuf = malloc(READBUF_SIZE);
+				memset(readbuf,0,READBUF_SIZE);
+			}
+			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr,length);
+			run_command(command,0);
+			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr);
+			if(ret){
+				    return -1;
+			}
 		}
 
-	}else if(partation->manager_mode == UBI_MANAGER){
-		if(!(part_name == partation->name) && cloner->args->spi_erase){/* need change part */
+	}else if(partition->manager_mode == UBI_MANAGER){
+		if(!(part_name == partition->name) && cloner->args->spi_erase){/* need change part */
 			memset(command, 0, 128);
-			sprintf(command, "ubi part %s", partation->name);
+			sprintf(command, "ubi part %s", partition->name);
 			BURNNER_PRI("%s\n", command);
 			ret = run_command(command, 0);
 			memset(command, 0, X_COMMAND_LENGTH);
-			sprintf(command, "ubi create %s",partation->name,partation->size);
+			sprintf(command, "ubi create %s",partition->name,partition->size);
 			ret = run_command(command, 0);
 
 			if (ret) {
 				BURNNER_PRI("error...\n");
 				return ret;
 			}
-			part_name = partation->name;
+			part_name = partition->name;
 		}
 
 		if(cloner->full_size && !(cloner->args->spi_erase)){
 			memset(command, 0, 128);
-			sprintf(command, "ubi part %s", partation->name);
+			sprintf(command, "ubi part %s", partition->name);
 			BURNNER_PRI("%s\n", command);
 			ret = run_command(command, 0);
 		}
@@ -128,11 +145,11 @@ int spinand_program(struct cloner *cloner)
 		wlen += length;
 		if (full_size && (full_size <= length)) {
 			length = full_size;
-			sprintf(command, "ubi write 0x%x %s 0x%x", (unsigned)databuf, partation->name, length);
+			sprintf(command, "ubi write 0x%x %s 0x%x", (unsigned)databuf, partition->name, length);
 		} else if (full_size) {
-			sprintf(command, "ubi write.part 0x%x %s 0x%x 0x%x",(unsigned)databuf, partation->name, length, full_size);
+			sprintf(command, "ubi write.part 0x%x %s 0x%x 0x%x",(unsigned)databuf, partition->name, length, full_size);
 		} else {
-			sprintf(command, "ubi write.part 0x%x %s 0x%x",(unsigned)databuf, partation->name, length);
+			sprintf(command, "ubi write.part 0x%x %s 0x%x",(unsigned)databuf, partition->name, length);
 		}
 
 
@@ -174,7 +191,7 @@ void add_information_to_spl(char *databuf)
 	member_addr+=sizeof(nand_param_from_burner.para_num);		//spinand parameter addr
 	memcpy((char *)member_addr,nand_param_from_burner.addr,nand_param_from_burner.para_num*sizeof(struct jz_spi_support_from_burner));
 
-	member_addr+=nand_param_from_burner.para_num*sizeof(struct jz_spi_support_from_burner);//spinand partation number addr
+	member_addr+=nand_param_from_burner.para_num*sizeof(struct jz_spi_support_from_burner);//spinand partition number addr
 	memcpy(member_addr,&nand_param_from_burner.partition_num,sizeof(nand_param_from_burner.partition_num));
 	member_addr+=sizeof(nand_param_from_burner.partition_num);		//partition addr
 	memcpy(member_addr,nand_param_from_burner.partition,nand_param_from_burner.partition_num*sizeof(struct jz_spinand_partition));	//partition

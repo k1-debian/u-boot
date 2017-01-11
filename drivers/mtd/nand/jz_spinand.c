@@ -968,16 +968,21 @@ static int mtd_spinand_partition_analysis(unsigned int blk_sz,int partcount,stru
 	setenv("mtdparts", mtdparts_env);
 	setenv("partition", NULL);
 }
-struct jz_spinand_partition *get_partion_index(u32 startaddr,int *pt_index)
+struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index)
 {
 	int ptcount = nand_param_from_burner.partition_num;
 	int i;
 	struct jz_spinand_partition *jz_mtd_spinand_partition=nand_param_from_burner.partition;
 	for(i = 0; i < ptcount; i++){
-		if(startaddr >= jz_mtd_spinand_partition[i].offset && startaddr < (jz_mtd_spinand_partition[i].offset + jz_mtd_spinand_partition[i].size)){
+		if(startaddr >= jz_mtd_spinand_partition[i].offset && (startaddr + length) <= (jz_mtd_spinand_partition[i].offset + jz_mtd_spinand_partition[i].size)){
 			*pt_index = i;
 			break;
 		}
+	}
+	if(i >= ptcount){
+		printf("startaddr %s can't find the pt_index or you partition size  is not align with 128K\n",startaddr);
+		*pt_index = -1;
+		return NULL;
 	}
 	return &jz_mtd_spinand_partition[i];
 }

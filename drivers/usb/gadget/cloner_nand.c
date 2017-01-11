@@ -7,7 +7,7 @@
 #ifdef CONFIG_JZ_NAND_MGR
 int nand_program(struct cloner *cloner)
 {
-	u32 startaddr = cloner->cmd->write.partation + (cloner->cmd->write.offset);
+	u32 startaddr = cloner->cmd->write.partition + (cloner->cmd->write.offset);
 	u32 length = cloner->cmd->write.length;
 	void *databuf = (void *)cloner->write_req->buf;
 
@@ -35,7 +35,7 @@ int nand_mtd_ubi_program(struct cloner *cloner)
 	char *volume;
 	void *databuf = (void *)cloner->write_req->buf;
 	int ret = 0;
-	int offset = cloner->cmd->write.partation;
+	int offset = cloner->cmd->write.partition;
 	char *part_name = NULL;
 
 	if (cloner->full_size_remainder == 0)
@@ -179,7 +179,7 @@ int nand_mtd_raw_program(struct cloner *cloner)
 {
 	u32 length = cloner->cmd->write.length;
 	void *databuf = (void *)cloner->write_req->buf;
-	u32 startaddr = cloner->cmd->write.partation + (cloner->cmd->write.offset);
+	u32 startaddr = cloner->cmd->write.partition + (cloner->cmd->write.offset);
 	char command[128];
 	int ret = 0;
 
