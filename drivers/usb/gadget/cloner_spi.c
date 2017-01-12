@@ -67,7 +67,7 @@ int spi_program(struct cloner *cloner)
 		flash = spi_flash_probe(bus, cs, spi.rate, mode);
 		if (!flash) {
 			printf("Failed to initialize SPI flash at %u:%u\n", bus, cs);
-			return 1;
+			return -1;
 		}
 	}
 

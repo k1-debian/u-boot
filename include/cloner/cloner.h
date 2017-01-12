@@ -115,7 +115,6 @@ struct spi_args {
 
 
 struct arguments {
-	int efuse_gpio;
 	int use_nand_mgr;
 	int use_nand_mtd;
 	int use_mmc;
@@ -123,10 +122,13 @@ struct arguments {
 	uint32_t use_sfc_nor;
 	uint32_t use_spi_nand;
 	uint32_t use_sfc_nand;
-
-	int nand_erase;
-	int nand_erase_count;
 	unsigned int offsets[32];
+
+
+	int efuse_gpio;
+	int log_enabled;
+	int transfer_data_chk;
+	int write_back_chk;
 
 	int mmc_open_card;
 	int mmc_erase;
@@ -137,13 +139,11 @@ struct arguments {
 	uint32_t spi_erase_block_siz;
 	uint32_t spi_erase;
 
-	int transfer_data_chk;
-	int write_back_chk;
-	int log_enabled;
-
+	int nand_erase_count;
+	int nand_erase;
+	int nr_nand_args;
 	PartitionInfo PartInfo;
 	MTDPartitionInfo MTDPartInfo;
-	int nr_nand_args;
 	nand_flash_param nand_params[0];
 };
 
