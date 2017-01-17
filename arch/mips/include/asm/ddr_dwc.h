@@ -29,23 +29,33 @@
  *************************************************************************/
 #define DDR_MEM_PHY_BASE		0x20000000
 
-
 #define DDRC_STATUS			0x0
 #define DDRC_CFG			0x4
 #define DDRC_CTRL			0x8
 #define DDRC_LMR			0xc
+#define DDRC_TIMING(n)			(0x60 + 4 * (n - 1))
 #define DDRC_REFCNT			0x18
 #define DDRC_MMAP0			0x24
 #define DDRC_MMAP1			0x28
 #define DDRC_DLP			0xbc
+#define DDRC_REMAP(n)			(0x9c + 4 * (n - 1))
 #define DDRC_STRB			0x34
+#define DDRC_WCMDCTRL1			0x100
+#define DDRC_RCMDCTRL0			0x104
+#define DDRC_RCMDCTRL1			0x108
+#define DDRC_WDATTHD0			0x114
+#define DDRC_WDATTHD1			0x118
+#define DDRC_IPORTPRI			0x128
+#define DDRC_IPORTWPRI			0x240
+#define DDRC_IPORTRPRI			0x244
+
 #define DDRC_AUTOSR_CNT                 0x308
 #define DDRC_AUTOSR_EN		        0x304
 
 #define DDRC_CLKSTP_CFG                 (DDR_PHY_OFFSET + 0x1000 + 0x68)
 
-#define DDRC_TIMING(n)			(0x60 + 4 * (n - 1))
-#define DDRC_REMAP(n)			(0x9c + 4 * (n - 1))
+
+
 
 #define DDRP_PIR	(DDR_PHY_OFFSET + 0x4) /* PHY Initialization Register */
 #define DDRP_PGCR	(DDR_PHY_OFFSET + 0x8) /* PHY General Configuration Register*/

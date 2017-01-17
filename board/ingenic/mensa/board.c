@@ -29,6 +29,138 @@
 #include <asm/arch/nand.h>
 #include <asm/arch/mmc.h>
 
+//#define CONFIG_DWC_DEBUG 1
+
+#ifdef  CONFIG_DWC_DEBUG
+#include <asm/io.h>
+#include <asm/ddr_dwc.h>
+/* #define FUNC_ENTER() printf("%s enter.\n",__FUNCTION__); */
+/* #define FUNC_EXIT() printf("%s exit.\n",__FUNCTION__); */
+#define FUNC_ENTER()
+#define FUNC_EXIT()
+
+static void cpm_regs_print(void)
+{
+	printf("APLL   0xb0000010: 0x%08lx\n", *(unsigned long *)(0xb0000010));
+	printf("MPLL   0xb0000014: 0x%08lx\n", *(unsigned long *)(0xb0000014));
+	printf("CPCCR  0xb0000000: 0x%08lx\n", *(unsigned long *)(0xb0000000));
+	printf("DDRCDR 0xb0000000: 0x%08lx\n", *(unsigned long *)(0xb000002c));
+	printf("\n");
+}
+
+static void dump_ddrc_register(void)
+{
+	printf("DDRC_STATUS             0x%08x\n", ddr_readl(DDRC_STATUS));
+	printf("DDRC_CFG                0x%08x\n", ddr_readl(DDRC_CFG));
+	printf("DDRC_CTRL               0x%08x\n", ddr_readl(DDRC_CTRL));
+	printf("DDRC_LMR                0x%08x\n", ddr_readl(DDRC_LMR));
+	printf("DDRC_TIMING1            0x%08x\n", ddr_readl(DDRC_TIMING(1)));
+	printf("DDRC_TIMING2            0x%08x\n", ddr_readl(DDRC_TIMING(2)));
+	printf("DDRC_TIMING3            0x%08x\n", ddr_readl(DDRC_TIMING(3)));
+	printf("DDRC_TIMING4            0x%08x\n", ddr_readl(DDRC_TIMING(4)));
+	printf("DDRC_TIMING5            0x%08x\n", ddr_readl(DDRC_TIMING(5)));
+	printf("DDRC_TIMING6            0x%08x\n", ddr_readl(DDRC_TIMING(6)));
+	printf("DDRC_REFCNT             0x%08x\n", ddr_readl(DDRC_REFCNT));
+	printf("DDRC_MMAP0              0x%08x\n", ddr_readl(DDRC_MMAP0));
+	printf("DDRC_MMAP1              0x%08x\n", ddr_readl(DDRC_MMAP1));
+	printf("DDRC_DLP                0x%08x\n", ddr_readl(DDRC_DLP));
+	printf("DDRC_REMAP1             0x%08x\n", ddr_readl(DDRC_REMAP(1)));
+	printf("DDRC_REMAP2             0x%08x\n", ddr_readl(DDRC_REMAP(2)));
+	printf("DDRC_REMAP3             0x%08x\n", ddr_readl(DDRC_REMAP(3)));
+	printf("DDRC_REMAP4             0x%08x\n", ddr_readl(DDRC_REMAP(4)));
+	printf("DDRC_REMAP5             0x%08x\n", ddr_readl(DDRC_REMAP(5)));
+	printf("DDRC_STRB               0x%08x\n", ddr_readl(DDRC_STRB));
+	printf("DDRC_WCMDCTRL1          0x%08x\n", ddr_readl(DDRC_WCMDCTRL1));
+	printf("DDRC_RCMDCTRL0          0x%08x\n", ddr_readl(DDRC_RCMDCTRL0));
+	printf("DDRC_RCMDCTRL1          0x%08x\n", ddr_readl(DDRC_RCMDCTRL1));
+	printf("DDRC_WDATTHD0           0x%08x\n", ddr_readl(DDRC_WDATTHD0));
+	printf("DDRC_WDATTHD1           0x%08x\n", ddr_readl(DDRC_WDATTHD1));
+	printf("DDRC_IPORTPRI           0x%08x\n", ddr_readl(DDRC_IPORTPRI));
+	printf("DDRC_IPORTWPRI          0x%08x\n", ddr_readl(DDRC_IPORTWPRI));
+	printf("DDRC_IPORTRPRI          0x%08x\n", ddr_readl(DDRC_IPORTRPRI));
+	printf("DDRC_AUTOSR_EN          0x%08x\n", ddr_readl(DDRC_AUTOSR_EN));
+	printf("DDRC_AUTOSR_CNT         0x%08x\n", ddr_readl(DDRC_AUTOSR_CNT));
+	printf("DDRC_CLKSTP_CFG         0x%08x\n", ddr_readl(DDRC_CLKSTP_CFG));
+
+	/* CHxWDOS */
+	{
+		int iii;
+		for (iii=0; iii<7; iii++) {
+			printf("DDRC_CHxWDOS(%d)         0x%08x\n", iii, ddr_readl(0x200+4*iii));
+		}
+	}
+	/* CHxRDOS */
+	{
+		int iii;
+		for (iii=0; iii<7; iii++) {
+			printf("DDRC_CHxRDOS(%d)         0x%08x\n", iii, ddr_readl(0x220+4*iii));
+		}
+	}
+
+
+	/* CPM_DRCG */
+	printf("CPM_DRCG(0xb00000D0)             0x%08lx\n", *(unsigned long *)(0xb00000D0));
+
+	//printf("DDRC_             0x%08x\n", ddr_readl(DDRC_));
+}
+
+static void dump_ddrp_register(void)
+{
+	printf("DDRP_PIR                0x%08x\n", ddr_readl(DDRP_PIR));
+	printf("DDRP_PGCR               0x%08x\n", ddr_readl(DDRP_PGCR));
+	printf("DDRP_PGSR               0x%08x\n", ddr_readl(DDRP_PGSR));
+	printf("DDRP_PTR0               0x%08x\n", ddr_readl(DDRP_PTR0));
+	printf("DDRP_PTR1               0x%08x\n", ddr_readl(DDRP_PTR1));
+	printf("DDRP_PTR2               0x%08x\n", ddr_readl(DDRP_PTR2));
+	printf("DDRP_DCR                0x%08x\n", ddr_readl(DDRP_DCR));
+	printf("DDRP_DTPR0              0x%08x\n", ddr_readl(DDRP_DTPR0));
+	printf("DDRP_DTPR1              0x%08x\n", ddr_readl(DDRP_DTPR1));
+	printf("DDRP_DTPR2              0x%08x\n", ddr_readl(DDRP_DTPR2));
+	printf("DDRP_MR0                0x%08x\n", ddr_readl(DDRP_MR0));
+	printf("DDRP_MR1                0x%08x\n", ddr_readl(DDRP_MR1));
+	printf("DDRP_MR2                0x%08x\n", ddr_readl(DDRP_MR2));
+	printf("DDRP_MR3                0x%08x\n", ddr_readl(DDRP_MR3));
+	printf("DDRP_ODTCR              0x%08x\n", ddr_readl(DDRP_ODTCR));
+	printf("DDRP_DXCCR              0x%08x\n", ddr_readl(DDRP_DXCCR));
+	printf("DDRP_ZQXSR0             0x%08x\n", ddr_readl(DDRP_ZQXSR0(0)));
+
+	int i=0;
+	/* DDRP_ZQXCR0, ZQXCR1, ZQXSR0, ZQXSR1 */
+	for(i=0;i<4;i++) {
+		printf("ZQX%dCR0:                0x%08x\n", i, ddr_readl(DDRP_ZQXCR0(i)));
+		printf("ZQX%dCR1:                0x%08x\n", i, ddr_readl(DDRP_ZQXCR1(i)));
+		printf("ZQX%dSR0:                0x%08x\n", i, ddr_readl(DDRP_ZQXSR0(i)));
+		printf("ZQX%dSR1:                0x%08x\n", i, ddr_readl(DDRP_ZQXSR1(i)));
+	}
+
+	for(i=0;i<4;i++) {
+		printf("DX%dGSR0:                0x%08x\n", i, ddr_readl(DDRP_DXGSR0(i)));
+		printf("@pas:DXDQSTR(%d)=        0x%08x\n", i,ddr_readl(DDRP_DXDQSTR(i)));
+	}
+
+	printf("\n");
+}
+
+static void dump_ddrp_register_all(void)
+{
+	printf("%s()\n", __FUNCTION__);
+
+	int i=0;
+	for(i=0;i<256;i++) {
+		printf("DDRP(%02x):        0x%08x\n", i, ddr_readl(DDR_PHY_OFFSET + 0x4*i));
+	}
+}
+
+
+#else
+#define FUNC_ENTER()
+#define FUNC_EXIT()
+
+#define dump_ddrc_register()
+#define dump_ddrp_register()
+#endif
+
+
 extern int act8600_regulator_init(void);
 extern int jz_net_initialize(bd_t *bis);
 #ifdef CONFIG_BOOT_ANDROID
@@ -124,6 +256,24 @@ int board_eth_init(bd_t *bis)
 int checkboard(void)
 {
 	puts("Board: mensa (Ingenic XBurst JZ4775 SoC)\n");
+
+#ifdef  CONFIG_DWC_DEBUG
+#ifdef CONFIG_SPL_CORE_VOLTAGE
+	printf("CPU CORE_VOLTAGE CONFIG_SPL_CORE_VOLTAGE=: %d mV\n", CONFIG_SPL_CORE_VOLTAGE);
+#else
+	printf("not config CONFIG_SPL_CORE_VOLTAGE, use default CPU CORE_VOLTAGE 1200 mV\n");
+#endif
+
+	printf("CONFIG_SYS_MEM_DIV: %d\n", CONFIG_SYS_MEM_DIV);
+	printf("MEM Clock: %d MHz\n", CONFIG_SYS_APLL_FREQ/CONFIG_SYS_MEM_DIV);
+	//printf("MEM Clock: %d MHz\n", gd->mem_clk/1000000);
+	//gd->mem_clk = __cpm_get_mclk();
+	cpm_regs_print();
+	dump_ddrc_register();
+	dump_ddrp_register();
+	dump_ddrp_register_all();
+#endif  //CONFIG_DWC_DEBUG
+
 	return 0;
 }
 
