@@ -275,6 +275,9 @@ static void ddr_phy_param_config(int bypass,enum ddr_type type)
 		ddr_writel(DDRP_MR2_VALUE, DDRP_MR2);
 		break;
 	case DDR3:
+		/* ddr_writel(0x800, DDRP_DXCCR); ??? */
+		/* ddr_writel(0x910, DDRP_DXCCR); */
+		/* ddr_writel(0xc40, DDRP_DXCCR); */
 		ddr_writel(DDRP_MR0_VALUE, DDRP_MR0);
 		ddr_writel(DDRP_MR1_VALUE, DDRP_MR1);
 		ddr_writel(DDRP_MR2_VALUE, DDRP_MR2);

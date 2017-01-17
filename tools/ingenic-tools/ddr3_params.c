@@ -84,6 +84,7 @@ static void ddrc_params_creator_ddr3(struct ddrc_reg *ddrc, struct ddr_params *p
 static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp = 0;
+	int cwl;
 	struct ddr_out_impedance *impedance;
 	struct ddr_out_impedance *odt_impedance;
 	struct ddr3_params *params = &p->private_params.ddr3_params;
@@ -131,6 +132,10 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 	ddrp->mr1.ddr3.DE = 0; /* DLL enable. */
 #endif
 
+#ifdef CONFIG_DDR_PHY_MR0_PD
+	ddrp->mr0.ddr3.PD = CONFIG_DDR_PHY_MR0_PD;
+#endif
+
 #ifdef CONFIG_DDR_DRIVER_OUT_STRENGTH
 	/*   00 - RZQ/6,01 - RZQ / 7 */
 	ddrp->mr1.ddr3.DIC1 = CONFIG_DDR_DRIVER_OUT_STRENGTH;
@@ -169,7 +174,19 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 		out_error(". %d\n",__ps_per_tck);
 		assert(1);
 	}
-	ddrp->mr2.ddr3.CWL = tmp - 5;
+
+	cwl = ps2cycle_ceil(p->private_params.ddr3_params.WL, 1);
+	if (cwl == tmp) {
+		ddrp->mr2.ddr3.CWL = cwl - 5;
+	}
+	else if (cwl > tmp) {
+		/* warning... */
+		//out_error("#error cwl(%d) > tmp(%d)\n", cwl, tmp);
+		ddrp->mr2.ddr3.CWL = cwl - 5;
+	}
+	else {
+		out_error("#error cwl(%d) < tmp(%d)\n", cwl, tmp);
+	}
 
 	ddrp->ptr1.b.tDINIT0 = ps2cycle_ceil(500*1000*1000, 1); /* DDR3 default 500us*/
 

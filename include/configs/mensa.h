@@ -58,8 +58,10 @@
 #define CONFIG_DDR_DW32			1	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
 #define CONFIG_DDR3_H5TQ1G83DFR_H9C
-#define CONFIG_DDR_PHY_IMPEDANCE 60000
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE 60000
+#define CONFIG_DDR_PHY_IMPEDANCE 40000 /* 60000: not stable on some mensa board. 40000 is much more stable */
+#define CONFIG_DDR_PHY_ODT_IMPEDANCE 40000
+#define CONFIG_DDR_DRIVER_OUT_STRENGTH 0 /* make mesa much more stable */
+/* #define CONFIG_DDR_PHY_MR0_PD 0 */
 /* #define CONFIG_DDR_DLL_OFF */
 /*
  * #define CONFIG_DDR_CHIP_ODT
