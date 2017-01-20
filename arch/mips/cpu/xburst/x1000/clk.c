@@ -81,6 +81,8 @@ static inline void cgu_clks_set(void)
 	unsigned int size = ARRAY_SIZE(cgusetting);
 
 	for (i = 0; i < size; i++) {
+		if (i == OTG)
+			continue;
 		reg = cgusetting[i].addr;
 		regval = readl(reg);
 		regval &= ~(3 << 30);
