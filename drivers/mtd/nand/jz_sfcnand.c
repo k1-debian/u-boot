@@ -43,6 +43,12 @@ static const char *const mtdids_default = MTDIDS_DEFAULT;
 static const char *const mtdids_default = "nand0:nand";
 #endif
 
+extern int read_sfcnand_id(u8 *response,size_t len);
+extern int read_sfcnand_id_func2(u8 *response,size_t len);
+int (*id_detect_funcs[])(u8*,  size_t)  = {
+					read_sfcnand_id,
+					read_sfcnand_id_func2,
+				         };
 
 extern unsigned int sfc_rate ;
 unsigned short column_cmdaddr_bits=24;/* read from cache ,the bits of cmd + addr */
@@ -103,6 +109,9 @@ int sfc_nand_erase(struct mtd_info *mtd,int addr)
 			erase_cmd = CMD_ERASE_64K;
 			break;
 		case 128 * 1024:
+			erase_cmd = CMD_ERASE_128K;
+			break;
+		case 256 * 1024:
 			erase_cmd = CMD_ERASE_128K;
 			break;
 		default:
@@ -612,7 +621,6 @@ static struct jz_spi_support_from_burner *sfc_nandflash_probe(u8 *idcode,struct 
 	}
 
 	if (i == param_array->para_num) {
-		printf("ingenic: Unsupported ID %04x\n", (idcode[0] <<8) |idcode[1]);
 		return NULL;
 	}
 #if 0
@@ -671,6 +679,7 @@ static int read_spinand_param(char *buffer,int ptcout,struct nand_param_from_bur
         sfc_nand_read_page(buffer,ptcout/pagesize,0,pagesize);
         jz_sfc_get_param(buffer+offset,param);
 }
+
 static char *get_chip_param_from_nand(struct nand_param_from_burner **param,int *using_way)
 {
 	int pagesize=0;
@@ -690,6 +699,7 @@ static char *get_chip_param_from_nand(struct nand_param_from_burner **param,int 
 	}
         return buffer;
 }
+
 static void tran_old_burnway(struct nand_param_from_burner **param)
 {
 	int i;
@@ -724,6 +734,7 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 	struct jz_spi_support_from_burner *spi_flash;
 	mtd = &nand_info[0];
 	int using_way;
+	int i;
 	sfc_for_nand_init(sfc_quad_mode);
 #ifndef CONFIG_BURNER
         char *buffer=get_chip_param_from_nand(&param,&using_way);
@@ -732,8 +743,18 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 		tran_old_burnway(&param);
 	}
 #endif
-	read_sfcnand_id(idcode,2);
-	spi_flash = sfc_nandflash_probe(idcode,param);
+	for (i = 0; i < sizeof(id_detect_funcs)/sizeof(id_detect_funcs[0]); i++) {
+		printf("Detect id at %d time\n", i+1);
+		id_detect_funcs[i](idcode, 2);
+		spi_flash = sfc_nandflash_probe(idcode,param);
+		if (spi_flash != NULL) {
+			break;
+		}
+	}
+	if (spi_flash == NULL) {
+		printf("ingenic: Unsupported ID %04x\n", (idcode[0] <<8) |idcode[1]);
+		return -1;
+	}
 
 	chip = malloc(sizeof(struct nand_chip));
 	if (!chip)

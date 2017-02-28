@@ -65,7 +65,6 @@ struct jz_sfc {
 	unsigned char dummy_byte;
 };
 
-
 static uint32_t jz_sfc_readl(unsigned int offset)
 {
 	return readl(SFC_BASE + offset);
@@ -1590,16 +1589,12 @@ void sfc_for_nand_init(int sfc_quad_mode)
 }
 int read_sfcnand_id(u8 *response,size_t len)
 {
-	/* the paraterms is
-	* cmd , len, addr,addr_len
-	* dummy_byte, daten
-	* dir
-	*
-	* */
+	/* =send=> [0x9F +  0x00/0x01(addr)]   ; =recv=>[manu_id + dev_id] */
 	unsigned char cmd[1];
 	//  unsigned char chip_id[4];
 	unsigned int chip_id = 0;
 	cmd[0] = CMD_RDID;
+
 	sfc_send_cmd(&cmd[0],len,0,1,0,1,0);
 	sfc_read_data(response,len);
 	printf("id0=%02x\n",response[0]);
@@ -1607,3 +1602,19 @@ int read_sfcnand_id(u8 *response,size_t len)
 	printf("SFC_DEV_STA_RT=0x%08x,\n",jz_sfc_readl(SFC_DEV_STA_RT));
 	//  *idcode = chip_id[0];
 }
+
+int read_sfcnand_id_func2(u8 *response,size_t len)
+{
+	/* =send=> [0x9F]    ; =recv=>[manu_id + dev_id] */
+	unsigned char cmd[1];
+	unsigned int chip_id = 0;
+	cmd[0] = CMD_RDID;
+
+	sfc_send_cmd(&cmd[0],len,0,0,0,1,0);
+	sfc_read_data(response, len);
+	printf("id0_2=%02x\n",response[0]);
+	printf("id1_2=%02x\n",response[1]);
+	printf("SFC_DEV_STA_RT=0x%08x,\n",jz_sfc_readl(SFC_DEV_STA_RT));
+	return 0;
+}
+
