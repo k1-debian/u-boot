@@ -36,11 +36,11 @@
  */
 #define DDR_tRFC DDR__ns(72) /* ns,  AUTO-REFRESH command period. */
 
-#define DDR_tXP  DDR__tck(2) /* EXIT-POWER-DOWN to next valid command period: 1 to 8 tCK. */
+#define DDR_tXP  DDR__tck(3) /* EXIT-POWER-DOWN to next valid command period: 1 to 8 tCK. */
 #define DDR_tMRD DDR__tck(2) /* unit: tCK Load-Mode-Register to next valid command period: 1 to 4 tCK */
 
 /* new add */
-#define DDR_BL	8   /* MDDR Burst length: 3 - 8 burst, 2 - 4 burst , 1 - 2 burst*/
+#define DDR_BL	4   /* MDDR Burst length: 3 - 8 burst, 2 - 4 burst , 1 - 2 burst*/
 #define DDR_RL  DDR__tck(DDR_CL)	/* MDDR: Read Latency = tAL + tCL */
 #define DDR_WL  DDR__tck(1)		/* MDDR: must 1 */
 

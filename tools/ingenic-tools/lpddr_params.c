@@ -99,7 +99,7 @@ static void ddrp_params_creator_lpddr(struct ddrp_reg *ddrp, struct ddr_params *
 	DDRP_TIMING_SET(0,lpddr_params,tMRD,2,0,3);
 
 	tmp = p->bl/2;
-	if(tmp <= 2 || tmp >= 6)
+	if(tmp < 2 || tmp >= 6)
 		out_error("tRTP %d is Out of range and check %s %d!\n",tmp,__FILE__,__LINE__);
 	ddrp->dtpr0.b.tRTP = tmp;
 
