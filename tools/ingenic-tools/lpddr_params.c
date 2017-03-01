@@ -52,7 +52,6 @@ static void ddrc_timing_creator_lpddr(struct ddrc_reg *ddrc, struct ddr_params *
 	tmp = ps2cycle_ceil(params->tXSR,4) / 4;
 	ASSERT_MASK(tmp,8);
 	ddrc->timing6.b.tXSRD = tmp;
-	ddrc->timing6.b.tXSRD = 0x80;
 
 	tmp = ps2cycle_ceil(params->tRFC,8) / 8 - 1;
 	if(tmp < 0)

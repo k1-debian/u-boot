@@ -151,7 +151,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	ASSERT_MASK(tmp,6);
 	ddrc->timing4.b.tRFC = tmp;
 
-	ddrc->timing4.b.tEXTRW = 1; /* default */
+	ddrc->timing4.b.tEXTRW = 3; /* default */
 	ddrc->timing4.b.tRWCOV = 0;  /* default */
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tCKE,1) + 1;
 	ASSERT_MASK(tmp,3);
