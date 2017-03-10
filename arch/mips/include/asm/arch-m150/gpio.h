@@ -55,6 +55,18 @@ enum gpio_port {
 	GPIO_NR_PORTS,
 };
 
+#ifdef CONFIG_JZ_SLT
+static inline enum gpio_port gpio_port_gp(int gpio)
+{
+	return (GPIO_PORT_A + (gpio/32));
+}
+
+static inline int gpio_pin(int gpio)
+{
+	return (gpio%32);
+}
+#endif
+
 struct jz_gpio_func_def {
 	int port;
 	int func;

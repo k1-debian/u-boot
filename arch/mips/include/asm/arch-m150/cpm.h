@@ -49,6 +49,7 @@
 #define CPM_BCHCDR	(0xac)
 
 #define CPM_MPHYCR	(0xe0)
+#define CPM_DRCG	(0xd0)
 
 #define CPM_CPAPCR	(0x10)
 #define CPM_CPMPCR	(0x14)
@@ -131,6 +132,8 @@
 
 #define CLKGR_VPU              (0x1<<19)
 
+#define cpm_readl(off)          readl(CPM_BASE + (off))
+#define cpm_writel(val,off)     writel(val, CPM_BASE + (off))
 #define cpm_inl(off)		readl(CPM_BASE + (off))
 #define cpm_outl(val,off)	writel(val, CPM_BASE + (off))
 #define cpm_test_bit(bit,off)	(cpm_inl(off) & 0x1<<(bit))

@@ -140,7 +140,7 @@
 /**
  * Drivers configuration.
  */
-#define CONFIG_LCD
+/* #define CONFIG_LCD */
 #ifdef CONFIG_LCD
 #define LCD_BPP				5
 #define CONFIG_GPIO_LCD_PWM	 	GPIO_PE(1)
@@ -224,7 +224,7 @@
 #define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
 #define CONFIG_CMD_SOURCE	/* "source" command support	*/
 #define CONFIG_CMD_GETTIME
-#define CONFIG_CMD_BMP          /* BMP support                  */
+/* #define CONFIG_CMD_BMP */         /* BMP support                  */
 #define CONFIG_CMD_UNZIP        /* unzip from memory to memory  */
 
 
