@@ -45,6 +45,9 @@ struct spi spi;
 #define VR_POWEROFF		0x17	/*reboot and poweroff*/
 #define VR_CHECK		0x18
 #define VR_GET_CRC		0x19
+#define VR_GET_FLASH_INFO	0x20
+
+
 
 #define MMC_ERASE_ALL	1
 #define MMC_ERASE_PART	2

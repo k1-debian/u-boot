@@ -170,6 +170,16 @@ int i2c_program(struct cloner *cloner)
 
 extern unsigned int ssi_rate;
 extern unsigned int sfc_rate;
+
+unsigned int cloner_get_flash_info(struct cloner *cloner)
+{
+	unsigned int id_code = 0;
+#ifdef CONFIG_JZ_SFC
+	id_code = get_norflash_id();
+#endif
+	return id_code;
+}
+
 int cloner_init(struct cloner *cloner)
 {
 #ifdef CONFIG_JZ_NAND_MGR
@@ -226,7 +236,7 @@ int cloner_init(struct cloner *cloner)
 #ifdef CONFIG_JZ_SFC
 	if(cloner->args->use_sfc_nor){
 		sfc_rate = cloner->args->spi_args.rate;
-		get_norflash_params_from_burner((unsigned char *)cloner->args + sizeof(struct arguments));
+		norflash_get_params_from_burner((unsigned char *)cloner->args + sizeof(struct arguments));
 		if (cloner->args->spi_erase == SPI_ERASE_PART) {
 			sfc_erase(cloner);
 		}
@@ -491,11 +501,8 @@ int f_cloner_setup_handle(struct usb_function *f,
 {
 	struct cloner *cloner = f->config->cdev->req->context;
 	struct usb_request *req = cloner->ep0req;
+	unsigned int chipid;
 
-	debug_cond(BURNNER_DEBUG,"vendor bRequestType %x,bRequest %x wLength %d\n",
-			ctlreq->bRequestType,
-			ctlreq->bRequest,
-			ctlreq->wLength);
 
 	if ((ctlreq->bRequestType & USB_TYPE_MASK) != USB_TYPE_VENDOR) {
 		printf("Unkown RequestType 0x%x \n",ctlreq->bRequestType);
@@ -528,6 +535,10 @@ int f_cloner_setup_handle(struct usb_function *f,
 			memcpy(cloner->ep0req->buf + sizeof(int),&cloner->crc,sizeof(int));
 			break;
 		case VR_INIT:
+			break;
+		case VR_GET_FLASH_INFO:
+			chipid = cloner_get_flash_info(cloner);
+			memcpy(cloner->ep0req->buf, &chipid, sizeof(unsigned int));
 			break;
 		case VR_UPDATE_CFG:
 		case VR_WRITE:

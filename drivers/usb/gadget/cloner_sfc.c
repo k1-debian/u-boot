@@ -2,8 +2,6 @@
 
 #ifdef CONFIG_JZ_SFC
 extern unsigned int sfc_rate;
-extern unsigned int sfc_quad_mode;
-extern int sfc_is_init;
 extern unsigned int get_partition_index(u32 offset,u32 length,int *pt_offset, int *pt_size);
 
 #define READBUF_SIZE	(512*1024)
@@ -17,19 +15,9 @@ int sfc_erase(struct cloner *cloner)
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	int err = 0;
 	struct spi_args *spi_arg = &cloner->args->spi_args;
-	sfc_quad_mode = spi_arg->sfc_quad_mode;
 	spi.rate  = spi_arg->rate;
 	sfc_rate = spi_arg->sfc_rate;
-
-	if(sfc_is_init == 0){
-		err = sfc_init();
-		if(err < 0){
-			printf("!!!!!!!!!!!!!!!!!%d,%s,the sfc init failed\n",__LINE__,__func__);
-			return -1;
-		}
-	}
 	jz_sfc_chip_erase();
-	printf("sfc chip erase ok\n");
 
 }
 
@@ -47,6 +35,7 @@ static int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned
 	}
 	return val;
 }
+
 
 int sfc_program(struct cloner *cloner)
 {
@@ -72,18 +61,8 @@ int sfc_program(struct cloner *cloner)
 	spi.clk   = spi_arg->clk;
 	spi.data_in  = spi_arg->data_in;
 	spi.data_out  = spi_arg->data_out;
-	sfc_quad_mode = spi_arg->sfc_quad_mode;
 	spi.rate  = spi_arg->rate ;
 	sfc_rate = spi_arg->sfc_rate;
-
-	if(sfc_is_init == 0){
-		BURNNER_PRI("in sfc init\n");
-		err = sfc_init();
-		if(err < 0){
-			printf("%d,%s,!!!!!!!!!!!!!!!!!!!!!the sfc init failed\n",__LINE__,__func__);
-			return -1;
-		}
-	}
 
 	BURNNER_PRI("the offset = %x\n",offset);
 	BURNNER_PRI("the length = %x\n",length);
@@ -114,7 +93,7 @@ int sfc_program(struct cloner *cloner)
 			BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
 				ret ? "ERROR" : "OK");
 		}
-		ret = sfc_nor_write(offset, len, addr,0);
+		ret = sfc_nor_write(offset, len, addr);
 		BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");
 
@@ -130,7 +109,7 @@ int sfc_program(struct cloner *cloner)
 		}
 	}
 
-	ret = sfc_nor_write(offset, len, addr,0);
+	ret = sfc_nor_write(offset, len, addr);
 	BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");
 

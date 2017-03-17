@@ -5,7 +5,7 @@
 #include <nand.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/base.h>
-#include <asm/arch/sfc.h>
+#include <asm/arch/sfc-jz.h>
 //#include <asm/arch/spi.h>
 int mode = 0;
 int flag = 0;

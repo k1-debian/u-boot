@@ -88,7 +88,7 @@ int saveenv(void)
 	sfc_get_env_addr(copy, &offset);
 	env_new.crc = crc32(0, env_new.data, ENV_SIZE);
 
-	sfc_nor_write(offset, CONFIG_ENV_SIZE , (char *)&env_new, 1);
+	sfc_nor_write(offset, CONFIG_ENV_SIZE , (char *)&env_new);
 
 	sfc_nor_read(offset, CONFIG_ENV_SIZE, (char *)buf);
 	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);

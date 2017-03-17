@@ -53,7 +53,7 @@ ifdef CONFIG_BURNER
 COBJS-$(CONFIG_JZ_SFC) += jz_sf_params.o
 endif
 COBJS-$(CONFIG_JZ_SPI) += jz_spi.o
-COBJS-$(CONFIG_JZ_SFC) += jz_sfc.o
+COBJS-$(CONFIG_JZ_SFC) += jz_sfc_jz.o
 COBJS-$(CONFIG_SH_SPI) += sh_spi.o
 COBJS-$(CONFIG_FSL_ESPI) += fsl_espi.o
 COBJS-$(CONFIG_FDT_SPI) += fdt_spi.o

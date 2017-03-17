@@ -320,6 +320,9 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #ifdef CONFIG_CMD_SFCNAND
 	sfc_nand_init();
 #endif
+#ifdef CONFIG_CMD_SFC_NOR
+	sfc_nor_flash_init();
+#endif
 #ifdef CONFIG_CMD_ZM_NAND
 	puts("NAND_ZM:	");
 	nand_zm_init();

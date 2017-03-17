@@ -29,6 +29,7 @@ DDR-$(CONFIG_DDR_PARAMS_CREATOR)	+= ddr_params_creator ddr_reg_values.h
 MBR-$(CONFIG_MBR_CREATOR)		+= mbr_creator mbr.bin
 GPT-$(CONFIG_GPT_CREATOR)		+= mbr-gpt.bin
 SPI-$(CONFIG_SPI_SPL_CHECK)		+= spi_checksum
+SPI-$(CONFIG_SPL_SFC_SUPPORT)		+= sfc_timing_params sfc_timing_val.h
 SPL-$(CONFIG_SPL_PARAMS_FIXER)		+= spl_params_fixer
 AUDIO-$(CONFIG_AUDIO_CAL_DIV) += audio_div_values.h
 #IMG2RLE-$(CONFIG_RLE_LCD_LOGO)          += img2rle
@@ -73,6 +74,9 @@ $(obj)ddr_reg_values.h:	$(obj)ddr_params_creator
 
 $(obj)audio_div_values.h: $(obj)audio_params_creator.py
 	$(OBJTREE)/tools/ingenic-tools/audio_params_creator.py $(CONFIG_AUDIO_APLL) $(CONFIG_AUDIO_MPLL) > $(OBJTREE)/include/generated/$@
+
+$(obj)sfc_timing_val.h:	$(obj)sfc_timing_params
+	$(OBJTREE)/tools/ingenic-tools/sfc_timing_params > $(OBJTREE)/include/generated/$@
 endif
 $(obj)mbr_creator:	mbr_creator.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
@@ -110,6 +114,10 @@ $(obj)spi_checksum:	spi_checksum.c
 	$(HOSTSTRIP) $@
 
 $(obj)spl_params_fixer:	spl_params_fixer.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
+
+$(obj)sfc_timing_params:sfc_timing_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 

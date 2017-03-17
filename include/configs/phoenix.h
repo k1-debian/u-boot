@@ -550,8 +550,7 @@
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
-/*#define CONFIG_SPI_DUAL*/
-#define CONFIG_SPI_QUAD
+#define CONFIG_SFC_QUAD
 #endif
 
 #ifdef CONFIG_JZ_SFC_NOR

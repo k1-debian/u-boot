@@ -11,13 +11,12 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if(argc < 4){
 		return CMD_RET_USAGE;
 	}
-	sfc_init();
 	if(!strcmp(argv[1],"read")){
 		src_addr = simple_strtoul(argv[2],NULL,16);
 		count = simple_strtoul(argv[3],NULL,16);
 		dst_addr = simple_strtoul(argv[4],NULL,16);
 		printf("sfcnor read Image from 0x%x to  0x%x size is 0x%x ...\n",src_addr,dst_addr,count);
-		sfc_nor_read(src_addr,count,dst_addr);
+		sfc_nor_read(src_addr,count, dst_addr);
 		printf("sfcnor read ok!\n");
 		return 0;
 	}else if(!strcmp(argv[1],"write")){
@@ -27,7 +26,7 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		dst_addr = simple_strtoul(argv[4],NULL,16);
 		erase_en = simple_strtoul(argv[5],NULL,16);
 		printf("sfcnor write Image from 0x%x to  0x%x size is 0x%x erase_en = %d...\n",dst_addr,src_addr,count,erase_en);
-		sfc_nor_write(src_addr,count,dst_addr,erase_en);
+		sfc_nor_write(src_addr,count,dst_addr);
 		printf("sfcnor write ok!\n");
 		return 0;
 

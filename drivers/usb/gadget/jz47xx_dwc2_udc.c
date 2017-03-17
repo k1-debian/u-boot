@@ -824,7 +824,7 @@ static void parse_setup(struct dwc2_ep *dep)
 		return;
 	}
 
-	if (dev->ep0state & STATUS_STAGE)
+	if ((dev->ep0state & 0xf) == STATUS_STAGE)
 		udc_start_new_setup();
 }
 
