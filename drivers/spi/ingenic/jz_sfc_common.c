@@ -838,7 +838,7 @@ struct sfc *sfc_res_init()
 	}
 	memset(sfc, 0, sizeof(struct sfc));
 
-	sfc->src_clk = CONFIG_SFC_NOR_RATE;
+	sfc->src_clk = CONFIG_SFC_RATE;
 	clk_set_rate(SFC, sfc->src_clk);
 
 	sfc->threshold = THRESHOLD;

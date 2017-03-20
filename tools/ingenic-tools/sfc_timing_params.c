@@ -29,7 +29,7 @@ int main()
 	unsigned int t_in, c_in, val = 0;
 	unsigned long cycle;
 	unsigned int tmp = 0x7;
-	unsigned int rate =  (unsigned long long)CONFIG_SFC_NOR_RATE / 1000000;
+	unsigned int rate =  (unsigned long long)CONFIG_SFC_RATE / 1000000;
 
 	cycle = 1000 / rate;
 
