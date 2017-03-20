@@ -26,7 +26,7 @@ struct spi_nor_cmd_info {
 
 struct spi_nor_st_info {
 	unsigned short cmd;
-	unsigned char bit;
+	unsigned char bit_shift;
 	unsigned char mask;
 	unsigned char val;
 	unsigned char len; //length of byte to operate from register

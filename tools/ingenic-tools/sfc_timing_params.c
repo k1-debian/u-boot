@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <config.h>
 #include <asm/arch/sfc.h>
 
 static void file_head_print(void)
@@ -28,7 +29,7 @@ int main()
 	unsigned int t_in, c_in, val = 0;
 	unsigned long cycle;
 	unsigned int tmp = 0x7;
-	unsigned int rate =  (unsigned long long)SFC_NOR_RATE / 1000000;
+	unsigned int rate =  (unsigned long long)CONFIG_SFC_NOR_RATE / 1000000;
 
 	cycle = 1000 / rate;
 
@@ -55,7 +56,7 @@ int main()
 	tmp &= ~DEV_CONF_TSH_MSK;
 	tmp |= val << DEV_CONF_TSH_OFFSET;
 
-	if(SFC_NOR_RATE >= 100){
+	if(rate >= 100){
 		val = 1;
 		tmp &= ~DEV_CONF_SMP_DELAY_MSK;
 		tmp |= val << DEV_CONF_SMP_DELAY_OFFSET;

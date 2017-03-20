@@ -174,7 +174,7 @@ extern unsigned int sfc_rate;
 unsigned int cloner_get_flash_info(struct cloner *cloner)
 {
 	unsigned int id_code = 0;
-#ifdef CONFIG_JZ_SFC
+#ifdef CONFIG_JZ_SFC_NOR
 	id_code = get_norflash_id();
 #endif
 	return id_code;
@@ -233,7 +233,7 @@ int cloner_init(struct cloner *cloner)
 		mtd_sfcnand_probe_burner(&(cloner->args->spi_erase),cloner->args->spi_args.sfc_quad_mode,&nand_param_from_burner);
 	}
 #endif
-#ifdef CONFIG_JZ_SFC
+#ifdef CONFIG_JZ_SFC_NOR
 	if(cloner->args->use_sfc_nor){
 		sfc_rate = cloner->args->spi_args.rate;
 		norflash_get_params_from_burner((unsigned char *)cloner->args + sizeof(struct arguments));
@@ -389,7 +389,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 			cloner->ack = spinand_program(cloner);
 			break;
 #endif
-#ifdef CONFIG_JZ_SFC
+#ifdef CONFIG_JZ_SFC_NOR
 		case OPS(SFC_NOR,RAW):
 			cloner->ack = sfc_program(cloner);
 			break;

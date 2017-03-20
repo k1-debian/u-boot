@@ -42,12 +42,10 @@ static inline void sfc_clear_all_intc(struct sfc *sfc)
 	sfc_writel(SFC_SCR, 0x1f);
 }
 
-#if 1
 static inline void sfc_mask_all_intc(struct sfc *sfc)
 {
 	sfc_writel(SFC_INTC, 0x1f);
 }
-#endif
 
 static inline void sfc_set_length(struct sfc *sfc, int value)
 {
@@ -285,7 +283,7 @@ static int set_quad_mode_reg()
 	quad_set = &spi_nor_info->quad_set;
 	quad_get = &spi_nor_info->quad_get;
 	busy = &spi_nor_info->busy;
-	data = (quad_set->val & quad_set->mask) << quad_set->bit;
+	data = (quad_set->val & quad_set->mask) << quad_set->bit_shift;
 
 	write_enable(flash);
 
@@ -303,14 +301,14 @@ static int set_quad_mode_reg()
 	sfc_sync(flash->sfc);
 
 	while (times--) {
-		val = (get_norflash_status(quad_get->cmd, quad_get->len) >> quad_get->bit) & quad_get->mask;
+		val = (get_norflash_status(quad_get->cmd, quad_get->len) >> quad_get->bit_shift) & quad_get->mask;
 		if (val == quad_get->val) {
 		flash->cur_r_cmd = &spi_nor_info->read_quad;
 			break;
 		}
 	}
 
-	while(!(((get_norflash_status(busy->cmd, busy->len) >> busy->bit) & busy->mask) == busy->val));
+	while(!(((get_norflash_status(busy->cmd, busy->len) >> busy->bit_shift) & busy->mask) == busy->val));
 	return ret;
 
 }
@@ -368,7 +366,7 @@ void sfc_init()
 {
 	struct mini_spi_nor_info *spi_nor_info;
 
-	clk_set_rate(SFC, SFC_NOR_RATE);
+	clk_set_rate(SFC, CONFIG_SFC_NOR_RATE);
 	sfc->threshold = THRESHOLD;
 	flash->sfc = sfc;
 

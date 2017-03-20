@@ -1,3 +1,9 @@
+/*
+ * jz_sfc_ops.c is for sfc nor flash to set special function,
+ * such as set_quad_mode, set_4byte_mode, and so on.
+ *
+ */
+
 #include <errno.h>
 
 #include <asm/arch/sfc.h>
@@ -80,7 +86,7 @@ static int set_quad_mode_reg(struct sfc_flash *flash)
 	quad_set = &spi_nor_info->quad_set;
 	quad_get = &spi_nor_info->quad_get;
 	busy = &spi_nor_info->busy;
-	data = (quad_set->val & quad_set->mask) << quad_set->bit;
+	data = (quad_set->val & quad_set->mask) << quad_set->bit_shift;
 	wr_en = &spi_nor_info->wr_en;
 
 	sfc_message_init(&message);
@@ -110,8 +116,8 @@ static int set_quad_mode_reg(struct sfc_flash *flash)
 
 	cmd[2].cmd = quad_get->cmd;
 	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = quad_get->val << quad_get->bit;
-	cmd[2].sta_msk = quad_get->mask << quad_get->bit;
+	cmd[2].sta_exp = quad_get->val << quad_get->bit_shift;
+	cmd[2].sta_msk = quad_get->mask << quad_get->bit_shift;
 	transfer[2].data_dummy_bits = quad_get->dummy;
 	transfer[2].cmd_info = &cmd[2];
 	sfc_message_add_tail(&transfer[2], &message);
@@ -123,7 +129,7 @@ static int set_quad_mode_reg(struct sfc_flash *flash)
 	} else {
 		flash->quad_succeed = 1;
 	}
-	while(!(((get_status(flash, busy->cmd, busy->len) >> busy->bit) & busy->mask) == busy->val));
+	while(!(((get_status(flash, busy->cmd, busy->len) >> busy->bit_shift) & busy->mask) == busy->val));
 	return ret;
 
 }

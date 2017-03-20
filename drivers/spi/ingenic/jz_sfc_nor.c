@@ -6,7 +6,7 @@
 #include <asm/arch/sfc_params.h>
 #include <asm/arch/sfc.h>
 #include <asm/arch/spi_nor.h>
-#include "sfc_common.h"
+#include "jz_sfc_common.h"
 
 
 struct sfc_flash *flash = NULL;
@@ -150,13 +150,11 @@ static unsigned int sfc_nor_read_params(unsigned int addr, unsigned char *buf, u
 	cmd.cmd = SPINOR_OP_READ;
 	cmd.dataen = ENABLE;
 	transfer.addr_len = DEF_ADDR_LEN;
-	transfer.data_dummy_bits = 0;
 	transfer.addr = addr;
 	transfer.len = len;
 	transfer.data = buf;
-	transfer.cur_len = 0;
 	transfer.ops_mode = CPU_OPS;
-	transfer.sfc_mode = 0;
+	transfer.sfc_mode = TM_STD_SPI;
 	transfer.direction = GLB_TRAN_DIR_READ;
 	transfer.cmd_info = &cmd;
 	sfc_message_add_tail(&transfer, &message);
@@ -198,7 +196,6 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	transfer.addr = addr;
 	transfer.len = len;
 	transfer.data = buf;
-	transfer.cur_len = 0;
 	transfer.ops_mode = CPU_OPS;
 	transfer.sfc_mode = transfer_mode;
 	transfer.direction = GLB_TRAN_DIR_READ;
@@ -255,7 +252,6 @@ static unsigned  int sfc_do_write(unsigned int addr, unsigned int len, const uns
 	transfer[1].addr = addr;
 	transfer[1].addr_len = addr_size;
 	transfer[1].len = len;
-	transfer[1].cur_len = 0;
 	transfer[1].data_dummy_bits = dummy_byte;
 	transfer[1].data = buf;
 	transfer[1].ops_mode = CPU_OPS;
@@ -266,8 +262,8 @@ static unsigned  int sfc_do_write(unsigned int addr, unsigned int len, const uns
 
 	cmd[2].cmd = busy->cmd;
 	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = busy->val << busy->bit;
-	cmd[2].sta_msk = busy->mask << busy->bit;
+	cmd[2].sta_exp = busy->val << busy->bit_shift;
+	cmd[2].sta_msk = busy->mask << busy->bit_shift;
 	transfer[2].cmd_info = &cmd[2];
 	sfc_message_add_tail(&transfer[2], &message);
 
@@ -326,8 +322,8 @@ static int sfc_do_erase(uint32_t addr)
 
 	cmd[2].cmd = busy->cmd;
 	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = busy->val << busy->bit;
-	cmd[2].sta_msk = busy->mask << busy->bit;
+	cmd[2].sta_exp = busy->val << busy->bit_shift;
+	cmd[2].sta_msk = busy->mask << busy->bit_shift;
 	transfer[2].cmd_info = &cmd[2];
 	sfc_message_add_tail(&transfer[2], &message);
 
@@ -600,8 +596,8 @@ int jz_sfc_chip_erase()
 
 	cmd[2].cmd = busy->cmd;
 	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = busy->val << busy->bit;
-	cmd[2].sta_msk = busy->mask << busy->bit;
+	cmd[2].sta_exp = busy->val << busy->bit_shift;
+	cmd[2].sta_msk = busy->mask << busy->bit_shift;
 	transfer[2].cmd_info = &cmd[2];
 	sfc_message_add_tail(&transfer[2], &message);
 
@@ -713,21 +709,21 @@ static void dump_cloner_params()
 	printf("en4byte->transfer_mode=0x%x\n",	spi_nor_info->en4byte.transfer_mode);
 
 	printf("quad_set->cmd=0x%x\n",		spi_nor_info->quad_set.cmd);
-	printf("quad_set->bit=0x%x\n",		spi_nor_info->quad_set.bit);
+	printf("quad_set->bit_shift=0x%x\n",		spi_nor_info->quad_set.bit_shift);
 	printf("quad_set->mask=0x%x\n",		spi_nor_info->quad_set.mask);
 	printf("quad_set->val=0x%x\n",		spi_nor_info->quad_set.val);
 	printf("quad_set->len=0x%x\n",		spi_nor_info->quad_set.len);
 	printf("quad_set->dummy=0x%x\n",	spi_nor_info->quad_set.dummy);
 
 	printf("quad_get->cmd=0x%x\n",		spi_nor_info->quad_get.cmd);
-	printf("quad_get->bit=0x%x\n",		spi_nor_info->quad_get.bit);
+	printf("quad_get->bit_shift=0x%x\n",		spi_nor_info->quad_get.bit_shift);
 	printf("quad_get->mask=0x%x\n",		spi_nor_info->quad_get.mask);
 	printf("quad_get->val=0x%x\n",		spi_nor_info->quad_get.val);
 	printf("quad_get->len=0x%x\n",		spi_nor_info->quad_get.len);
 	printf("quad_get->dummy=0x%x\n",	spi_nor_info->quad_get.dummy);
 
 	printf("busy->cmd=0x%x\n",		spi_nor_info->busy.cmd);
-	printf("busy->bit=0x%x\n",		spi_nor_info->busy.bit);
+	printf("busy->bit_shift=0x%x\n",		spi_nor_info->busy.bit_shift);
 	printf("busy->mask=0x%x\n",		spi_nor_info->busy.mask);
 	printf("busy->val=0x%x\n",		spi_nor_info->busy.val);
 	printf("busy->len=0x%x\n",		spi_nor_info->busy.len);
@@ -778,21 +774,21 @@ static void dump_mini_cloner_params()
 	printf("mini_en4byte->transfer_mode=0x%x\n",	spi_nor_info->en4byte.transfer_mode);
 
 	printf("mini_quad_set->cmd=0x%x\n",		spi_nor_info->quad_set.cmd);
-	printf("mini_quad_set->bit=0x%x\n",		spi_nor_info->quad_set.bit);
+	printf("mini_quad_set->bit_shift=0x%x\n",		spi_nor_info->quad_set.bit_shift);
 	printf("mini_quad_set->mask=0x%x\n",		spi_nor_info->quad_set.mask);
 	printf("mini_quad_set->val=0x%x\n",		spi_nor_info->quad_set.val);
 	printf("mini_quad_set->len=0x%x\n",		spi_nor_info->quad_set.len);
 	printf("mini_quad_set->dummy=0x%x\n",	spi_nor_info->quad_set.dummy);
 
 	printf("mini_quad_get->cmd=0x%x\n",		spi_nor_info->quad_get.cmd);
-	printf("mini_quad_get->bit=0x%x\n",		spi_nor_info->quad_get.bit);
+	printf("mini_quad_get->bit_shift=0x%x\n",		spi_nor_info->quad_get.bit_shift);
 	printf("mini_quad_get->mask=0x%x\n",		spi_nor_info->quad_get.mask);
 	printf("mini_quad_get->val=0x%x\n",		spi_nor_info->quad_get.val);
 	printf("mini_quad_get->len=0x%x\n",		spi_nor_info->quad_get.len);
 	printf("mini_quad_get->dummy=0x%x\n",	spi_nor_info->quad_get.dummy);
 
 	printf("mini_busy->cmd=0x%x\n",		spi_nor_info->busy.cmd);
-	printf("mini_busy->bit=0x%x\n",		spi_nor_info->busy.bit);
+	printf("mini_busy->bit_shift=0x%x\n",		spi_nor_info->busy.bit_shift);
 	printf("mini_busy->mask=0x%x\n",		spi_nor_info->busy.mask);
 	printf("mini_busy->val=0x%x\n",		spi_nor_info->busy.val);
 	printf("mini_busy->len=0x%x\n",		spi_nor_info->busy.len);

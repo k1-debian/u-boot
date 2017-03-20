@@ -27,8 +27,8 @@ LIB	:= $(obj)libsfc.o
 
 
 COBJS-y += jz_sfc_nor.o
-COBJS-y += sfc_common.o
-COBJS-y += sfc_ops.o
+COBJS-y += jz_sfc_common.o
+COBJS-y += jz_sfc_ops.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

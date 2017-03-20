@@ -24,7 +24,7 @@
 #include <asm/arch/sfc.h>
 
 
-#define	SFC_NOR_DEBUG
+//#define	SFC_NOR_DEBUG
 
 
 
@@ -643,18 +643,21 @@ void sfc_set_mem_addr(struct sfc *sfc,unsigned int addr )
 	sfc_writel(sfc, SFC_MEM_ADDR, addr);
 }
 
-static void sfc_sr_handle(struct sfc *sfc)
+static int sfc_sr_handle(struct sfc *sfc)
 {
+	int ret;
 	while (1) {
 		if (sfc_underrun(sfc)) {
 			sfc_clear_under_intc(sfc);
 			printk("sfc UNDR !\n");
+			ret = -1;
 			break;
 		}
 
 		if (sfc_overrun(sfc)) {
 			sfc_clear_over_intc(sfc);
 			printk("sfc OVER !\n");
+			ret = -1;
 			break;
 		}
 
@@ -670,21 +673,23 @@ static void sfc_sr_handle(struct sfc *sfc)
 
 		if(sfc_end(sfc)){
 			sfc_clear_end_intc(sfc);
+			ret = 0;
 			break;
 		}
 	}
+	return ret;
 }
 
 static int sfc_start_transfer(struct sfc *sfc)
 {
-	int err;
+	int ret;
 	sfc_clear_all_intc(sfc);
 	sfc_mask_all_intc(sfc);
 	sfc_start(sfc);
 
-	sfc_sr_handle(sfc);
+	ret = sfc_sr_handle(sfc);
 
-	return 0;
+	return ret;
 }
 static void sfc_phase_transfer(struct sfc *sfc,struct sfc_transfer *
 		transfer,int channel)
@@ -833,7 +838,7 @@ struct sfc *sfc_res_init()
 	}
 	memset(sfc, 0, sizeof(struct sfc));
 
-	sfc->src_clk = SFC_NOR_RATE;
+	sfc->src_clk = CONFIG_SFC_NOR_RATE;
 	clk_set_rate(SFC, sfc->src_clk);
 
 	sfc->threshold = THRESHOLD;

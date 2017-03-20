@@ -551,6 +551,7 @@
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SFC_QUAD
+#define CONFIG_SFC_NOR_RATE    110000000
 #endif
 
 #ifdef CONFIG_JZ_SFC_NOR

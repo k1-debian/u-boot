@@ -230,7 +230,6 @@ struct sfc_flash {
 
 #define THRESHOLD		31
 
-#define SFC_NOR_RATE    110000000
 #define DEF_ADDR_LEN    3
 #define DEF_TCHSH       5
 #define DEF_TSLCH       5
