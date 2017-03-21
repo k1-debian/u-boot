@@ -99,6 +99,7 @@
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
+#define CONFIG_SFC_RATE    150000000
 /*#define CONFIG_SFC_QUAD*/
 /*#define SFC_NOR_CLONER_DEBUG*/
 #endif
