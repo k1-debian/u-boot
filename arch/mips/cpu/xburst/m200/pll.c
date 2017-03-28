@@ -237,6 +237,10 @@ static void final_fill_div(int cpll, int ddrpll)
 
 	pll_cfg.l2div = cpu_pll_freq/l2cache_clk;
 
+        /* optimize decimal problem */
+	(cpu_pll_freq / pll_cfg.l2div) > (Periph_pll_freq / pll_cfg.h0div) * 3/2 ? pll_cfg.l2div += 1 : NULL;
+        /* pll_cfg.l2div = (cpu_pll_freq + l2cache_clk - 1)/l2cache_clk; // another method from dsqiu */
+
 	printf("pll_cfg.pdiv = %d, pll_cfg.h2div = %d, pll_cfg.h0div = %d, pll_cfg.cdiv = %d, pll_cfg.l2div = %d\n",
 			pll_cfg.pdiv,pll_cfg.h2div,pll_cfg.h0div,pll_cfg.cdiv,pll_cfg.l2div);
 	return;
