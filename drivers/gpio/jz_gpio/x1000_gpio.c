@@ -84,3 +84,10 @@ static struct jz_gpio_func_def gpio_func[] = {
 	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x3ff << 6, },
 #endif
 };
+static struct jz_gpio_func_def gpio_pull[] = {
+#ifdef CONFIG_JZ_SFC_PA_6BIT
+	{ .port = GPIO_PORT_A, .func = GPIO_PULL, .pins = 0x3f <<26, },
+#endif
+};
+
+

@@ -38,6 +38,7 @@ enum gpio_function {
         GPIO_OUTPUT1    = 0x05,  //0101, GPIO output high level
 	GPIO_INPUT	= 0x06,	 //0110, GPIO as input
 	GPIO_RISE_EDGE  = 0x0b,	//1011, GPIO as rise edge interrupt
+	GPIO_PULL       = 0x10,	//10000, GPIO set pull
 };
 
 enum gpio_port {
