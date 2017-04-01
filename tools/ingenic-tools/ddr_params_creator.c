@@ -391,6 +391,14 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 	for(i = 0;i < 4;i++)
 		ddrp->dxngcrt[i].d32 = 0x00090e80;
 	i = 0;
+
+#ifdef CONFIG_DDR_PHY_IO_MODE_LVCOMS
+/* only for Mobile DDR SDRM, also can be called LPDDR. */
+	for(i = 0;i < 4;i++){
+		ddrp->dxngcrt[i].b.dxiom = 1;   // 0 -> SSTL mode, 1 -> CMOS mode.
+	}
+#endif
+
 #ifdef CONFIG_DDR_PHY_ODT
 	for(i = 0;i < (CONFIG_DDR_DW32 + 1) * 2;i++){
 		ddrp->dxngcrt[i].b.dqsrtt = 1;
