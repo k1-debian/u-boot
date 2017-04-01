@@ -420,15 +420,88 @@ int sfc_nor_page_write(unsigned int to, unsigned int len, unsigned char *buf)
 
 }
 
+
+#ifdef CONFIG_BURNER
+
+static struct legacy_params g_legacy_params;
+static struct legacy_params *params_compatibility()
+{
+	int val, mask, bit_shift;
+	struct legacy_params *p = &g_legacy_params;
+
+	memset(p, 0, sizeof(struct legacy_params));
+
+	p->magic = params.magic;
+	p->version = 1;
+
+	memcpy(p->nor_params.name, params.spi_nor_info.name, sizeof(SIZEOF_NAME));
+	p->nor_params.pagesize = params.spi_nor_info.page_size;
+	p->nor_params.sectorsize = 4096;
+	p->nor_params.chipsize = params.spi_nor_info.chip_size;
+	p->nor_params.erasesize = params.spi_nor_info.erase_size;
+	p->nor_params.id = params.spi_nor_info.id;
+
+	if (p->nor_params.chipsize > 0x1000000 ) {
+		p->nor_params.addrsize = 4;
+	} else {
+		p->nor_params.addrsize = 3;
+	}
+
+	p->nor_params.block_info.cmd_blockerase = params.spi_nor_info.sector_erase.cmd;
+	p->nor_params.quad_mode.dummy_byte = params.spi_nor_info.read_quad.dummy_byte;
+	p->nor_params.quad_mode.RDSR_CMD = params.spi_nor_info.quad_get.cmd;
+	p->nor_params.quad_mode.WRSR_CMD = params.spi_nor_info.quad_set.cmd;
+
+	val = params.spi_nor_info.quad_get.val;
+	mask = params.spi_nor_info.quad_get.mask;
+	bit_shift = params.spi_nor_info.quad_get.bit_shift;
+	p->nor_params.quad_mode.RDSR_DATA = (val & mask) << bit_shift;
+	p->nor_params.quad_mode.RD_DATA_SIZE = params.spi_nor_info.quad_set.bit_shift / 8 + 1;
+
+	val = params.spi_nor_info.quad_set.val;
+	mask = params.spi_nor_info.quad_set.mask;
+	bit_shift = params.spi_nor_info.quad_set.bit_shift;
+	p->nor_params.quad_mode.WRSR_DATA = (val & mask) << bit_shift;
+	p->nor_params.quad_mode.WD_DATA_SIZE = params.spi_nor_info.quad_set.bit_shift / 8 + 1;
+
+	p->nor_params.quad_mode.cmd_read = params.spi_nor_info.read_quad.cmd;
+	p->nor_params.quad_mode.sfc_mode = params.spi_nor_info.read_quad.transfer_mode;
+
+	memcpy(&p->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));
+
+	return p;
+}
+#endif
+
+
 int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
 	int ret = 0;
 	int i;
 
 #ifdef CONFIG_BURNER
+	struct legacy_params *l_params;
+	int spl_version;
 	if (to == 0) {
-		memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &params, sizeof(struct burner_params));
-		memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
+		/* spl_version is in 16byte of spl header,
+		 * spl_version = 0x01, spl is new code, NOR_VERSION is 2,
+		 * spl_version = 0x00, spl is old code, NOR_VERSION is 1.
+		 * */
+		spl_version = buf[CONFIG_SPL_VERSION_OFFSET];
+		switch (spl_version) {
+			case 0:
+				l_params = params_compatibility();
+				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, l_params, sizeof(struct legacy_params));
+				break;
+			case 1:
+				params.version = NOR_VERSION;
+				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &params, sizeof(struct burner_params));
+				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
+				break;
+			default:
+				printf("spl uboot version error !\n");
+				break;
+		}
 	}
 #endif
 	ret = sfc_nor_page_write(to, len, buf);
@@ -826,18 +899,18 @@ int norflash_get_params_from_burner(unsigned char *addr)
 
 
 #ifdef SFC_NOR_CLONER_DEBUG
-		dump_cloner_params();
-		dump_mini_cloner_params();
+	dump_cloner_params();
+	dump_mini_cloner_params();
 #endif
 
-		if (!memcmp(&params.spi_nor_info, 0, sizeof(struct spi_nor_info))) {
-			printf("unsupport nor flash, no params in burner\n");
-			return -1;
-		}
-		if (!memcmp(&mini_params, 0, sizeof(struct mini_spi_nor_info))) {
-			printf("unsupport nor flash, no mini params in burner\n");
-			return -1;
-		}
+	if (!memcmp(&params.spi_nor_info, 0, sizeof(struct spi_nor_info))) {
+		printf("unsupport nor flash, no params in burner\n");
+		return -1;
+	}
+	if (!memcmp(&mini_params, 0, sizeof(struct mini_spi_nor_info))) {
+		printf("unsupport nor flash, no mini params in burner\n");
+		return -1;
+	}
 
 
 	memcpy(flash->g_nor_info, &params.spi_nor_info, sizeof(struct spi_nor_info));

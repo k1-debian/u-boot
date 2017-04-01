@@ -56,8 +56,9 @@ _start:
 	.word (0x00000000 | (SSI_PPB<<16) | (SSI_BPP<<24))
 #endif
 	.word 0x00000000
+	.word (0x00000000 | CONFIG_SPL_VERSION)
 
-	.space (512-16),0
+	.space (512-20),0
 	RESERVED_FOR_SC(0)
 #endif
 
