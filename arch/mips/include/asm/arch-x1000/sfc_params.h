@@ -5,7 +5,7 @@
 #define SIZEOF_NAME			32
 
 #define NOR_MAGIC	0x726f6e	//ascii "nor"
-#define NOR_MAJOR_VERSION_NUMBER        1
+#define NOR_MAJOR_VERSION_NUMBER        2
 #define NOR_MINOR_VERSION_NUMBER        0
 #define NOR_REVERSION_NUMBER    0
 #define NOR_VERSION             (NOR_MAJOR_VERSION_NUMBER | (NOR_MINOR_VERSION_NUMBER << 8) | (NOR_REVERSION_NUMBER << 16))
@@ -113,14 +113,66 @@ struct burner_params {
 };
 
 
-
-
-
-
 struct spiflash_info {
 	struct burner_params burner_params;
 	struct mini_spi_nor_info mini_spi_nor_info;
 };
+
+
+
+
+
+
+struct nor_block_info {
+	unsigned int blocksize;
+	unsigned char cmd_blockerase;
+	/* MAX Busytime for block erase, unit: ms */
+	unsigned int be_maxbusy;
+};
+
+struct quad_mode {
+	unsigned char dummy_byte;
+	unsigned char RDSR_CMD;
+	unsigned char WRSR_CMD;
+	unsigned int RDSR_DATA;//the data is write the spi status register for QE bit
+	unsigned int RD_DATA_SIZE;//the data is write the spi status register for QE bit
+	unsigned int WRSR_DATA;//this bit should be the flash QUAD mode enable
+	unsigned int WD_DATA_SIZE;//the data is write the spi status register for QE bit
+	unsigned char cmd_read;
+	unsigned char sfc_mode;
+};
+struct nor_params {
+	char name[SIZEOF_NAME];
+	unsigned int pagesize;
+	unsigned int sectorsize;
+	unsigned int chipsize;
+	unsigned int erasesize;
+	int id;
+	/* Flash Address size, unit: Bytes */
+	int addrsize;
+
+	/* MAX Busytime for page program, unit: ms */
+	unsigned int pp_maxbusy;
+	/* MAX Busytime for sector erase, unit: ms */
+	unsigned int se_maxbusy;
+	/* MAX Busytime for chip erase, unit: ms */
+	unsigned int ce_maxbusy;
+
+	/* Flash status register num, Max support 3 register */
+	int st_regnum;
+	/* Some NOR flash has different blocksize and block erase command,
+	 *          * One command with One blocksize. */
+	struct nor_block_info block_info;
+	struct quad_mode quad_mode;
+};
+struct legacy_params {
+	uint32_t magic;
+	uint32_t version;
+	struct nor_params nor_params;
+	struct norflash_partitions norflash_partitions;
+
+};
+
 
 
 #endif

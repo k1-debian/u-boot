@@ -111,6 +111,7 @@
 
 #if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
 #define CONFIG_SPL_SFC_SUPPORT
+#define CONFIG_SPL_VERSION	1
 #endif
 
 /**

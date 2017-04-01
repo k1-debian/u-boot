@@ -102,6 +102,7 @@
 #define CONFIG_SFC_RATE    150000000
 /*#define CONFIG_SFC_QUAD*/
 /*#define SFC_NOR_CLONER_DEBUG*/
+#define CONFIG_SPL_VERSION_OFFSET	16
 #endif
 
 
