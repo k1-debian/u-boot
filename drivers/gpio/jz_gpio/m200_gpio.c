@@ -104,3 +104,5 @@ static struct jz_gpio_func_def gpio_func[] = {
 	{ .port = GPIO_PORT_E, .func = GPIO_FUNC_0, .pins = 0x30f00000},
 #endif
 };
+static struct jz_gpio_func_def gpio_pull[] = {
+};
