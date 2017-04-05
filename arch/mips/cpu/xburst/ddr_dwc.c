@@ -410,6 +410,17 @@ static void ddr_phy_init_dram(int bypass,enum ddr_type type)
 	}
 	FUNC_EXIT();
 }
+static struct jzsoc_ddr_hook *ddr_hook = NULL;
+void register_ddr_hook(struct jzsoc_ddr_hook * hook)
+{
+	ddr_hook = hook;
+}
+static void force_no_slefresh(void)
+{
+	/* force CKE1 CS1 HIGH */
+	ddr_writel(DDRC_CFG_VALUE | DDRC_CFG_CS1EN |  DDRC_CFG_CS0EN, DDRC_CFG);
+	ddr_writel((1 << 1), DDRC_CTRL);
+}
 void ddr_phy_init(int bypass,enum ddr_type type)
 {
 	int ret;
@@ -418,28 +429,16 @@ void ddr_phy_init(int bypass,enum ddr_type type)
 	/* DDR training address set*/
 	ddr_phy_param_config(bypass,type);
 	ddr_phy_init_dram(bypass,type);
+
+	if(ddr_hook && ddr_hook->reset_controller)
+		ddr_hook->reset_controller(bypass,type);
+	force_no_slefresh();
 	ret = ddr_training_hardware(bypass);
 	if(ret)
 		ddr_hang();
 	FUNC_EXIT();
 }
-static void controller_reset_phy (void)
-{
-	FUNC_ENTER();
-	ddr_writel(0xf << 20, DDRC_CTRL);
-	mdelay(1);
-	ddr_writel(0, DDRC_CTRL);
-	mdelay(1);
-	/*force CKE1 CS1 HIGH*/
-	ddr_writel(DDRC_CFG_VALUE | DDRC_CFG_CS1EN |  DDRC_CFG_CS0EN, DDRC_CFG);
-	ddr_writel((1 << 1), DDRC_CTRL);
-	FUNC_EXIT();
-}
-static struct jzsoc_ddr_hook *ddr_hook = NULL;
-void register_ddr_hook(struct jzsoc_ddr_hook * hook)
-{
-	ddr_hook = hook;
-}
+
 extern void soc_ddr_init(void);
 void sdram_init(void)
 {
@@ -457,7 +456,7 @@ void sdram_init(void)
 		bypass = 1;
 	if(ddr_hook && ddr_hook->prev_ddr_init)
 		ddr_hook->prev_ddr_init(bypass,type);
-	controller_reset_phy();
+
 	/* DDR PHY init*/
 	ddr_phy_init(bypass,type);
 	dump_ddrp_register();
