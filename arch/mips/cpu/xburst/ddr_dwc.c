@@ -266,11 +266,19 @@ static void ddr_phy_param_config(int bypass,enum ddr_type type)
 	 *      Note: DQS resistor must be connected for LPDDR/LPDDR2    *
 	 *****************************************************************
 	 *     the config will affect power and stablity
+	 *
+	 *     DXIOM: 1bit
+	 *           Data I/O Mode: Selects SSTL mode (when set to 0)
+	 *                           or CMOS mode (when set to 1)
+	 *     I/O Mode: I/O Mode select
+	 *           0 = DDR2/DDR3/DDR3L/LPDDR2 mode
+	 *           1 = Mobile DDR mode
+	 *
 	 */
 	switch(type){
 	case LPDDR:
 		ddr_writel(0x30c00813, DDRP_ACIOCR);
-		ddr_writel(0x4910, DDRP_DXCCR);
+		ddr_writel(0x4911, DDRP_DXCCR);
 		ddr_writel(DDRP_MR0_VALUE, DDRP_MR0);
 		ddr_writel(DDRP_MR2_VALUE, DDRP_MR2);
 		break;
