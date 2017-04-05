@@ -54,7 +54,7 @@
 # Generated files
 #
 
-kk
+/tools/ingenic-tools/sfc_timing_params
 /include/charge_logo.h
 /tools/logos/ingenic.rle
 /include/rle_boot_logo.h

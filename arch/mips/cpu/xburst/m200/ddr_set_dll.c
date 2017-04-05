@@ -42,8 +42,8 @@ static void prev_ddr_init(int bypass,enum ddr_type type)
 	cpm_writel(0x7d | (1 << 6), CPM_DRCG);
 	mdelay(1);
 
-	/* reset dll and dfi */
-	ddr_writel(0xc << 21 | 1, DDRC_PHYRST_CFG);
+	/* reset phy dll dfi and cfg */
+	ddr_writel(0xd << 21 | 1, DDRC_PHYRST_CFG);
 	mdelay(1);
 	ddr_writel(0, DDRC_PHYRST_CFG);
 	mdelay(1);
@@ -59,8 +59,8 @@ static void dynamic_clk_gate_enable(int bypass,enum ddr_type type)
 }
 static void apb_rest_crtl(int bypass,enum ddr_type type)
 {
-	/* reset DDR ctrl and cfg */
-	ddr_writel(0x3 << 21, DDRC_PHYRST_CFG);
+	/* reset DDR ctrl */
+	ddr_writel(0x2 << 21, DDRC_PHYRST_CFG);
 	mdelay(1);
 	ddr_writel(0, DDRC_PHYRST_CFG);
 	mdelay(1);

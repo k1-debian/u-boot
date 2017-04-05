@@ -64,13 +64,6 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x10? pins : 0, base + PXPEC);
 	writel(func & 0x10? 0 : pins, base + PXPES);
 }
-void gpio_set_pull(enum gpio_port n, enum gpio_function func, unsigned int pins)
-{
-	unsigned int base = GPIO_BASE + 0x100 * n;
-
-	writel(func & 0x10? pins : 0, base + PXPEC);
-	writel(func & 0x10? 0 : pins, base + PXPES);
-}
 
 int gpio_request(unsigned gpio, const char *label)
 {
@@ -149,7 +142,6 @@ int gpio_clear_flag(unsigned gpio)
 	writel(1 << pin, GPIO_PXFLGC(port));
 	return 0;
 }
-
 
 int gpio_direction_input(unsigned gpio)
 {
@@ -249,10 +241,6 @@ void gpio_ack_irq(unsigned gpio)
 }
 
 void dump_gpio_func( unsigned int gpio);
-void gpio_uart_enable_pull(unsigned int port, unsigned int pin)
-{
-	writel(pin, GPIO_PXPEC(port));
-}
 void gpio_init(void)
 {
 	int i, n;
@@ -275,15 +263,6 @@ void gpio_init(void)
 	g = &uart_gpio_func[gd->arch.gi->uart_idx];
 #endif
 	gpio_set_func(g->port, g->func, g->pins);
-
-	n = ARRAY_SIZE(gpio_pull);
-
-	for (i = 0; i < n; i++) {
-		g = &gpio_pull[i];
-		gpio_set_pull(g->port,g->func, g->pins);
-	}
-
-	gpio_uart_enable_pull(g->port, g->pins);
 
 #ifndef CONFIG_SPL_BUILD
 #ifdef CONFIG_JZ_PCA953X

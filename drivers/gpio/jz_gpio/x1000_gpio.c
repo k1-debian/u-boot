@@ -75,7 +75,7 @@ static struct jz_gpio_func_def gpio_func[] = {
 	{ .port = GPIO_PORT_E, .func = GPIO_FUNC_0, .pins = 1 << 3, },
 #endif
 #ifdef CONFIG_JZ_SFC_PA_6BIT
-	{ .port = GPIO_PORT_A, .func = GPIO_FUNC_1, .pins = 0x3f <<26, },
+	{ .port = GPIO_PORT_A, .func = GPIO_FUNC_1 | GPIO_PULL, .pins = 0x3f <<26, },
 #endif
 #ifdef CONFIG_JZ_PMU_SLP_OUTPUT1
 	{ .port = GPIO_PORT_C, .func = GPIO_OUTPUT1, .pins = 0x1 <<22, },
@@ -84,10 +84,3 @@ static struct jz_gpio_func_def gpio_func[] = {
 	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x3ff << 6, },
 #endif
 };
-static struct jz_gpio_func_def gpio_pull[] = {
-#ifdef CONFIG_JZ_SFC_PA_6BIT
-	{ .port = GPIO_PORT_A, .func = GPIO_PULL, .pins = 0x3f <<26, },
-#endif
-};
-
-

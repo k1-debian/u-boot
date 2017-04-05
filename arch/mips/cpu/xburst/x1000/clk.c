@@ -222,7 +222,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 	pll_rate = pll_get_rate(cgu->sel_src);
 
 	if(!pll_rate) {
-		printf("clk id %d: get pll error\n", clk_id);
+		debug("clk id %d: get pll error\n", clk_id);
 		return;
 	}
 

@@ -16,9 +16,8 @@
 
 #define GS_RETRY_TIMES	100
 
-
-struct sfc_flash flash[1];
-struct sfc sfc[1];
+struct sfc_flash *flash = (CONFIG_SYS_TEXT_BASE + 0x500000);
+struct sfc *sfc = (CONFIG_SYS_TEXT_BASE + 0x504000);
 
 static inline void sfc_writel(unsigned short offset, u32 value)
 {
@@ -29,7 +28,6 @@ static inline unsigned int sfc_readl(unsigned short offset)
 {
 	return readl(SFC_BASE + offset);
 }
-
 
 static inline void sfc_flush_and_start(struct sfc *sfc)
 {
@@ -52,10 +50,9 @@ static inline void sfc_set_length(struct sfc *sfc, int value)
 	sfc_writel(SFC_TRAN_LEN, value);
 }
 
-
-static inline void sfc_read_rxfifo(struct sfc *sfc, unsigned int *value)
+static inline unsigned int sfc_read_rxfifo(struct sfc *sfc)
 {
-	*(volatile unsigned int*)value = sfc_readl(SFC_RM_DR);
+	return sfc_readl(SFC_RM_DR);
 }
 
 static inline void sfc_write_txfifo(struct sfc *sfc, const unsigned int value)
@@ -84,7 +81,7 @@ static unsigned int cpu_read_rxfifo(struct sfc *sfc)
 	}
 
 	for (i = 0; i < fifo_num; i++) {
-		sfc_read_rxfifo(sfc, (unsigned int *)sfc->transfer->data);
+		*(unsigned int *)sfc->transfer->data = sfc_read_rxfifo(sfc);
 		sfc->transfer->data += 4;
 		sfc->transfer->cur_len += 4;
 	}
@@ -538,5 +535,3 @@ void spl_sfc_nor_load_image(void)
 	return ;
 
 }
-
-
