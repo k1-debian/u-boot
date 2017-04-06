@@ -278,7 +278,7 @@ static void ddr_phy_param_config(int bypass,enum ddr_type type)
 	switch(type){
 	case LPDDR:
 		ddr_writel(0x30c00813, DDRP_ACIOCR);
-		ddr_writel(0x4911, DDRP_DXCCR);
+		ddr_writel(0x4912, DDRP_DXCCR);
 		ddr_writel(DDRP_MR0_VALUE, DDRP_MR0);
 		ddr_writel(DDRP_MR2_VALUE, DDRP_MR2);
 		break;
