@@ -16,6 +16,7 @@
  */
 
 
+#include <config.h>
 #include <common.h>
 #include <malloc.h>
 #include <errno.h>
@@ -27,10 +28,12 @@
 #include <linux/mtd/nand.h>
 #include <asm/arch/spi.h>
 #include <asm/arch/sfc.h>
+#include <asm/io.h>
 #include <ingenic_nand_mgr/nand_param.h>
 #include "../spi/spi_flash_internal.h"
 #include "../../spi/jz_spi.h"
 #include "jz_spinand.h"
+#include <asm/arch/sfc-jz.h>
 
 #include <cloner/cloner.h>
 #include <asm/arch/cpm.h>
@@ -43,14 +46,8 @@ static const char *const mtdids_default = MTDIDS_DEFAULT;
 static const char *const mtdids_default = "nand0:nand";
 #endif
 
-extern int read_sfcnand_id(u8 *response,size_t len);
-extern int read_sfcnand_id_func2(u8 *response,size_t len);
-int (*id_detect_funcs[])(u8*,  size_t)  = {
-					read_sfcnand_id,
-					read_sfcnand_id_func2,
-				         };
 
-extern unsigned int sfc_rate ;
+unsigned int sfc_rate = 0;
 unsigned short column_cmdaddr_bits=24;/* read from cache ,the bits of cmd + addr */
 
 struct nand_param_from_burner nand_param_from_burner;
@@ -58,8 +55,6 @@ struct nand_param_from_burner nand_param_from_burner;
 #define SIZE_KERNEL 0x800000    /* 8M */
 #define SIZE_ROOTFS (0x100000 * 40)        /* -1: all of left */
 
-extern unsigned int sfc_rate ;
-unsigned short column_cmdaddr_bits;/* read from cache ,the bits of cmd + addr */
 static struct jz_spinand_partition jz_mtd_spinand_partition[] = {
         {
                 .name =     "uboot",
@@ -88,9 +83,337 @@ static int t_write = 700;
 static int t_erase = 5000;
 
 
+static int mode = 0;
+struct jz_sfc {
+	unsigned int  addr;
+	unsigned int  len;
+	unsigned int  cmd;
+	unsigned int  addr_plus;
+	unsigned int  sfc_mode;
+	unsigned char daten;
+	unsigned char addr_len;
+	unsigned char pollen;
+	unsigned char phase;
+	unsigned char dummy_byte;
+};
+
+
+static uint32_t jz_sfc_readl(unsigned int offset)
+{
+	return readl(SFC_BASE + offset);
+}
+
+static void jz_sfc_writel(unsigned int value, unsigned int offset)
+{
+	writel(value, SFC_BASE + offset);
+}
+
+static void dump_sfc_reg()
+{
+	int i = 0;
+	printf("SFC_GLB			:%x\n", jz_sfc_readl(SFC_GLB ));
+	printf("SFC_DEV_CONF	:%x\n", jz_sfc_readl(SFC_DEV_CONF ));
+	printf("SFC_DEV_STA_RT	:%x\n", jz_sfc_readl(SFC_DEV_STA_RT ));
+	printf("SFC_DEV_STA_MSK	:%x\n", jz_sfc_readl(SFC_DEV_STA_MSK ));
+	printf("SFC_TRAN_LEN		:%x\n", jz_sfc_readl(SFC_TRAN_LEN ));
+
+	for(i = 0; i < 6; i++)
+		printf("SFC_TRAN_CONF(%d)	:%x\n", i,jz_sfc_readl(SFC_TRAN_CONF(i)));
+
+	for(i = 0; i < 6; i++)
+		printf("SFC_DEV_ADDR(%d)	:%x\n", i,jz_sfc_readl(SFC_DEV_ADDR(i)));
+
+	printf("SFC_MEM_ADDR :%x\n", jz_sfc_readl(SFC_MEM_ADDR));
+	printf("SFC_TRIG	 :%x\n", jz_sfc_readl(SFC_TRIG));
+	printf("SFC_SR		 :%x\n", jz_sfc_readl(SFC_SR));
+	printf("SFC_SCR		 :%x\n", jz_sfc_readl(SFC_SCR));
+	printf("SFC_INTC	 :%x\n", jz_sfc_readl(SFC_INTC));
+	printf("SFC_FSM		 :%x\n", jz_sfc_readl(SFC_FSM ));
+	printf("SFC_CGE		 :%x\n", jz_sfc_readl(SFC_CGE ));
+
+}
+
+static void sfc_transfer_direction(int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = jz_sfc_readl(SFC_GLB);
+		tmp &= ~TRAN_DIR;
+		jz_sfc_writel(tmp,SFC_GLB);
+	} else {
+		unsigned int tmp;
+		tmp = jz_sfc_readl(SFC_GLB);
+		tmp |= TRAN_DIR;
+		jz_sfc_writel(tmp,SFC_GLB);
+	}
+}
+
+static void sfc_set_length(int value)
+{
+	jz_sfc_writel(value,SFC_TRAN_LEN);
+}
+static void sfc_set_addr_length(int channel, unsigned int value)
+{
+	unsigned int tmp;
+	tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+	tmp &= ~(ADDR_WIDTH_MSK);
+	tmp |= (value << ADDR_WIDTH_OFFSET);
+	jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+}
+
+static void sfc_cmd_en(int channel, unsigned int value)
+{
+	if(value == 1) {
+		unsigned int tmp;
+		tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+		tmp |= CMDEN;
+		jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+	} else {
+		unsigned int tmp;
+		tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+		tmp &= ~CMDEN;
+		jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+	}
+}
+
+static void sfc_data_en(int channel, unsigned int value)
+{
+	if(value == 1) {
+		unsigned int tmp;
+		tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+		tmp |= DATEEN;
+		jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+	} else {
+		unsigned int tmp;
+		tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+		tmp &= ~DATEEN;
+		jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+	}
+}
+
+static void sfc_write_cmd(int channel, unsigned int value)
+{
+	unsigned int tmp;
+	tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+	tmp &= ~CMD_MSK;
+	tmp |= value;
+	jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+}
+
+static void sfc_dev_addr(int channel, unsigned int value)
+{
+	jz_sfc_writel(value, SFC_DEV_ADDR(channel));
+}
+
+static void sfc_dev_addr_plus(int channel, unsigned int value)
+{
+	jz_sfc_writel(value,SFC_DEV_ADDR_PLUS(channel));
+}
+static void sfc_dev_addr_dummy_bytes(int channel, unsigned int value)
+{
+	unsigned int tmp;
+	tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+	tmp &= ~TRAN_CONF_DMYBITS_MSK;
+	tmp |= (value << TRAN_CONF_DMYBITS_OFFSET);
+	jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+}
+static void sfc_set_mode(int channel, int value)
+{
+	unsigned int tmp;
+	tmp = jz_sfc_readl(SFC_TRAN_CONF(channel));
+	tmp &= ~(TRAN_MODE_MSK);
+	tmp |= (value << TRAN_MODE_OFFSET);
+	jz_sfc_writel(tmp,SFC_TRAN_CONF(channel));
+}
+
+
+
+static void sfc_set_transfer(struct jz_sfc *hw,int dir)
+{
+	if(dir == 1)
+		sfc_transfer_direction(GLB_TRAN_DIR_WRITE);
+	else
+		sfc_transfer_direction(GLB_TRAN_DIR_READ);
+	sfc_set_length(hw->len);
+	sfc_set_addr_length(0, hw->addr_len);
+	sfc_cmd_en(0, 0x1);
+	sfc_data_en(0, hw->daten);
+	sfc_write_cmd(0, hw->cmd);
+	sfc_dev_addr(0, hw->addr);
+	sfc_dev_addr_plus(0, hw->addr_plus);
+	sfc_dev_addr_dummy_bytes(0,hw->dummy_byte);
+	sfc_set_mode(0,hw->sfc_mode);
+
+}
+static int sfc_read_data(unsigned int *data, unsigned int length)
+{
+	unsigned int tmp_len = 0;
+	unsigned int fifo_num = 0;
+	unsigned int i;
+	unsigned int reg_tmp = 0;
+	unsigned int  len = (length + 3) / 4 ;
+	unsigned int time_out = 1000;
+
+	while(1){
+		reg_tmp = jz_sfc_readl(SFC_SR);
+		if (reg_tmp & RECE_REQ) {
+			jz_sfc_writel(CLR_RREQ,SFC_SCR);
+			if ((len - tmp_len) > THRESHOLD)
+				fifo_num = THRESHOLD;
+			else {
+				fifo_num = len - tmp_len;
+			}
+
+			for (i = 0; i < fifo_num; i++) {
+				*data = jz_sfc_readl(SFC_DR);
+				data++;
+				tmp_len++;
+			}
+		}
+		if (tmp_len == len)
+			break;
+	}
+
+	reg_tmp = jz_sfc_readl(SFC_SR);
+	while (!(reg_tmp & END)){
+		reg_tmp = jz_sfc_readl(SFC_SR);
+	}
+
+	if ((jz_sfc_readl(SFC_SR)) & END)
+		jz_sfc_writel(CLR_END,SFC_SCR);
+
+
+	return 0;
+}
+static int sfc_write_data(unsigned int *data, unsigned int length)
+{
+	unsigned int tmp_len = 0;
+	unsigned int fifo_num = 0;
+	unsigned int i;
+	unsigned int reg_tmp = 0;
+	unsigned int  len = (length + 3) / 4 ;
+	unsigned int time_out = 10000;
+
+	while(1){
+		reg_tmp = jz_sfc_readl(SFC_SR);
+		if (reg_tmp & TRAN_REQ) {
+			jz_sfc_writel(CLR_TREQ,SFC_SCR);
+			if ((len - tmp_len) > THRESHOLD)
+				fifo_num = THRESHOLD;
+			else {
+				fifo_num = len - tmp_len;
+			}
+
+			for (i = 0; i < fifo_num; i++) {
+				jz_sfc_writel(*data,SFC_DR);
+				data++;
+				tmp_len++;
+			}
+		}
+		if (tmp_len == len)
+			break;
+	}
+
+	reg_tmp = jz_sfc_readl(SFC_SR);
+	while (!(reg_tmp & END)){
+		reg_tmp = jz_sfc_readl(SFC_SR);
+	}
+
+	if ((jz_sfc_readl(SFC_SR)) & END)
+		jz_sfc_writel(CLR_END,SFC_SCR);
+
+
+	return 0;
+}
+
+
+
+void sfc_send_cmd(unsigned char *cmd,unsigned int len,unsigned int addr ,unsigned addr_len,unsigned dummy_byte,unsigned int daten,unsigned char dir)
+{
+	struct jz_sfc sfc;
+	unsigned int reg_tmp = 0;
+	sfc.cmd = *cmd;
+	sfc.addr_len = addr_len;
+	//sfc.addr = ((*addr << 16) &0x00ff0000) | ((*(addr + 1) << 8)&0x0000ff00) |((*(addr + 2))&0xff);
+	sfc.addr = addr;
+	sfc.addr_plus = 0;
+	sfc.dummy_byte = dummy_byte;
+	sfc.daten = daten;
+	sfc.len = len;
+
+	if((daten == 1)&&(addr_len != 0)){
+		sfc.sfc_mode = mode;
+	}else{
+		sfc.sfc_mode = 0;
+	}
+	sfc_set_transfer(&sfc,dir);
+	jz_sfc_writel(1 << 2,SFC_TRIG);
+	jz_sfc_writel(START,SFC_TRIG);
+
+	/*this must judge the end status*/
+	if((daten == 0)){
+		reg_tmp = jz_sfc_readl(SFC_SR);
+		while (!(reg_tmp & END)){
+			reg_tmp = jz_sfc_readl(SFC_SR);
+		}
+
+		if ((jz_sfc_readl(SFC_SR)) & END)
+			jz_sfc_writel(CLR_END,SFC_SCR);
+	}
+
+}
+
+int sfc_nand_write_data(unsigned int *data,unsigned int length)
+{
+	return sfc_write_data(data,length);
+}
+int sfc_nand_read_data(unsigned int *data, unsigned int length)
+{
+	 return sfc_read_data(data,length);
+}
+
+
+void sfc_for_nand_init(int sfc_quad_mode)
+{
+	unsigned int i;
+	volatile unsigned int tmp;
+	sfc_rate = 100000000;
+	clk_set_rate(SSI, sfc_rate);
+
+	tmp = jz_sfc_readl(SFC_GLB);
+	tmp &= ~(TRAN_DIR | OP_MODE );
+	tmp |= WP_EN;
+	jz_sfc_writel(tmp,SFC_GLB);
+	tmp = jz_sfc_readl(SFC_DEV_CONF);
+	tmp &= ~(CMD_TYPE | CPHA | CPOL | SMP_DELAY_MSK |
+				THOLD_MSK | TSETUP_MSK | TSH_MSK);
+	tmp |= (CEDL | HOLDDL | WPDL | 1 << SMP_DELAY_OFFSET);
+	jz_sfc_writel(tmp,SFC_DEV_CONF);
+	for (i = 0; i < 6; i++) {
+		jz_sfc_writel((jz_sfc_readl(SFC_TRAN_CONF(i))& (~(TRAN_MODE_MSK | FMAT))),SFC_TRAN_CONF(i));
+	     if(sfc_quad_mode==1)
+	     {
+		unsigned int temp=0;
+		temp=jz_sfc_readl(SFC_TRAN_CONF(i));
+		temp&=~(7<<29);
+		temp|=(5<<29);
+		jz_sfc_writel(temp,SFC_TRAN_CONF(i));
+	     }
+	}
+	jz_sfc_writel((CLR_END | CLR_TREQ | CLR_RREQ | CLR_OVER | CLR_UNDER),SFC_INTC);
+	jz_sfc_writel(0,SFC_CGE);
+	tmp = jz_sfc_readl(SFC_GLB);
+	tmp &= ~(THRESHOLD_MSK);
+	tmp |= (THRESHOLD << THRESHOLD_OFFSET);
+	jz_sfc_writel(tmp,SFC_GLB);
+
+}
+
 static struct nand_ecclayout gd5f_ecc_layout_128 = {
 	.oobavail = 0,
 };
+
+
 int sfc_nand_erase(struct mtd_info *mtd,int addr)
 {
 	unsigned char cmd[COMMAND_MAX_LENGTH];
@@ -174,25 +497,14 @@ static int sfc_nand_write(struct mtd_info *mtd,loff_t addr,int column,size_t len
 		*
 		* */
 
-		cmd[0]=CMD_PRO_LOAD;//get feature
-		sfc_send_cmd(&cmd[0],wlen,column,2,0,1,1);
-
-		ops_len = wlen;
-	/*	while(ops_len) {
-			if(ops_len > FIFI_THRESHOLD) {
-				sfc_nand_write_data(buffer,FIFI_THRESHOLD);
-				buffer += FIFI_THRESHOLD;
-				ops_len -= FIFI_THRESHOLD;
-			} else {
-				sfc_nand_write_data(buffer,ops_len);
-				buffer += ops_len;
-				ops_len = 0;
-			}
-		}*/
-		sfc_nand_write_data(buffer,ops_len);
-		buffer += ops_len;
 		cmd[0] = CMD_WREN;
 		sfc_send_cmd(&cmd[0],0,0,0,0,0,0);
+
+		cmd[0]=CMD_PRO_LOAD;//02h
+		sfc_send_cmd(&cmd[0],wlen,column,2,0,1,1);
+		ops_len = wlen;
+		sfc_nand_write_data(buffer,ops_len);
+		buffer += ops_len;
 
 		cmd[0] = CMD_PE;
 		sfc_send_cmd(&cmd[0],0,page,3,0,0,0);
@@ -290,13 +602,12 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 	unsigned char cmd[COMMAND_MAX_LENGTH];
 	volatile unsigned int read_buf;
 
-	cmd[0]=CMD_PARD;//
+	cmd[0]=CMD_PARD;//13h read to cache
 	sfc_send_cmd(&cmd[0],0,page,3,0,0,0);
 
-	cmd[0]=CMD_GET_FEATURE;//get feature
+	cmd[0]=CMD_GET_FEATURE;//get feature 0x0f
 	sfc_send_cmd(&cmd[0],1,FEATURE_ADDR,1,0,1,0);
 	sfc_nand_read_data(&read_buf,1);
-	//	printf("read_buf=%08x\n",read_buf);
 	while(read_buf & 0x1)
 	{
 		cmd[0]=CMD_GET_FEATURE;//get feature
@@ -308,20 +619,21 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 		return -1;
 	}
 	switch(column_cmdaddr_bits){
-			case 24:
-				cmd[0]=CMD_R_CACHE;//get feature
-				column=(column<<8)&0xffffff00;
-				sfc_send_cmd(&cmd[0],rlen,column,3,0,1,0);
-				sfc_nand_read_data(buffer,rlen);
+		printf("column_cmdaddr_bits=%d\n", column_cmdaddr_bits);
+		case 24:
+			cmd[0]=CMD_R_CACHE;//03h read from cache
+			column=(column<<8)&0xffffff00;
+			sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
+			sfc_nand_read_data(buffer,rlen);
 			break;
 		case 32:
-			cmd[0]=CMD_FR_CACHE;//get feature
+			cmd[0]=CMD_FR_CACHE;//0bh read from cache
 			column=(column<<8)&0xffffff00;
-			sfc_send_cmd(&cmd[0],rlen,column,4,0,1,0);
+			sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
 			sfc_nand_read_data(buffer,rlen);
 			break;
 		default:
-			printk("can't support the column addr format !!!\n");
+			printf("can't support the column addr format !!!\n");
 			break;
 	}
 
@@ -430,7 +742,7 @@ static int sfcnand_read_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops 
 			sfc_nand_read_data(buffer,len);
 			break;
 		default:
-			printk("can't support the column addr format !!!\n");
+			printf("can't support the column addr format !!!\n");
 			break;
 	}
 
@@ -504,7 +816,6 @@ static int sfcnand_read(struct mtd_info *mtd,loff_t addr,size_t len,size_t *retl
 static int sfcnand_write(struct mtd_info *mtd,loff_t addr,size_t len,size_t *retlen, u_char *buf)
 {
 	int ret,i,n=0;
-	int readv;
 	ret = sfc_nand_write(mtd,addr,0,len,buf,retlen);
 
 	return ret;
@@ -524,19 +835,20 @@ static void mtd_sfcnand_init(struct mtd_info *mtd)
 	mtd->_block_markbad = sfcnand_block_markbad;
 }
 
+
 static void jz_sfcnand_ext_init(void )
 {
 	unsigned char cmd[COMMAND_MAX_LENGTH];
 	unsigned int x=0;
 	/* disable write protect */
 	unsigned int add;
-	cmd[0]=0x1f;//get feature
+	cmd[0]=0x1f;//set feature
 	add=0xa0;
 
 	sfc_send_cmd(&cmd[0],1,add,1,0,1,1);
 	sfc_nand_write_data(&x,1);
 
-	cmd[0]=0x1f;//get feature
+	cmd[0]=0x1f;//set feature
 	add=0xb0;
 	x=0x10;
 	sfc_send_cmd(&cmd[0],1,add,1,0,1,1);
@@ -613,7 +925,6 @@ static struct jz_spi_support_from_burner *sfc_nandflash_probe(u8 *idcode,struct 
 {
 	int i;
 	struct jz_spi_support_from_burner *params=param_array->addr;
-	printf("sfcnand param num=%d\n",param_array->para_num);
 	for (i = 0; i < param_array->para_num; i++) {
 		if ( params->id_manufactory == ((idcode[0]<<8)|idcode[1]))
 			break;
@@ -624,19 +935,19 @@ static struct jz_spi_support_from_burner *sfc_nandflash_probe(u8 *idcode,struct 
 		return NULL;
 	}
 #if 0
-	printk("*******************************************************************\n");
-	printk("id=0x%08x\n",params->id_manufactory);
-	printk("name=%s\n",params->name);
-	printk("page_size=%d\n",params->page_size);
-	printk("oobsize=%d\n",params->oobsize);
-	printk("sector_size=%d\n",params->sector_size);
-	printk("block_size=%d\n",params->block_size);
-	printk("size=%d\n",params->size);
-	printk("page_num=%d\n",params->page_num);
-	printk("tRD_maxbusy=%d\n",params->tRD_maxbusy);
-	printk("tPROG_maxbusy=%d\n",params->tPROG_maxbusy);
-	printk("column_cmdaddr_bits=%d\n",params->column_cmdaddr_bits);
-	printk("*******************************************************************\n");
+	printf("*******************************************************************\n");
+	printf("id=0x%08x\n",params->id_manufactory);
+	printf("name=%s\n",params->name);
+	printf("page_size=%d\n",params->page_size);
+	printf("oobsize=%d\n",params->oobsize);
+	printf("sector_size=%d\n",params->sector_size);
+	printf("block_size=%d\n",params->block_size);
+	printf("size=%d\n",params->size);
+	printf("page_num=%d\n",params->page_num);
+	printf("tRD_maxbusy=%d\n",params->tRD_maxbusy);
+	printf("tPROG_maxbusy=%d\n",params->tPROG_maxbusy);
+	printf("column_cmdaddr_bits=%d\n",params->column_cmdaddr_bits);
+	printf("*******************************************************************\n");
 #endif
 	return params;
 }
@@ -726,6 +1037,35 @@ static void tran_old_burnway(struct nand_param_from_burner **param)
 
 }
 #define IDCODE_LEN (IDCODE_CONT_LEN + IDCODE_PART_LEN)
+
+static int jz_sfc_nand_read_id(int id_dummy_nbits, int id_nbytes)
+{
+	unsigned char id_buf[32];
+	unsigned int chip_id = 0;
+	int mask = 0;
+	int i;
+	unsigned char cmd[1];
+	if (id_nbytes >= 4) {
+		printk("warnning : id is too long, error maybe occur!\n");
+		return -1;
+	}
+
+	/* read id */
+	cmd[0] = 0x9f;
+	sfc_send_cmd(&cmd[0], id_nbytes, 0, 0, id_dummy_nbits, 1, 0);
+	sfc_read_data(id_buf, id_nbytes);
+
+	for(i = 0; i < (id_nbytes); i++) {
+		mask |= (0xff << (i * 8));
+	}
+	for(i = 0; i < (id_nbytes); i++) {
+		chip_id |= (id_buf[i] << ((id_nbytes - i - 1) * 8));
+	}
+//	printk("chip_id=%x mask=%x\n", chip_id, mask);
+
+	return chip_id & mask;
+}
+
 int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 {
 	u8 idcode[IDCODE_LEN + 1];
@@ -735,6 +1075,10 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 	mtd = &nand_info[0];
 	int using_way;
 	int i;
+	int chip_id;
+	int try_times = 0;
+	int id_dummy_nbits;
+	int id_nbytes;
 	sfc_for_nand_init(sfc_quad_mode);
 #ifndef CONFIG_BURNER
         char *buffer=get_chip_param_from_nand(&param,&using_way);
@@ -743,14 +1087,38 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 		tran_old_burnway(&param);
 	}
 #endif
-	for (i = 0; i < sizeof(id_detect_funcs)/sizeof(id_detect_funcs[0]); i++) {
-		printf("Detect id at %d time\n", i+1);
-		id_detect_funcs[i](idcode, 2);
-		spi_flash = sfc_nandflash_probe(idcode,param);
-		if (spi_flash != NULL) {
+
+	/* probe spi nand flash id */
+	do {
+		if (try_times == 0) {
+			id_dummy_nbits = 0;
+			id_nbytes = 3;
+		} else if (try_times ==1) {
+			id_dummy_nbits = 8;
+			id_nbytes = 3;
+		}  else {
+			id_dummy_nbits = 8;
+			id_nbytes = 2;
+		}
+
+		chip_id = jz_sfc_nand_read_id(id_dummy_nbits, id_nbytes);
+
+		struct jz_spi_support_from_burner *p = param->addr;
+		for (i = 0; i < param->para_num; i++) {
+			if (chip_id == p->id_manufactory) {
+				spi_flash = p;
+				break;
+			} else {
+				spi_flash = NULL;
+			}
+			p++;
+		}
+		if (spi_flash) {
 			break;
 		}
-	}
+	} while(++try_times < 3);
+
+
 	if (spi_flash == NULL) {
 		printf("ingenic: Unsupported ID %04x\n", (idcode[0] <<8) |idcode[1]);
 		return -1;

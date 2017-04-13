@@ -108,9 +108,9 @@ int spinand_program(struct cloner *cloner)
 				readbuf = malloc(READBUF_SIZE);
 				memset(readbuf,0,READBUF_SIZE);
 			}
-			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr,length);
+			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr + bad_len, length);
 			run_command(command,0);
-			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr);
+			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr + bad_len);
 			if(ret){
 				    return -1;
 			}

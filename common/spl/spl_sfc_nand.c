@@ -7,6 +7,7 @@
 #include <asm/arch/base.h>
 #include <asm/arch/sfc-jz.h>
 //#include <asm/arch/spi.h>
+
 int mode = 0;
 int flag = 0;
 int sfc_is_init = 0;
@@ -265,7 +266,7 @@ static int sfc_read_page(unsigned int page,unsigned char *dst_addr,int pagesize)
 	}
 	cmd[0]=0x03;//get feature
 	column=(column<<8)&0xffffff00;
-	sfc_send_cmd(&cmd[0],pagesize,column,3,0,1,0);
+	sfc_send_cmd(&cmd[0],pagesize,column,2,8,1,0);
 	sfc_nand_read_data(dst_addr,pagesize);
 //	printf("---------column=%d,dst_addr=%x,pagesize=%d\n",column,dst_addr,pagesize);
 }
