@@ -29,8 +29,9 @@
 #include <malloc.h>
 #include <search.h>
 #include <errno.h>
+#include <asm/arch/sfc_params.h>
 
-
+extern struct burner_params params;
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -68,6 +69,9 @@ int saveenv(void)
 	char    *res;
 	int   i, ret = 0, offset, conut = 0;
 	int  copy = 0;
+	int erase_size = params.spi_nor_info.erase_size;
+	int erase_offset;
+
 
 	res = (char *)&env_new.data;
 	env_ptr = (env_t *)buf;
@@ -88,6 +92,8 @@ int saveenv(void)
 	sfc_get_env_addr(copy, &offset);
 	env_new.crc = crc32(0, env_new.data, ENV_SIZE);
 
+	erase_offset = ALIGN(offset, erase_size) - erase_size;
+	sfc_nor_erase(erase_offset, erase_size);
 	sfc_nor_write(offset, CONFIG_ENV_SIZE , (char *)&env_new);
 
 	sfc_nor_read(offset, CONFIG_ENV_SIZE, (char *)buf);
