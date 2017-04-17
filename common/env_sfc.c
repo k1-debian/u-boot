@@ -60,6 +60,8 @@ int env_init(void)
 
 	return 0;
 }
+
+static unsigned char r_buf[32768];
 int saveenv(void)
 {
 	ALLOC_CACHE_ALIGN_BUFFER(char, buf, ENV_SIZE);
@@ -92,11 +94,19 @@ int saveenv(void)
 	sfc_get_env_addr(copy, &offset);
 	env_new.crc = crc32(0, env_new.data, ENV_SIZE);
 
-	erase_offset = ALIGN(offset, erase_size) - erase_size;
-	sfc_nor_erase(erase_offset, erase_size);
-	sfc_nor_write(offset, CONFIG_ENV_SIZE , (char *)&env_new);
+	if (offset % erase_size) {
+		erase_offset = ALIGN(offset, erase_size) - erase_size;
+	} else {
+		erase_offset = offset;
+	}
 
-	sfc_nor_read(offset, CONFIG_ENV_SIZE, (char *)buf);
+	sfc_nor_read(erase_offset, erase_size, r_buf);
+	memcpy(r_buf + (CONFIG_ENV_OFFSET - erase_offset), (char *)&env_new, CONFIG_ENV_SIZE);
+	sfc_nor_erase(erase_offset, erase_size);
+	sfc_nor_write(erase_offset, erase_size, r_buf);
+
+	sfc_nor_read(offset, CONFIG_ENV_SIZE , (char *)buf);
+
 	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);
 
 	for (i = 0; i < 0x0b0; i++){
