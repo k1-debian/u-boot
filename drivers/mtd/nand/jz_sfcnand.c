@@ -708,7 +708,7 @@ static int sfcnand_read_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops 
 	* dir 0,read 1.write
 	*
 	* */
-	cmd[0] = CMD_PARD;//write en
+	cmd[0] = CMD_PARD;
 	sfc_send_cmd(&cmd[0],0,page,3,0,0,0);
 	udelay(t_read);
 
@@ -730,15 +730,17 @@ static int sfcnand_read_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops 
 	}
         switch(column_cmdaddr_bits){
         	case 24:
-			cmd[0]=CMD_R_CACHE;//get feature
+			cmd[0]=CMD_R_CACHE;
 			column=(column<<8)&0xffffff00;
-			sfc_send_cmd(&cmd[0],len,column,3,0,1,0);
+//			sfc_send_cmd(&cmd[0],len,column,3,0,1,0);
+			sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
 			sfc_nand_read_data(buffer,len);
 			break;
 		case 32:
-			cmd[0]=CMD_FR_CACHE;//get feature
+			cmd[0]=CMD_FR_CACHE;
 			column=(column<<8)&0xffffff00;
-			sfc_send_cmd(&cmd[0],len,column,4,0,1,0);
+//			sfc_send_cmd(&cmd[0],len,column,4,0,1,0);
+			sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
 			sfc_nand_read_data(buffer,len);
 			break;
 		default:
