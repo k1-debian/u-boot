@@ -4,14 +4,14 @@
 extern unsigned int ssi_rate;
 
 
-int spi_erase(struct cloner *cloner)
+int spi_erase(struct spi_param *spi_args)
 {
 	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
 	unsigned int cs = CONFIG_SF_DEFAULT_CS;
 	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	struct spi_flash *flash;
-	struct spi_args *spi_arg = &cloner->args->spi_args;
+	struct spi_param *spi_arg = spi_args;
 	spi.rate  = spi_arg->rate ;
 	ssi_rate  = spi.rate;
 
@@ -42,9 +42,10 @@ int spi_program(struct cloner *cloner)
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	u32 offset = cloner->cmd->write.partition + cloner->cmd->write.offset;
 	u32 length = cloner->cmd->write.length;
-	int blk_size = cloner->args->spi_erase_block_siz;
+	struct spi_param* spi_args = get_param(('S' << 24) | ('F' << 16) | ('C' << 8) | 0);
+	int blk_size = spi_args->spi_erase_block_siz;
 	void *addr = (void *)cloner->write_req->buf;
-	struct spi_args *spi_arg = &cloner->args->spi_args;
+	struct spi_args *spi_arg = spi_args;
 	unsigned int ret;
 	int len = 0;
 	struct spi_flash *flash;
@@ -84,7 +85,7 @@ int spi_program(struct cloner *cloner)
 		len = (length/blk_size)*blk_size + blk_size;
 	}
 
-	if (cloner->args->spi_erase == SPI_NO_ERASE) {
+	if (spi_args->spi_erase == SPI_NO_ERASE) {
 		ret = spi_flash_erase(flash, offset, len);
 		BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
 				ret ? "ERROR" : "OK");
@@ -95,7 +96,7 @@ int spi_program(struct cloner *cloner)
 			ret ? "ERROR" : "OK");
 
 
-	if (cloner->args->write_back_chk) {
+	if (spi_args->write_back_chk) {
 		spi_flash_read(flash, offset,len, addr);
 
 		uint32_t tmp_crc = local_crc32(0xffffffff,addr,cloner->cmd->write.length);

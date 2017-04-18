@@ -17,10 +17,9 @@ extern struct nand_param_from_burner nand_param_from_burner;
  *is changed,and para_num is changed to 1,and jz_spi_support_from_burner
  *pointer addr changed to the address which param we probe.
  * ******************************************************************************/
-void get_burner_nandinfo(struct cloner *cloner,struct nand_param_from_burner *param)
+void get_burner_nandinfo(char *flash_info,struct nand_param_from_burner *param)
 {
-	struct arguments *get_id=cloner->args;
-	char *member_addr=(char *)(get_id+1);
+	char *member_addr=flash_info;
 	param->version=*(int *)member_addr;
 	member_addr+=sizeof(param->version);
 	param->flash_type=*(int *)member_addr;
@@ -74,14 +73,14 @@ int spinand_program(struct cloner *cloner)
 	static char *part_name = NULL;
 	nand_info_t *nand;
 	nand = &nand_info[0];
-
+	struct spi_param* spi_args = get_param(('S' << 24) | ('F' << 16) | ('C' << 8) | 0);
 	partition = get_partion_index(startaddr,length,&pt_index);
 	if(pt_index < 0)
 		return -EIO;
 	if(startaddr==0){
 		add_information_to_spl(databuf);
 	}
-	if((!cloner->args->spi_erase) && (partition->manager_mode != UBI_MANAGER)){
+	if((!spi_args->spi_erase) && (partition->manager_mode != UBI_MANAGER)){
 		if(pt_index != pt_index_bak){/* erase part partition */
 			pt_index_bak = pt_index;
 			memset(command, 0 , 128);
@@ -103,7 +102,7 @@ int spinand_program(struct cloner *cloner)
 		} else {
 			BURNNER_PRI("ERROR : out of partition !!!\n");
 		}
-		if(cloner->args->write_back_chk){
+		if(spi_args->write_back_chk){
 			if(!readbuf){
 				readbuf = malloc(READBUF_SIZE);
 				memset(readbuf,0,READBUF_SIZE);
@@ -117,7 +116,7 @@ int spinand_program(struct cloner *cloner)
 		}
 
 	}else if(partition->manager_mode == UBI_MANAGER){
-		if(!(part_name == partition->name) && cloner->args->spi_erase){/* need change part */
+		if(!(part_name == partition->name) && spi_args->spi_erase){/* need change part */
 			memset(command, 0, 128);
 			sprintf(command, "ubi part %s", partition->name);
 			BURNNER_PRI("%s\n", command);
@@ -133,7 +132,7 @@ int spinand_program(struct cloner *cloner)
 			part_name = partition->name;
 		}
 
-		if(cloner->full_size && !(cloner->args->spi_erase)){
+		if(cloner->full_size && !(spi_args->spi_erase)){
 			memset(command, 0, 128);
 			sprintf(command, "ubi part %s", partition->name);
 			BURNNER_PRI("%s\n", command);

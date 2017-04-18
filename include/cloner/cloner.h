@@ -115,8 +115,46 @@ struct spi_args {
 	uint32_t sfc_rate;// the sfc rate
 	uint32_t sfc_quad_mode;// the sfc rate
 };
-
-
+/*module args struct start*/
+struct ParameterInfo
+{
+	uint32_t magic;
+	uint32_t size;
+	uint32_t data[0];
+};
+void dump_ParameterInfo();
+void *get_param(uint32_t magic);
+struct spi_param {
+	uint32_t clk;
+	uint32_t data_in;
+	uint32_t data_out;
+	uint32_t enable;
+	uint32_t rate;   // the ssi rate
+	uint32_t sfc_rate;// the sfc rate
+	uint32_t sfc_quad_mode;// the sfc rate
+	uint32_t spi_erase_block_siz;
+	uint32_t spi_erase;
+	uint32_t write_back_chk;
+	char* flash_info[0];
+};
+struct policy_param{
+	int use_nand_mgr;
+	int use_nand_mtd;
+	int use_mmc;
+	uint32_t use_spi_nor;
+	uint32_t use_sfc_nor;
+	uint32_t use_spi_nand;
+	uint32_t use_sfc_nand;
+};
+struct debug_param{
+	uint32_t efuse_gpio;
+	uint32_t log_enabled;
+	uint32_t transfer_data_chk;
+	uint32_t write_back_chk;
+	uint32_t transfer_size;
+	uint32_t stage2_timeout;
+};
+/*end*/
 struct arguments {
 	int use_nand_mgr;
 	int use_nand_mtd;

@@ -180,10 +180,66 @@ unsigned int cloner_get_flash_info(struct cloner *cloner)
 	return id_code;
 }
 
+#if 1
+static struct ParameterInfo *global_args;
+void dump_ParameterInfo()
+{
+	int i = 0;
+	int count = 0;
+	struct ParameterInfo *p = global_args;
+	printf("\n-----------dump_parameterinfo-------------\n");
+	while(1)
+	{
+		if(((int)p%4==0) && ((char*)p>=(char*)global_args) && ((char*)p<((char*)global_args+ARGS_LEN)) && (p->magic != 0))
+		{
+			printf("index=%d;offset=%p;",count++,p);
+			printf("magic=");
+			for(i=3;i>=0;i--)
+				printk("%c",((char*)(&p->magic))[i]);
+			printk(";size=%d\n",p->size);
+		}else{
+			return;
+		}
+		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t)*2);
+	}
+}
+void *get_param(uint32_t magic)
+{
+	int i = 0;
+	char *c = &magic;
+	struct ParameterInfo *p = global_args;
+	while(1)
+	{
+		if(((int)p%4==0) && ((char*)p>=(char*)global_args) && ((char*)p<((char*)global_args+ARGS_LEN)) && (p->magic != 0))
+		{
+			if(p->magic == magic)
+				return (void*)p->data;
+		}
+		else
+		{
+			printf("Can't find parameter of (");
+			for(i=3;i>=0;i--)
+				printk("%c",c[i]);
+			printk(")\n");
+			return NULL;
+		}
+		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t)*2);
+	}
+	return NULL;
+}
+#endif
+
 int cloner_init(struct cloner *cloner)
 {
+//	dump_ParameterInfo();
+	struct policy_param* comm_args = (struct comm_param*)get_param(('P' << 24) | ('O' << 16) | ('L' << 8) |('I' << 0));
+	if(!comm_args)
+		return 0;
+	struct debug_param* debug_args = (struct debug_param*)get_param(('D' <<24) | ('B' <<16) |('G' <<8) |(0 << 0));
+	if(debug_args)
+		L.enable = debug_args->log_enabled;
 #ifdef CONFIG_JZ_NAND_MGR
-	if(cloner->args->use_nand_mgr) {
+	if(comm_args->use_nand_mgr) {
 		nand_probe_burner(&(cloner->args->PartInfo),
 				&(cloner->args->nand_params[0]),
 				cloner->args->nr_nand_args,
@@ -191,7 +247,7 @@ int cloner_init(struct cloner *cloner)
 	}
 #endif	/*CONFIG_JZ_NAND_MGR*/
 #ifdef CONFIG_MTD_NAND_JZ
-	if(cloner->args->use_nand_mtd) {
+	if(comm_args->use_nand_mtd) {
 		mtd_nand_probe_burner(&cloner->args->MTDPartInfo,
 				&cloner->args->nand_params,
 				cloner->args->nr_nand_args,
@@ -201,46 +257,51 @@ int cloner_init(struct cloner *cloner)
 	}
 #endif	/*CONFIG_JZ_NAND_MGR*/
 #ifdef CONFIG_JZ_MMC
-	if (cloner->args->use_mmc) {
+	if (comm_args->use_mmc) {
 		if (cloner->args->mmc_erase) {
 			mmc_erase(cloner);
 		}
 	}
 #endif	/*CONFIG_JZ_MMC*/
 
+#ifdef CONFIG_JZ_SPI || CONFIG_MTD_SFCNAND || CONFIG_JZ_SFC_NOR
+	struct spi_param* spi_args = (struct spi_param*)get_param(('S'<<24) | ('F'<<16) | ('C'<<8) | 0);
+	if(!spi_args)
+		return 0;
+#endif
 #ifdef CONFIG_JZ_SPI
 #ifdef CONFIG_MTD_SPINAND
-	if(cloner->args->use_spi_nand){
-		ssi_rate = (&cloner->args->spi_args)->rate;
-		printf("******** ssi_rate = %d oldrate = %d spi_erase = %d\n",ssi_rate,(&cloner->args->spi_args)->rate,cloner->args->spi_erase);
-		get_burner_nandinfo(cloner,&nand_param_from_burner);
-		mtd_spinand_probe_burner(&(cloner->args->spi_erase),&nand_param_from_burner);
+	if(comm_args->use_spi_nand){
+		ssi_rate = spi_args->rate;
+		printf("******** ssi_rate = %d oldrate = %d spi_erase = %d\n",ssi_rate,spi_args->rate,spi_args->spi_erase);
+		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
+		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);
 	}
 #endif
 
-	if(cloner->args->use_spi_nor){
-		if (cloner->args->spi_erase == SPI_ERASE_PART) {
-			spi_erase(cloner);
+	if(comm_args->use_spi_nor){
+		if (spi_args->spi_erase == SPI_ERASE_PART) {
+			spi_erase(spi_args);
 		}
-		printf("cloner->args->spi_args.rate:%d\n",cloner->args->spi_args.rate);
+		printf("spi_args.rate:%d\n",spi_args->rate);
 	}
 #endif
 #if CONFIG_MTD_SFCNAND
 
-	if(cloner->args->use_sfc_nand){
-		ssi_rate = (&cloner->args->spi_args)->rate;
-		get_burner_nandinfo(cloner,&nand_param_from_burner);
-		mtd_sfcnand_probe_burner(&(cloner->args->spi_erase),cloner->args->spi_args.sfc_quad_mode,&nand_param_from_burner);
+	if(comm_args->use_sfc_nand){
+		ssi_rate = spi_args->rate;
+		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
+		mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
 	}
 #endif
 #ifdef CONFIG_JZ_SFC_NOR
-	if(cloner->args->use_sfc_nor){
-		sfc_rate = cloner->args->spi_args.rate;
-		norflash_get_params_from_burner((unsigned char *)cloner->args + sizeof(struct arguments));
-		if (cloner->args->spi_erase == SPI_ERASE_PART) {
-			sfc_erase(cloner);
+	if(comm_args->use_sfc_nor){
+		sfc_rate = spi_args->rate;
+		norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
+		if (spi_args->spi_erase == SPI_ERASE_PART) {
+			sfc_erase(spi_args);
 		}
-		printf("cloner->args->spi_args.rate:%d\n",cloner->args->spi_args.rate);
+		printf("cloner->args->spi_args.rate:%d\n",spi_args->rate);
 	}
 #endif
 	return 0;
@@ -514,9 +575,6 @@ int f_cloner_setup_handle(struct usb_function *f,
 	usb_ep_dequeue(cloner->ep_in, cloner->read_req);
 	usb_ep_dequeue(cloner->ep_out, cloner->write_req);
 
-	L.enable = cloner->args->log_enabled;
-	//L.printf = printf;
-
 	cloner->cmd_type = ctlreq->bRequest;
 	req->length = ctlreq->wLength;
 	req->complete = handle_cmd;
@@ -677,6 +735,7 @@ int cloner_function_bind_config(struct usb_configuration *c)
 	cloner->usb_function.unbind = f_cloner_unbind;
 
 	cloner->args = malloc(ARGS_LEN);
+	global_args = (struct ParameterInfo*)(cloner->args);
 	cloner->args->transfer_data_chk = 1;
 	cloner->args->write_back_chk = 1;
 	cloner->skip_spl_size = 0;
