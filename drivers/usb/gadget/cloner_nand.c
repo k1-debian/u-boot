@@ -2,7 +2,6 @@
 #include <linux/mtd/mtd.h>
 #include <nand.h>
 #include <ingenic_nand_mgr/nand_param.h>
-#include "burn_printf.h"
 
 #ifdef CONFIG_JZ_NAND_MGR
 int nand_program(struct cloner *cloner)
@@ -188,7 +187,7 @@ int nand_mtd_raw_program(struct cloner *cloner)
 
 	startaddr += cloner->skip_spl_size;
 
-	if (!cloner->args->nand_erase) {
+	if (!nand_args->nand_erase) {
 		ret = nand_mtd_raw_erase(startaddr, length);
 		if (ret) goto out;
 	}

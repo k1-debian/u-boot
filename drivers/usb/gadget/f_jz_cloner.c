@@ -36,6 +36,7 @@
 #include <linux/compiler.h>
 #include <linux/usb/composite.h>
 #include <cloner/cloner.h>
+#include "burn_printf.h"
 #include "cloner_nand.c"
 #include "cloner_mmc.c"
 #include "cloner_efuse.c"
@@ -229,49 +230,84 @@ void *get_param(uint32_t magic)
 }
 #endif
 
-int cloner_init(struct cloner *cloner)
+extern struct policy_param	*policy_args;
+extern struct debug_param	*debug_args;
+extern struct spi_param		*spi_args;
+extern struct mmc_param		*mmc_args;
+extern struct nand_param	*nand_args;
+
+int module_parameter_init()
 {
 //	dump_ParameterInfo();
-	struct policy_param* comm_args = (struct comm_param*)get_param(('P' << 24) | ('O' << 16) | ('L' << 8) |('I' << 0));
-	if(!comm_args)
-		return 0;
-	struct debug_param* debug_args = (struct debug_param*)get_param(('D' <<24) | ('B' <<16) |('G' <<8) |(0 << 0));
-	if(debug_args)
-		L.enable = debug_args->log_enabled;
+	policy_args = get_param(('P' << 24) | ('O' << 16) | ('L' << 8) |('I' << 0));
+	if(!policy_args)
+	{
+		printf("Not found policy parameters\n");
+		return -EINVAL;
+	}
+	debug_args = get_param(('D' <<24) | ('B' <<16) |('G' <<8) | 0);
+	if(!debug_args)
+	{
+		printf("Not found debug parameters\n");
+		return -EINVAL;
+	}
+	L.enable = debug_args->log_enabled;
+	spi_args = get_param(('S'<<24) | ('F'<<16) | ('C'<<8) | 0);
+	if(!spi_args)
+	{
+		printf("Not found sfcspi parameters\n");
+		return -EINVAL;
+	}
+	mmc_args = get_param(('M'<<24) | ('M'<<16) | ('C'<<8) | 0);
+	if(!mmc_args)
+	{
+		printf("Not found mmc parameters\n");
+		return -EINVAL;
+	}
+	nand_args = get_param(('N'<<24)| ('A'<<16) | ('N'<<8) | ('D'<<0));
+	if(!nand_args)
+	{
+		printf("Not found nand parameters\n");
+		return -EINVAL;
+	}
+	return 0;
+}
+
+
+int cloner_init(struct cloner *cloner)
+{
+	int ret;
+	if ((ret = module_parameter_init()) < 0)
+		return ret;
 #ifdef CONFIG_JZ_NAND_MGR
-	if(comm_args->use_nand_mgr) {
-		nand_probe_burner(&(cloner->args->PartInfo),
-				&(cloner->args->nand_params[0]),
-				cloner->args->nr_nand_args,
-				cloner->args->nand_erase,cloner->args->offsets,cloner->args->nand_erase_count);
+	if(policy_args->use_nand_mgr) {
+		nand_probe_burner(&(nand_args->PartInfo),
+				&(nand_args->nand_params[0]),
+				nand_args->nr_nand_args,
+				nand_args->nand_erase,policy_args->offsets,nand_args->nand_erase_count);
 	}
 #endif	/*CONFIG_JZ_NAND_MGR*/
 #ifdef CONFIG_MTD_NAND_JZ
-	if(comm_args->use_nand_mtd) {
-		mtd_nand_probe_burner(&cloner->args->MTDPartInfo,
-				&cloner->args->nand_params,
-				cloner->args->nr_nand_args,
-				cloner->args->nand_erase,
+	if(policy_args->use_nand_mtd) {
+		mtd_nand_probe_burner(&nand_args->MTDPartInfo,
+				&nand_args->nand_params,
+				nand_args->nr_nand_args,
+				nand_args->nand_erase,
 				&cloner->spl_title,
 				&cloner->spl_title_sz);
 	}
 #endif	/*CONFIG_JZ_NAND_MGR*/
 #ifdef CONFIG_JZ_MMC
-	if (comm_args->use_mmc) {
-		if (cloner->args->mmc_erase) {
-			mmc_erase(cloner);
+	if (policy_args->use_mmc) {
+		if (mmc_args->mmc_erase) {
+			mmc_erase();
 		}
 	}
 #endif	/*CONFIG_JZ_MMC*/
 
-#ifdef CONFIG_JZ_SPI || CONFIG_MTD_SFCNAND || CONFIG_JZ_SFC_NOR
-	struct spi_param* spi_args = (struct spi_param*)get_param(('S'<<24) | ('F'<<16) | ('C'<<8) | 0);
-	if(!spi_args)
-		return 0;
-#endif
 #ifdef CONFIG_JZ_SPI
 #ifdef CONFIG_MTD_SPINAND
-	if(comm_args->use_spi_nand){
+	if(policy_args->use_spi_nand){
 		ssi_rate = spi_args->rate;
 		printf("******** ssi_rate = %d oldrate = %d spi_erase = %d\n",ssi_rate,spi_args->rate,spi_args->spi_erase);
 		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
@@ -279,29 +315,29 @@ int cloner_init(struct cloner *cloner)
 	}
 #endif
 
-	if(comm_args->use_spi_nor){
+	if(policy_args->use_spi_nor){
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
-			spi_erase(spi_args);
+			spi_erase();
 		}
-		printf("spi_args.rate:%d\n",spi_args->rate);
+		printf("spi_args->rate:%d\n",spi_args->rate);
 	}
 #endif
 #if CONFIG_MTD_SFCNAND
 
-	if(comm_args->use_sfc_nand){
+	if(policy_args->use_sfc_nand){
 		ssi_rate = spi_args->rate;
 		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
 		mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
 	}
 #endif
 #ifdef CONFIG_JZ_SFC_NOR
-	if(comm_args->use_sfc_nor){
+	if(policy_args->use_sfc_nor){
 		sfc_rate = spi_args->rate;
 		norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
-			sfc_erase(spi_args);
+			sfc_erase();
 		}
-		printf("cloner->args->spi_args.rate:%d\n",spi_args->rate);
+		printf("spi_args->rate:%d\n",spi_args->rate);
 	}
 #endif
 	return 0;
@@ -342,7 +378,7 @@ void handle_read(struct cloner *cloner)
 		cloner->ack = ret;
 	else
 		cloner->ack = 0;
-	if (cloner->args->transfer_data_chk)
+	if (debug_args->transfer_data_chk)
 		cloner->crc = local_crc32(0xffffffff, cloner->read_req->buf, cloner->cmd->read.length);
 	//printf("handle read cloner->crc %x\n", cloner->crc);
 
@@ -404,7 +440,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 		return;
 	}
 
-	if (cloner->args->transfer_data_chk) {
+	if (debug_args->transfer_data_chk) {
 		uint32_t tmp_crc = local_crc32(0xffffffff,req->buf,req->actual);
 		if (cloner->cmd->write.crc != tmp_crc) {
 			printf("crc is errr! src crc=%08x crc=%08x\n",cloner->cmd->write.crc,tmp_crc);
@@ -656,13 +692,15 @@ int f_cloner_bind(struct usb_configuration *c,
 	cloner->args_req = usb_ep_alloc_request(cloner->ep_out,0);
 	cloner->read_req = usb_ep_alloc_request(cloner->ep_in,0);
 
-	cloner->buf_size = 1024*1024;
-	cloner->buf = malloc(1024*1024);
+	cloner->buf_size = ARGS_LEN;
+	cloner->buf = malloc(ARGS_LEN);
 	cloner->write_req->complete = handle_write;
 	cloner->write_req->buf = cloner->buf;
-	cloner->write_req->length = 1024*1024;
+	cloner->write_req->length = ARGS_LEN;
 	cloner->write_req->context = cloner;
 
+	cloner->args = malloc(ARGS_LEN);
+	global_args = (struct ParameterInfo*)(cloner->args);
 	cloner->args_req->complete = handle_write;
 	cloner->args_req->buf = cloner->args;
 	cloner->args_req->length = ARGS_LEN;
@@ -670,7 +708,7 @@ int f_cloner_bind(struct usb_configuration *c,
 
 	cloner->read_req->complete = handle_read_complete;
 	cloner->read_req->buf = cloner->buf;
-	cloner->read_req->length = 1024*1024;
+	cloner->read_req->length = ARGS_LEN;
 	cloner->read_req->context = cloner;
 
 	return 0;
@@ -733,13 +771,6 @@ int cloner_function_bind_config(struct usb_configuration *c)
 	cloner->usb_function.strings= burn_intf_string_tab;
 	cloner->usb_function.disable = f_cloner_disable;
 	cloner->usb_function.unbind = f_cloner_unbind;
-
-	cloner->args = malloc(ARGS_LEN);
-	global_args = (struct ParameterInfo*)(cloner->args);
-	cloner->args->transfer_data_chk = 1;
-	cloner->args->write_back_chk = 1;
-	cloner->skip_spl_size = 0;
-
 	cloner->inited = 0;
 
 	if (cloner_moudle_init())

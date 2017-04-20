@@ -1,11 +1,9 @@
-#include<asm/arch-x1000/spi.h>
+#include <asm/arch-x1000/spi.h>
+#include <nand.h>
 #include "../../spi/jz_spi.h"
 #include <linux/mtd/mtd.h>
 #include <ingenic_nand_mgr/nand_param.h>
 #include "../../mtd/nand/jz_spinand.h"
-#include "burn_printf.h"
-
-#include <nand.h>
 
 
 extern struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
@@ -73,7 +71,6 @@ int spinand_program(struct cloner *cloner)
 	static char *part_name = NULL;
 	nand_info_t *nand;
 	nand = &nand_info[0];
-	struct spi_param* spi_args = get_param(('S' << 24) | ('F' << 16) | ('C' << 8) | 0);
 	partition = get_partion_index(startaddr,length,&pt_index);
 	if(pt_index < 0)
 		return -EIO;
@@ -102,7 +99,7 @@ int spinand_program(struct cloner *cloner)
 		} else {
 			BURNNER_PRI("ERROR : out of partition !!!\n");
 		}
-		if(spi_args->write_back_chk){
+		if(debug_args->write_back_chk){
 			if(!readbuf){
 				readbuf = malloc(READBUF_SIZE);
 				memset(readbuf,0,READBUF_SIZE);

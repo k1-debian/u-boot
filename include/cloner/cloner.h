@@ -134,7 +134,6 @@ struct spi_param {
 	uint32_t sfc_quad_mode;// the sfc rate
 	uint32_t spi_erase_block_siz;
 	uint32_t spi_erase;
-	uint32_t write_back_chk;
 	char* flash_info[0];
 };
 struct policy_param{
@@ -145,6 +144,7 @@ struct policy_param{
 	uint32_t use_sfc_nor;
 	uint32_t use_spi_nand;
 	uint32_t use_sfc_nand;
+	uint32_t offsets[32];
 };
 struct debug_param{
 	uint32_t efuse_gpio;
@@ -154,32 +154,13 @@ struct debug_param{
 	uint32_t transfer_size;
 	uint32_t stage2_timeout;
 };
-/*end*/
-struct arguments {
-	int use_nand_mgr;
-	int use_nand_mtd;
-	int use_mmc;
-	uint32_t use_spi_nor;
-	uint32_t use_sfc_nor;
-	uint32_t use_spi_nand;
-	uint32_t use_sfc_nand;
-	unsigned int offsets[32];
-
-
-	int efuse_gpio;
-	int log_enabled;
-	int transfer_data_chk;
-	int write_back_chk;
-
+struct mmc_param{
 	int mmc_open_card;
 	int mmc_erase;
 	uint32_t mmc_erase_range_count;
 	struct mmc_erase_range mmc_erase_range[MMC_ERASE_CNT_MAX];
-
-	struct spi_args spi_args;
-	uint32_t spi_erase_block_siz;
-	uint32_t spi_erase;
-
+};
+struct nand_param{
 	int nand_erase_count;
 	int nand_erase;
 	int nr_nand_args;
@@ -187,6 +168,13 @@ struct arguments {
 	MTDPartitionInfo MTDPartInfo;
 	nand_flash_param nand_params[0];
 };
+
+struct policy_param	*policy_args;
+struct debug_param	*debug_args;
+struct spi_param	*spi_args;
+struct mmc_param	*mmc_args;
+struct nand_param	*nand_args;
+/*end*/
 
 union cmd {
 	struct update {
@@ -240,7 +228,7 @@ struct cloner {
 	uint32_t buf_size;
 	int ack;
 	int crc;
-	struct arguments *args;
+	void *args;
 	int inited;
 
 	/*used for mtd, ubi*/

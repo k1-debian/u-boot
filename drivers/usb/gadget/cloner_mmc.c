@@ -1,12 +1,11 @@
 #include <mmc.h>
-#include "burn_printf.h"
 
 #ifdef CONFIG_JZ_MMC
 
 #define MMC_BYTE_PER_BLOCK 512
 
 
-static int mmc_erase(struct cloner *cloner)
+static int mmc_erase()
 {
 	int curr_device = 0;
 	struct mmc *mmc = find_mmc_device(0);
@@ -32,7 +31,7 @@ static int mmc_erase(struct cloner *cloner)
 		return -EPERM;
 	}
 
-	if (cloner->args->mmc_erase == MMC_ERASE_ALL) {
+	if (mmc_args->mmc_erase == MMC_ERASE_ALL) {
 		blk = 0;
 		blk_cnt = mmc->capacity / MMC_BYTE_PER_BLOCK;
 
@@ -47,20 +46,20 @@ static int mmc_erase(struct cloner *cloner)
 
 		BURNNER_PRI("mmc all erase ok, blocks %d\n", blk_cnt);
 		return 0;
-	} else if (cloner->args->mmc_erase != MMC_ERASE_PART) {
+	} else if (mmc_args->mmc_erase != MMC_ERASE_PART) {
 		return -EINVAL;
 	}
 
 	/*mmc part erase */
-	erase_cnt = (cloner->args->mmc_erase_range_count >MMC_ERASE_CNT_MAX) ?
-		MMC_ERASE_CNT_MAX : cloner->args->mmc_erase_range_count;
+	erase_cnt = (mmc_args->mmc_erase_range_count >MMC_ERASE_CNT_MAX) ?
+		MMC_ERASE_CNT_MAX : mmc_args->mmc_erase_range_count;
 
 	for (i = 0; erase_cnt > 0; i++, erase_cnt--) {
-		blk = cloner->args->mmc_erase_range[i].start / MMC_BYTE_PER_BLOCK;
-		if(cloner->args->mmc_erase_range[i].end == -1){
+		blk = mmc_args->mmc_erase_range[i].start / MMC_BYTE_PER_BLOCK;
+		if(mmc_args->mmc_erase_range[i].end == -1){
 			blk_cnt = mmc->capacity / MMC_BYTE_PER_BLOCK - blk ;
 		}else{
-			blk_end = cloner->args->mmc_erase_range[i].end / MMC_BYTE_PER_BLOCK;
+			blk_end = mmc_args->mmc_erase_range[i].end / MMC_BYTE_PER_BLOCK;
 			blk_cnt = blk_end - blk ;
 		}
 
@@ -80,7 +79,7 @@ static int mmc_erase(struct cloner *cloner)
 	return 0;
 }
 
-int mmc_program(struct cloner *cloner,int mmc_index)
+int mmc_program(struct cloner *cloner, int mmc_index)
 {
 #define MMC_BYTE_PER_BLOCK 512
 	int curr_device = mmc_index;
@@ -106,17 +105,15 @@ int mmc_program(struct cloner *cloner,int mmc_index)
 		return -EPERM;
 	}
 
-	n = mmc->block_dev.block_write(curr_device, blk,
-			cnt, addr);
+	n = mmc->block_dev.block_write(curr_device, blk, cnt, addr);
 	//debug_cond(BURNNER_DEBUG,"%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 	BURNNER_PRI("%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 
 	if (n != cnt)
 		return -EIO;
 
-	if (cloner->args->write_back_chk) {
-		mmc->block_dev.block_read(curr_device, blk,
-				cnt, addr);
+	if (debug_args->write_back_chk) {
+		mmc->block_dev.block_read(curr_device, blk, cnt, addr);
 		debug_cond(BURNNER_DEBUG,"%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 		if (n != cnt)
 			return -EIO;

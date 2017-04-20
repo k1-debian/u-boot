@@ -16,7 +16,7 @@ int efuse_program(struct cloner *cloner)
 	int id = 0, flag = 0;
 	int i = 0;
 	if(!enabled) {
-		r = efuse_init(cloner->args->efuse_gpio);
+		r = efuse_init(debug_args->efuse_gpio);
 		if(r < 0) {
 			printf("efuse init error\n");
 			return r;
