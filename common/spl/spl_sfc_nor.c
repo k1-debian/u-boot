@@ -376,16 +376,17 @@ void sfc_init()
 	spi_nor_info = &flash->g_nor_info;
 
 	flash->cur_r_cmd = &spi_nor_info->read_standard;
+
 #ifdef CONFIG_SFC_QUAD
 	switch (spi_nor_info->quad_ops_mode) {
-	case 0:
-		set_quad_mode_cmd();
-		break;
-	case 1:
-		set_quad_mode_reg();
-		break;
-	default:
-		break;
+		case 0:
+			set_quad_mode_cmd();
+			break;
+		case 1:
+			set_quad_mode_reg();
+			break;
+		default:
+			break;
 	}
 #endif
 

@@ -61,7 +61,6 @@ int env_init(void)
 	return 0;
 }
 
-static unsigned char r_buf[32768];
 int saveenv(void)
 {
 	ALLOC_CACHE_ALIGN_BUFFER(char, buf, ENV_SIZE);
@@ -73,6 +72,7 @@ int saveenv(void)
 	int  copy = 0;
 	int erase_size = params.spi_nor_info.erase_size;
 	int erase_offset;
+	char *r_buf = NULL;
 
 
 	res = (char *)&env_new.data;
@@ -100,10 +100,12 @@ int saveenv(void)
 		erase_offset = offset;
 	}
 
+	r_buf = malloc(erase_size);
 	sfc_nor_read(erase_offset, erase_size, r_buf);
 	memcpy(r_buf + (CONFIG_ENV_OFFSET - erase_offset), (char *)&env_new, CONFIG_ENV_SIZE);
 	sfc_nor_erase(erase_offset, erase_size);
 	sfc_nor_write(erase_offset, erase_size, r_buf);
+	free(r_buf);
 
 	sfc_nor_read(offset, CONFIG_ENV_SIZE , (char *)buf);
 

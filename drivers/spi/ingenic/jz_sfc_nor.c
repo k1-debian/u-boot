@@ -14,6 +14,9 @@ struct burner_params params;
 
 struct mini_spi_nor_info mini_params;
 
+#ifdef CONFIG_BURNER
+unsigned int burn_mode = 0;
+#endif
 
 int sfc_nor_reset()
 {
@@ -570,13 +573,17 @@ int sfc_nor_do_special_func()
 	sfc_nor_get_special_ops(flash);
 
 	flash->quad_succeed = 0;
-#ifdef CONFIG_SFC_QUAD
-	if (flash->nor_flash_ops->set_quad_mode) {
-		flash->nor_flash_ops->set_quad_mode(flash);
-	}
-	if (flash->quad_succeed)
-		printf("nor flash quad mode is set, now use quad mode!\n");
+#ifndef CONFIG_BURNER
+	if (params.uk_quad) {
+#else
+	if (burn_mode) {
 #endif
+		if (flash->nor_flash_ops->set_quad_mode) {
+			flash->nor_flash_ops->set_quad_mode(flash);
+		}
+		if (flash->quad_succeed)
+			printf("nor flash quad mode is set, now use quad mode!\n");
+	}
 
 	/* if nor flash size is greater than 16M, use 4byte mode */
 	if(spi_nor_info->chip_size > 0x1000000) {
@@ -873,6 +880,7 @@ static void dump_mini_cloner_params()
 	printf("mini_chip_size=%d\n",	spi_nor_info->chip_size);
 	printf("mini_page_size=%d\n",	spi_nor_info->page_size);
 	printf("mini_erase_size=%d\n",	spi_nor_info->erase_size);
+	printf("mini_quad_mode=%d\n",	spi_nor_info->s_quad);
 
 }
 #endif
@@ -896,11 +904,15 @@ int norflash_get_params_from_burner(unsigned char *addr)
 
 	memcpy(&params, spiflash_info, sizeof(struct burner_params));
 	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
+	burn_mode = spiflash_info->b_quad;
 
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();
 	dump_mini_cloner_params();
+	printf("fs_erase_size=%d\n", params.fs_erase_size);
+	printf("uk_quad=%d\n", params.uk_quad);
+	printf("burner_quad_mode=%d\n",spiflash_info->b_quad);
 #endif
 
 	if (!memcmp(&params.spi_nor_info, 0, sizeof(struct spi_nor_info))) {
