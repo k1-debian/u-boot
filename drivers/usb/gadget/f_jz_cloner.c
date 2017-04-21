@@ -45,7 +45,18 @@
 #if CONFIG_MTD_SPINAND || CONFIG_MTD_SFCNAND
 #include "cloner_spinand.c"
 #endif
-#include "burn_printf.h"
+
+
+#ifdef CONFIG_JZ_SCBOOT
+#include "../../scboot/secure.h"
+#include "../../scboot/otp.h"
+#include "../../scboot/aes.h"
+#include "../../scboot/spi_checksum.h"
+
+static bool is_security = false;
+static bool is_bootfile = false;
+#endif
+
 
 /**
  * cloner module manage
@@ -369,6 +380,11 @@ void handle_read(struct cloner *cloner)
 				cloner->cmd->read.length);
 		break;
 #endif
+#ifdef CONFIG_JZ_SCBOOT
+	case OPS_GET_ENCK:                             //4. send enckey to pc burner
+		ret = cpu_get_enckey(cloner->read_req->buf);
+		break;
+#endif
 	default:
 		ret = clmg_read(cloner);
 		break;
@@ -511,6 +527,14 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 				}
 			}
 			break;
+#ifdef CONFIG_JZ_SCBOOT
+		case OPS_BURN_NKU:     //3.uboot recv nku and burn
+			cloner->ack = cpu_burn_nku(cloner->write_req->buf,cloner->cmd->write.length);
+			break;
+		case OPS_BURN_ENUK:     //5.recv encrtpy ukey and burn
+			cloner->ack = cpu_burn_ukey(cloner->write_req->buf);
+			break;
+#endif
 		default:
 			cloner->ack = clmg_write(cloner);
 	}
@@ -590,6 +614,24 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			burner_set_reset_tag();
 			do_reset(NULL,0,0,NULL);
 			break;
+#ifdef CONFIG_JZ_SCBOOT
+		case VR_SEC_SEDEN:
+			if(cloner->cmd->security.security_en)
+				is_security = true;
+			else
+				is_security = false;
+			break;
+		case VR_SEC_INIT:  //1.init security boot
+			cloner->ack = init_seboot();
+			break;
+		case VR_SEC_BURN_RKCK://2.burn rckey
+			cloner->ack = cpu_burn_rckey();
+			break;
+		case VR_SEC_BURN_SECBOOT_EN:	//6.burn secboot_enable
+			cloner->ack = cpu_burn_secboot_enable();
+			//cloner->ack = 0;
+			break;
+#endif
 	}
 }
 
@@ -649,8 +691,19 @@ int f_cloner_setup_handle(struct usb_function *f,
 		case VR_SET_DATA_LEN:
 			cloner->full_size = ctlreq->wIndex | ctlreq->wValue << 16;
 			cloner->full_size_remainder = cloner->full_size;
+#ifdef CONFIG_JZ_SCBOOT
+			if(cloner->full_size < 0x100000)
+				is_bootfile = true;
+			else
+				is_bootfile = false;
+#endif
 			printf("cloner->full_size = %x\n", cloner->full_size);
 			break;
+#ifdef CONFIG_JZ_SCBOOT
+		case VR_SEC_GET_CK_LEN:     //4. get ckey length
+			*(unsigned int *)cloner->ep0req->buf = get_rsakeylen();
+			break;
+#endif
 	}
 
 	return usb_ep_queue(cloner->ep0, cloner->ep0req, 0);

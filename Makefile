@@ -283,6 +283,9 @@ LIBS-y += drivers/crypto/libcrypto.o
 LIBS-y += drivers/dma/libdma.o
 LIBS-y += drivers/fpga/libfpga.o
 LIBS-y += drivers/gpio/libgpio.o
+ifdef CONFIG_JZ_SCBOOT
+LIBS-y += drivers/scboot/libscboot.o
+endif
 LIBS-y += drivers/hwmon/libhwmon.o
 LIBS-y += drivers/i2c/libi2c.o
 LIBS-y += drivers/pwm/libpwm.o

@@ -45,9 +45,35 @@ struct spi spi;
 #define VR_POWEROFF		0x17	/*reboot and poweroff*/
 #define VR_CHECK		0x18
 #define VR_GET_CRC		0x19
-#define VR_GET_FLASH_INFO	0x20
+#define VR_GET_FLASH_INFO	0x26
 
+/*************** security boot ****************/
+#ifdef CONFIG_JZ_SCBOOT
+#define VR_SEC_INIT				0x20		/*security boot*/
+#define VR_SEC_BURN_RKCK		0x21
+#define VR_SEC_GET_CK_LEN		0x23
+#define VR_SEC_BURN_SECBOOT_EN	0x24
+#define VR_SEC_SEDEN			0x25
 
+#define OPS_BURN_NKU	1
+#define OPS_BURN_ENUK	2
+#define OPS_GET_ENCK	1
+
+#define RSA_KEY_LEN		128		/* byte */
+
+#define SPL_CRC_OFFSET	9
+
+#define SCKEY_SPLBINLEN_OFFSET		0x80 /* word */
+#define SCKEY_SPLBINCRYPT_OFFSET	0x81 /* word */
+#define SCKEY_SPLKEYCRYPT_OFFSET	0x84 /* word */
+#define SCKEY_RSAN_OFFSET			0x300
+#define SCKEY_RSAKU_OFFSET			0x400
+#define SCKEY_SPLCODE_OFFSET		0x800
+
+#define AES_ENCRYPT	0
+#define AES_DECRYPT	1
+#endif
+/**********************************************/
 
 #define MMC_ERASE_ALL	1
 #define MMC_ERASE_PART	2
@@ -202,7 +228,11 @@ union cmd {
 		uint32_t offset;
 		uint32_t check;
 	} check;
-
+#ifdef CONFIG_JZ_SCBOOT
+	struct security {
+		uint32_t security_en;
+	}security;
+#endif
 	struct rtc_time rtc;
 };
 
