@@ -46,6 +46,11 @@ static const char *const mtdids_default = MTDIDS_DEFAULT;
 static const char *const mtdids_default = "nand0:nand";
 #endif
 
+#define MANU_GD 0xc8
+#define MANU_MX 0xc2
+
+static unsigned int id_table[2] = {0xc8b148, 0xc212};
+int manufacturer_id = 0;
 
 unsigned int sfc_rate = 0;
 unsigned short column_cmdaddr_bits=24;/* read from cache ,the bits of cmd + addr */
@@ -623,13 +628,25 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 		case 24:
 			cmd[0]=CMD_R_CACHE;//03h read from cache
 			column=(column<<8)&0xffffff00;
-			sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
+			if(manufacturer_id == MANU_MX) {
+				sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
+			} else if (manufacturer_id = MANU_GD) {
+				sfc_send_cmd(&cmd[0],rlen,column,3,0,1,0);
+			} else {
+				printf("unsuppor nand flash\n");
+			}
 			sfc_nand_read_data(buffer,rlen);
 			break;
 		case 32:
 			cmd[0]=CMD_FR_CACHE;//0bh read from cache
 			column=(column<<8)&0xffffff00;
-			sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
+			if(manufacturer_id == MANU_MX) {
+				sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
+			} else if (manufacturer_id = MANU_GD) {
+				sfc_send_cmd(&cmd[0],rlen,column,4,0,1,0);
+			} else {
+				printf("unsuppor nand flash\n");
+			}
 			sfc_nand_read_data(buffer,rlen);
 			break;
 		default:
@@ -732,15 +749,25 @@ static int sfcnand_read_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops 
         	case 24:
 			cmd[0]=CMD_R_CACHE;
 			column=(column<<8)&0xffffff00;
-//			sfc_send_cmd(&cmd[0],len,column,3,0,1,0);
-			sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
+			if(manufacturer_id == MANU_MX) {
+				sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
+			} else if (manufacturer_id = MANU_GD) {
+				sfc_send_cmd(&cmd[0],len,column,3,0,1,0);
+			} else {
+				printf("unsuppor nand flash\n");
+			}
 			sfc_nand_read_data(buffer,len);
 			break;
 		case 32:
 			cmd[0]=CMD_FR_CACHE;
 			column=(column<<8)&0xffffff00;
-//			sfc_send_cmd(&cmd[0],len,column,4,0,1,0);
-			sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
+			if(manufacturer_id == MANU_MX) {
+				sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
+			} else if (manufacturer_id = MANU_GD) {
+				sfc_send_cmd(&cmd[0],len,column,4,0,1,0);
+			} else {
+				printf("unsuppor nand flash\n");
+			}
 			sfc_nand_read_data(buffer,len);
 			break;
 		default:
@@ -1082,15 +1109,7 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 	int id_dummy_nbits;
 	int id_nbytes;
 	sfc_for_nand_init(sfc_quad_mode);
-#ifndef CONFIG_BURNER
-        char *buffer=get_chip_param_from_nand(&param,&using_way);
-	if(using_way==1)		//use old way
-	{
-		tran_old_burnway(&param);
-	}
-#endif
 
-	/* probe spi nand flash id */
 	do {
 		if (try_times == 0) {
 			id_dummy_nbits = 0;
@@ -1102,23 +1121,45 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct nand_param_from_burner *param)
 			id_dummy_nbits = 8;
 			id_nbytes = 2;
 		}
-
 		chip_id = jz_sfc_nand_read_id(id_dummy_nbits, id_nbytes);
-
-		struct jz_spi_support_from_burner *p = param->addr;
-		for (i = 0; i < param->para_num; i++) {
-			if (chip_id == p->id_manufactory) {
-				spi_flash = p;
+		for (i = 0; i < 2; i++) {
+			if (chip_id == id_table[i]) {
+				if (chip_id == id_table[0]) {
+					manufacturer_id = MANU_GD;
+				} else {
+					manufacturer_id = MANU_MX;
+				}
 				break;
-			} else {
-				spi_flash = NULL;
 			}
-			p++;
 		}
-		if (spi_flash) {
+		if (manufacturer_id != 0) {
 			break;
 		}
 	} while(++try_times < 3);
+
+	if (manufacturer_id == 0) {
+		printf("unsupport nand id\n");
+		return -1;
+	}
+#ifndef CONFIG_BURNER
+        char *buffer=get_chip_param_from_nand(&param,&using_way);
+	if(using_way==1)		//use old way
+	{
+		tran_old_burnway(&param);
+	}
+#endif
+
+
+	struct jz_spi_support_from_burner *p = param->addr;
+	for (i = 0; i < param->para_num; i++) {
+		if (chip_id == p->id_manufactory) {
+			spi_flash = p;
+			break;
+		} else {
+			spi_flash = NULL;
+		}
+		p++;
+	}
 
 
 	if (spi_flash == NULL) {

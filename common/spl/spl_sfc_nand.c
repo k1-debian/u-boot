@@ -14,6 +14,11 @@ int sfc_is_init = 0;
 unsigned int sfc_rate = 0;
 unsigned int sfc_quad_mode = 0;
 unsigned int quad_mode_is_set = 0;
+int manufacturer_id = 0;
+
+#define MANU_GD 0xc8
+#define MANU_MX 0xc2
+
 struct jz_sfc {
 	unsigned int  addr;
 	unsigned int  len;
@@ -266,7 +271,13 @@ static int sfc_read_page(unsigned int page,unsigned char *dst_addr,int pagesize)
 	}
 	cmd[0]=0x03;//get feature
 	column=(column<<8)&0xffffff00;
-	sfc_send_cmd(&cmd[0],pagesize,column,2,8,1,0);
+	if (manufacturer_id == MANU_MX) {
+		sfc_send_cmd(&cmd[0],pagesize,column,2,8,1,0);
+	} else if (manufacturer_id == MANU_GD) {
+		sfc_send_cmd(&cmd[0],pagesize,column,3,0,1,0);
+	} else {
+		printf("unknown nand flash read params\n");
+	}
 	sfc_nand_read_data(dst_addr,pagesize);
 //	printf("---------column=%d,dst_addr=%x,pagesize=%d\n",column,dst_addr,pagesize);
 }
@@ -326,15 +337,84 @@ static void gpio_as_sfc(void)
 	writel(0x3c << 26,GPIO_PXPAT1S(0));
 	writel(0x3c << 26,GPIO_PXPAT0C(0));
 }
+
+static sfc_nand_probe_id(int id_dummy_nbits, int id_nbytes)
+{
+	unsigned char id_buf[32];
+	unsigned int chip_id = 0;
+	int mask = 0;
+	int i;
+	unsigned char cmd[1];
+	if (id_nbytes >= 4) {
+		printk("warnning : id is too long, error maybe occur!\n");
+		return -1;
+	}
+
+	/* read id */
+	cmd[0] = 0x9f;
+	sfc_send_cmd(&cmd[0], id_nbytes, 0, 0, id_dummy_nbits, 1, 0);
+	sfc_nand_read_data(id_buf, id_nbytes);
+
+	for(i = 0; i < (id_nbytes); i++) {
+		mask |= (0xff << (i * 8));
+	}
+	for(i = 0; i < (id_nbytes); i++) {
+		chip_id |= (id_buf[i] << ((id_nbytes - i - 1) * 8));
+	}
+//	printk("chip_id=%x mask=%x\n", chip_id, mask);
+
+	return chip_id & mask;
+
+}
+
+static unsigned int id_table[2] = {0xc8b148, 0xc212};
+
 void spl_sfc_nand_load_image(void)
 {
 	struct image_header *header;
 	char cmd[5] = {0};
 	char idcode[5] = {0};
 	unsigned int i=0;
+	int chip_id;
+	int try_times = 0;
+	int id_dummy_nbits;
+	int id_nbytes;
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_init();
+
+	/* probe spi nand flash id */
+	do {
+		if (try_times == 0) {
+			id_dummy_nbits = 0;
+			id_nbytes = 3;
+		} else if (try_times ==1) {
+			id_dummy_nbits = 8;
+			id_nbytes = 3;
+		} else {
+			id_dummy_nbits = 8;
+			id_nbytes = 2;
+		}
+		chip_id = sfc_nand_probe_id(id_dummy_nbits, id_nbytes);
+		for (i = 0; i < 2; i++) {
+			if (chip_id == id_table[i]) {
+				if (chip_id == id_table[0]) {
+					manufacturer_id = MANU_GD;
+				} else {
+					manufacturer_id = MANU_MX;
+				}
+				break;
+			}
+		}
+		if (manufacturer_id != 0) {
+			break;
+		}
+	} while(++try_times < 3);
+
+	if (manufacturer_id == 0) {
+		printf("unsupport nand id\n");
+		return -1;
+	}
 
 	spl_parse_image_header(header);
 	sfc_nand_load(CONFIG_UBOOT_OFFSET,CONFIG_SYS_MONITOR_LEN,(void *)CONFIG_SYS_TEXT_BASE);
