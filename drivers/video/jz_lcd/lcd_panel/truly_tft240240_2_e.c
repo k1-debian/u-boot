@@ -82,9 +82,9 @@ void panel_power_on(void)
 
 	/*power reset*/
         gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rst, 0);
-        mdelay(20);
+	mdelay(1);
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rst, 1);
-	mdelay(10);
+	mdelay(5);
 
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_cs, 0);
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_bl, 1);
@@ -107,9 +107,9 @@ void panel_power_on(void)
 
 	/*power reset*/
         gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rst, 0);
-        mdelay(20);
+	mdelay(1);
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_rst, 1);
-	mdelay(10);
+	mdelay(5);
 
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_cs, 0);
 	gpio_direction_output(truly_tft240240_2_e_pdata.gpio_lcd_bl, 1);

@@ -46,9 +46,9 @@ void board_set_lcd_power_on(void)
 struct smart_lcd_data_table truly_tft240240_data_table[] = {
     /* LCD init code */
     {SMART_CONFIG_CMD, 0x01},  //soft reset, 120 ms = 120 000 us
-    {SMART_CONFIG_UDELAY, 120000},
+    {SMART_CONFIG_UDELAY, 1000},
     {SMART_CONFIG_CMD, 0x11},
-    {SMART_CONFIG_UDELAY, 50000},	  /* sleep out 50 ms  */
+    {SMART_CONFIG_UDELAY, 5000},	  /* sleep out 5 ms  */
 
     {SMART_CONFIG_CMD, 0x36},
 #ifdef	CONFIG_TRULY_240X240_ROTATE_180
@@ -185,9 +185,9 @@ struct smart_lcd_data_table truly_tft240240_data_table[] = {
 struct smart_lcd_data_table new_truly_tft240240_data_table[] = {
     /* LCD init code */
     {SMART_CONFIG_CMD, 0x01},  //soft reset, 120 ms = 120 000 us
-    {SMART_CONFIG_UDELAY, 120000},
+    {SMART_CONFIG_UDELAY, 1000},
     {SMART_CONFIG_CMD, 0x11},
-    {SMART_CONFIG_UDELAY, 50000},	  /* sleep out 50 ms  */
+    {SMART_CONFIG_UDELAY, 5000},	  /* sleep out 5 ms  */
 
     {SMART_CONFIG_CMD, 0x36},
 #ifdef	CONFIG_TRULY_240X240_ROTATE_180
