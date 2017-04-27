@@ -186,6 +186,10 @@
              #undef CONFIG_SPL_BOOTARGS
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
      #endif /*CONFIG_OTA_VERSION20*/
+     #ifdef CONFIG_BOOT_VMLINUX
+             #undef CONFIG_SPL_BOOTARGS
+             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
+     #endif /* CONFIG_BOOT_VMLINUX */
 
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
