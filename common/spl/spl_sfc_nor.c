@@ -486,6 +486,7 @@ void spl_sfc_nor_load_image(void)
 	struct image_header *header;
 #ifdef CONFIG_SPL_OS_BOOT
 	unsigned int bootimg_addr = 0;
+	unsigned int bootimg_size = 0;
 	struct norflash_partitions partition;
 	int i;
 #ifdef CONFIG_OTA_VERSION20
@@ -504,6 +505,7 @@ void spl_sfc_nor_load_image(void)
 	for (i = 0 ; i < partition.num_partition_info; i ++) {
 		if (!strncmp(partition.nor_partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
 			bootimg_addr = partition.nor_partition[i].offset;
+			bootimg_size = partition.nor_partition[i].size;
 		}
 #ifdef CONFIG_OTA_VERSION20
 		if (!strncmp(partition.nor_partition[i].name, CONFIG_PAR_NV_NAME, sizeof(CONFIG_PAR_NV_NAME))) {
@@ -512,6 +514,12 @@ void spl_sfc_nor_load_image(void)
 		}
 #endif
 	}
+#ifdef CONFIG_BOOT_VMLINUX
+		spl_image.os = IH_OS_LINUX;
+		spl_image.entry_point = CONFIG_LOAD_ADDR;
+		sfc_read_data(bootimg_addr, bootimg_size, CONFIG_LOAD_ADDR);
+		return 0;
+#endif
 #ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
 	sfc_read_data(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
