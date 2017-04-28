@@ -455,14 +455,21 @@ int sfc_read_data(unsigned int from, unsigned int len, unsigned char *buf)
 
 
 #ifdef CONFIG_OTA_VERSION20
-static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int blocksize)
+static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int nv_size)
 {
-	unsigned int buf[3][2];
+	unsigned int buf[6][2];
 	unsigned int tmp_buf[4];
-	unsigned int nv_num = 0, nv_count = 0;
+	unsigned int nv_off = 0, nv_count = 0;
 	unsigned int addr, i;
+	unsigned int blocksize = flash->g_nor_info.erase_size;
+	unsigned int nv_num = nv_size / blocksize;
 
-	for(i = 0; i < 3; i++) {
+	if(nv_num > 6) {
+		printf("%s,bigger\n",__func__);
+		while(1);
+	}
+
+	for(i = 0; i < nv_num; i++) {
 		addr = nv_addr + i * blocksize;
 		sfc_read_data(addr, 4, buf[i]);
 		if(buf[i][0] == 0x5a5a5a5a) {
@@ -472,13 +479,13 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 			if(buf[i][1] == 0xa5a5a5a5) {
 				if(nv_count < buf[i][0]) {
 					nv_count = buf[i][0];
-					nv_num = i;
+					nv_off = i;
 				}
 			}
 		}
 	}
 
-	*base_addr = nv_addr + nv_num * blocksize;
+	*base_addr = nv_addr + nv_off * blocksize;
 }
 #endif
 void spl_sfc_nor_load_image(void)
@@ -491,7 +498,7 @@ void spl_sfc_nor_load_image(void)
 	int i;
 #ifdef CONFIG_OTA_VERSION20
 	unsigned int nv_rw_addr;
-	unsigned int nor_blocksize;
+	unsigned int nv_rw_size;
 	unsigned int src_addr, updata_flag;
 	unsigned nv_buf[2];
 	int count = 8;
@@ -510,7 +517,7 @@ void spl_sfc_nor_load_image(void)
 #ifdef CONFIG_OTA_VERSION20
 		if (!strncmp(partition.nor_partition[i].name, CONFIG_PAR_NV_NAME, sizeof(CONFIG_PAR_NV_NAME))) {
 			nv_rw_addr = partition.nor_partition[i].offset;
-			nor_blocksize = partition.nor_partition[i].size / CONFIG_PAR_NV_NUM;
+			nv_rw_size = partition.nor_partition[i].size;
 		}
 #endif
 	}
@@ -526,7 +533,7 @@ void spl_sfc_nor_load_image(void)
 	sfc_read_data(bootimg_addr, spl_image.size, spl_image.load_addr);
 	return ;
 #else //not defined CONFIG_NOR_SPL_BOOT_OS
-	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nor_blocksize);
+	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nv_rw_size);
 	sfc_read_data(src_addr, count, nv_buf);
 	updata_flag = nv_buf[1];
 	if((updata_flag & 0x3) != 0x3)

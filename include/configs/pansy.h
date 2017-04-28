@@ -144,7 +144,6 @@
       #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
-             #define CONFIG_PAR_NV_NUM        (3)
              #define CONFIG_PAT_USERFS_NAME   "userfs"
              #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
              #undef CONFIG_SPL_BOOTARGS
