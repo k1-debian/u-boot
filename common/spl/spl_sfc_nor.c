@@ -465,7 +465,7 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 	unsigned int nv_num = nv_size / blocksize;
 
 	if(nv_num > 6) {
-		printf("%s,bigger\n",__func__);
+	//	printf("%s,bigger\n",__func__);
 		while(1);
 	}
 
