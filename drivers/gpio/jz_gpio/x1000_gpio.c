@@ -33,7 +33,7 @@ static struct jz_gpio_func_def uart_gpio_func[] = {
 #elif defined(CONFIG_SYS_UART2_PA)
 	[2] = { .port = GPIO_PORT_A, .func = GPIO_FUNC_2, .pins = 3<<2},
 #else
-	[2] = { .port = GPIO_PORT_C, .func = GPIO_FUNC_1, .pins = 1<<31},
+	[2] = { .port = GPIO_PORT_C, .func = GPIO_FUNC_1 | GPIO_PULL, .pins = 1<<31},
 #endif
 };
 
