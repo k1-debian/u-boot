@@ -241,11 +241,11 @@ void *get_param(uint32_t magic)
 }
 #endif
 
-extern struct policy_param	*policy_args;
-extern struct debug_param	*debug_args;
-extern struct spi_param		*spi_args;
-extern struct mmc_param		*mmc_args;
-extern struct nand_param	*nand_args;
+struct policy_param	*policy_args;
+struct debug_param	*debug_args;
+struct spi_param	*spi_args;
+struct mmc_param	*mmc_args;
+struct nand_param	*nand_args;
 
 int module_parameter_init()
 {
@@ -263,23 +263,32 @@ int module_parameter_init()
 		return -EINVAL;
 	}
 	L.enable = debug_args->log_enabled;
-	spi_args = get_param(('S'<<24) | ('F'<<16) | ('C'<<8) | 0);
-	if(!spi_args)
+	if(policy_args->use_sfc_nand || policy_args->use_sfc_nor || policy_args->use_spi_nand || policy_args->use_spi_nor)
 	{
-		printf("Not found sfcspi parameters\n");
-		return -EINVAL;
+		spi_args = get_param(('S'<<24) | ('F'<<16) | ('C'<<8) | 0);
+		if(!spi_args)
+		{
+			printf("Not found sfcspi parameters\n");
+			return -EINVAL;
+		}
 	}
-	mmc_args = get_param(('M'<<24) | ('M'<<16) | ('C'<<8) | 0);
-	if(!mmc_args)
+	if(policy_args->use_mmc)
 	{
-		printf("Not found mmc parameters\n");
-		return -EINVAL;
+		mmc_args = get_param(('M'<<24) | ('M'<<16) | ('C'<<8) | 0);
+		if(!mmc_args)
+		{
+			printf("Not found mmc parameters\n");
+			return -EINVAL;
+		}
 	}
-	nand_args = get_param(('N'<<24)| ('A'<<16) | ('N'<<8) | ('D'<<0));
-	if(!nand_args)
+	if(policy_args->use_nand_mgr || policy_args->use_nand_mtd)
 	{
-		printf("Not found nand parameters\n");
-		return -EINVAL;
+		nand_args = get_param(('N'<<24)| ('A'<<16) | ('N'<<8) | ('D'<<0));
+		if(!nand_args)
+		{
+			printf("Not found nand parameters\n");
+			return -EINVAL;
+		}
 	}
 	return 0;
 }
@@ -370,24 +379,24 @@ void handle_read(struct cloner *cloner)
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->read.ops) {
 #ifdef CONFIG_JZ_MMC
-	case OPS(MMC,0):
-	case OPS(MMC,1):
-	case OPS(MMC,2):
-		realloc_buf(cloner, ((cloner->cmd->read.length + 0x200) & (~(0x200 - 1))));
-		ret = mmc_read_x((cloner->cmd->read.ops & 0xffff),
-				cloner->read_req->buf,
-				cloner->cmd->read.partition + cloner->cmd->read.offset,
-				cloner->cmd->read.length);
-		break;
+		case OPS(MMC,0):
+		case OPS(MMC,1):
+		case OPS(MMC,2):
+			realloc_buf(cloner, ((cloner->cmd->read.length + 0x200) & (~(0x200 - 1))));
+			ret = mmc_read_x((cloner->cmd->read.ops & 0xffff),
+					cloner->read_req->buf,
+					cloner->cmd->read.partition + cloner->cmd->read.offset,
+					cloner->cmd->read.length);
+			break;
 #endif
 #ifdef CONFIG_JZ_SCBOOT
-	case OPS_GET_ENCK:                             //4. send enckey to pc burner
-		ret = cpu_get_enckey(cloner->read_req->buf);
-		break;
+		case OPS_GET_ENCK:                             //4. send enckey to pc burner
+			ret = cpu_get_enckey(cloner->read_req->buf);
+			break;
 #endif
-	default:
-		ret = clmg_read(cloner);
-		break;
+		default:
+			ret = clmg_read(cloner);
+			break;
 	}
 
 	if (ret < 0)
@@ -415,18 +424,18 @@ int handle_check(struct cloner *cloner)
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->read.ops) {
 #ifdef CONFIG_JZ_MMC
-	case OPS(MMC,0):
-	case OPS(MMC,1):
-	case OPS(MMC,2):
-		ret = mmc_read_x((cloner->cmd->check.ops & 0xffff), buf,
-				cloner->cmd->check.partition + cloner->cmd->check.offset,
-				512);
-		check_buf = buf[0];
-		break;
+		case OPS(MMC,0):
+		case OPS(MMC,1):
+		case OPS(MMC,2):
+			ret = mmc_read_x((cloner->cmd->check.ops & 0xffff), buf,
+					cloner->cmd->check.partition + cloner->cmd->check.offset,
+					512);
+			check_buf = buf[0];
+			break;
 #endif
-	default:
-		ret = clmg_check(cloner);
-		break;
+		default:
+			ret = clmg_check(cloner);
+			break;
 	}
 
 	if (!ret && check_buf == cloner->cmd->check.check)

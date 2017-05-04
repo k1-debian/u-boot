@@ -127,20 +127,6 @@ struct i2c_args {
 	int value[0];
 };
 
-struct mmc_erase_range {
-	uint32_t start;
-	uint32_t end;
-};
-
-struct spi_args {
-	uint32_t clk;
-	uint32_t data_in;
-	uint32_t data_out;
-	uint32_t enable;
-	uint32_t rate;   // the ssi rate
-	uint32_t sfc_rate;// the sfc rate
-	uint32_t sfc_quad_mode;// the sfc rate
-};
 /*module args struct start*/
 struct ParameterInfo
 {
@@ -180,6 +166,10 @@ struct debug_param{
 	uint32_t transfer_size;
 	uint32_t stage2_timeout;
 };
+struct mmc_erase_range {
+	uint32_t start;
+	uint32_t end;
+};
 struct mmc_param{
 	int mmc_open_card;
 	int mmc_erase;
@@ -195,11 +185,11 @@ struct nand_param{
 	nand_flash_param nand_params[0];
 };
 
-struct policy_param	*policy_args;
-struct debug_param	*debug_args;
-struct spi_param	*spi_args;
-struct mmc_param	*mmc_args;
-struct nand_param	*nand_args;
+extern struct policy_param	*policy_args;
+extern struct debug_param	*debug_args;
+extern struct spi_param	*spi_args;
+extern struct mmc_param	*mmc_args;
+extern struct nand_param	*nand_args;
 /*end*/
 
 union cmd {
