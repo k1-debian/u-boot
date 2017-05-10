@@ -10,10 +10,7 @@
 //#include "test1.h"
 #include "test_nku.h"
 #include "otp.h"
-
-/*PD01 */
-//#define AVDD_EFUSE_GPIO			(97)
-#define AVDD_EFUSE_GPIO			(0)
+#include <cloner/cloner.h>
 static void gpio_output_value(int gpio, int value)
 {
 	gpio_direction_output(gpio, value);
@@ -37,9 +34,9 @@ int test_wtotp(int opera){
 
 	args->arg[0] = opera;
 	*(volatile unsigned int *)0xb3540000 |= 1<<15; /*pg en*/
-	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	gpio_output_value(debug_args->efuse_gpio, 0);
 	ret = secall(args,SC_FUNC_WTOTP,0);
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	*(volatile unsigned int *)0xb3540000 &= ~(1<<15);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC){
@@ -111,7 +108,7 @@ int test_burnukey(void)
 	printf("xxxx otp efuse state:%x\n", *reg_stat);
 
 	*reg_ctrl |= 1<<15; /*pg en*/
-	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	gpio_output_value(debug_args->efuse_gpio, 0);
 
 	*reg_data0 =  1<<15; /* ukey protected */
 	*reg_ctrl &= ~(0x7f<<21 | 0x1f<<16); /*set address ,length*/
@@ -120,7 +117,7 @@ int test_burnukey(void)
 	*reg_ctrl |= 1<<1; /*write en*/
 	while(!(*reg_stat & (1<<1)));
 
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~(1<<15);
 
 	*reg_ctrl |= 1<<0; /*read en*/
@@ -244,7 +241,7 @@ int cpu_burn_secboot_enable_1(void)
 	printf("xxxx otp efuse date:%x\n", *reg_data0);
 
 	*reg_ctrl |= 1<<15; /*pg en*/
-	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	gpio_output_value(debug_args->efuse_gpio, 0);
 
 	*reg_data0 = (1<<0 | 1<<4); /* security boot enable, security boot enable protected */
 	*reg_ctrl &= ~(0x7f<<21 | 0x1f<<16); /*set address ,length*/
@@ -255,7 +252,7 @@ int cpu_burn_secboot_enable_1(void)
 	*reg_ctrl |= 1<<1; /*write en*/
 	while(!(*reg_stat & (1<<1)));
 
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~(1<<15);
 
 

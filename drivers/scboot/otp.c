@@ -7,9 +7,7 @@
 #include "aes.h"
 #include "otp.h"
 #include "test_nku.h"
-
-/*PD01 */
-#define AVDD_EFUSE_GPIO			(0)
+#include <cloner/cloner.h>
 
 unsigned int rsakey[128];
 unsigned int rsakeylen;
@@ -137,7 +135,7 @@ static int efuse_config(void)
 
 void otp_init(void)
 {
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	efuse_config();
 	efuse_update_state();
 }
@@ -153,12 +151,12 @@ int cpu_wtotp(int opera)
 //	printf("xxxxxxxxxxx func : %s\n",__func__);
 
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	gpio_output_value(debug_args->efuse_gpio, 0);
 
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0);
 
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
@@ -187,11 +185,11 @@ int cpu_burn_rckey(void)
 		return -ESEC;
 
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	gpio_output_value(debug_args->efuse_gpio, 0);
 
 	secall(args, SC_FUNC_BURNRKCK, 0);
 
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
@@ -336,7 +334,7 @@ int cpu_burn_secboot_enable(void)
 	volatile unsigned int *reg_data1 = (volatile unsigned int *)EFUSE_REG_DAT1;
 
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	gpio_output_value(debug_args->efuse_gpio, 0);
 
 	*reg_data1 = (1 << EFUSE_PTCOFF_SEC | 1 << EFUSE_PTCOFF_SCB); /* security boot enable, security boot enable protected */
 	*reg_ctrl &= ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
@@ -345,7 +343,7 @@ int cpu_burn_secboot_enable(void)
 
 	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
 
-	gpio_output_value(AVDD_EFUSE_GPIO, 1);
+	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 
 	efuse_update_state();
