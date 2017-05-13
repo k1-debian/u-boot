@@ -104,11 +104,15 @@ enum medium_type {
 	I2C,
 	EFUSE,
 	REGISTER,
-	SPI_NOR,
+	SPISFC,
+	EXT_POL,
+};
+
+enum spisfc_sub_type {
+	SPI_NOR = 0,
 	SFC_NOR,
 	SPI_NAND,
 	SFC_NAND,
-	EXT_POL,
 };
 
 enum data_type {
@@ -128,14 +132,24 @@ struct i2c_args {
 };
 
 /*module args struct start*/
+
+#define MAGIC_INFO	('B' << 24) | ('D' << 16) | ('I' << 8) | ('F' << 0)
+#define MAGIC_DDR	('D' << 24) | ('D' << 16) | ('R' << 8) | 0
+#define MAGIC_DEBUG	('D' << 24) | ('B' << 16) | ('G' << 8) | 0
+#define MAGIC_GPIO	('G' << 24) | ('P' << 16) | ('I' << 8) | ('O' << 0)
+#define MAGIC_MMC	('M' << 24) | ('M' << 16) | ('C' << 8) | 0
+#define MAGIC_NAND	('N' << 24) | ('A' << 16) | ('N' << 8) | ('D' << 0)
+#define MAGIC_POLICY	('P' << 24) | ('O' << 16) | ('L' << 8) | ('I' << 0)
+#define MAGIC_SFC	('S' << 24) | ('F' << 16) | ('C' << 8) | 0
+#define MAGIC_EXPY	('E' << 24) | ('X' << 16) | ('P' << 8) | ('Y' << 0)
+#define MAGIC_EFUSE	('E' << 24) | ('F' << 16) | ('U' << 8) | ('S' << 0)
+
 struct ParameterInfo
 {
 	uint32_t magic;
 	uint32_t size;
 	uint32_t data[0];
 };
-void dump_ParameterInfo();
-void *get_param(uint32_t magic);
 struct spi_param {
 	uint32_t clk;
 	uint32_t data_in;
@@ -187,8 +201,8 @@ struct nand_param{
 
 extern struct policy_param	*policy_args;
 extern struct debug_param	*debug_args;
-extern struct spi_param	*spi_args;
-extern struct mmc_param	*mmc_args;
+extern struct spi_param		*spi_args;
+extern struct mmc_param		*mmc_args;
 extern struct nand_param	*nand_args;
 /*end*/
 
@@ -393,7 +407,8 @@ struct cloner_moudle {
 	uint32_t medium;
 	int ops;
 	struct list_head node;
-	int (*init)(void *args, void* mdata);
+	int (*init)(struct cloenr *cloner, void *args, void* mdata);
+	int (*info)(struct cloner *cloner);
 	int (*write)(struct cloner *cloner, int sub_ops, void* mdata);
 	int (*read)(struct cloner *cloner, int sub_ops, void* mdata);
 	int (*check)(struct cloner *cloner, int sub_ops, void* mdata);
@@ -413,7 +428,9 @@ typedef int (*cloner_regcall_t)(void);
 
 /*----------------------------------------------------------------*/
 
-int clmg_init(void *args);
+int clmg_init(struct cloner *cloner, void *args);
+
+int clmg_info(struct cloner *cloner);
 
 int clmg_check(struct cloner *cloner);
 
@@ -437,4 +454,9 @@ static inline int cloner_moudle_init(void)
 	}
 	return ret;
 }
+
+void *realloc_buf(struct cloner *cloner, size_t realloc_size);
+int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset);
+#define READBUF_SIZE	(512*1024)
+
 #endif

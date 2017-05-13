@@ -64,12 +64,13 @@ int extend_policy_mg_init(void)
 
 	if (!clmd)
 		return -ENOMEM;
-	clmd->medium = 0x59505845;	/*magic code*/
-	clmd->ops = 10;
+	clmd->medium = MAGIC_EXPY; 
+	clmd->ops = EXT_POL;
 	clmd->read = epmg_read;
-	clmd->write = epmg_write;;
+	clmd->write = epmg_write;
 	clmd->init = NULL;
 	clmd->check = NULL;
+	clmd->info = NULL;
 	clmd->data = NULL;
 	printf("extend policy manager register\n");
 	ret = register_cloner_moudle(clmd);

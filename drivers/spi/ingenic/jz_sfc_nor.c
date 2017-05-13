@@ -880,7 +880,7 @@ static void dump_mini_cloner_params()
 	printf("mini_chip_size=%d\n",	spi_nor_info->chip_size);
 	printf("mini_page_size=%d\n",	spi_nor_info->page_size);
 	printf("mini_erase_size=%d\n",	spi_nor_info->erase_size);
-	printf("mini_quad_mode=%d\n",	spi_nor_info->s_quad);
+	printf("mini_quad_mode=%d\n",	spi_nor_info->spl_quad);
 
 }
 #endif

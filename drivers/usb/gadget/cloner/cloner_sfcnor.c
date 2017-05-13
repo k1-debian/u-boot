@@ -1,8 +1,9 @@
 #ifdef CONFIG_JZ_SFC
+extern struct debug_param *debug_args;
+
 extern unsigned int sfc_rate;
 extern unsigned int get_partition_index(u32 offset,u32 length,int *pt_offset, int *pt_size);
 
-#define READBUF_SIZE	(512*1024)
 static char *readbuf = NULL;
 
 int sfc_erase()
@@ -14,25 +15,13 @@ int sfc_erase()
 	int err = 0;
 	spi.rate  = spi_args->rate;
 	sfc_rate = spi_args->sfc_rate;
-	jz_sfc_chip_erase();
-
+	int ret = jz_sfc_chip_erase();
+	if (ret < 0)
+		printf("sfc chip erese failed!\n");
+	else
+		printf("sfc chip erase ok\n");
+	return ret;
 }
-
-static int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
-{
-	unsigned int i,val = 0;
-	unsigned int *buf1 = (unsigned int *)org_data;
-	unsigned int *buf2 = (unsigned int *)read_data;
-	for(i = 0; i < len / 4; i++)
-	{
-		if(buf1[i] != buf2[i]){
-			printf("XXXXXXXXXX  compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x  len = %d\n",i,buf1[i],i,buf2[i],offset + i * 4,len);
-			val = -1;
-		}
-	}
-	return val;
-}
-
 
 int sfc_program(struct cloner *cloner)
 {

@@ -96,7 +96,7 @@ int expy_efuse_init(void)
 	struct extend_policy *expy = malloc(sizeof(struct extend_policy));
 	if (!expy)
 		return -ENOMEM;
-	expy->magic = 0x30545847;
+	expy->magic = MAGIC_EFUSE;
 	expy->write = expy_efuse_write;
 	expy->read = expy_efuse_read;
 	expy->data = (struct efuse_priv *)malloc(sizeof(struct efuse_priv));

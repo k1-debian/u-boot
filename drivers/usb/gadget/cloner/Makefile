@@ -28,6 +28,10 @@ LIB	:= $(obj)libcloner_module_mg.o
 COBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += extend_policy_manager.o
 SUBOBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += expy/libexpy.o
 
+COBJS-$(if $(CONFIG_JZ_SPI),$(CONFIG_MTD_SPINAND),$(CONFIG_MTD_SFCNAND),$(CONFIG_JZ_SFC_NOR)) += cloner_module_spisfc.o
+COBJS-$(CONFIG_JZ_MMC) += cloner_module_mmc.o
+COBJS-$(if $(CONFIG_JZ_NAND_MGR),$(CONFIG_MTD_NAND_JZ)) += cloner_module_nand.o
+
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

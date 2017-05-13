@@ -1,6 +1,7 @@
 #ifdef CONFIG_JZ_SPI
 extern unsigned int ssi_rate;
 
+struct spi_param *spi_args;
 
 int spi_erase()
 {
@@ -23,7 +24,6 @@ int spi_erase()
 			return 1;
 		}
 	}
-//	printf("######################\n");
 	jz_erase_all(flash);
 	printf("spi erase ok\n");
 	return 0;

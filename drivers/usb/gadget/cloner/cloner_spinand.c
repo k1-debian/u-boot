@@ -1,10 +1,9 @@
 #include <asm/arch-x1000/spi.h>
 #include <nand.h>
-#include "../../spi/jz_spi.h"
+#include "../../../spi/jz_spi.h"
 #include <linux/mtd/mtd.h>
 #include <ingenic_nand_mgr/nand_param.h>
-#include "../../mtd/nand/jz_spinand.h"
-
+#include "../../../mtd/nand/jz_spinand.h"
 
 extern struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
 extern struct nand_param_from_burner nand_param_from_burner;

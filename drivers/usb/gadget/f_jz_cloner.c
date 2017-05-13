@@ -36,17 +36,9 @@
 #include <linux/compiler.h>
 #include <linux/usb/composite.h>
 #include <cloner/cloner.h>
-#include "burn_printf.h"
-#include "cloner_nand.c"
-#include "cloner_mmc.c"
-#include "cloner_efuse.c"
-#include "cloner_spi.c"
-#include "cloner_sfc.c"
-#if CONFIG_MTD_SPINAND || CONFIG_MTD_SFCNAND
-#include "cloner_spinand.c"
-#endif
-
-
+#include "cloner/burn_printf.h"
+#include "cloner/cloner_mmc.c"
+#include "cloner/cloner_efuse.c"
 #ifdef CONFIG_JZ_SCBOOT
 #include "../../scboot/secure.h"
 #include "../../scboot/otp.h"
@@ -71,7 +63,7 @@ int register_cloner_moudle(struct cloner_moudle *clmd)
 	return 0;
 }
 
-static inline struct cloner_moudle *find_cloner_moudle1(int ops) {
+static inline struct cloner_moudle *find_cloner_moudle_ops(int ops) {
 
 	struct cloner_moudle *pos = NULL;
 	list_for_each_entry(pos, &clmg_list, node)
@@ -81,7 +73,7 @@ static inline struct cloner_moudle *find_cloner_moudle1(int ops) {
 }
 
 
-static inline struct cloner_moudle *find_cloner_moudle2(uint32_t medium) {
+static inline struct cloner_moudle *find_cloner_moudle_medium(uint32_t medium) {
 
 	struct cloner_moudle *pos = NULL;
 	list_for_each_entry(pos, &clmg_list, node)
@@ -90,26 +82,37 @@ static inline struct cloner_moudle *find_cloner_moudle2(uint32_t medium) {
 	return NULL;
 }
 
-int clmg_init(void *args)
+int clmg_init(struct cloner *cloner, void *args)
 {
 	struct cloner_moudle *clmd;
-	uint32_t medium;
 
 	if (!args)
 		return -EINVAL;
 
-	medium = *(uint32_t *)args;
+	struct ParameterInfo *p = (struct ParameterInfo *)args;
 
-	clmd = find_cloner_moudle2(medium);
+	clmd = find_cloner_moudle_medium(p->magic);
 	if (!clmd)
 		return -ENOSYS;
 
 	if (!clmd->init) {
-		printf("moudle(%d) not support init function", clmd->medium);
+		printf("moudle(%x) not support init function\n", clmd->medium);
 		return 0;
 	}
+	return clmd->init(cloner, (void*)p->data, clmd->data);
+}
 
-	return clmd->init(args, clmd->data);
+int clmg_info(struct cloner *cloner)
+{
+	struct cloner_moudle *clmd = NULL;
+
+	list_for_each_entry(clmd, &clmg_list, node)
+	{
+		if (!clmd || !clmd->info)
+			continue;
+		clmd->info(cloner);
+	}
+	return 0;
 }
 
 int clmg_write(struct cloner *cloner)
@@ -122,7 +125,7 @@ int clmg_write(struct cloner *cloner)
 
 	ops = MOUDLE_TYPE(cloner->cmd->write.ops);
 
-	clmd = find_cloner_moudle1(ops);
+	clmd = find_cloner_moudle_ops(ops);
 	if (!clmd || !clmd->write)
 		return -ENOSYS;
 
@@ -139,7 +142,7 @@ int clmg_read(struct cloner *cloner)
 
 	ops = MOUDLE_TYPE(cloner->cmd->read.ops);
 
-	clmd = find_cloner_moudle1(ops);
+	clmd = find_cloner_moudle_ops(ops);
 	if (!clmd || !clmd->read)
 		return -ENOSYS;
 
@@ -156,12 +159,13 @@ int clmg_check(struct cloner *cloner)
 
 	ops = MOUDLE_TYPE(cloner->cmd->check.ops);
 
-	clmd = find_cloner_moudle1(ops);
+	clmd = find_cloner_moudle_ops(ops);
 	if (!clmd || !clmd->check)
 		return -ENOSYS;
 
 	return clmd->check(cloner, MOUDLE_SUB_TYPE(cloner->cmd->check.ops), clmd->data);
 }
+
 
 int i2c_program(struct cloner *cloner)
 {
@@ -180,187 +184,44 @@ int i2c_program(struct cloner *cloner)
 	return 0;
 }
 
-extern unsigned int ssi_rate;
-extern unsigned int sfc_rate;
 
-unsigned int cloner_get_flash_info(struct cloner *cloner)
-{
-	unsigned int id_code = 0;
-#ifdef CONFIG_JZ_SFC_NOR
-	id_code = get_norflash_id();
-#endif
-	return id_code;
-}
-
-#if 1
 static struct ParameterInfo *global_args;
-void dump_ParameterInfo()
-{
-	int i = 0;
-	int count = 0;
-	struct ParameterInfo *p = global_args;
-	printf("\n-----------dump_parameterinfo-------------\n");
-	while(1)
-	{
-		if(((int)p%4==0) && ((char*)p>=(char*)global_args) && ((char*)p<((char*)global_args+ARGS_LEN)) && (p->magic != 0))
-		{
-			printf("index=%d;offset=%p;",count++,p);
-			printf("magic=");
-			for(i=3;i>=0;i--)
-				printk("%c",((char*)(&p->magic))[i]);
-			printk(";size=%d\n",p->size);
-		}else{
-			return;
-		}
-		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t)*2);
-	}
-}
-void *get_param(uint32_t magic)
-{
-	int i = 0;
-	char *c = &magic;
-	struct ParameterInfo *p = global_args;
-	while(1)
-	{
-		if(((int)p%4==0) && ((char*)p>=(char*)global_args) && ((char*)p<((char*)global_args+ARGS_LEN)) && (p->magic != 0))
-		{
-			if(p->magic == magic)
-				return (void*)p->data;
-		}
-		else
-		{
-			printf("Can't find parameter of (");
-			for(i=3;i>=0;i--)
-				printk("%c",c[i]);
-			printk(")\n");
-			return NULL;
-		}
-		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t)*2);
-	}
-	return NULL;
-}
-#endif
-
 struct policy_param	*policy_args;
 struct debug_param	*debug_args;
-struct spi_param	*spi_args;
-struct mmc_param	*mmc_args;
-struct nand_param	*nand_args;
-
-int module_parameter_init()
-{
-//	dump_ParameterInfo();
-	policy_args = get_param(('P' << 24) | ('O' << 16) | ('L' << 8) |('I' << 0));
-	if(!policy_args)
-	{
-		printf("Not found policy parameters\n");
-		return -EINVAL;
-	}
-	debug_args = get_param(('D' <<24) | ('B' <<16) |('G' <<8) | 0);
-	if(!debug_args)
-	{
-		printf("Not found debug parameters\n");
-		return -EINVAL;
-	}
-	L.enable = debug_args->log_enabled;
-	if(policy_args->use_sfc_nand || policy_args->use_sfc_nor || policy_args->use_spi_nand || policy_args->use_spi_nor)
-	{
-		spi_args = get_param(('S'<<24) | ('F'<<16) | ('C'<<8) | 0);
-		if(!spi_args)
-		{
-			printf("Not found sfcspi parameters\n");
-			return -EINVAL;
-		}
-	}
-	if(policy_args->use_mmc)
-	{
-		mmc_args = get_param(('M'<<24) | ('M'<<16) | ('C'<<8) | 0);
-		if(!mmc_args)
-		{
-			printf("Not found mmc parameters\n");
-			return -EINVAL;
-		}
-	}
-	if(policy_args->use_nand_mgr || policy_args->use_nand_mtd)
-	{
-		nand_args = get_param(('N'<<24)| ('A'<<16) | ('N'<<8) | ('D'<<0));
-		if(!nand_args)
-		{
-			printf("Not found nand parameters\n");
-			return -EINVAL;
-		}
-	}
-	return 0;
-}
-
 
 int cloner_init(struct cloner *cloner)
 {
-	int ret;
-	if ((ret = module_parameter_init()) < 0)
-		return ret;
-#ifdef CONFIG_JZ_NAND_MGR
-	if(policy_args->use_nand_mgr) {
-		nand_probe_burner(&(nand_args->PartInfo),
-				&(nand_args->nand_params[0]),
-				nand_args->nr_nand_args,
-				nand_args->nand_erase,policy_args->offsets,nand_args->nand_erase_count);
-	}
-#endif	/*CONFIG_JZ_NAND_MGR*/
-#ifdef CONFIG_MTD_NAND_JZ
-	if(policy_args->use_nand_mtd) {
-		mtd_nand_probe_burner(&nand_args->MTDPartInfo,
-				&nand_args->nand_params,
-				nand_args->nr_nand_args,
-				nand_args->nand_erase,
-				&cloner->spl_title,
-				&cloner->spl_title_sz);
-	}
-#endif	/*CONFIG_JZ_NAND_MGR*/
-#ifdef CONFIG_JZ_MMC
-	if (policy_args->use_mmc) {
-		if (mmc_args->mmc_erase) {
-			mmc_erase();
+	int i = 0;
+	struct ParameterInfo *p = global_args;
+	while(1)
+	{
+		if(((int)p%4==0) && ((char*)p>=(char*)global_args)
+				&& ((char*)p<((char*)global_args+ARGS_LEN)) && (p->magic != 0))
+		{
+			printf("magic=");
+			for(i=3;i>=0;i--)
+				printf("%c",((char*)&p->magic)[i]);
+			printf("\n");
+			switch(p->magic)
+			{
+				case MAGIC_POLICY:
+					policy_args = p->data;
+					break;
+				case MAGIC_DEBUG:
+					debug_args = p->data;
+					L.enable = debug_args->log_enabled;
+					break;
+				default:
+					clmg_init(cloner, p);
+					break;
+			}
 		}
-	}
-#endif	/*CONFIG_JZ_MMC*/
-
-#ifdef CONFIG_JZ_SPI
-#ifdef CONFIG_MTD_SPINAND
-	if(policy_args->use_spi_nand){
-		ssi_rate = spi_args->rate;
-		printf("******** ssi_rate = %d oldrate = %d spi_erase = %d\n",ssi_rate,spi_args->rate,spi_args->spi_erase);
-		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
-		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);
-	}
-#endif
-
-	if(policy_args->use_spi_nor){
-		if (spi_args->spi_erase == SPI_ERASE_PART) {
-			spi_erase();
+		else
+		{
+			return 0;
 		}
-		printf("spi_args->rate:%d\n",spi_args->rate);
+		p = (struct ParameterInfo *)((char*)(p++) + p->size);
 	}
-#endif
-#if CONFIG_MTD_SFCNAND
-
-	if(policy_args->use_sfc_nand){
-		ssi_rate = spi_args->rate;
-		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
-		mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
-	}
-#endif
-#ifdef CONFIG_JZ_SFC_NOR
-	if(policy_args->use_sfc_nor){
-		sfc_rate = spi_args->rate;
-		norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
-		if (spi_args->spi_erase == SPI_ERASE_PART) {
-			sfc_erase();
-		}
-		printf("spi_args->rate:%d\n",spi_args->rate);
-	}
-#endif
-	return 0;
 }
 
 void *realloc_buf(struct cloner *cloner, size_t realloc_size)
@@ -375,34 +236,18 @@ void *realloc_buf(struct cloner *cloner, size_t realloc_size)
 
 void handle_read(struct cloner *cloner)
 {
-	int ret;
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->read.ops) {
-#ifdef CONFIG_JZ_MMC
-		case OPS(MMC,0):
-		case OPS(MMC,1):
-		case OPS(MMC,2):
-			realloc_buf(cloner, ((cloner->cmd->read.length + 0x200) & (~(0x200 - 1))));
-			ret = mmc_read_x((cloner->cmd->read.ops & 0xffff),
-					cloner->read_req->buf,
-					cloner->cmd->read.partition + cloner->cmd->read.offset,
-					cloner->cmd->read.length);
-			break;
-#endif
 #ifdef CONFIG_JZ_SCBOOT
-		case OPS_GET_ENCK:                             //4. send enckey to pc burner
-			ret = cpu_get_enckey(cloner->read_req->buf);
-			break;
+	case OPS_GET_ENCK:                             //4. send enckey to pc burner
+		cloner->ack = cpu_get_enckey(cloner->read_req->buf);
+		break;
 #endif
-		default:
-			ret = clmg_read(cloner);
-			break;
+	default:
+		cloner->ack = clmg_read(cloner);
+		break;
 	}
 
-	if (ret < 0)
-		cloner->ack = ret;
-	else
-		cloner->ack = 0;
 	if (debug_args->transfer_data_chk)
 		cloner->crc = local_crc32(0xffffffff, cloner->read_req->buf, cloner->cmd->read.length);
 	//printf("handle read cloner->crc %x\n", cloner->crc);
@@ -419,30 +264,7 @@ void handle_read_complete(struct usb_ep *ep,struct usb_request *req)
 
 int handle_check(struct cloner *cloner)
 {
-	unsigned int buf[128];
-	int ret = 0, check_buf = 0;
-#define OPS(x,y) ((x<<16)|(y&0xffff))
-	switch(cloner->cmd->read.ops) {
-#ifdef CONFIG_JZ_MMC
-		case OPS(MMC,0):
-		case OPS(MMC,1):
-		case OPS(MMC,2):
-			ret = mmc_read_x((cloner->cmd->check.ops & 0xffff), buf,
-					cloner->cmd->check.partition + cloner->cmd->check.offset,
-					512);
-			check_buf = buf[0];
-			break;
-#endif
-		default:
-			ret = clmg_check(cloner);
-			break;
-	}
-
-	if (!ret && check_buf == cloner->cmd->check.check)
-		return 0;
-	else
-		return -EINVAL;
-#undef OPS
+	return clmg_check(cloner);
 }
 
 void handle_write(struct usb_ep *ep,struct usb_request *req)
@@ -473,52 +295,15 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 			return;
 		}
 	}
+
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->write.ops) {
 		case OPS(I2C,RAW):
 			cloner->ack = i2c_program(cloner);
 			break;
-#ifdef CONFIG_JZ_NAND_MGR
-		case OPS(NAND,IMAGE):
-			cloner->ack = nand_program(cloner);
-			break;
-#endif
-#ifdef CONFIG_MTD_NAND_JZ
-		case OPS(NAND, MTD_RAW):
-			cloner->ack = nand_mtd_raw_program(cloner);
-			break;
-		case OPS(NAND, MTD_UBI):
-			cloner->ack = nand_mtd_ubi_program(cloner);
-			break;
-#endif
-#ifdef CONFIG_JZ_MMC
-		case OPS(MMC,0):
-		case OPS(MMC,1):
-		case OPS(MMC,2):
-			cloner->ack = mmc_program(cloner,cloner->cmd->write.ops & 0xffff);
-			break;
-#endif
 #ifdef CONFIG_CMD_EFUSE
 		case OPS(EFUSE,RAW):
 			cloner->ack = efuse_program(cloner);
-			break;
-#endif
-		case OPS(SPI_NOR,RAW):
-			cloner->ack = spi_program(cloner);
-			break;
-#ifdef CONFIG_MTD_SPINAND
-		case OPS(SPI_NAND,RAW):
-			cloner->ack = spinand_program(cloner);
-			break;
-#endif
-#ifdef CONFIG_JZ_SFC_NOR
-		case OPS(SFC_NOR,RAW):
-			cloner->ack = sfc_program(cloner);
-			break;
-#endif
-#ifdef CONFIG_MTD_SFCNAND
-		case OPS(SFC_NAND,RAW):
-			cloner->ack = spinand_program(cloner);
 			break;
 #endif
 		case OPS(MEMORY,RAW):
@@ -649,8 +434,6 @@ int f_cloner_setup_handle(struct usb_function *f,
 {
 	struct cloner *cloner = f->config->cdev->req->context;
 	struct usb_request *req = cloner->ep0req;
-	unsigned int chipid;
-
 
 	if ((ctlreq->bRequestType & USB_TYPE_MASK) != USB_TYPE_VENDOR) {
 		printf("Unkown RequestType 0x%x \n",ctlreq->bRequestType);
@@ -668,7 +451,7 @@ int f_cloner_setup_handle(struct usb_function *f,
 
 	switch (ctlreq->bRequest) {
 		case VR_GET_CPU_INFO:
-			strcpy(cloner->ep0req->buf,"BOOT47XX");
+			strcpy(cloner->ep0req->buf,CONFIG_BURNER_CPU_INFO);
 			break;
 		case VR_GET_ACK:
 			if (cloner->ack) printf("cloner->ack = %d\n",cloner->ack);
@@ -682,8 +465,7 @@ int f_cloner_setup_handle(struct usb_function *f,
 		case VR_INIT:
 			break;
 		case VR_GET_FLASH_INFO:
-			chipid = cloner_get_flash_info(cloner);
-			memcpy(cloner->ep0req->buf, &chipid, sizeof(unsigned int));
+			cloner->ack = clmg_info(cloner);
 			break;
 		case VR_UPDATE_CFG:
 		case VR_WRITE:
