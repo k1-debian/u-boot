@@ -87,6 +87,7 @@ struct global_info {
 	uint32_t baud_rate;
 #ifdef CONFIG_BURNER
 //	struct ddr_params ddr_params;
+	struct jz_gpio_func_def uart_gpio[1];
 	uint32_t nr_gpio_func;
 	struct jz_gpio_func_def gpio[0];
 	struct ddr_test_burner ddr_test;

@@ -260,7 +260,8 @@ void gpio_init(void)
 		g = &gd->arch.gi->gpio[i];
 		gpio_set_func(g->port, g->func, g->pins);
 	}
-	g = &uart_gpio_func[gd->arch.gi->uart_idx];
+//	g = &uart_gpio_func[gd->arch.gi->uart_idx];
+	g = &gd->arch.gi->uart_gpio[0];
 #endif
 	gpio_set_func(g->port, g->func, g->pins);
 
