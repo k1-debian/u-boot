@@ -186,7 +186,7 @@ void board_init_f(ulong bootflag)
 #else
 	/* reserve memory for LCD display (always full pages) */
 	addr = lcd_setmem(addr);
-	printf("Reserving %ldk for U-Boot at: %08lx\n", len >> 10, addr);
+	printf("Reserving %ldk for LCDC at: %08lx\n", len >> 10, addr);
 	gd->fb_base = addr;
 #endif /* CONFIG_FB_ADDR */
 #endif /* CONFIG_LCD */

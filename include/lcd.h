@@ -37,6 +37,7 @@ extern struct vidinfo panel_info;
 
 void lcd_ctrl_init(void *lcdbase);
 void lcd_enable(void);
+void lcd_dma_sync(void);
 
 /* setcolreg used in 8bpp/16bpp; initcolregs used in monochrome */
 void lcd_setcolreg(ushort regno, ushort red, ushort green, ushort blue);

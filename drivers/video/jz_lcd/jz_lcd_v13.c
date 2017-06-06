@@ -129,28 +129,45 @@ void dump_lcd_reg()
 	printf("reg:0x10000064 value=0x%08x  Lcd pixclock \n",
 	       *(unsigned int *)0xb0000064);
 	printf("==================================\n");
-	printf("ccccccPCINT:\t0x%08x\n", *(unsigned int *)0xb0010210);
-	printf("ccccccPCMASK:\t0x%08x\n",*(unsigned int *)0xb0010220);
-	printf("ccccccPCPAT1:\t0x%08x\n",*(unsigned int *)0xb0010230);
-	printf("ccccccPCPAT0:\t0x%08x\n",*(unsigned int *)0xb0010240);
+	printf("PAINT:\t0x%08x\n", *(unsigned int *)0xb0010010);
+	printf("PAMASK:\t0x%08x\n",*(unsigned int *)0xb0010020);
+	printf("PAPAT1:\t0x%08x\n",*(unsigned int *)0xb0010030);
+	printf("PAPAT0:\t0x%08x\n",*(unsigned int *)0xb0010040);
 	printf("==================================\n");
+	printf("PBINT:\t0x%08x\n", *(unsigned int *)0xb0010110);
+	printf("PBMASK:\t0x%08x\n",*(unsigned int *)0xb0010120);
+	printf("PBPAT1:\t0x%08x\n",*(unsigned int *)0xb0010130);
+	printf("PBPAT0:\t0x%08x\n",*(unsigned int *)0xb0010140);
 	printf("==================================\n");
-	printf("aaaaaaaPCINT:\t0x%08x\n", *(unsigned int *)0xb0010010);
-	printf("aaaaaaPCMASK:\t0x%08x\n",*(unsigned int *)0xb0010020);
-	printf("aaaaaaPCPAT1:\t0x%08x\n",*(unsigned int *)0xb0010030);
-	printf("aaaaaaPCPAT0:\t0x%08x\n",*(unsigned int *)0xb0010040);
+	printf("PCINT:\t0x%08x\n", *(unsigned int *)0xb0010210);
+	printf("PCMASK:\t0x%08x\n",*(unsigned int *)0xb0010220);
+	printf("PCPAT1:\t0x%08x\n",*(unsigned int *)0xb0010230);
+	printf("PCPAT0:\t0x%08x\n",*(unsigned int *)0xb0010240);
 	printf("==================================\n");
+	printf("PDINT:\t0x%08x\n", *(unsigned int *)0xb0010310);
+	printf("PDMASK:\t0x%08x\n",*(unsigned int *)0xb0010320);
+	printf("PDPAT1:\t0x%08x\n",*(unsigned int *)0xb0010330);
+	printf("PDPAT0:\t0x%08x\n",*(unsigned int *)0xb0010340);
 	printf("==================================\n");
-	printf("bbbbbbPCINT:\t0x%08x\n", *(unsigned int *)0xb0010110);
-	printf("bbbbbbPCMASK:\t0x%08x\n",*(unsigned int *)0xb0010120);
-	printf("bbbbbbPCPAT1:\t0x%08x\n",*(unsigned int *)0xb0010130);
-	printf("bbbbbbPCPAT0:\t0x%08x\n",*(unsigned int *)0xb0010140);
+	printf("jzfb->framedesc:       0x%p\n"  , lcd_config_info.dmadesc_cmd_tmp);
+	printf("cmdmedesc->next:       0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->fdadr);
+	printf("cmdmedesc->databuf:    0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->fsadr);
+	printf("cmdmedesc->id:         0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->fidr);
+	printf("cmdmedesc->cmd:        0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->ldcmd);
+	printf("cmdmedesc->offsize:    0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->offsize);
+	printf("cmdmedesc->page_width: 0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->page_width);
+	printf("cmdmedesc->cpos:       0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->cmd_num);
+	printf("cmdmedesc->desc_size:  0x%08x\n", lcd_config_info.dmadesc_cmd_tmp->desc_size);
 	printf("==================================\n");
-	printf("==================================\n");
-	printf("ddddddPCINT:\t0x%08x\n", *(unsigned int *)0xb0010310);
-	printf("ddddddPCMASK:\t0x%08x\n",*(unsigned int *)0xb0010320);
-	printf("ddddddPCPAT1:\t0x%08x\n",*(unsigned int *)0xb0010330);
-	printf("ddddddPCPAT0:\t0x%08x\n",*(unsigned int *)0xb0010340);
+	printf("jzfb->framedesc:       0x%p\n"  , lcd_config_info.dmadesc_fbhigh);
+	printf("framedesc->next:       0x%08x\n", lcd_config_info.dmadesc_fbhigh->fdadr);
+	printf("framedesc->databuf:    0x%08x\n", lcd_config_info.dmadesc_fbhigh->fsadr);
+	printf("framedesc->id:         0x%08x\n", lcd_config_info.dmadesc_fbhigh->fidr);
+	printf("framedesc->cmd:        0x%08x\n", lcd_config_info.dmadesc_fbhigh->ldcmd);
+	printf("framedesc->offsize:    0x%08x\n", lcd_config_info.dmadesc_fbhigh->offsize);
+	printf("framedesc->page_width: 0x%08x\n", lcd_config_info.dmadesc_fbhigh->page_width);
+	printf("framedesc->cpos:       0x%08x\n", lcd_config_info.dmadesc_fbhigh->cmd_num);
+	printf("framedesc->desc_size:  0x%08x\n", lcd_config_info.dmadesc_fbhigh->desc_size);
 	printf("==================================\n");
 
 }/*end dump_lcd_reg*/
@@ -531,6 +548,14 @@ void fb_fill(void *logo_addr, void *fb_addr, int count)
         reg_write(SLCDC_CTRL, smart_ctrl);
 #endif
 
+}
+
+void lcd_dma_sync(void)
+{
+        int smart_ctrl = 0;
+        smart_ctrl = reg_read(SLCDC_CTRL);
+        smart_ctrl |= SLCDC_CTRL_DMA_START; //trigger a new frame
+        reg_write(SLCDC_CTRL, smart_ctrl);
 }
 
 int jzfb_get_controller_bpp(unsigned int bpp)

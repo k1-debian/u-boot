@@ -536,6 +536,7 @@ void lcd_clear(void)
 	/* Paint the logo and retrieve LCD base address */
 	debug("[LCD] Drawing the logo...\n");
 	lcd_console_address = lcd_logo();
+	lcd_dma_sync();
 
 	console_col = 0;
 	console_row = 0;
@@ -777,7 +778,7 @@ void bitmap_plot(int x, int y)
 		}
 		else if (NBITS(panel_info.vl_bpix) == 32){
 			u16 col16;
-			fb32 = (uint *)(lcd_base + y * lcd_line_length + x);
+			fb32 = (uint *)(lcd_base + y * lcd_line_length + x * bpix / 8);
 
 			for (i=0; i<BMP_LOGO_HEIGHT; ++i) {
 
@@ -1247,7 +1248,16 @@ static void *lcd_logo(void)
 #if defined(CONFIG_RLE_LCD_LOGO) && !defined(CONFIG_LCD_INFO_BELOW_LOGO)
 	rle_plot(RLE_LOGO_DEFAULT_ADDR, lcd_base);
 #else
-	bitmap_plot(0, 85);
+	/*  The logo size should not larger than framebuffer, else the DMA descriptor will be destroyed. */
+	if ((BMP_LOGO_WIDTH > panel_info.vl_col) || (BMP_LOGO_HEIGHT > panel_info.vl_row)) {
+		printf("\033[31mThe LOGO's width or height is larger than lcd panel, skip draw the LOGO!!!\033[0m\n");
+	} else {
+		/* By default, draw the LOGO at the center of the lcd panel. */
+		unsigned int xpos = 0, ypos = 0;
+		xpos = (panel_info.vl_col - BMP_LOGO_WIDTH) / 2;
+		ypos = (panel_info.vl_row - BMP_LOGO_HEIGHT) / 2;
+		bitmap_plot(xpos, ypos);
+	}
 #endif
 	flush_cache_all();
 #ifdef CONFIG_LCD_INFO
