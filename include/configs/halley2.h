@@ -318,6 +318,16 @@
 #define CONFIG_GPIO_LCD_FLAG GPIO_PD(3)
 #endif	/* CONFIG_VIDEO_TRULY_TFT240240_2_E */
 
+/* #define CONFIG_VIDEO_NHD_160128UGC3 */
+
+#ifdef CONFIG_VIDEO_NHD_160128UGC3
+#define CONFIG_GPIO_LCD_RD GPIO_PB(16)
+#define CONFIG_GPIO_LCD_RST GPIO_PD(0)
+#define CONFIG_GPIO_LCD_CS GPIO_PB(18)
+#define CONFIG_GPIO_LCD_BL GPIO_PD(1)
+#define CONFIG_GPIO_LCD_FLAG GPIO_PD(3)
+#endif
+
 #ifdef CONFIG_RLE_LCD_LOGO
 #define CONFIG_CMD_BATTERYDET       /* detect battery and show charge logo */
 #define CONFIG_CMD_LOGO_RLE /*display the logo using rle command*/
