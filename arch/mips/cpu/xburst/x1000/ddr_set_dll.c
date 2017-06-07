@@ -68,9 +68,8 @@ static void apb_reset_crtl(int bypass,enum ddr_type type)
 
 static struct jzsoc_ddr_hook ddr_hook={
 	.prev_ddr_init = prev_ddr_init,
-	.post_ddr_init = NULL,
 	.reset_controller = apb_reset_crtl,
-//	.post_ddr_init = dynamic_clk_gate_enable,
+	.post_ddr_init = dynamic_clk_gate_enable,
 };
 void soc_ddr_init(void)
 {
