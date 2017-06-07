@@ -218,6 +218,8 @@ int main (int argc, char *argv[])
 					b->data[(uint16_t) i + x] = (uint8_t) fgetc (fp) \
 								    + DEFAULT_CMAP_SIZE;
 				}
+				if (b->width % 4)
+					skip_bytes (fp, 4 - b->width % 4);
 			}
 
 			for (i=0; i<(b->height*b->width); ++i) {
