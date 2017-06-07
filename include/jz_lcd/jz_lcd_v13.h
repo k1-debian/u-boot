@@ -160,6 +160,7 @@ enum smart_lcd_new_dwidth {
 	SMART_LCD_NEW_DWIDTH_16_BIT = (2 << 13),
 	SMART_LCD_NEW_DWIDTH_9_BIT = (1 << 13),
 	SMART_LCD_NEW_DWIDTH_8_BIT = (0 << 13),
+	SMART_LCD_NEW_DWIDTH_MASK = (0x7 << 13),
 };
 
 /* smart lcd data times */
@@ -167,6 +168,7 @@ enum smart_lcd_new_dtimes {
 	SMART_LCD_NEW_DTIMES_ONCE = (0 << 8),
 	SMART_LCD_NEW_DTIMES_TWICE = (1 << 8),
 	SMART_LCD_NEW_DTIMES_THICE = (2 << 8),
+	SMART_LCD_NEW_DTIMES_MASK = (3 << 8),
 };
 
 struct jzfb_config_info {

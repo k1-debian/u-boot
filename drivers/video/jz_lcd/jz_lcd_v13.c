@@ -907,7 +907,7 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
 	}
 	if(info->bpp / info->smart_config.bus_width != 1 ) {
 		int tmp = reg_read(SLCDC_CFG_NEW);
-		tmp &= ~(SMART_LCD_DWIDTH_MASK); //mask the 8~9bit
+		tmp &= ~(SMART_LCD_NEW_DTIMES_MASK); //mask the 8~9bit
 		tmp |=  (info->bpp / info->smart_config.bus_width)  == 2 ? SMART_LCD_NEW_DTIMES_TWICE : SMART_LCD_NEW_DTIMES_THICE;
 		reg_write(SLCDC_CFG_NEW, tmp);
 		printf("the slcd slcd_cfg_new is %08x\n", tmp);
@@ -973,9 +973,6 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 	ctrl |= LCDC_CTRL_BPP_18_24;
 	/* configure smart LCDC registers */
 	if (info->lcd_type == LCD_TYPE_SLCD) {
-		smart_cfg = lcd_config_info.smart_config.smart_type |
-			SMART_LCD_DWIDTH_24_BIT_ONCE_PARALLEL;
-
 		switch(info->smart_config.bus_width){
 		case 8:
 			smart_cfg |= SMART_LCD_CWIDTH_8_BIT_ONCE;
@@ -983,7 +980,7 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 			break;
 		case 9:
 			smart_cfg |= SMART_LCD_CWIDTH_9_BIT_ONCE;
-			smart_new_cfg |= SMART_LCD_NEW_DWIDTH_9_BIT;
+			smart_new_cfg |= SMART_LCD_NEW_DWIDTH_16_BIT;
 			break;
 		case 16:
 			smart_cfg |= SMART_LCD_CWIDTH_16_BIT_ONCE;
@@ -1106,6 +1103,12 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 		if (info->smart_config.newcfg_fmt_conv) {
 			smart_new_cfg = reg_read(SLCDC_CFG_NEW);
 			smart_new_cfg |= SLCDC_NEW_CFG_FMT_CONV_EN;
+			reg_write(SLCDC_CFG_NEW, smart_new_cfg);
+		}
+		if (info->smart_config.bus_width == 9) {
+			smart_new_cfg = reg_read(SLCDC_CFG_NEW);
+			smart_new_cfg &= ~SMART_LCD_NEW_DWIDTH_MASK;
+			smart_new_cfg |= SMART_LCD_NEW_DWIDTH_9_BIT;
 			reg_write(SLCDC_CFG_NEW, smart_new_cfg);
 		}
 		reg_write(SLCDC_CTRL, smart_ctrl);
