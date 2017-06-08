@@ -670,6 +670,14 @@ void fb_fill(void *logo_addr, void *fb_addr, int count)
 #endif
 }
 
+void lcd_dma_sync(void)
+{
+        int smart_ctrl = 0;
+        smart_ctrl = reg_read(SLCDC_CTRL);
+        smart_ctrl |= SLCDC_CTRL_DMA_START; //trigger a new frame
+        reg_write(SLCDC_CTRL, smart_ctrl);
+}
+
 int jzfb_get_controller_bpp(unsigned int bpp)
 {
 	switch (bpp) {
