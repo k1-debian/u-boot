@@ -170,6 +170,10 @@ void lcd_sync(void)
 		flush_dcache_range((u32)lcd_base,
 			(u32)(lcd_base + lcd_get_size(&line_length)));
 #endif
+
+#ifdef CONFIG_JZ_LCD_V13
+	lcd_dma_sync();
+#endif
 }
 
 void lcd_set_flush_dcache(int flush)
@@ -536,7 +540,6 @@ void lcd_clear(void)
 	/* Paint the logo and retrieve LCD base address */
 	debug("[LCD] Drawing the logo...\n");
 	lcd_console_address = lcd_logo();
-	lcd_dma_sync();
 
 	console_col = 0;
 	console_row = 0;
