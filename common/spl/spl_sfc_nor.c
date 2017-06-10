@@ -16,8 +16,8 @@
 
 #define GS_RETRY_TIMES	100
 
-struct sfc_flash *flash = (CONFIG_SYS_TEXT_BASE + 0x500000);
-struct sfc *sfc = (CONFIG_SYS_TEXT_BASE + 0x504000);
+static struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);
+static struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);
 
 static inline void sfc_writel(unsigned short offset, u32 value)
 {
@@ -60,33 +60,27 @@ static inline void sfc_write_txfifo(struct sfc *sfc, const unsigned int value)
 	sfc_writel(SFC_RM_DR, value);
 }
 
-
-static inline unsigned int get_sfc_ctl_sr()
+static inline unsigned int get_sfc_ctl_sr(void)
 {
 	return sfc_readl(SFC_SR);
 }
 
-static unsigned int cpu_read_rxfifo(struct sfc *sfc)
+static void cpu_read_rxfifo(struct sfc *sfc)
 {
 	int i;
 	unsigned long align_len = 0;
-	unsigned int fifo_num = 0;
+	unsigned int fifo_num, size;
 
 	align_len = ALIGN(sfc->transfer->len, 4);
+	size = (align_len - sfc->transfer->cur_len) >> 2;
 
-	if (((align_len - sfc->transfer->cur_len) / 4) > THRESHOLD) {
-		fifo_num = THRESHOLD;
-	} else {
-		fifo_num = (align_len - sfc->transfer->cur_len) / 4;
-	}
+	fifo_num = (size < THRESHOLD) ? size : THRESHOLD;
 
 	for (i = 0; i < fifo_num; i++) {
 		*(unsigned int *)sfc->transfer->data = sfc_read_rxfifo(sfc);
 		sfc->transfer->data += 4;
 		sfc->transfer->cur_len += 4;
 	}
-
-	return 0;
 }
 
 static void cpu_write_txfifo(struct sfc *sfc)
@@ -103,6 +97,7 @@ static void sfc_sr_handle(struct sfc *sfc)
 {
 	unsigned int reg_sr = 0;
 	unsigned int tmp = 0;
+
 	while (1) {
 		reg_sr = get_sfc_ctl_sr();
 		if(reg_sr & CLR_END){
@@ -120,15 +115,9 @@ static void sfc_sr_handle(struct sfc *sfc)
 			cpu_write_txfifo(sfc);
 		}
 
-		if (reg_sr & CLR_UNDER) {
-			tmp = CLR_UNDER;
-			printf("UNDR!\n");
-			break;
-		}
-
-		if (reg_sr & CLR_OVER) {
-			tmp = CLR_OVER;
-			printf("OVER!\n");
+		if (reg_sr & (CLR_UNDER | CLR_OVER)) {
+			tmp = CLR_UNDER | CLR_OVER;
+			printf("OVER or UNDER!\n");
 			break;
 		}
 	}
@@ -148,7 +137,6 @@ static void sfc_start_transfer(struct sfc *sfc)
 static void sfc_phase_transfer(struct sfc *sfc,struct sfc_transfer *transfer)
 {
 	unsigned int tmp = 0;
-	struct cmd_info *cmd = &transfer->cmd_info;
 
 	tmp |= (transfer->addr_len << ADDR_WIDTH_OFFSET);	//addr_len
 	tmp |= TRAN_CONF_CMDEN;	//cmd_enable
@@ -175,7 +163,7 @@ static void sfc_glb_info_config(struct sfc *sfc,struct sfc_transfer *transfer)
 	} else {
 		tmp |= GLB_TRAN_DIR;
 	}
-	tmp &= ~(GLB_OP_MODE << GLB_OP_MODE); //use CPU mode
+	tmp &= ~(GLB_OP_MODE); //use CPU mode
 	tmp &= ~GLB_PHASE_NUM_MSK;	//phase_num=1
 	tmp |= 1 << GLB_PHASE_NUM_OFFSET;
 	sfc_writel(SFC_GLB, tmp);
@@ -204,7 +192,7 @@ static int get_norflash_status(int command, int len)
 	transfer.cmd_info.cmd = command;
 	transfer.cmd_info.dataen = ENABLE;
 	transfer.len = len;
-	transfer.data = &val;
+	transfer.data = (const unsigned char *)&val;
 	transfer.ops_mode = CPU_OPS;
 	transfer.sfc_mode = TM_STD_SPI;
 	transfer.direction = GLB_TRAN_DIR_READ;
@@ -215,7 +203,7 @@ static int get_norflash_status(int command, int len)
 	return val;
 
 }
-static void write_enable()
+static void write_enable(void)
 {
 	struct sfc_transfer transfer;
 	struct mini_spi_nor_info *spi_nor_info;
@@ -236,7 +224,7 @@ static void write_enable()
 	sfc_sync(flash->sfc);
 }
 
-static void enter_4byte()
+static void enter_4byte(void)
 {
 	struct sfc_transfer transfer;
 	struct mini_spi_nor_info *spi_nor_info;
@@ -255,7 +243,7 @@ static void enter_4byte()
 	sfc_sync(flash->sfc);
 }
 
-static void inline set_quad_mode_cmd()
+static inline void set_quad_mode_cmd(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
 
@@ -264,10 +252,9 @@ static void inline set_quad_mode_cmd()
 }
 
 /* write nor flash status register QE bit to set quad mode */
-static int set_quad_mode_reg()
+static void set_quad_mode_reg(void)
 {
 	unsigned int data;
-	int ret;
 	unsigned int times = GS_RETRY_TIMES;
 	unsigned int val;
 	struct sfc_transfer transfer;
@@ -282,7 +269,7 @@ static int set_quad_mode_reg()
 	busy = &spi_nor_info->busy;
 	data = (quad_set->val & quad_set->mask) << quad_set->bit_shift;
 
-	write_enable(flash);
+	write_enable();
 
 	memset(&transfer, 0, sizeof(transfer));
 	/* write ops */
@@ -300,14 +287,12 @@ static int set_quad_mode_reg()
 	while (times--) {
 		val = (get_norflash_status(quad_get->cmd, quad_get->len) >> quad_get->bit_shift) & quad_get->mask;
 		if (val == quad_get->val) {
-		flash->cur_r_cmd = &spi_nor_info->read_quad;
+			flash->cur_r_cmd = &spi_nor_info->read_quad;
 			break;
 		}
 	}
 
 	while(!(((get_norflash_status(busy->cmd, busy->len) >> busy->bit_shift) & busy->mask) == busy->val));
-	return ret;
-
 }
 
 static void sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned int len)
@@ -333,33 +318,31 @@ static void sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned 
 
 }
 
-static inline void set_flash_timing()
+static inline void set_flash_timing(void)
 {
 	sfc_writel(SFC_DEV_CONF, DEF_TIM_VAL);
 }
 
-static void reset_nor()
+static void reset_nor(void)
 {
 	struct sfc_transfer transfer;
 
 	memset(&transfer, 0, sizeof(transfer));
+	flash->sfc->transfer = &transfer;
 
-	transfer.cmd_info.cmd = SPINOR_OP_RSTEN;
 	transfer.cmd_info.dataen = DISABLE;
 	transfer.sfc_mode = 0;
-	flash->sfc->transfer = &transfer;
+
+	transfer.cmd_info.cmd = SPINOR_OP_RSTEN;
 	sfc_sync(flash->sfc);
 
 	transfer.cmd_info.cmd = SPINOR_OP_RST;
-	transfer.cmd_info.dataen = DISABLE;
-	transfer.sfc_mode = 0;
-	flash->sfc->transfer = &transfer;
 	sfc_sync(flash->sfc);
 	udelay(100);
 }
 
 
-void sfc_init()
+void sfc_init(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
 
@@ -370,38 +353,24 @@ void sfc_init()
 	reset_nor();
 
 	set_flash_timing();
-	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &flash->g_nor_info, sizeof(struct mini_spi_nor_info));
+	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), (unsigned char*)&flash->g_nor_info, sizeof(struct mini_spi_nor_info));
 	printf("%s %x\n", flash->g_nor_info.name, flash->g_nor_info.id);
 
-	spi_nor_info = &flash->g_nor_info;
+	spi_nor_info = (struct mini_spi_nor_info *)&flash->g_nor_info;
 
 	flash->cur_r_cmd = &spi_nor_info->read_standard;
 
 #ifdef CONFIG_SFC_QUAD
-	switch (spi_nor_info->quad_ops_mode) {
-		case 0:
-			set_quad_mode_cmd();
-			break;
-		case 1:
-			set_quad_mode_reg();
-			break;
-		default:
-			break;
-	}
+	if(spi_nor_info->quad_ops_mode)
+		set_quad_mode_reg();
+	else
+		set_quad_mode_cmd();
 #endif
 
 	if (spi_nor_info->chip_size > 0x1000000) {
-		switch (spi_nor_info->addr_ops_mode) {
-			case 0:
-				enter_4byte();
-				break;
-			case 1:
-				write_enable();
-				enter_4byte();
-				break;
-			default:
-				break;
-		}
+		if(spi_nor_info->addr_ops_mode)
+			write_enable();
+		enter_4byte();
 	}
 }
 
@@ -411,7 +380,6 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	int dummy_byte;
 	int addr_size;
 	int transfer_mode;
-	int ret;
 	struct sfc_transfer transfer;
 
 	command = flash->cur_r_cmd->cmd;
@@ -439,12 +407,12 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	return len;
 }
 
-int sfc_read_data(unsigned int from, unsigned int len, unsigned char *buf)
+int sfc_read_data(unsigned int from, unsigned int len, unsigned int *buf)
 {
 	int tmp_len = 0, current_len = 0;
 
 	while(len) {
-		tmp_len = sfc_do_read((unsigned int)from + current_len, &buf[current_len], len);
+		tmp_len = sfc_do_read((unsigned int)from + current_len, (unsigned char *)&buf[current_len], len);
 		current_len += tmp_len;
 		len -= tmp_len;
 	}
@@ -497,8 +465,8 @@ void spl_sfc_nor_load_image(void)
 	struct norflash_partitions partition;
 	int i;
 #ifdef CONFIG_OTA_VERSION20
-	unsigned int nv_rw_addr;
-	unsigned int nv_rw_size;
+	unsigned int nv_rw_addr = 0;
+	unsigned int nv_rw_size = 0;
 	unsigned int src_addr, updata_flag;
 	unsigned nv_buf[2];
 	int count = 8;
@@ -522,31 +490,31 @@ void spl_sfc_nor_load_image(void)
 #endif
 	}
 #ifdef CONFIG_BOOT_VMLINUX
-		spl_image.os = IH_OS_LINUX;
-		spl_image.entry_point = CONFIG_LOAD_ADDR;
-		sfc_read_data(bootimg_addr, bootimg_size, CONFIG_LOAD_ADDR);
-		return 0;
+	spl_image.os = IH_OS_LINUX;
+	spl_image.entry_point = CONFIG_LOAD_ADDR;
+	sfc_read_data(bootimg_addr, bootimg_size, (unsigned int*)CONFIG_LOAD_ADDR);
+	return 0;
 #endif
 #ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
-	sfc_read_data(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+	sfc_read_data(bootimg_addr, sizeof(struct image_header), (unsigned int*)CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
-	sfc_read_data(bootimg_addr, spl_image.size, spl_image.load_addr);
+	sfc_read_data(bootimg_addr, spl_image.size, (unsigned int*)(spl_image.load_addr));
 	return ;
 #else //not defined CONFIG_NOR_SPL_BOOT_OS
-	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nv_rw_size);
+	nv_map_area((unsigned int *)&src_addr, nv_rw_addr, nv_rw_size);
 	sfc_read_data(src_addr, count, nv_buf);
 	updata_flag = nv_buf[1];
 	if((updata_flag & 0x3) != 0x3)
 	{
-		sfc_read_data(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+		sfc_read_data(bootimg_addr, sizeof(struct image_header), (unsigned int*)CONFIG_SYS_TEXT_BASE);
 		spl_parse_image_header(header);
-		sfc_read_data(bootimg_addr, spl_image.size, spl_image.load_addr);
+		sfc_read_data(bootimg_addr, spl_image.size, (unsigned int*)(spl_image.load_addr));
 	} else
 #endif	/* CONFIG_OTA_VERSION20 */
 #endif	/* CONFIG_SPL_OS_BOOT */
 	{
 		spl_parse_image_header(header);
-		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,CONFIG_SYS_TEXT_BASE);
+		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned int*)CONFIG_SYS_TEXT_BASE);
 	}
 	return ;
 

@@ -93,7 +93,6 @@ static int read_and_check_chipid()
 
 static void read_socid(unsigned int *id)
 {
-	unsigned int val;
 	read_efuse_segment(EFUSE_SOCID_ADDR, 1, id);
 }
 
@@ -135,7 +134,7 @@ int check_socid()
 		gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
 		break;
 	default:
-		socid = -1;
+		return -1;
 	}
 
 	return socid;
