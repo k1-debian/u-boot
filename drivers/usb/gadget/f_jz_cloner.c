@@ -220,7 +220,7 @@ int cloner_init(struct cloner *cloner)
 		{
 			return 0;
 		}
-		p = (struct ParameterInfo *)((char*)(p++) + p->size);
+		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t) * 2);
 	}
 }
 
