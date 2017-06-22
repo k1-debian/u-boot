@@ -7,7 +7,8 @@
 #define X_COMMAND_LENGTH    128
 
 
-#define MTD_MODE		0x0
+#define MTD_MODE		0x0	//use mtd mode, erase partition when write
+#define MTD_D_MODE		0x2	//use mtd dynamic mode, erase block_size when write
 #define UBI_MANAGER		0x1
 
 struct jz_spinand_partition {
