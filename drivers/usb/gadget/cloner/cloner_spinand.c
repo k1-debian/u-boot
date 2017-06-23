@@ -1,3 +1,4 @@
+#include <common.h>
 #include <asm/arch-x1000/spi.h>
 #include <nand.h>
 #include "../../../spi/jz_spi.h"
@@ -33,25 +34,22 @@ void get_burner_nandinfo(char *flash_info,struct nand_param_from_burner *param)
 extern nand_info_t nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
 static unsigned int bad_len = 0;
 
-static int sfc_nand_write_skip_bad(unsigned int addr, char *buffer, unsigned int len)
+
+
+static int sfc_nand_skip_bad(unsigned int addr)
 {
 	nand_info_t *nand;
 	nand = &nand_info[0];
 	unsigned int offset;
 	unsigned int block_size = nand->erasesize;
-	int ret;
 
 	offset = addr + bad_len;
-
 	while (nand_block_isbad(nand, offset)) {
-		printf("Skip bad block 0x%lx\n", offset);
+		printf("Skip bad block 0x%lx\n", addr);
 		bad_len += block_size;
 		offset += block_size;
 	}
-
-	ret = nand_write(nand, offset, &len, buffer);
-
-	return ret;
+	return offset;
 }
 
 
@@ -70,29 +68,39 @@ int spinand_program(struct cloner *cloner)
 	static char *part_name = NULL;
 	nand_info_t *nand;
 	nand = &nand_info[0];
+	unsigned int block_size = nand->erasesize;
+
 	partition = get_partion_index(startaddr,length,&pt_index);
 	if(pt_index < 0)
 		return -EIO;
 	if(startaddr==0){
 		add_information_to_spl(databuf);
 	}
-	if((!spi_args->spi_erase) && (partition->manager_mode != UBI_MANAGER)){
-		if(pt_index != pt_index_bak){/* erase part partition */
-			pt_index_bak = pt_index;
-			memset(command, 0 , 128);
-			sprintf(command, "nand erase 0x%x 0x%x", partition->offset,partition->size);
-			printf("%s\n", command);
-			ret = run_command(command, 0);
-			if (ret) goto out;
-		}
-	}
 
-	memset(command, 0 , 128);
+	if ((partition->manager_mode == MTD_MODE) || (partition->manager_mode == MTD_D_MODE)) {
 
-	if(partition->manager_mode == MTD_MODE){
+		startaddr = sfc_nand_skip_bad(startaddr);
 
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
-			ret = sfc_nand_write_skip_bad(startaddr, databuf, length);
+
+			if (!spi_args->spi_erase) {
+				if (partition->manager_mode == MTD_D_MODE)
+					pt_index = startaddr / block_size;
+				if(pt_index != pt_index_bak){/* erase part partition */
+					pt_index_bak = pt_index;
+					memset(command, 0 , 128);
+					if (partition->manager_mode == MTD_D_MODE)
+						sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
+					else
+						sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
+					printf("%s\n", command);
+					ret = run_command(command, 0);
+					if (ret)
+						goto out;
+				}
+			}
+
+			ret = nand_write(nand, startaddr, &length, databuf);
 			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
 					startaddr, length, ret ? "ERROR" : "OK");
 		} else {
@@ -103,6 +111,7 @@ int spinand_program(struct cloner *cloner)
 				readbuf = malloc(READBUF_SIZE);
 				memset(readbuf,0,READBUF_SIZE);
 			}
+			memset(command, 0 , 128);
 			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr + bad_len, length);
 			run_command(command,0);
 			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr + bad_len);
