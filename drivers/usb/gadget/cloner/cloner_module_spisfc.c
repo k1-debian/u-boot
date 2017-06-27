@@ -29,6 +29,7 @@ int clmd_spisfc_info(struct cloner *cloner)
 	unsigned int id_code = 0;
 #ifdef CONFIG_JZ_SFC_NOR
 	id_code = get_norflash_id();
+	printf("id_code=%x\n", id_code);
 #endif
 	memcpy(cloner->ep0req->buf, &id_code, sizeof(unsigned int));
 	return (int)id_code;
