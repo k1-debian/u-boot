@@ -1,8 +1,10 @@
+#include <asm/arch/sfc_params.h>
+
 #ifdef CONFIG_JZ_SFC
 extern struct debug_param *debug_args;
 
 extern unsigned int sfc_rate;
-extern unsigned int get_partition_index(u32 offset,u32 length,int *pt_offset, int *pt_size);
+extern struct nor_partition *get_partition_index(u32 offset,u32 length,int *pt_index);
 
 static char *readbuf = NULL;
 
@@ -36,6 +38,7 @@ int sfc_program(struct cloner *cloner)
 	unsigned int ret;
 	int len = 0,err = 0;
 	struct spi_flash *flash;
+	struct nor_partition *partition;
 
 	volatile int pt_offset;
 	volatile int pt_size;
@@ -61,36 +64,27 @@ int sfc_program(struct cloner *cloner)
 		BURNNER_PRI("the length = %x, is no enough %x\n",len,blk_size);
 	}
 
-	pt_index = get_partition_index(offset,len, &pt_offset, &pt_size);
+	partition = get_partition_index(offset,len, &pt_index);
 
 	if(pt_index < 0){
-		if(length < blk_size){
-			BURNNER_PRI("the length = %x, is no enough %x\n",length,blk_size);
-			len = length;
-		}
-		int index_offset = check_offset(offset,len);
-		if(index_offset < 0){
-			BURNNER_PRI("the offset + len is greater than the partition offset,please check it\n");
-			return -1;
-		}
-		if (spi_args->spi_erase == SPI_NO_ERASE) {
-			ret = sfc_nor_erase(offset, len);
-			BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
-				ret ? "ERROR" : "OK");
-		}
-		ret = sfc_nor_write(offset, len, addr);
-		BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
-			ret ? "ERROR" : "OK");
-
-		return ret;
+		printf("out of partition\n");
+		return -EIO;
 	}
 
 	if (spi_args->spi_erase == SPI_NO_ERASE) {
+		if (partition->manager_mode == MTD_D_MODE)
+			pt_index = offset / blk_size;
 		if(pt_index != pt_index_bak){
 			pt_index_bak = pt_index;
-			ret = sfc_nor_erase(pt_offset, pt_size);
+
+			if (partition->manager_mode == MTD_D_MODE) {
+				ret = sfc_nor_erase(offset, length);
+			} else {
+				ret = sfc_nor_erase(partition->offset, partition->size);
+			}
+
 			BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
-				ret ? "ERROR" : "OK");
+					ret ? "ERROR" : "OK");
 		}
 	}
 

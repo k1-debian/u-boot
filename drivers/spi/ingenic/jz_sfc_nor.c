@@ -691,8 +691,7 @@ int jz_sfc_chip_erase()
 }
 
 #ifdef CONFIG_BURNER
-
-unsigned int get_partition_index(u32 offset,u32 length, int *pt_offset, int *pt_size)
+struct nor_partition *get_partition_index(u32 offset, u32 length, int *pt_index)
 {
 	int i;
 	struct spi_nor_info *spi_nor_info;
@@ -703,24 +702,21 @@ unsigned int get_partition_index(u32 offset,u32 length, int *pt_offset, int *pt_
 		if(offset >= flash->norflash_partitions->nor_partition[i].offset && \
 				(offset + length) <= (flash->norflash_partitions->nor_partition[i].offset + \
 					flash->norflash_partitions->nor_partition[i].size)){
-			*pt_offset = flash->norflash_partitions->nor_partition[i].offset;
-			*pt_size = flash->norflash_partitions->nor_partition[i].size;
+			*pt_index = i;
 			break;
 		}else if(offset >= flash->norflash_partitions->nor_partition[i].offset && \
 				offset < (spi_nor_info->chip_size) && \
 				(flash->norflash_partitions->nor_partition[i].size == 0xffffffff)){ /*size == -1*/
-			*pt_offset = flash->norflash_partitions->nor_partition[i].offset;
-			*pt_size = spi_nor_info->chip_size - flash->norflash_partitions->nor_partition[i].offset;
+			*pt_index = i;
 			break;
 		}
 	}
-	if(i == flash->norflash_partitions->num_partition_info){
-		*pt_offset = -1;
-		*pt_size = -1;
+	if(i >= flash->norflash_partitions->num_partition_info){
+		*pt_index = -1;
 		printf("partition size not align with write transfer size \n");
 		return -1;
 	}
-	return i;
+	return &flash->norflash_partitions->nor_partition[i];
 }
 
 int check_offset(u32 offset,u32 length)
