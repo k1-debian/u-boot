@@ -1,5 +1,7 @@
 
 #include <common.h>
+#include <config.h>
+#include <spl.h>
 #include <asm/io.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/sfc.h>
@@ -7,6 +9,39 @@
 
 #include <generated/sfc_timing_val.h>
 
+static unsigned char *sfc_flash = (unsigned char *)(CONFIG_SYS_TEXT_BASE + 0x500000);
+
+struct jz_spinand_partition {
+	char name[32];         /* identifier string */
+	uint32_t size;          /* partition size */
+	uint32_t offset;        /* offset within the master MTD space */
+	u_int32_t mask_flags;       /* master MTD flags to mask out for this partition */
+	u_int32_t manager_mode;		/* manager_mode mtd or ubi */
+};
+
+struct jz_spi_support_from_burner{
+		unsigned int id_manufactory;
+		unsigned char id_device;
+		char name[32];
+		int page_size;
+		int oobsize;
+		int sector_size;
+		int block_size;
+		int size;
+		int page_num;
+		uint32_t tRD_maxbusy;
+		uint32_t tPROG_maxbusy;
+		uint32_t tBERS_maxbusy;
+		unsigned short column_cmdaddr_bits;
+};
+struct nand_param_from_burner {
+	int version;
+	int flash_type;
+	int para_num;
+	struct jz_spi_support_from_burner *addr;
+	int partition_num;
+	struct jz_spinand_partition *partition;
+};
 
 #define  CONFIG_SFC_FREQ            (110)
 #undef CONFIG_SPI_STANDARD
@@ -526,7 +561,7 @@ int spinand_init(void)
 	 */
 	spinand_probe_id(&sfc, id);
 
-	printf("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]);
+	/* printf("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]); */
 
 	/* disable write protect */
 	x = 0;
@@ -554,9 +589,9 @@ static int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int
 	pagesize = CONFIG_NAND_BPP;
 	blksize = CONFIG_NAND_PPB * pagesize;
 
-	if (src_addr % pagesize)
-		printf("\n\tWarning: offset 0x%x not align with page size 0x%x.\n",
-				src_addr, pagesize);
+	/* if (src_addr % pagesize) */
+	/* 	printf("\n\tWarning: offset 0x%x not align with page size 0x%x.\n", */
+	/* 			src_addr, pagesize); */
 
 	page = src_addr / pagesize;
 	while (pagecopy_cnt * pagesize < count) {
@@ -581,18 +616,47 @@ static int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int
 void spl_sfc_nand_load_image(void)
 {
 	struct image_header *header;
-	char cmd[5] = {0};
-	char idcode[5] = {0};
-	unsigned int i=0;
-	int chip_id;
-	int try_times = 0;
-	int id_dummy_nbits;
-	int id_nbytes;
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_init();
 	spinand_init();
 
+#ifdef CONFIG_SPL_OS_BOOT
+	{
+	    struct nand_param_from_burner *nand_param;	/* at 15k + magic in nandflash */
+	    int partitions_num;
+	    struct jz_spinand_partition *partitions_info;
+
+	    unsigned int bootimg_addr = 0;
+	    unsigned int i=0;
+
+	    sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, 1, (unsigned int)sfc_flash); /* read one page(total 2k: 14k - 16k) from nandflash to uboot space. */
+
+	    nand_param = (struct nand_param_from_burner*)(sfc_flash +
+		    CONFIG_SPIFLASH_PART_OFFSET % CONFIG_NAND_BPP + sizeof(int)); /* 1k + magic */
+
+	    partitions_num = *(int*)((char*)nand_param + 3 * sizeof(int) +
+		    sizeof(struct jz_spi_support_from_burner) * nand_param->para_num);
+
+	    partitions_info = (struct jz_spinand_partition *)((char*)nand_param +
+		    4 * sizeof(int) + sizeof(struct jz_spi_support_from_burner) * nand_param->para_num);
+
+	    for (i = 0; i < partitions_num; i++) {
+		if (!strncmp(partitions_info[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
+		    bootimg_addr = partitions_info[i].offset;
+		}
+	    }
+
+	    sfc_nand_load(bootimg_addr, sizeof(struct image_header), (unsigned int*)CONFIG_SYS_TEXT_BASE);
+	    spl_parse_image_header(header);
+	    sfc_nand_load(bootimg_addr, spl_image.size, (unsigned int*)(spl_image.load_addr));
+	    return ;
+	}
+#else
 	spl_parse_image_header(header);
 	sfc_nand_load(CONFIG_UBOOT_OFFSET,CONFIG_SYS_MONITOR_LEN,(void *)CONFIG_SYS_TEXT_BASE);
+#endif	/* CONFIG_SPL_OS_BOOT */
+	return ;
 }
+
+
