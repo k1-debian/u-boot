@@ -132,7 +132,7 @@
 	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x800000 0x80800000 ;bootm 0x80800000"
 #elif defined(CONFIG_SPL_SFC_NAND)
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 ubi.mtd=4 ubi.mtd=5 root=ubi1:updater rootfstype=ubifs rw"
-	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x400000 0x80600000 ;bootm 0x80600000"
+	#define CONFIG_BOOTCOMMAND "sfcnand read 0x600000 0x300000 0x80600000 ;bootm 0x80600000"
 #elif defined(CONFIG_SPL_JZMMC_SUPPORT)
 	/* 1. X1000 ONLY support boot from msc0; 2. canna board ONLY support gpt partitions */
 	#if defined(CONFIG_JZ_MMC_MSC0) || defined(CONFIG_GPT_CREATOR)
@@ -347,13 +347,6 @@
 #define CONFIG_ENV_SIZE			(4 << 10)
 #define CONFIG_ENV_OFFSET		0x2e400 /*write nor flash 185k address*/
 #define CONFIG_CMD_SAVEENV
-#elif defined(CONFIG_ENV_IS_IN_SFC_NAND)
-#define CONFIG_ENV_SIZE			(32 << 10)
-#define CONFIG_ENV_OFFSET		(CONFIG_SYS_NAND_BLOCK_SIZE * 5)
-#else
-#define CONFIG_ENV_IS_NOWHERE
-#define CONFIG_ENV_SIZE			(32 << 10)
-#define CONFIG_ENV_OFFSET		(CONFIG_SYS_NAND_BLOCK_SIZE * 5)
 #endif
 
 /**
@@ -414,7 +407,8 @@
 #define CONFIG_ENV_SIZE         SPI_NAND_BLK /* uboot is 1M but the last block size is the env*/
 #define CONFIG_ENV_OFFSET       0xc0000 /* offset is 768k */
 #define CONFIG_ENV_OFFSET_REDUND (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
-#define CONFIG_CMD_SFC_NAND
+#define CONFIG_ENV_IS_IN_SFC_NAND
+
 
 #else
 #define CONFIG_SPI_SPL_CHECK
@@ -442,11 +436,6 @@
 #define CONFIG_SPI_FLASH_INGENIC
 #define CONFIG_SPI_FLASH
 #define CONFIG_UBOOT_OFFSET             (4<<12)
-#endif
-
-#ifdef CONFIG_CMD_SFC_NAND
-/*#define CONFIG_SPI_DUAL*/
-#define CONFIG_SPI_QUAD
 #endif
 
 #ifdef CONFIG_CMD_SFC_NOR
