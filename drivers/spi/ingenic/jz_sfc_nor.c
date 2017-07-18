@@ -707,6 +707,7 @@ struct nor_partition *get_partition_index(u32 offset, u32 length, int *pt_index)
 		}else if(offset >= flash->norflash_partitions->nor_partition[i].offset && \
 				offset < (spi_nor_info->chip_size) && \
 				(flash->norflash_partitions->nor_partition[i].size == 0xffffffff)){ /*size == -1*/
+			flash->norflash_partitions->nor_partition[i].size=spi_nor_info->chip_size-flash->norflash_partitions->nor_partition[i].offset;
 			*pt_index = i;
 			break;
 		}
@@ -714,7 +715,7 @@ struct nor_partition *get_partition_index(u32 offset, u32 length, int *pt_index)
 	if(i >= flash->norflash_partitions->num_partition_info){
 		*pt_index = -1;
 		printf("partition size not align with write transfer size \n");
-		return -1;
+		return NULL;
 	}
 	return &flash->norflash_partitions->nor_partition[i];
 }

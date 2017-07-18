@@ -66,7 +66,7 @@ int sfc_program(struct cloner *cloner)
 
 	partition = get_partition_index(offset,len, &pt_index);
 
-	if(pt_index < 0){
+	if(pt_index < 0 || partition == NULL){
 		printf("out of partition\n");
 		return -EIO;
 	}
@@ -82,7 +82,6 @@ int sfc_program(struct cloner *cloner)
 			} else {
 				ret = sfc_nor_erase(partition->offset, partition->size);
 			}
-
 			BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
 					ret ? "ERROR" : "OK");
 		}
