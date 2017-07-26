@@ -45,7 +45,7 @@ static int sfc_nand_skip_bad(unsigned int addr)
 
 	offset = addr + bad_len;
 	while (nand_block_isbad(nand, offset)) {
-		printf("Skip bad block 0x%lx\n", addr);
+		printf("Skip bad block 0x%lx\n", offset);
 		bad_len += block_size;
 		offset += block_size;
 	}
@@ -71,77 +71,84 @@ int spinand_program(struct cloner *cloner)
 	unsigned int block_size = nand->erasesize;
 
 	partition = get_partion_index(startaddr,length,&pt_index);
-	if(pt_index < 0)
+	if (pt_index < 0)
 		return -EIO;
-	if(startaddr==0){
+	if (startaddr==0) {
 		add_information_to_spl(databuf);
 	}
 
 	if ((partition->manager_mode == MTD_MODE) || (partition->manager_mode == MTD_D_MODE)) {
-
-		startaddr = sfc_nand_skip_bad(startaddr);
+		if (!spi_args->spi_erase) {
+			if (partition->manager_mode == MTD_D_MODE)
+				pt_index = startaddr / block_size;
+			if (pt_index != pt_index_bak) {
+				pt_index_bak = pt_index;
+				memset(command, 0 , 128);
+				if (partition->manager_mode == MTD_D_MODE)
+					sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
+				else
+					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
+				BURNNER_PRI("%s\n", command);
+				ret = run_command(command, 0);
+				if (ret)
+					goto out;
+			}
+		}
 
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
-
-			if (!spi_args->spi_erase) {
-				if (partition->manager_mode == MTD_D_MODE)
-					pt_index = startaddr / block_size;
-				if(pt_index != pt_index_bak){/* erase part partition */
-					pt_index_bak = pt_index;
-					memset(command, 0 , 128);
-					if (partition->manager_mode == MTD_D_MODE)
-						sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
-					else
-						sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
-					printf("%s\n", command);
-					ret = run_command(command, 0);
-					if (ret)
-						goto out;
-				}
-			}
-
+			startaddr = sfc_nand_skip_bad(startaddr);
 			ret = nand_write(nand, startaddr, &length, databuf);
 			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
 					startaddr, length, ret ? "ERROR" : "OK");
 		} else {
 			BURNNER_PRI("ERROR : out of partition !!!\n");
 		}
-		if(debug_args->write_back_chk){
-			if(!readbuf){
+
+		if (debug_args->write_back_chk) {
+			if (!readbuf) {
 				readbuf = malloc(READBUF_SIZE);
 				memset(readbuf,0,READBUF_SIZE);
 			}
 			memset(command, 0 , 128);
-			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr + bad_len, length);
+			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr, length);
 			run_command(command,0);
-			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr + bad_len);
-			if(ret){
-				    return -1;
+			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr);
+			if (ret) {
+				return -1;
 			}
 		}
 
-	}else if(partition->manager_mode == UBI_MANAGER){
-		if(!(part_name == partition->name) && spi_args->spi_erase){/* need change part */
+	} else if (partition->manager_mode == UBI_MANAGER) {
+		if (startaddr == partition->offset) {
+			if (!spi_args->spi_erase) {
+				if (pt_index != pt_index_bak) {
+					pt_index_bak = pt_index;
+					memset(command, 0 , 128);
+					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
+					BURNNER_PRI("%s\n", command);
+					ret = run_command(command, 0);
+					if (ret)
+						goto out;
+				}
+			}
+
 			memset(command, 0, 128);
 			sprintf(command, "ubi part %s", partition->name);
 			BURNNER_PRI("%s\n", command);
 			ret = run_command(command, 0);
-			memset(command, 0, X_COMMAND_LENGTH);
-			sprintf(command, "ubi create %s",partition->name,partition->size);
-			ret = run_command(command, 0);
-
 			if (ret) {
-				BURNNER_PRI("error...\n");
+				BURNNER_PRI("ubi part error...\n");
 				return ret;
 			}
-			part_name = partition->name;
-		}
 
-		if(cloner->full_size && !(spi_args->spi_erase)){
-			memset(command, 0, 128);
-			sprintf(command, "ubi part %s", partition->name);
+			memset(command, 0, X_COMMAND_LENGTH);
+			sprintf(command, "ubi create %s",partition->name);
 			BURNNER_PRI("%s\n", command);
 			ret = run_command(command, 0);
+			if (ret) {
+				BURNNER_PRI("ubi create error...\n");
+				return ret;
+			}
 		}
 
 		memset(command, 0, 128);
@@ -163,7 +170,7 @@ int spinand_program(struct cloner *cloner)
 			return ret;
 		}
 	}
-	if(cloner->full_size)
+	if (cloner->full_size)
 		cloner->full_size = 0;
 	return 0;
 out:
