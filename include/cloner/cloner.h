@@ -109,9 +109,7 @@ enum medium_type {
 };
 
 enum spisfc_sub_type {
-	SPI_NOR = 0,
-	SFC_NOR,
-	SPI_NAND,
+	SFC_NOR = 0,
 	SFC_NAND,
 };
 
@@ -151,13 +149,8 @@ struct ParameterInfo
 	uint32_t data[0];
 };
 struct spi_param {
-	uint32_t clk;
-	uint32_t data_in;
-	uint32_t data_out;
-	uint32_t enable;
-	uint32_t rate;   // the ssi rate
-	uint32_t sfc_rate;// the sfc rate
-	uint32_t sfc_quad_mode;// the sfc rate
+	uint32_t download_params;
+	uint32_t sfc_quad_mode;
 	uint32_t spi_erase_block_siz;
 	uint32_t spi_erase;
 	char* flash_info[0];
@@ -166,9 +159,7 @@ struct policy_param{
 	int use_nand_mgr;
 	int use_nand_mtd;
 	int use_mmc;
-	uint32_t use_spi_nor;
 	uint32_t use_sfc_nor;
-	uint32_t use_spi_nand;
 	uint32_t use_sfc_nand;
 	uint32_t offsets[32];
 };

@@ -44,10 +44,6 @@ int spi_program(struct cloner *cloner)
 	unsigned int ret;
 	int len = 0;
 	struct spi_flash *flash;
-	spi.enable = spi_args->enable;
-	spi.clk   = spi_args->clk;
-	spi.data_in  = spi_args->data_in;
-	spi.data_out  = spi_args->data_out;
 	spi.rate  = spi_args->rate ;
 	ssi_rate = spi.rate;
 

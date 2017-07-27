@@ -73,7 +73,7 @@ int spinand_program(struct cloner *cloner)
 	partition = get_partion_index(startaddr,length,&pt_index);
 	if (pt_index < 0)
 		return -EIO;
-	if (startaddr==0) {
+	if (startaddr==0 && spi_args->download_params != 0) {
 		add_information_to_spl(databuf);
 	}
 

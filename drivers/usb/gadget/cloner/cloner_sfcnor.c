@@ -2,10 +2,7 @@
 
 #ifdef CONFIG_JZ_SFC
 extern struct debug_param *debug_args;
-
-extern unsigned int sfc_rate;
 extern struct nor_partition *get_partition_index(u32 offset,u32 length,int *pt_index);
-
 static char *readbuf = NULL;
 
 int sfc_erase()
@@ -15,8 +12,6 @@ int sfc_erase()
 	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	int err = 0;
-	spi.rate  = spi_args->rate;
-	sfc_rate = spi_args->sfc_rate;
 	int ret = jz_sfc_chip_erase();
 	if (ret < 0)
 		printf("sfc chip erese failed!\n");
@@ -45,12 +40,6 @@ int sfc_program(struct cloner *cloner)
 	volatile int pt_index;
 	static pt_index_bak = -1;
 
-	spi.enable = spi_args->enable;
-	spi.clk   = spi_args->clk;
-	spi.data_in  = spi_args->data_in;
-	spi.data_out  = spi_args->data_out;
-	spi.rate  = spi_args->rate ;
-	sfc_rate = spi_args->sfc_rate;
 
 	BURNNER_PRI("the offset = %x\n",offset);
 	BURNNER_PRI("the length = %x\n",length);
@@ -87,7 +76,7 @@ int sfc_program(struct cloner *cloner)
 		}
 	}
 
-	ret = sfc_nor_write(offset, len, addr);
+	ret = sfc_nor_write(offset, len, addr, spi_args->download_params);
 	BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");
 

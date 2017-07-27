@@ -477,7 +477,7 @@ static struct legacy_params *params_compatibility()
 #endif
 
 
-int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
+int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf, unsigned int d_params)
 {
 	int ret = 0;
 	int i;
@@ -485,7 +485,7 @@ int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 #ifdef CONFIG_BURNER
 	struct legacy_params *l_params;
 	int spl_version;
-	if (to == 0) {
+	if (to == 0 && d_params != 0) {
 		/* spl_version is in 16byte of spl header,
 		 * spl_version = 0x01, spl is new code, NOR_VERSION is 2,
 		 * spl_version = 0x00, spl is old code, NOR_VERSION is 1.

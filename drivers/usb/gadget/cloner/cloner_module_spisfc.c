@@ -1,12 +1,9 @@
 #include <cloner/cloner.h>
 #include "burn_printf.h"
 #include "cloner_sfcnor.c"
-#include "cloner_spinor.c"
 #include "cloner_spinand.c"
 
 struct spi_param *spi_args;
-
-extern unsigned int ssi_rate;
 
 int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
 {
@@ -16,7 +13,8 @@ int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int le
 	for(i = 0; i < len / 4; i++)
 	{
 		if(buf1[i] != buf2[i]){
-			printf("XXXXXXXXXX  compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x  len = %d\n",i,buf1[i],i,buf2[i],offset + i * 4,len);
+			printf("XXXXXXXXXX  compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x  len = %d\n",
+					i, buf1[i], i, buf2[i], offset + i * 4, len);
 			val = -1;
 		}
 	}
@@ -51,35 +49,16 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 		printf("Not fount policy parameters (%s)\n",__func__);
 		return -EINVAL;
 	}
-#ifdef CONFIG_JZ_SPI
-	if(policy_args->use_spi_nor){
-		if (spi_args->spi_erase == SPI_ERASE_PART) {
-			spi_erase();
-		}
-		printf("spi_args->rate:%d\n",spi_args->rate);
-	}
-#endif
 #ifdef CONFIG_JZ_SFC_NOR
 	if(policy_args->use_sfc_nor){
-		sfc_rate = spi_args->rate;
 		norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
 			sfc_erase();
 		}
-		printf("spi_args->rate:%d\n",spi_args->rate);
-	}
-#endif
-#ifdef CONFIG_MTD_SPINAND
-	if(policy_args->use_spi_nand){
-		ssi_rate = spi_args->rate;
-		printf("******** ssi_rate = %d oldrate = %d spi_erase = %d\n",ssi_rate,spi_args->rate,spi_args->spi_erase);
-		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
-		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);
 	}
 #endif
 #if CONFIG_MTD_SFCNAND
 	if(policy_args->use_sfc_nand){
-		ssi_rate = spi_args->rate;
 		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
 		mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
 	}
@@ -92,19 +71,9 @@ int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
 	switch(sub_type)
 	{
-#ifdef CONFIG_JZ_SPI
-		case SPI_NOR:
-			cloner->ack = spi_program(cloner);
-			break;
-#endif
 #ifdef CONFIG_JZ_SFC_NOR
 		case SFC_NOR:
 			cloner->ack = sfc_program(cloner);
-			break;
-#endif
-#ifdef CONFIG_MTD_SPINAND
-		case SPI_NAND:
-			cloner->ack = spinand_program(cloner);
 			break;
 #endif
 #if CONFIG_MTD_SFCNAND
