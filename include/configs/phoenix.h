@@ -466,7 +466,6 @@
 #define CONFIG_SPL_TEXT_BASE		0xf4001000
 #define CONFIG_SPL_MAX_SIZE		(12 * 1024)
 #define CONFIG_SPL_PAD_TO		16384
-#define CONFIG_SPL_SFC_NAND
 #define CONFIG_MTD_SFCNAND
 #define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFCNAND
@@ -474,6 +473,15 @@
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_BASE    0xb3441000
+
+#define CONFIG_MTD_DEVICE
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_CMD_MTDPARTS
+#define CONFIG_MTD_PARTITIONS
+#define MTDIDS_DEFAULT                  "nand0=nand"
+#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+
 
 /*SFCNAND env*/
 /* spi nand environment */

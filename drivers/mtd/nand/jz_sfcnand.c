@@ -487,11 +487,12 @@ static int sfc_nand_write(struct mtd_info *mtd,loff_t addr,int column,size_t len
 {
 	unsigned char state, cmd[COMMAND_MAX_LENGTH];
 	int page_size = mtd->writesize;
-	int page;// = addr / page_size;
+	int page = addr / page_size;
 	int wlen,i,write_num;
 	int ops_len;
 	u_char *buffer = buf;
-	page = addr/page_size;
+
+	column = (unsigned int)addr % page_size;
 
 	write_num = (len + page_size - 1) / page_size;
 	for(i = 0; i < write_num; i++)
@@ -546,68 +547,31 @@ static int sfc_nand_write(struct mtd_info *mtd,loff_t addr,int column,size_t len
 }
 static int sfc_nand_read(struct mtd_info *mtd,loff_t addr,int column,size_t len,u_char *buf)
 {
-        int page_size = mtd->writesize;
-        int page = addr / page_size;
-        int i,read_num,rlen;
+	int page_size = mtd->writesize;
+	int page = addr / page_size;
+	int rlen;
 	u_char *buffer=buf;
-        size_t page_overlength;
-        size_t ops_addr;
-        size_t ops_len;
-        int ret;
+	size_t ops_addr;
+	int ret;
 
-        if(column){
-                ops_addr = (unsigned int)addr;
-                ops_len = len;
 
-                if(len <= (page_size - column))
-                        page_overlength = len;
-                else
-                        page_overlength = page_size - column;/*random read but len over a page */
-                while(ops_addr < addr + len){
-                        page = ops_addr / page_size;
-                        if(page_overlength){
-                                ret = sfc_nand_read_page(buffer,page,column,page_overlength);
-                                if(ret < 0)
-                                        return ret;
-                                ops_len -= page_overlength;
-                                buffer += page_overlength;
-                                ops_addr += page_overlength;
-                                page_overlength = 0;
-                        }else{
-                                column = 0;
-                                if(ops_len >= page_size)
-                                        rlen = page_size;
-                                else
-                                        rlen = ops_len;
+	ops_addr = (unsigned int)addr;
+	while(1){
+		column = ops_addr % page_size;
+		rlen = min_t(unsigned int,len,page_size-column);
 
-                                ret = sfc_nand_read_page(buffer,page,column,rlen);
-                                if(ret < 0)
-                                        return ret;
+		ret = sfc_nand_read_page(buffer,page,column,rlen);
+		if(ret < 0)
+			return ret;
 
-                                buffer += rlen;
-                                ops_len -= rlen;
-                                ops_addr += rlen;
-                        }
-                }
-       }else{
-                read_num = (len + page_size - 1) / page_size;
-                page = addr / page_size;
-                for(i = 0; i < read_num; i++){
-                        if(len >= page_size)
-                                rlen = page_size;
-                        else
-                                rlen = len;
-
-                        ret = sfc_nand_read_page(buffer,page,column,rlen);
-                        if(ret < 0)
-                                return ret;
-
-                        buffer += rlen;
-                        len -= rlen;
-                        page++;
-                }
-        }
-        return 0;
+		buffer += rlen;
+		len -= rlen;
+		ops_addr += rlen;
+		page = (ops_addr)/page_size;
+		if(len <= 0)
+			break;
+	}
+	return 0;
 }
 int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 {
@@ -634,7 +598,6 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 		printf("column_cmdaddr_bits=%d\n", column_cmdaddr_bits);
 		case 24:
 			cmd[0]=CMD_R_CACHE;//03h read from cache
-			column=(column<<8)&0xffffff00;
 			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B)) {
 				sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
 			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_WB) || (manufacturer_id ==MANU_ATO)) {
@@ -646,7 +609,6 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 			break;
 		case 32:
 			cmd[0]=CMD_FR_CACHE;//0bh read from cache
-			column=(column<<8)&0xffffff00;
 			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B)) {
 				sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
 			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_WB) || (manufacturer_id ==MANU_ATO)) {
@@ -866,6 +828,7 @@ static int sfcnand_read(struct mtd_info *mtd,loff_t addr,size_t len,size_t *retl
 static int sfcnand_write(struct mtd_info *mtd,loff_t addr,size_t len,size_t *retlen, u_char *buf)
 {
 	int ret,i,n=0;
+
 	ret = sfc_nand_write(mtd,addr,0,len,buf,retlen);
 
 	return ret;

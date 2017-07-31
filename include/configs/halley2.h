@@ -448,9 +448,9 @@
 #define CONFIG_SPL_NO_CPU_SUPPORT_CODE
 #define CONFIG_SPL_START_S_PATH		"$(CPUDIR)/$(SOC)"
 #ifdef CONFIG_SPL_NOR_SUPPORT
-#define CONFIG_SPL_LDSCRIPT             "$(CPUDIR)/$(SOC)/u-boot-nor-spl.lds"
+ #define CONFIG_SPL_LDSCRIPT             "$(CPUDIR)/$(SOC)/u-boot-nor-spl.lds"
 #else
-#define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/$(SOC)/u-boot-spl.lds"
+ #define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/$(SOC)/u-boot-spl.lds"
 #endif
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0x3A /* 12KB+17K offset */
 #define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x200 /* 256 KB */
@@ -459,56 +459,64 @@
 #define CONFIG_SPL_BOARD_INIT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #if defined(CONFIG_SPL_NOR_SUPPORT)
-#define CONFIG_SPL_TEXT_BASE		0xba000000
-#define CONFIG_SYS_UBOOT_BASE		(CONFIG_SPL_TEXT_BASE + CONFIG_SPL_PAD_TO - 0x40)
+ #define CONFIG_SPL_TEXT_BASE		0xba000000
+ #define CONFIG_SYS_UBOOT_BASE		(CONFIG_SPL_TEXT_BASE + CONFIG_SPL_PAD_TO - 0x40)
 					/* 0x40 = sizeof (image_header)*/
-#define CONFIG_SYS_OS_BASE		0
-#define CONFIG_SYS_SPL_ARGS_ADDR	0
-#define CONFIG_SYS_FDT_BASE		0
-#define CONFIG_SPL_PAD_TO		32768
-#define CONFIG_SPL_MAX_SIZE		(32 * 1024)
+ #define CONFIG_SYS_OS_BASE		0
+ #define CONFIG_SYS_SPL_ARGS_ADDR	0
+ #define CONFIG_SYS_FDT_BASE		0
+ #define CONFIG_SPL_PAD_TO		32768
+ #define CONFIG_SPL_MAX_SIZE		(32 * 1024)
 #elif defined(CONFIG_SPL_JZMMC_SUPPORT)
-#define CONFIG_SPL_PAD_TO		12288  /* spl size */
-#define CONFIG_SPL_TEXT_BASE		0xf4001000
-#define CONFIG_SPL_MAX_SIZE		(12 * 1024)
+ #define CONFIG_SPL_PAD_TO		12288  /* spl size */
+ #define CONFIG_SPL_TEXT_BASE		0xf4001000
+ #define CONFIG_SPL_MAX_SIZE		(12 * 1024)
 #elif defined(CONFIG_SPL_SFC_SUPPORT)
-#define CONFIG_UBOOT_OFFSET             (4<<12)
-#define CONFIG_JZ_SFC_PA_6BIT
-#ifdef	CONFIG_SPL_SFC_NAND
-#define CONFIG_SFC_RATE    150000000
-#define CONFIG_SPIFLASH_PART_OFFSET     0x3c00
-#define CONFIG_SPI_NAND_BPP			(2048 +64)		/*Bytes Per Page*/
-#define CONFIG_SPI_NAND_PPB			(64)		/*Page Per Block*/
-#define CONFIG_SPL_TEXT_BASE		0xf4001000
-#define CONFIG_SPL_MAX_SIZE		(12 * 1024)
-#define CONFIG_SPL_PAD_TO		16384
-#define CONFIG_SPL_SFC_NAND
-#define CONFIG_MTD_SFCNAND
-#define CONFIG_JZ_SFC
-#define CONFIG_CMD_SFCNAND
-#define CONFIG_CMD_NAND
-#define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define CONFIG_SYS_NAND_BASE    0xb3441000
+  #define CONFIG_UBOOT_OFFSET             (4<<12)
+  #define CONFIG_JZ_SFC_PA_6BIT
+ #ifdef	CONFIG_SPL_SFC_NAND
+  #define CONFIG_SFC_RATE    150000000
+  #define CONFIG_SPIFLASH_PART_OFFSET     0x3c00
+  #define CONFIG_SPI_NAND_BPP			(2048 +64)		/*Bytes Per Page*/
+  #define CONFIG_SPI_NAND_PPB			(64)		/*Page Per Block*/
+  #define CONFIG_SPL_TEXT_BASE		0xf4001000
+  #define CONFIG_SPL_MAX_SIZE		(12 * 1024)
+  #define CONFIG_SPL_PAD_TO		16384
+  #define CONFIG_MTD_SFCNAND
+  #define CONFIG_JZ_SFC
+  #define CONFIG_CMD_SFCNAND
+  #define CONFIG_CMD_NAND
+  #define CONFIG_SPI_SPL_CHECK
+  #define CONFIG_SYS_MAX_NAND_DEVICE	1
+  #define CONFIG_SYS_NAND_BASE    0xb3441000
+
+  #define CONFIG_MTD_DEVICE
+  #define CONFIG_CMD_UBI
+  #define CONFIG_CMD_UBIFS
+  #define CONFIG_CMD_MTDPARTS
+  #define CONFIG_MTD_PARTITIONS
+  #define MTDIDS_DEFAULT                  "nand0=nand"
+  #define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+
 
 /*SFCNAND env*/
 /* spi nand environment */
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_SECT_SIZE 0x20000 /* 128K*/
-#define SPI_NAND_BLK            0x20000 /*the spi nand block size */
-#define CONFIG_ENV_SIZE         SPI_NAND_BLK /* uboot is 1M but the last block size is the env*/
-#define CONFIG_ENV_OFFSET       0xc0000 /* offset is 768k */
-#define CONFIG_ENV_OFFSET_REDUND (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
-#define CONFIG_ENV_IS_IN_SFC_NAND
+  #define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+  #define CONFIG_ENV_SECT_SIZE 0x20000 /* 128K*/
+  #define SPI_NAND_BLK            0x20000 /*the spi nand block size */
+  #define CONFIG_ENV_SIZE         SPI_NAND_BLK /* uboot is 1M but the last block size is the env*/
+  #define CONFIG_ENV_OFFSET       0xc0000 /* offset is 768k */
+  #define CONFIG_ENV_OFFSET_REDUND (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+  #define CONFIG_ENV_IS_IN_SFC_NAND
 
 
-#else
-#define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SPL_TEXT_BASE		0xf4001000
-#define CONFIG_SPL_MAX_SIZE		(12 * 1024)
-#define CONFIG_SPL_PAD_TO		16384
-#define CONFIG_CMD_SFC_NOR
-#endif
+ #else
+  #define CONFIG_SPI_SPL_CHECK
+  #define CONFIG_SPL_TEXT_BASE		0xf4001000
+  #define CONFIG_SPL_MAX_SIZE		(12 * 1024)
+  #define CONFIG_SPL_PAD_TO		16384
+  #define CONFIG_CMD_SFC_NOR
+ #endif
 #endif
 
 #ifdef CONFIG_SPL_SPI_NAND
@@ -525,8 +533,6 @@
 #define CONFIG_MTD_SPINAND
 #define CONFIG_CMD_SPINAND
 #define CONFIG_SPI_FLASH
-#define CONFIG_CMD_UBI
-#define CONFIG_CMD_UBIFS
 #define CONFIG_MTD_PARTITIONS
 #define CONFIG_CMD_MTDPARTS
 #define CONFIG_ENV_IS_IN_SPI_NAND
