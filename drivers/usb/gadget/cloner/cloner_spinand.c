@@ -1,3 +1,5 @@
+#if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
+
 #include <common.h>
 #include <asm/arch-x1000/spi.h>
 #include <nand.h>
@@ -207,3 +209,5 @@ void add_information_to_spl(char *databuf)
 	member_addr+=sizeof(nand_param_from_burner.partition_num);		//partition addr
 	memcpy(member_addr,nand_param_from_burner.partition,nand_param_from_burner.partition_num*sizeof(struct jz_spinand_partition));	//partition
 }
+
+#endif
