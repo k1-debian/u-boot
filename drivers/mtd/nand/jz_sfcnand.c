@@ -598,9 +598,12 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 		printf("column_cmdaddr_bits=%d\n", column_cmdaddr_bits);
 		case 24:
 			cmd[0]=CMD_R_CACHE;//03h read from cache
-			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B)) {
+			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B) || (manufacturer_id == MANU_WB)) {
 				sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
-			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_WB) || (manufacturer_id ==MANU_ATO)) {
+			} else if ((manufacturer_id == MANU_GD_C) ||(manufacturer_id == MANU_ATO) ) {
+				if (manufacturer_id == MANU_ATO) {
+					column=(column<<8)&0xffffff00;
+				}
 				sfc_send_cmd(&cmd[0],rlen,column,3,0,1,0);
 			} else {
 				printf("unsuppor nand flash\n");
@@ -609,10 +612,10 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 			break;
 		case 32:
 			cmd[0]=CMD_FR_CACHE;//0bh read from cache
-			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B)) {
+			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B) || (manufacturer_id == MANU_WB)) {
 				sfc_send_cmd(&cmd[0],rlen,column,2,8,1,0);
-			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_WB) || (manufacturer_id ==MANU_ATO)) {
-				sfc_send_cmd(&cmd[0],rlen,column,4,0,1,0);
+			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_ATO)) {
+				sfc_send_cmd(&cmd[0],rlen,column,3,8,1,0);
 			} else {
 				printf("unsuppor nand flash\n");
 			}
@@ -621,6 +624,7 @@ int sfc_nand_read_page(u_char *buffer,int page,int column,size_t rlen)
 		default:
 			printf("can't support the column addr format !!!\n");
 			break;
+
 	}
 
 	return 0;
@@ -631,10 +635,6 @@ static int sfcnand_write_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops
 	int page = addr / mtd->writesize;
 	int ret;
 	size_t retlen;
-
-	cmd[0]=CMD_PARD;//get feature
-	sfc_send_cmd(&cmd[0],0,page,3,0,0,0);
-	udelay(t_read);
 
 	ret = sfc_nand_write(mtd,addr,mtd->writesize,ops->ooblen,ops->oobbuf,&retlen);
 	if(ret){
@@ -731,10 +731,12 @@ static int sfcnand_read_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops 
         switch(column_cmdaddr_bits){
         	case 24:
 			cmd[0]=CMD_R_CACHE;
-			column=(column<<8)&0xffffff00;
-			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B)) {
+			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B) || (manufacturer_id == MANU_WB)) {
 				sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
-			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_WB) || (manufacturer_id ==MANU_ATO)) {
+			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id ==MANU_ATO)) {
+				if (manufacturer_id == MANU_ATO) {
+					column=(column<<8)&0xffffff00;
+				}
 				sfc_send_cmd(&cmd[0],len,column,3,0,1,0);
 			} else {
 				printf("unsuppor nand flash\n");
@@ -743,11 +745,10 @@ static int sfcnand_read_oob(struct mtd_info *mtd,loff_t addr,struct mtd_oob_ops 
 			break;
 		case 32:
 			cmd[0]=CMD_FR_CACHE;
-			column=(column<<8)&0xffffff00;
-			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B)) {
+			if((manufacturer_id == MANU_MX) || (manufacturer_id == MANU_GD_B) || (manufacturer_id == MANU_WB)) {
 				sfc_send_cmd(&cmd[0],len,column,2,8,1,0);
-			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id == MANU_WB) || (manufacturer_id ==MANU_ATO)) {
-				sfc_send_cmd(&cmd[0],len,column,4,0,1,0);
+			} else if ((manufacturer_id == MANU_GD_C) || (manufacturer_id ==MANU_ATO)) {
+				sfc_send_cmd(&cmd[0],len,column,3,8,1,0);
 			} else {
 				printf("unsuppor nand flash\n");
 			}
