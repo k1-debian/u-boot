@@ -30,7 +30,7 @@ int clmd_spisfc_info(struct cloner *cloner)
 	printf("id_code=%x\n", id_code);
 #endif
 	memcpy(cloner->ep0req->buf, &id_code, sizeof(unsigned int));
-	return (int)id_code;
+	return 0;
 }
 
 
@@ -51,7 +51,7 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 	}
 #ifdef CONFIG_JZ_SFC_NOR
 	if(policy_args->use_sfc_nor){
-		norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
+		ret = norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
 			sfc_erase();
 		}
@@ -60,7 +60,7 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 #if CONFIG_MTD_SFCNAND
 	if(policy_args->use_sfc_nand){
 		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
-		mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
+		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
 	}
 #endif
 
@@ -69,23 +69,24 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 
 int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
+	int ret = 0;
 	switch(sub_type)
 	{
 #ifdef CONFIG_JZ_SFC_NOR
 		case SFC_NOR:
-			cloner->ack = sfc_program(cloner);
+			ret = sfc_program(cloner);
 			break;
 #endif
 #if CONFIG_MTD_SFCNAND
 		case SFC_NAND:
-			cloner->ack = spinand_program(cloner);
+			ret = spinand_program(cloner);
 			break;
 #endif
 		default:
 			printf("Not found sfc sub_type!\n");
 			return -EINVAL;
 	}
-	return 0;
+	return ret;
 }
 
 int cloner_spisfc_init(void)

@@ -6,6 +6,7 @@ struct nand_param *nand_args;
 
 static int clmd_nand_init(struct cloner *cloner, void *args, void *mdata)
 {
+	int ret = 0;
 	nand_args = (struct nand_param *)args;
 	if(!nand_args)
 	{
@@ -19,7 +20,7 @@ static int clmd_nand_init(struct cloner *cloner, void *args, void *mdata)
 	}
 #ifdef CONFIG_JZ_NAND_MGR
 	if(policy_args->use_nand_mgr) {
-		nand_probe_burner(&(nand_args->PartInfo),
+		ret = nand_probe_burner(&(nand_args->PartInfo),
 				&(nand_args->nand_params[0]),
 				nand_args->nr_nand_args,
 				nand_args->nand_erase,policy_args->offsets,nand_args->nand_erase_count);
@@ -27,7 +28,7 @@ static int clmd_nand_init(struct cloner *cloner, void *args, void *mdata)
 #endif
 #ifdef CONFIG_MTD_NAND_JZ
 	if(policy_args->use_nand_mtd) {
-		mtd_nand_probe_burner(&nand_args->MTDPartInfo,
+		ret = mtd_nand_probe_burner(&nand_args->MTDPartInfo,
 				&nand_args->nand_params,
 				nand_args->nr_nand_args,
 				nand_args->nand_erase,
@@ -36,31 +37,33 @@ static int clmd_nand_init(struct cloner *cloner, void *args, void *mdata)
 	}
 #endif
 
-	return 0;
+	return ret;
 }
 
 int clmd_nand_write(struct cloner *cloner,int sub_type, void* ops_data)
 {
+	int ret = 0;
 	switch(sub_type) {
 		case RAW:
 			break;
 #ifdef CONFIG_JZ_NAND_MGR
 		case IMAGE:
-			cloner->ack = nand_program(cloner);
+			ret = nand_program(cloner);
 			break;
 #endif
 #ifdef CONFIG_MTD_NAND_JZ
 		case MTD_RAW:
-			cloner->ack = nand_mtd_raw_program(cloner);
+			ret = nand_mtd_raw_program(cloner);
 			break;
 		case MTD_UBI:
-			cloner->ack = nand_mtd_ubi_program(cloner);
+			ret = nand_mtd_ubi_program(cloner);
 			break;
 #endif
 		default:
 			printf("Not found nand sub_type.\n");
+			return -EINVAL;
 	}
-	return 0;
+	return ret;
 }
 
 int cloner_nand_init(void)
