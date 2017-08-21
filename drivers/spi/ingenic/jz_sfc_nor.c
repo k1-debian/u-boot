@@ -427,7 +427,7 @@ int sfc_nor_page_write(unsigned int to, unsigned int len, unsigned char *buf)
 #ifdef CONFIG_BURNER
 
 static struct legacy_params g_legacy_params;
-static struct legacy_params *params_compatibility()
+struct legacy_params *params_compatibility()
 {
 	int val, mask, bit_shift;
 	struct legacy_params *p = &g_legacy_params;
@@ -477,36 +477,9 @@ static struct legacy_params *params_compatibility()
 #endif
 
 
-int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf, unsigned int d_params)
+int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
 	int ret = 0;
-	int i;
-
-#ifdef CONFIG_BURNER
-	struct legacy_params *l_params;
-	int spl_version;
-	if (to == 0 && d_params != 0) {
-		/* spl_version is in 16byte of spl header,
-		 * spl_version = 0x01, spl is new code, NOR_VERSION is 2,
-		 * spl_version = 0x00, spl is old code, NOR_VERSION is 1.
-		 * */
-		spl_version = buf[CONFIG_SPL_VERSION_OFFSET];
-		switch (spl_version) {
-			case 0:
-				l_params = params_compatibility();
-				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, l_params, sizeof(struct legacy_params));
-				break;
-			case 1:
-				params.version = NOR_VERSION;
-				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &params, sizeof(struct burner_params));
-				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
-				break;
-			default:
-				printf("spl uboot version error !\n");
-				break;
-		}
-	}
-#endif
 	ret = sfc_nor_page_write(to, len, buf);
 
 	return 0;

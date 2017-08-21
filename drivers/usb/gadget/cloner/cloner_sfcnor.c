@@ -6,6 +6,10 @@ extern struct debug_param *debug_args;
 extern struct nor_partition *get_partition_index(u32 offset,u32 length,int *pt_index);
 static char *readbuf = NULL;
 
+extern struct burner_params params;
+extern struct mini_spi_nor_info mini_params;
+extern struct legacy_params *params_compatibility();
+
 int sfc_erase()
 {
 	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
@@ -19,6 +23,32 @@ int sfc_erase()
 	else
 		printf("sfc chip erase ok\n");
 	return ret;
+}
+
+static void add_sfc_nor_params_to_flash(unsigned char *buf)
+{
+	struct legacy_params *l_params;
+	int spl_version;
+	/* spl_version is in 16byte of spl header,
+	 * spl_version = 0x01, spl is new code, NOR_VERSION is 2,
+	 * spl_version = 0x00, spl is old code, NOR_VERSION is 1.
+	 * */
+	spl_version = buf[CONFIG_SPL_VERSION_OFFSET];
+	switch (spl_version) {
+		case 0:
+			l_params = params_compatibility();
+			memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, l_params, sizeof(struct legacy_params));
+			break;
+		case 1:
+			params.version = NOR_VERSION;
+			memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &params, sizeof(struct burner_params));
+			memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
+			break;
+		default:
+			printf("spl uboot version error !\n");
+			break;
+	}
+
 }
 
 int sfc_program(struct cloner *cloner)
@@ -77,7 +107,10 @@ int sfc_program(struct cloner *cloner)
 		}
 	}
 
-	ret = sfc_nor_write(offset, len, addr, spi_args->download_params);
+	if (offset == 0 && spi_args->download_params != 0) {
+		add_sfc_nor_params_to_flash(addr);
+	}
+	ret = sfc_nor_write(offset, len, addr);
 	BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");
 
