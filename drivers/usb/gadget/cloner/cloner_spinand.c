@@ -6,7 +6,7 @@
 #include "../../../spi/jz_spi.h"
 #include <linux/mtd/mtd.h>
 #include <ingenic_nand_mgr/nand_param.h>
-#include "../../../mtd/nand/jz_spinand.h"
+#include "../../../mtd/devices/jz_sfc_nand.h"
 
 extern struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
 extern struct nand_param_from_burner nand_param_from_burner;
@@ -17,26 +17,54 @@ extern struct nand_param_from_burner nand_param_from_burner;
  *is changed,and para_num is changed to 1,and jz_spi_support_from_burner
  *pointer addr changed to the address which param we probe.
  * ******************************************************************************/
-void get_burner_nandinfo(char *flash_info,struct nand_param_from_burner *param)
+
+struct jz_sfc_nand_burner_param bp;
+void get_burner_nandinfo(char *flash_info)
 {
-	char *member_addr=flash_info;
-	param->version=*(int *)member_addr;
-	member_addr+=sizeof(param->version);
-	param->flash_type=*(int *)member_addr;
-	member_addr+=sizeof(param->flash_type);
-        param->para_num=*(int *)member_addr;
-	member_addr+=sizeof(param->para_num);
-        param->addr=member_addr;
-	member_addr+=param->para_num*sizeof(struct jz_spi_support_from_burner);
-        param->partition_num=*(int *)member_addr;
-	member_addr+=sizeof(param->partition_num);
-        param->partition=member_addr;
+	int i;
+	struct jz_sfc_nand_burner_param *tmpbp = (struct jz_sfc_nand_burner_param*)flash_info;
+
+	bp.magic_num = tmpbp->magic_num;
+	bp.version= tmpbp->version;
+
+	memcpy(&bp.param,&tmpbp->param,sizeof(struct jz_sfc_nand_param));
+
+	bp.partition_num= tmpbp->partition_num;
+
+	bp.partition = malloc(sizeof(struct jz_spinand_partition) * bp.partition_num);
+
+	memcpy(bp.partition, &tmpbp->partition, sizeof(struct jz_spinand_partition) * bp.partition_num);
+
+#ifdef DEBUG
+	printf("**** magic num = %x\n",bp.magic_num);
+	printf("**** version = %x\n",bp.version);
+	printf("**** name = %s\n",bp.param.name);
+	printf("**** id = %x\n",bp.param.nand_id);
+
+	printf("**** pagesize = %x\n", bp.param.param.pagesize);
+	printf("**** block_size = %x\n", bp.param.param.blocksize);
+	printf("**** oob = %x\n",bp.param.param.oobsize);
+	printf("**** flash = %x\n",bp.param.param.flashsize);
+
+	printf("**** ecc max= %x\n",bp.param.param.ecc_max);
+	printf("**** qq = %x\n",bp.param.param.need_quad);
+
+	printf("**** partition_num =  %x\n",bp.partition_num);
+
+	struct jz_spinand_partition *partition = bp.partition;
+	printf("**** partition_  =  %p\n",partition);
+	printf("**** partition_a  =  %s\n",partition);
+
+	for(i = 0;i < bp.partition_num;i++){
+	    printf("name = %s\n",partition[i].name);
+	    printf("size = %x\n",partition[i].size);
+	    printf("offset= %x\n",partition[i].offset);
+	}
+#endif
 }
 
 extern nand_info_t nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
 static unsigned int bad_len = 0;
-
-
 
 static int sfc_nand_skip_bad(unsigned int addr)
 {
@@ -188,26 +216,8 @@ out:
  * **************************************************************************************/
 void add_information_to_spl(char *databuf)
 {
-	int page_spl=0;
-	int32_t nand_magic=0x6e616e64;
-	char *member_addr=databuf;
-	page_spl=((nand_param_from_burner.addr->page_num/32)<<16)|((nand_param_from_burner.addr->page_size/1024)<<24);//compatible
-	*((int *)(databuf+8))=( *((int *)(databuf+8)))|page_spl;	//write pagesize to spl head
-	member_addr+=CONFIG_SPIFLASH_PART_OFFSET;			//spinand parameter number addr
-	memcpy((char *)member_addr,&nand_magic,sizeof(int32_t));
-	member_addr+=sizeof(int32_t);					//spinand parameter magic  addr
-	memcpy((char *)member_addr,&nand_param_from_burner.version,sizeof(nand_param_from_burner.version));
-	member_addr+=sizeof(nand_param_from_burner.version);		//spinand parameter number addr
-	memcpy((char *)member_addr,&nand_param_from_burner.flash_type,sizeof(nand_param_from_burner.flash_type));
-	member_addr+=sizeof(nand_param_from_burner.flash_type);
-	memcpy((char *)member_addr,&nand_param_from_burner.para_num,sizeof(nand_param_from_burner.para_num));
-	member_addr+=sizeof(nand_param_from_burner.para_num);		//spinand parameter addr
-	memcpy((char *)member_addr,nand_param_from_burner.addr,nand_param_from_burner.para_num*sizeof(struct jz_spi_support_from_burner));
+	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfc_nand_burner_param) - 4);
+	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfc_nand_burner_param) - 4, bp.partition, sizeof(struct jz_spinand_partition) * bp.partition_num);
 
-	member_addr+=nand_param_from_burner.para_num*sizeof(struct jz_spi_support_from_burner);//spinand partition number addr
-	memcpy(member_addr,&nand_param_from_burner.partition_num,sizeof(nand_param_from_burner.partition_num));
-	member_addr+=sizeof(nand_param_from_burner.partition_num);		//partition addr
-	memcpy(member_addr,nand_param_from_burner.partition,nand_param_from_burner.partition_num*sizeof(struct jz_spinand_partition));	//partition
 }
-
 #endif

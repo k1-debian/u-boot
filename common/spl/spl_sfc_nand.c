@@ -1,53 +1,56 @@
-
+/*#define DEBUG*/
 #include <common.h>
-#include <config.h>
-#include <spl.h>
+#include <errno.h>
 #include <asm/io.h>
+#include <spl.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/sfc.h>
 #include <asm/arch/spi_nand.h>
-
 #include <generated/sfc_timing_val.h>
+#include <generated/sfc_nand_params.h>
 
-static unsigned char *sfc_flash = (unsigned char *)(CONFIG_SYS_TEXT_BASE + 0x500000);
-
+#ifdef CONFIG_SPL_OS_BOOT
 struct jz_spinand_partition {
 	char name[32];         /* identifier string */
 	uint32_t size;          /* partition size */
 	uint32_t offset;        /* offset within the master MTD space */
 	u_int32_t mask_flags;       /* master MTD flags to mask out for this partition */
-	u_int32_t manager_mode;		/* manager_mode mtd or ubi */
+	u_int32_t manager_mode;     /* manager_mode mtd or ubi */
 };
 
-struct jz_spi_support_from_burner{
-		unsigned int id_manufactory;
-		unsigned char id_device;
-		char name[32];
-		int page_size;
-		int oobsize;
-		int sector_size;
-		int block_size;
-		int size;
-		int page_num;
-		uint32_t tRD_maxbusy;
-		uint32_t tPROG_maxbusy;
-		uint32_t tBERS_maxbusy;
-		unsigned short column_cmdaddr_bits;
+struct jz_nand_base_param {
+	uint32_t pagesize;
+	uint32_t blocksize;
+	uint32_t oobsize;
+	uint32_t flashsize;
+
+	uint16_t tHOLD;
+	uint16_t tSETUP;
+	uint16_t tSHSL_R;
+	uint16_t tSHSL_W;
+
+	uint8_t ecc_max;
+	uint8_t need_quad;
 };
-struct nand_param_from_burner {
-	int version;
-	int flash_type;
-	int para_num;
-	struct jz_spi_support_from_burner *addr;
+
+struct jz_sfc_nand_param {
+	char name[32];
+	short nand_id;
+	struct jz_nand_base_param param;
+};
+
+struct jz_sfc_nand_burner_param {
+	unsigned int magic_num;
+	char version;
+	struct jz_sfc_nand_param param;
 	int partition_num;
 	struct jz_spinand_partition *partition;
+
 };
+#endif
 
-#define  CONFIG_SFC_FREQ            (110)
-#undef CONFIG_SPI_STANDARD
-#define CONFIG_NAND_BPP             (2048)
-#define CONFIG_NAND_PPB             (64)
-
+/*#define  CONFIG_SPI_STANDARD*/
+static struct spl_nand_param *curr_device;
 
 static inline void sfc_writel(unsigned int value, unsigned short offset)
 {
@@ -69,7 +72,7 @@ static void sfc_set_mode(unsigned int channel, unsigned int value)
 	sfc_writel(tmp, SFC_TRAN_CONF(channel));
 }
 
-static void sfc_dev_addr_dummy_bits(unsigned int channel, unsigned int value)
+static void sfc_dev_dummy_bits(unsigned int channel, unsigned int value)
 {
 	unsigned int tmp;
 
@@ -156,7 +159,7 @@ static inline void sfc_dev_addr_plus(unsigned int channel, unsigned int value)
 	sfc_writel(value, SFC_DEV_ADDR_PLUS(channel));
 }
 
-static inline void set_flash_timing()
+static inline void set_flash_timing(void)
 {
 	sfc_writel(DEF_TIM_VAL, SFC_DEV_CONF);
 }
@@ -173,10 +176,9 @@ static void sfc_set_transfer(struct jz_sfc *sfc, unsigned int dir)
 	sfc_set_addr_length(0, sfc->addr_len);
 	sfc_cmd_en(0, 0x1);
 	sfc_data_en(0, sfc->daten);
-	sfc_dev_addr_dummy_bits(0, sfc->dummy_byte);
+	sfc_dev_dummy_bits(0, sfc->dummy_byte);
 	sfc_set_length(sfc->len);
 	sfc_dev_addr(0, sfc->addr);
-
 }
 
 static void sfc_send_cmd(struct jz_sfc *sfc, unsigned char dir)
@@ -190,12 +192,8 @@ static void sfc_send_cmd(struct jz_sfc *sfc, unsigned char dir)
 
 	/*this must judge the end status*/
 	if((sfc->daten == 0)){
-		reg_tmp = sfc_readl(SFC_SR);
-		while (!(reg_tmp & END))
-			reg_tmp = sfc_readl(SFC_SR);
-
-		if ((sfc_readl(SFC_SR)) & END)
-			sfc_writel(CLR_END, SFC_SCR);
+		while(!(sfc_readl(SFC_SR) & END));
+		sfc_writel(CLR_END, SFC_SCR);
 	}
 }
 
@@ -227,12 +225,8 @@ static int sfc_write_data(unsigned int *data, unsigned int length)
 			break;
 	}
 
-	reg_tmp = sfc_readl(SFC_SR);
-	while (!(reg_tmp & END))
-		reg_tmp = sfc_readl(SFC_SR);
-
-	if ((sfc_readl(SFC_SR)) & END)
-		sfc_writel(CLR_END, SFC_SCR);
+	while(!(sfc_readl(SFC_SR) & END));
+	sfc_writel(CLR_END, SFC_SCR);
 
 	return 0;
 }
@@ -255,8 +249,7 @@ static int sfc_read_data(unsigned int *data, unsigned int length)
 				fifo_num = len - tmp_len;
 
 			for (i = 0; i < fifo_num; i++) {
-				*data = sfc_readl(SFC_RM_DR);
-				data++;
+				*data++ = sfc_readl(SFC_RM_DR);
 				tmp_len++;
 			}
 		}
@@ -264,20 +257,15 @@ static int sfc_read_data(unsigned int *data, unsigned int length)
 			break;
 	}
 
-	reg_tmp = sfc_readl(SFC_SR);
-	while (!(reg_tmp & END))
-		reg_tmp = sfc_readl(SFC_SR);
-
-	if ((sfc_readl(SFC_SR)) & END)
-		sfc_writel(CLR_END, SFC_SCR);
+	while(!(sfc_readl(SFC_SR) & END));
+	sfc_writel(CLR_END, SFC_SCR);
 
 	return 0;
 }
 
-void sfc_init(void)
+static void sfc_init(void)
 {
 	unsigned int tmp;
-	int i;
 
 	clk_set_rate(SFC, CONFIG_SFC_RATE);
 
@@ -289,39 +277,7 @@ void sfc_init(void)
 	set_flash_timing();
 }
 
-
-
-static unsigned char gd5fxfq4xc_series;
-static unsigned char gd5fxgq4xbxig_series;
-static unsigned char addr_len;
-
-static struct spi_mode_peer spi_mode_local[] = {
-	[SPI_MODE_STANDARD] = {TRAN_SPI_STANDARD, CMD_R_CACHE},
-	[SPI_MODE_STANDARD2] = {TRAN_SPI_STANDARD, CMD_FR_CACHE},
-	[SPI_MODE_QUAD] = {TRAN_SPI_QUAD, CMD_FR_CACHE_QUAD},
-};
-
-static struct special_spiflash_id spiflash_id[] = {
-	/* ======================== GD5FxGQ4xC ======================= */
-	{ GIGADEVICE_VID, GD5F1GQ4UC_PID },
-	{ GIGADEVICE_VID, GD5F2GQ4UC_PID },
-	{ GIGADEVICE_VID, GD5F1GQ4RC_PID },
-	{ GIGADEVICE_VID, GD5F2GQ4RC_PID },
-	/* ====================== GD5FxGQ4xC end ===================== */
-};
-
-static struct special_spiflash_desc spinand_descs[] = {
-	{
-		WINBOND_VID,
-		{
-			FEATURE_REG_FEATURE1,//0xb0
-			BITS_BUF_EN,
-			VALUE_SET
-		}
-	},
-};
-
-static int spinand_bad_block_check(int len,unsigned char *buf)
+static int spinand_bad_block_check(int len, unsigned char *buf)
 {
 	int i, j, bit0_cnt = 0;
 	unsigned char *check_buf = buf;
@@ -339,16 +295,14 @@ static int spinand_bad_block_check(int len,unsigned char *buf)
 	return 0;
 }
 
-
-
-int spinand_read_page(unsigned int page, unsigned char *dst_addr,
-		unsigned int pagesize, unsigned int blksize)
+static int spinand_read_page(unsigned int page, unsigned char *dst_addr,
+			    unsigned int pagesize)
 {
+	struct jz_sfc sfc;
 	unsigned int read_buf;
 	int column = 0;
 	int oob_flag = 0;
-	struct jz_sfc sfc;
-	unsigned char error = 0;
+	unsigned char i;
 	unsigned char checklen = 1;
 
 read_oob:
@@ -366,101 +320,23 @@ read_oob:
 		SFC_SEND_COMMAND(&sfc, CMD_GET_FEATURE, 1, FEATURE_REG_STATUS1, 1, 0, 1, 0);
 		sfc_read_data(&read_buf, 1);
 	}
-
-	if (gd5fxgq4xbxig_series) {
-		if ((read_buf >> 4) == 0x02)
-			error = 1;
-
-	} else if (gd5fxfq4xc_series){
-		if ((read_buf >> 4) == 0x07)
-			error = 1;
-	} else {
-		if(read_buf & 0x20)
-			error = 1;
+	/*ecc check*/
+	for(i = 0; i < curr_device->eccstat_count; i++) {
+		if((read_buf >> curr_device->ecc_bit) &
+		(~(0xff << curr_device->bit_counts)) == curr_device->eccerrstatus[i])
+			return -1;
 	}
 
-	if (error) {
-		printf("ecc error at page %d\n", page);
-		return -1;
-	}
-
-	column = (column << 8) & 0xffffff00;
 #ifndef CONFIG_SPI_STANDARD
-	SFC_SEND_COMMAND(&sfc, SPI_MODE_QUAD, pagesize, column, addr_len, 0, 1, 0);
+	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE_QUAD, pagesize, column, curr_device->addrlen, 8, 1, 0);
 #else
-	if (addr_len == 4)
-		SFC_SEND_COMMAND(&sfc, SPI_MODE_STANDARD2, pagesize, column, addr_len, 0, 1, 0);
-	else
-		SFC_SEND_COMMAND(&sfc, SPI_MODE_STANDARD, pagesize, column, addr_len, 0, 1, 0);
+	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE, pagesize, column, curr_device->addrlen, 8, 1, 0);
 #endif
 	sfc_read_data((unsigned int *)dst_addr, pagesize);
 
-	if (!oob_flag && !(page % CONFIG_NAND_PPB)) {
+	if (!oob_flag && !(page % CONFIG_SPI_NAND_PPB)) {
 		oob_flag = 1;
 		goto read_oob;
-
-	} else if (oob_flag) {
-#if NAND_BUSWIDTH == NAND_BUSWIDTH_16
-		checklen = 2;
-#endif
-		if (spinand_bad_block_check(checklen, (unsigned char *)&read_buf))
-			return 1;
-	}
-
-	return 0;
-}
-int spinand_read_page_4(unsigned int page, unsigned char *dst_addr,
-		unsigned int pagesize, unsigned int blksize)
-{
-	unsigned int read_buf;
-	int column = 0;
-	int oob_flag = 0;
-	struct jz_sfc sfc;
-	unsigned char error = 0;
-	unsigned char checklen = 1;
-
-read_oob:
-	if (oob_flag) {
-		column = pagesize;
-		pagesize = 4;
-		dst_addr = (unsigned char *)&read_buf;
-	}
-
-	SFC_SEND_COMMAND(&sfc, CMD_PARD, 0, page, 3, 0, 0, 0);
-
-	SFC_SEND_COMMAND(&sfc, CMD_GET_FEATURE, 1, FEATURE_REG_STATUS1, 1, 0, 1, 0);
-	sfc_read_data(&read_buf, 1);
-	while((read_buf & 0x1)) {
-		SFC_SEND_COMMAND(&sfc, CMD_GET_FEATURE, 1, FEATURE_REG_STATUS1, 1, 0, 1, 0);
-		sfc_read_data(&read_buf, 1);
-	}
-
-	if (gd5fxgq4xbxig_series) {
-		if ((read_buf >> 4) == 0x02)
-			error = 1;
-
-	} else if (gd5fxfq4xc_series){
-		if ((read_buf >> 4) == 0x07)
-			error = 1;
-	} else {
-		if(read_buf & 0x20)
-			error = 1;
-	}
-
-	if (error) {
-		printf("ecc error at page %d\n", page);
-		return -1;
-	}
-
-	column = (column << 8) & 0xffffff00;
-	SFC_SEND_COMMAND(&sfc, SPI_MODE_QUAD, pagesize, column, 2, 8, 1, 0);
-
-	sfc_read_data((unsigned int *)dst_addr, pagesize);
-
-	if (!oob_flag && !(page % CONFIG_NAND_PPB)) {
-		oob_flag = 1;
-		goto read_oob;
-
 	} else if (oob_flag) {
 #if NAND_BUSWIDTH == NAND_BUSWIDTH_16
 		checklen = 2;
@@ -472,141 +348,108 @@ read_oob:
 	return 0;
 }
 
-static void spinand_dev_special_init(struct jz_sfc *sfc, unsigned int vid)
-{
-	struct spiflash_register *regs;
-	unsigned int x = 0;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(spinand_descs); i++) {
-		if (vid == spinand_descs[i].vid) {
-			regs = &spinand_descs[i].regs;
-			SFC_SEND_COMMAND(sfc, CMD_GET_FEATURE, 1, regs->addr, 1, 0, 1, 0);
-			sfc_read_data(&x, 1);
-			OPERAND_CONTROL(regs->action, regs->val, x);
-			SFC_SEND_COMMAND(sfc, CMD_SET_FEATURE, 1, regs->addr, 1, 0, 1, 1);
-			sfc_write_data(&x, 1);
-			SFC_SEND_COMMAND(sfc, CMD_GET_FEATURE, 1, regs->addr, 1, 0, 1, 0);
-			sfc_read_data(&x, 1);
-		}
-	}
-}
-
-static unsigned char probe_id_list(unsigned char* id)
+static int probe_id_list(unsigned char *id)
 {
 	unsigned char i;
 
-	for (i = 0; i < ARRAY_SIZE(spiflash_id); i++) {
-		if (spiflash_id[i].vid == id[0] &&
-				spiflash_id[i].pid == id[1])
+	for (i = 0; i < ARRAY_SIZE(nand_param); i++) {
+		if (nand_param[i].id_manufactory == id[0] &&
+			    nand_param[i].device_id == id[1]) {
+
+			curr_device = &nand_param[i];
 			break;
+		}
 	}
 
-	if (i == ARRAY_SIZE(spiflash_id))
-		return 0;
+	if (i == ARRAY_SIZE(nand_param))
+		return -ENODEV;
 
-	return 1;
+	return 0;
 }
 
-static void spinand_probe_id(struct jz_sfc* sfc, unsigned char* id)
+static int spinand_probe_id(struct jz_sfc *sfc)
 {
 	/*
 	 * cmd-->addr-->pid
 	 */
-	SFC_SEND_COMMAND(sfc, CMD_RDID, 2, 0, 1, 0, 1, 0);
-	sfc_read_data((unsigned int *)id, 2);
+	unsigned char addrlen[] = {0, 1};
+	unsigned char id[2] = {0};
+	unsigned char i;
 
-	if (probe_id_list(id))
-		goto id_found_out;
+	for(i = 0; i < sizeof(addrlen); i++) {
+		SFC_SEND_COMMAND(sfc, CMD_RDID, 2, 0, addrlen[i], 0, 1, 0);
+		sfc_read_data((unsigned int *)id, 2);
 
-	else {
-		/*
-		 * cmd-->vid-->pid
-		 */
-		SFC_SEND_COMMAND(sfc, CMD_RDID, 3, 0, 0, 0, 1, 0);
-		sfc_read_data((unsigned int *)id, 3);
-
-		if (probe_id_list(id))
-			goto id_found_out;
-
-		else {
-			/*
-			 * cmd-->addr-->pid
-			 */
-			SFC_SEND_COMMAND(sfc, CMD_RDID, 2, 0, 1, 0, 1, 0);
-			sfc_read_data((unsigned int *)id, 2);
-
-			addr_len = 3;
-			if (id[0] == GIGADEVICE_VID)
-				gd5fxgq4xbxig_series = 1;
-
-			return;
-		}
+		if (!probe_id_list(id))
+			    break;
 	}
-
-id_found_out:
-	addr_len = 4;
-	if (id[0] == GIGADEVICE_VID)
-		gd5fxfq4xc_series = 1;
+	if(i == sizeof(addrlen)) {
+		debug("ERR: don`t support this kind of nand device, \
+			please add it\n");
+		return -ENODEV;
+	}
+	return 0;
 }
 
-int spinand_init(void)
+static int spinand_init(void)
 {
-	unsigned char id[4] = {0, 0, 0, 0};
-	unsigned int x;
 	struct jz_sfc sfc;
+	unsigned int x;
 
 	/*
 	 * Probe nand vid/pid
 	 */
-	spinand_probe_id(&sfc, id);
-
-	/* printf("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]); */
+	if(spinand_probe_id(&sfc))
+		return -ENODEV;
 
 	/* disable write protect */
 	x = 0;
 	SFC_SEND_COMMAND(&sfc, CMD_SET_FEATURE, 1, FEATURE_REG_PROTECT, 1, 0, 1, 1);
 	sfc_write_data(&x, 1);
 
-#ifndef CONFIG_SPI_STANDARD
-	x = BITS_QUAD_EN;
-#endif
+	x = BITS_QUAD_EN | BITS_ECC_EN | BITS_BUF_EN;
 	SFC_SEND_COMMAND(&sfc, CMD_SET_FEATURE, 1, FEATURE_REG_FEATURE1, 1, 0, 1, 1);
 	sfc_write_data(&x, 1);
 
-	spinand_dev_special_init(&sfc, id[0]);
-
+	SFC_SEND_COMMAND(&sfc, CMD_GET_FEATURE, 1, FEATURE_REG_FEATURE1, 1, 0, 1, 0);
+	sfc_read_data(&x, 1);
 	return 0;
 }
 
 static int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_addr)
 {
-	unsigned int blksize, pagesize, page;
+	unsigned int page, pagesize;
 	unsigned int pagecopy_cnt = 0;
-	unsigned int ret;
+	unsigned int ret, try_count = 5;
 	unsigned char *buf = (unsigned char *)dst_addr;
 
-	pagesize = CONFIG_NAND_BPP;
-	blksize = CONFIG_NAND_PPB * pagesize;
+	pagesize = curr_device->pagesize;
 
-	/* if (src_addr % pagesize) */
-	/* 	printf("\n\tWarning: offset 0x%x not align with page size 0x%x.\n", */
-	/* 			src_addr, pagesize); */
+	if (src_addr % pagesize)
+		debug("\n\tWarning: offset 0x%x not align with page size 0x%x.\n",
+				src_addr, pagesize);
 
 	page = src_addr / pagesize;
 	while (pagecopy_cnt * pagesize < count) {
-		ret = spinand_read_page(page, buf, pagesize, blksize);
-		if (ret > 0){
-			printf("bad block %d\n", page / CONFIG_NAND_PPB);
-			page += CONFIG_NAND_PPB;
+		ret = spinand_read_page(page, buf, pagesize);
+		if (ret > 0) {
+			debug("bad block %d\n", page / CONFIG_SPI_NAND_PPB);
+			page += CONFIG_SPI_NAND_PPB;
 			continue;
+		} else if (ret < 0 && try_count--) {
+		/*read page err, try again*/
+			continue;
+		}
 
-		} else if (ret < 0)
+		if (ret < 0 && try_count < 0) {
+			debug("ERR: read page ECC error, page addr = %u\n", page);
 			return -1;
+		}
 
 		buf += pagesize;
 		page++;
 		pagecopy_cnt++;
+		try_count = 5;
 	}
 
 	return 0;
@@ -616,47 +459,37 @@ static int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int
 void spl_sfc_nand_load_image(void)
 {
 	struct image_header *header;
+#ifdef CONFIG_SPL_OS_BOOT
+	struct jz_sfc_nand_burner_param *burn_param;
+	struct jz_spinand_partition *partition;
+	unsigned int bootimg_addr = 0;
+	unsigned int i = 0;
+#endif
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_init();
-	spinand_init();
+	if(spinand_init())
+		return;
 
 #ifdef CONFIG_SPL_OS_BOOT
-	{
-	    struct nand_param_from_burner *nand_param;	/* at 15k + magic in nandflash */
-	    int partitions_num;
-	    struct jz_spinand_partition *partitions_info;
+	/*read burn param*/
+	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, 1, CONFIG_SYS_TEXT_BASE);
+	burn_param = (void *)(CONFIG_SYS_TEXT_BASE + CONFIG_SPIFLASH_PART_OFFSET % curr_device->pagesize);
+	partition = &burn_param->partition;
 
-	    unsigned int bootimg_addr = 0;
-	    unsigned int i=0;
-
-	    sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, 1, (unsigned int)sfc_flash); /* read one page(total 2k: 14k - 16k) from nandflash to uboot space. */
-
-	    nand_param = (struct nand_param_from_burner*)(sfc_flash +
-		    CONFIG_SPIFLASH_PART_OFFSET % CONFIG_NAND_BPP + sizeof(int)); /* 1k + magic */
-
-	    partitions_num = *(int*)((char*)nand_param + 3 * sizeof(int) +
-		    sizeof(struct jz_spi_support_from_burner) * nand_param->para_num);
-
-	    partitions_info = (struct jz_spinand_partition *)((char*)nand_param +
-		    4 * sizeof(int) + sizeof(struct jz_spi_support_from_burner) * nand_param->para_num);
-
-	    for (i = 0; i < partitions_num; i++) {
-		if (!strncmp(partitions_info[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
-		    bootimg_addr = partitions_info[i].offset;
+	for(i = 0; i < burn_param->partition_num; i++) {
+		if (!strncmp(partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
+			bootimg_addr = partition[i].offset;
+			break;
 		}
-	    }
-
-	    sfc_nand_load(bootimg_addr, sizeof(struct image_header), (unsigned int*)CONFIG_SYS_TEXT_BASE);
-	    spl_parse_image_header(header);
-	    sfc_nand_load(bootimg_addr, spl_image.size, (unsigned int*)(spl_image.load_addr));
-	    return ;
 	}
-#else
+
+	/*read image head*/
+	sfc_nand_load(bootimg_addr, 1, CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
-	sfc_nand_load(CONFIG_UBOOT_OFFSET,CONFIG_SYS_MONITOR_LEN,(void *)CONFIG_SYS_TEXT_BASE);
-#endif	/* CONFIG_SPL_OS_BOOT */
-	return ;
+	sfc_nand_load(bootimg_addr, spl_image.size, spl_image.load_addr);
+#else
+	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (void *)CONFIG_SYS_TEXT_BASE);
+	spl_parse_image_header(header);
+#endif
 }
-
-

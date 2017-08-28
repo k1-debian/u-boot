@@ -24,15 +24,26 @@ int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int le
 
 int clmd_spisfc_info(struct cloner *cloner)
 {
-	unsigned int id_code = 0;
+	int id_code = 0;
 #ifdef CONFIG_JZ_SFC_NOR
-	id_code = get_norflash_id();
-	printf("id_code=%x\n", id_code);
+	if(policy_args->use_sfc_nor){
+		id_code = get_norflash_id();
+	}
 #endif
-	memcpy(cloner->ep0req->buf, &id_code, sizeof(unsigned int));
-	return 0;
-}
+#ifdef CONFIG_MTD_SFCNAND
+	if(policy_args->use_sfc_nand){
+		id_code = burner_get_nand_id();
+	}
+#endif
 
+	if(id_code < 0) {
+		printf("ERR : (get flash_info) try id err, %d\n", id_code);
+		id_code = 0;
+	}
+
+	memcpy(cloner->ep0req->buf, &id_code, sizeof(unsigned int));
+	return id_code;
+}
 
 int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 {
@@ -59,8 +70,8 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 #endif
 #if CONFIG_MTD_SFCNAND
 	if(policy_args->use_sfc_nand){
-		get_burner_nandinfo(spi_args->flash_info,&nand_param_from_burner);
-		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,&nand_param_from_burner);
+		get_burner_nandinfo(spi_args->flash_info);
+		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,spi_args->flash_info);
 	}
 #endif
 

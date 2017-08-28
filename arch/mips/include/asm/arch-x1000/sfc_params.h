@@ -96,7 +96,6 @@ struct mini_spi_nor_info {
 #define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
 #define UBI_MANAGER             0x1
 
-
 struct nor_partition {
 	char name[32];
 	uint32_t size;
@@ -181,23 +180,19 @@ struct legacy_params {
 
 };
 
+struct spl_nand_param {
+		unsigned int pagesize:16;
+		unsigned int id_manufactory:8;
+		unsigned int device_id:8;
 
+		unsigned int addrlen:2;
+		unsigned int ecc_bit:3;
+		unsigned int bit_counts:3;
+
+		unsigned char eccstat_count;
+		unsigned char eccerrstatus[2];
+} __attribute__((aligned(4)));
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

@@ -5,6 +5,7 @@
 #ifndef CONFIG_SPL_BUILD
 #include <linux/list.h>
 #endif
+#include <linux/mtd/mtd.h>
 #include "sfc_params.h"
 
 
@@ -74,7 +75,9 @@ struct spi_nor_flash_ops {
 
 struct sfc_flash {
 	struct sfc *sfc;
+	struct mtd_info  *mtd;
 
+	void *flash_info;
 #ifndef CONFIG_SPL_BUILD
 	int quad_succeed;
 	struct spi_nor_info *g_nor_info;
@@ -155,6 +158,8 @@ struct sfc_flash {
 #define	TRAN_CONF_TRAN_MODE_OFFSET	(29)
 #define	TRAN_CONF_TRAN_MODE_MSK		(0x7)
 #define	TRAN_CONF_ADDR_WIDTH_OFFSET	(26)
+#define TRAN_CONF_FMAT_OFFSET		(23)
+#define TRAN_CONF_DATEEN_OFFSET		(16)
 #define	TRAN_CONF_ADDR_WIDTH_MSK	(0x7 << ADDR_WIDTH_OFFSET)
 #define TRAN_CONF_POLLEN		(1 << 25)
 #define TRAN_CONF_CMDEN			(1 << 24)
@@ -279,17 +284,6 @@ struct jz_sfc {
 };
 #endif
 
-struct spi_mode_peer {
-    int controller_mode;
-    int device_mode;
-};
-
-enum {
-    SPI_MODE_STANDARD,
-    SPI_MODE_STANDARD2,
-    SPI_MODE_QUAD,
-};
-
 #ifdef CONFIG_SFC_DEBUG
 #define sfc_debug(fmt, args...)         \
     do {                    \
@@ -301,33 +295,21 @@ enum {
     } while (0)
 #endif
 
-#define  SFC_MODE_GENERATE(sfc, a)    do{                                       \
-        if ((a >= SPI_MODE_STANDARD) && (a <= SPI_MODE_QUAD)){                  \
-            ((struct jz_sfc *)sfc)->cmd = spi_mode_local[a].device_mode;        \
-        }                                                                       \
-        if((((struct jz_sfc *)sfc)->daten == 1)                                 \
-        && (((struct jz_sfc *)sfc)->addr_len != 0)){                            \
-            if (a == SPI_MODE_QUAD)                                             \
-                ((struct jz_sfc *)sfc)->sfc_mode = spi_mode_local[a].controller_mode; \
-            else                                                                \
-                ((struct jz_sfc *)sfc)->sfc_mode = 0;                           \
-        } else {                                                                \
-            ((struct jz_sfc *)sfc)->sfc_mode = 0;                               \
-        }                                                                       \
-} while(0)
-
 #define  SFC_SEND_COMMAND(sfc, a, b, c, d, e, f, g)   do{                       \
         ((struct jz_sfc *)sfc)->cmd = a;                                        \
         ((struct jz_sfc *)sfc)->len = b;                                        \
         ((struct jz_sfc *)sfc)->addr = c;                                       \
         ((struct jz_sfc *)sfc)->addr_len = d;                                   \
         ((struct jz_sfc *)sfc)->addr_plus = 0;                                  \
-        ((struct jz_sfc *)sfc)->dummy_byte = e;                                \
+        ((struct jz_sfc *)sfc)->dummy_byte = e;                                 \
         ((struct jz_sfc *)sfc)->daten = f;                                      \
-        SFC_MODE_GENERATE(sfc, a);                                              \
+	if(a == CMD_FR_CACHE_QUAD) {						\
+		((struct jz_sfc *)sfc)->sfc_mode = TRAN_SPI_QUAD;		\
+	} else {								\
+		((struct jz_sfc *)sfc)->sfc_mode = TRAN_SPI_STANDARD;		\
+	}									\
         sfc_send_cmd(sfc, g);                                                   \
 } while(0)
-
 
 #endif
 

@@ -72,6 +72,7 @@
 #define FEATURE_REG_STATUS2         0xf0
 #define BITS_ECC_EN                 (1 << 4)
 #define BITS_QUAD_EN                (1 << 0)
+#define BITS_BUF_EN		    (1 << 3)  /*notice: only use by winbond*/
 
 /* some manufacture with unusual method */
 #define MANUFACTURE_PID1_IGNORE 0x00
@@ -125,7 +126,6 @@ struct special_spiflash_desc {
 int spinor_init(void);
 int spinor_read(uint32_t src_addr, uint32_t count, uint32_t dst_addr);
 
-int spinand_init(void);
 int spinand_read(uint32_t src_addr, uint32_t count, uint32_t dst_addr);
 
 ///////////////////upper layer logic depends on flash /////////////////

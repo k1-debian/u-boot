@@ -77,11 +77,11 @@
 #define  CONFIG_DDR_64M     64
 #define  CONFIG_DDR_32M     32
 #define CONFIG_MDDR_EMD56164PC_50I
-
+/*
 #define CONFIG_AUDIO_CAL_DIV
 #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
 #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
-
+*/
 /* wdt config */
 /* #define CONFIG_JZ_WATCHDOG */
 #ifdef CONFIG_JZ_WATCHDOG
@@ -177,7 +177,11 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
-      #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #ifdef  CONFIG_SPL_SFC_NOR
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #else
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+    #endif
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
              #define CONFIG_PAT_USERFS_NAME   "userfs"

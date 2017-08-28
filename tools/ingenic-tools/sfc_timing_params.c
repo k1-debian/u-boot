@@ -1,7 +1,19 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <config.h>
-#include <asm/arch/sfc.h>
+
+#define DEV_CONF_SMP_DELAY_OFFSET       (16)
+#define DEV_CONF_SMP_DELAY_MSK          (0x3 << DEV_CONF_SMP_DELAY_OFFSET)
+#define DEV_CONF_THOLD_OFFSET           (11)
+#define DEV_CONF_THOLD_MSK              (0x3 << DEV_CONF_THOLD_OFFSET)
+#define DEV_CONF_TSETUP_OFFSET          (9)
+#define DEV_CONF_TSETUP_MSK             (0x3 << DEV_CONF_TSETUP_OFFSET)
+#define DEV_CONF_TSH_OFFSET             (5)
+#define DEV_CONF_TSH_MSK                (0xf << DEV_CONF_TSH_OFFSET)
+#define DEF_TCHSH       5
+#define DEF_TSLCH       5
+#define DEF_TSHSL_R     20
+#define DEF_TSHSL_W     50
 
 static void file_head_print(void)
 {

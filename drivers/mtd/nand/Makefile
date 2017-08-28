@@ -93,7 +93,6 @@ COBJS-$(CONFIG_NAND_OMAP_GPMC) += omap_gpmc.o
 COBJS-$(CONFIG_NAND_PLAT) += nand_plat.o
 COBJS-$(CONFIG_NAND_DOCG4) += docg4.o
 COBJS-$(CONFIG_MTD_SPINAND) += jz_spinand.o
-COBJS-$(CONFIG_MTD_SFCNAND) +=jz_sfcnand.o
 else  # minimal SPL drivers
 
 COBJS-$(CONFIG_NAND_FSL_ELBC) += fsl_elbc_spl.o

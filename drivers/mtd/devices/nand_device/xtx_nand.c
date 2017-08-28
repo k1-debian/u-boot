@@ -1,0 +1,166 @@
+/*#define CONFIG_PARAM_FROM_BURNER*/
+#include <errno.h>
+#include <malloc.h>
+#include <linux/mtd/partitions.h>
+#include "../jz_sfc_nand.h"
+#include "nand_common.h"
+
+#define XTX_DEVICES_NUM         2
+#define TSETUP		5
+#define THOLD		5
+#define	TSHSL_R		20
+#define	TSHSL_W		20
+
+#ifndef CONFIG_PARAM_FROM_BURNER
+static struct jz_nand_base_param xtx_param[XTX_DEVICES_NUM] = {
+
+	[0] = {
+		/*PN26G01AW*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.ecc_max = 0x3,
+		.need_quad = 1,
+	},
+	[1] = {
+		/*PN26G02AW */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.ecc_max = 0x3,
+		.need_quad = 1,
+	}
+
+};
+
+static struct mtd_partition partition[4] = {
+	{
+		.name = "uboot",
+		.size = 0x100000,
+		.offset = 0,
+		.mask_flags = 0,
+	},
+	{
+		.name = "kernel",
+		.size = 0x800000,
+		.offset = 0x100000,
+		.mask_flags = 0,
+	},
+	{
+		.name = "rootfs",
+		.size = 0x2800000,
+		.offset = 0x900000,
+		.mask_flags = 0,
+	},
+	{
+		.name = "data",
+		.size = 0x0,
+		.offset = 0x3100000,
+		.mask_flags = 0,
+	}
+};
+
+static struct jz_nand_partition_param xtx_partition = {
+
+	.partition = partition,
+	.num_partition = 4,
+
+};
+
+static struct device_id_struct device_id[XTX_DEVICES_NUM] = {
+	DEVICE_ID_STRUCT(0xE1, "PN26G01AW", &xtx_param[0], &xtx_partition),
+	DEVICE_ID_STRUCT(0xE2, "PN26G02AW", &xtx_param[1], &xtx_partition),
+};
+
+#else
+
+static struct device_id_struct device_id[XTX_DEVICES_NUM] = {
+	DEVICE_ID_STRUCT(0xE1, "PN26G01AW"),
+	DEVICE_ID_STRUCT(0xE2, "PN26G02AW"),
+};
+#endif
+
+static int32_t xtx_get_read_feature(struct sfc_flash *flash, uint8_t device_id) {
+	struct sfc_transfer transfer;
+	struct sfc_message message;
+	struct cmd_info cmd;
+	uint8_t ecc_status = 0;
+	int32_t ret = 0;
+
+	memset(&transfer, 0, sizeof(transfer));
+	memset(&cmd, 0, sizeof(cmd));
+	sfc_message_init(&message);
+
+	cmd.cmd = SPINAND_CMD_GET_FEATURE;
+	transfer.sfc_mode = TM_STD_SPI;
+
+	transfer.addr = SPINAND_ADDR_STATUS;
+	transfer.addr_len = 1;
+
+	cmd.dataen = DISABLE;
+	transfer.len = 0;
+
+	transfer.data_dummy_bits = 0;
+	cmd.sta_exp = (0 << 0);
+	cmd.sta_msk = SPINAND_IS_BUSY;
+	transfer.cmd_info = &cmd;
+	transfer.ops_mode = CPU_OPS;
+
+	sfc_message_add_tail(&transfer, &message);
+	if(sfc_sync(flash->sfc, &message)) {
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+
+	ecc_status = sfc_get_sta_rt(flash->sfc);
+
+	switch(device_id) {
+		case 0xE1 ... 0xE2:
+			switch((ecc_status >> 4) & 0x3) {
+			    case 0x02:
+				    ret = -EBADMSG;
+				    break;
+			    case 0x03:
+				    ret = 0x8;
+				    break;
+			    default:
+				    ret = 0;
+			}
+			break;
+		default:
+			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
+			ret = -EIO;   //notice!!!
+
+	}
+	return ret;
+}
+
+int xtx_nand_init(void) {
+	struct jz_nand_device *xtx_nand;
+	xtx_nand = kzalloc(sizeof(*xtx_nand), GFP_KERNEL);
+	if(!xtx_nand) {
+		pr_err("alloc xtx_nand struct fail\n");
+		return -ENOMEM;
+	}
+
+	xtx_nand->id_manufactory = 0xA1;
+	xtx_nand->id_device_list = device_id;
+
+	xtx_nand->ops.nand_read_ops.get_feature = xtx_get_read_feature;
+	return jz_spinand_register(xtx_nand);
+}
+SPINAND_MOUDLE_INIT(xtx_nand_init);
