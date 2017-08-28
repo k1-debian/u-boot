@@ -79,6 +79,11 @@ __weak void spl_board_prepare_for_linux(void)
 	/* Nothing to do! */
 }
 
+__weak char* spl_board_process_bootargs(char *arg)
+{
+	return arg;
+}
+
 void spl_parse_image_header(const struct image_header *header)
 {
 	u32 header_size = sizeof(struct image_header);
@@ -149,6 +154,7 @@ static void spl_ram_load_image(void)
 void board_init_r(gd_t *dummy1, ulong dummy2)
 {
 	u32 boot_device;
+	char *cmdargs = NULL;
 	debug(">>spl:board_init_r()\n");
 
 #ifdef CONFIG_SYS_SPL_MALLOC_START
@@ -218,7 +224,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 #endif
 #ifdef CONFIG_SPL_SFC_NOR
 	case BOOT_DEVICE_SFC_NOR:
-		spl_sfc_nor_load_image();
+		cmdargs = spl_sfc_nor_load_image();
 		break;
 #endif
 #ifdef CONFIG_SPL_SFC_NAND
@@ -253,7 +259,12 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	case IH_OS_LINUX:
 		debug("Jumping to Linux\n");
 		spl_board_prepare_for_linux();
-		jump_to_image_linux((void *)CONFIG_SYS_SPL_ARGS_ADDR);
+
+		cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
+		cmdargs = spl_board_process_bootargs(cmdargs);
+
+		debug("get cmdargs: %s.\n", cmdargs);
+		jump_to_image_linux((void *)cmdargs);
 #endif
 	default:
 		debug("Unsupported OS image.. Jumping nevertheless..\n");

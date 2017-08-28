@@ -169,9 +169,16 @@
 		#endif /* CONFIG_JZ_MMC_MSC0 */
 	#endif /* CONFIG_SPL_JZMMC_SUPPORT */
 
+	#define CONFIG_PAR_NV_NAME        "nv"
 	#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
-	#define CONFIG_SYS_SPL_ARGS_ADDR      CONFIG_SPL_BOOTARGS
-	#define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+	#define CONFIG_PAT_USERFS_NAME    "userfs"
+	#define CONFIG_PAT_UPDATEFS_NAME  "updatefs"
+	#define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+	#define CONFIG_BOOTX_BOOTARGS     BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+#ifdef CONFIG_OTA_VERSION20
+	#define CONFIG_NV_INFO_AS_IAD
+#endif
+
 #else /* CONFIG_SPL_OS_BOOT */
 
 #endif /* CONFIG_SPL_OS_BOOT */
