@@ -497,7 +497,7 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 }
 
-static void get_params_from_burner(struct sfc_flash *flash)
+static void get_params_from_spinand(struct sfc_flash *flash)
 {
 	int retlen, i;
 	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET, sizeof(struct jz_sfc_nand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
@@ -802,7 +802,7 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 #else
 	sfc_nand_detect_pagesize(flash);
 	mtd->writesize = nand_desc->param.pagesize;
-	get_params_from_burner(flash);
+	get_params_from_spinand(flash);
 	nand_desc->param = jz_sfc_nand_burner_param.param.param;
 	nand_desc->partition.num_partition =jz_sfc_nand_burner_param.partition_num;
 	nand_desc->partition.partition = jz_sfc_nand_burner_param.partition;
@@ -902,7 +902,7 @@ struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int mtd_sfcnand_probe_burner(/*MTDPartitionInfo *pinfo,*/int *erase_mode,int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
+int mtd_sfcnand_probe_burner(int *erase_mode,int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 {
 	int ret;
 	struct mtd_info *mtd;

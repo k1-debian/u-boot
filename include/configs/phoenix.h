@@ -172,7 +172,11 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
-      #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #ifdef  CONFIG_SPL_SFC_NOR
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #else
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+    #endif
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
              #define CONFIG_PAT_USERFS_NAME   "userfs"
@@ -466,7 +470,6 @@
 #define CONFIG_SPL_TEXT_BASE		0xf4001000
 #define CONFIG_SPL_MAX_SIZE		(12 * 1024)
 #define CONFIG_SPL_PAD_TO		16384
-#define CONFIG_MTD_SFCNAND
 #define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND
