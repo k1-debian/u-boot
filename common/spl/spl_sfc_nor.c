@@ -424,6 +424,7 @@ int sfc_read_data(unsigned int from, unsigned int len, unsigned int *buf)
 
 
 #ifdef CONFIG_OTA_VERSION20
+  #ifdef CONFIG_NV_INFO_AS_IAD
 void *spl_get_nvinfo(unsigned int nv_addr)
 {
 	nvinfo_t *nvinfo = (nvinfo_t *)CONFIG_SPL_NV_BASE;
@@ -451,6 +452,7 @@ void *spl_get_nvinfo(unsigned int nv_addr)
 		return NULL;
 	}
 }
+  #endif
 
 static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int nv_size)
 {
