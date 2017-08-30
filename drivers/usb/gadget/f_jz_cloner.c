@@ -185,7 +185,7 @@ int i2c_program(struct cloner *cloner)
 }
 
 
-static struct ParameterInfo *global_args;
+struct ParameterInfo	*global_args;
 struct policy_param	*policy_args;
 struct debug_param	*debug_args;
 

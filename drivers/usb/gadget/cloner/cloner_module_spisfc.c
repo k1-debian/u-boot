@@ -3,6 +3,7 @@
 #include "cloner_sfcnor.c"
 #include "cloner_spinand.c"
 
+extern struct ParameterInfo	*global_args;
 struct spi_param *spi_args;
 
 int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
@@ -21,10 +22,17 @@ int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int le
 	return val;
 }
 
-
 int clmd_spisfc_info(struct cloner *cloner)
 {
 	int id_code = 0;
+
+	if(global_args->magic == MAGIC_POLICY){
+		policy_args = global_args->data;
+	} else {
+		printf("ERR: cloner send policy data error!\n");
+		memset(global_args->data, 0, sizeof(*policy_args));
+	}
+
 #ifdef CONFIG_JZ_SFC_NOR
 	if(policy_args->use_sfc_nor){
 		id_code = get_norflash_id();
