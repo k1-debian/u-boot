@@ -1,5 +1,4 @@
 #if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
-
 #include <common.h>
 #include <asm/arch-x1000/spi.h>
 #include <nand.h>
@@ -25,10 +24,6 @@ void get_burner_nandinfo(char *flash_info)
 	struct jz_sfc_nand_burner_param *tmpbp = (struct jz_sfc_nand_burner_param*)flash_info;
 
 	bp.magic_num = tmpbp->magic_num;
-	bp.version= tmpbp->version;
-
-	memcpy(&bp.param,&tmpbp->param,sizeof(struct jz_sfc_nand_param));
-
 	bp.partition_num= tmpbp->partition_num;
 
 	bp.partition = malloc(sizeof(struct jz_spinand_partition) * bp.partition_num);
@@ -36,29 +31,14 @@ void get_burner_nandinfo(char *flash_info)
 	memcpy(bp.partition, &tmpbp->partition, sizeof(struct jz_spinand_partition) * bp.partition_num);
 
 #ifdef DEBUG
+	struct jz_spinand_partition *partition = bp.partition;
 	printf("**** magic num = %x\n",bp.magic_num);
-	printf("**** version = %x\n",bp.version);
-	printf("**** name = %s\n",bp.param.name);
-	printf("**** id = %x\n",bp.param.nand_id);
-
-	printf("**** pagesize = %x\n", bp.param.param.pagesize);
-	printf("**** block_size = %x\n", bp.param.param.blocksize);
-	printf("**** oob = %x\n",bp.param.param.oobsize);
-	printf("**** flash = %x\n",bp.param.param.flashsize);
-
-	printf("**** ecc max= %x\n",bp.param.param.ecc_max);
-	printf("**** qq = %x\n",bp.param.param.need_quad);
-
 	printf("**** partition_num =  %x\n",bp.partition_num);
 
-	struct jz_spinand_partition *partition = bp.partition;
-	printf("**** partition_  =  %p\n",partition);
-	printf("**** partition_a  =  %s\n",partition);
-
-	for(i = 0;i < bp.partition_num;i++){
-	    printf("name = %s\n",partition[i].name);
-	    printf("size = %x\n",partition[i].size);
-	    printf("offset= %x\n",partition[i].offset);
+	for(i = 0; i < bp.partition_num; i++){
+		printf("name = %s\n",partition[i].name);
+		printf("size = %x\n",partition[i].size);
+		printf("offset= %x\n",partition[i].offset);
 	}
 #endif
 }

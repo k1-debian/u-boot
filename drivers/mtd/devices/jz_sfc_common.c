@@ -480,7 +480,6 @@ static void sfc_set_tran_config(struct sfc *sfc, struct sfc_transfer *transfer, 
 static void sfc_phase_transfer(struct sfc *sfc,struct sfc_transfer *
 		transfer,int channel)
 {
-	sfc_flush_fifo(sfc);
 	sfc_dev_addr(sfc, channel,transfer->addr);
 	sfc_dev_addr_plus(sfc,channel,transfer->addr_plus);
 	sfc_set_tran_config(sfc, transfer, channel);
@@ -555,8 +554,9 @@ static void  dump_transfer(struct sfc_transfer *xfer,int num)
 int sfc_sync(struct sfc *sfc, struct sfc_message *message)
 {
 	struct sfc_transfer *xfer;
-	int phase_num = 0,ret = 0;
+	int phase_num = 0;
 
+	sfc_flush_fifo(sfc);
 	sfc_set_length(sfc, 0);
 	list_for_each_entry(xfer, &message->transfers, transfer_list) {
 		if(xfer->cmd_info->sta_msk == 0){
@@ -575,7 +575,6 @@ int sfc_sync(struct sfc *sfc, struct sfc_message *message)
 	list_del_init(&message->transfers);
 	return sfc_start_transfer(sfc);
 }
-
 
 void sfc_transfer_del(struct sfc_transfer *t)
 {

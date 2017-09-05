@@ -1,4 +1,3 @@
-/*#define CONFIG_PARAM_FROM_BURNER*/
 #include <errno.h>
 #include <malloc.h>
 #include <linux/mtd/partitions.h>
@@ -10,7 +9,6 @@
 #define	TSHSL_R		20
 #define	TSHSL_W		20
 
-#ifndef CONFIG_PARAM_FROM_BURNER
 static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 
 	[0] = {
@@ -107,58 +105,14 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 
 };
 
-static struct mtd_partition partition[4] = {
-	{
-		.name = "uboot",
-		.size = 0x100000,
-		.offset = 0,
-		.mask_flags = 0,
-	},
-	{
-		.name = "kernel",
-		.size = 0x800000,
-		.offset = 0x100000,
-		.mask_flags = 0,
-	},
-	{
-		.name = "rootfs",
-		.size = 0x2800000,
-		.offset = 0x900000,
-		.mask_flags = 0,
-	},
-	{
-		.name = "data",
-		.size = 0x0,
-		.offset = 0x3100000,
-		.mask_flags = 0,
-	}
-};
-
-static struct jz_nand_partition_param gd_partition = {
-
-	.partition = partition,
-	.num_partition = 4,
-
-};
-
 static struct device_id_struct device_id[GD_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xD1, "GD5F1GQ4UB",&gd_param[0],&gd_partition),
-	DEVICE_ID_STRUCT(0xD2, "GD5F2GQ4UB",&gd_param[1],&gd_partition),
-	DEVICE_ID_STRUCT(0xD4, "GD5F4GQ4UB",&gd_param[2],&gd_partition),
-	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC",&gd_param[3],&gd_partition),
-	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4],&gd_partition),
-	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5],&gd_partition),
+	DEVICE_ID_STRUCT(0xD1, "GD5F1GQ4UB",&gd_param[0]),
+	DEVICE_ID_STRUCT(0xD2, "GD5F2GQ4UB",&gd_param[1]),
+	DEVICE_ID_STRUCT(0xD4, "GD5F4GQ4UB",&gd_param[2]),
+	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC",&gd_param[3]),
+	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4]),
+	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5]),
 };
-#else
-static struct device_id_struct device_id[GD_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xD1, "GD5F1GQ4UB"),
-	DEVICE_ID_STRUCT(0xD2, "GD5F2GQ4UB"),
-	DEVICE_ID_STRUCT(0xD4, "GD5F4GQ4UB"),
-	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC"),
-	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC"),
-	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC"),
-};
-#endif
 
 static void gd_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint32_t device_id) {
 	uint8_t addr_len = 0;

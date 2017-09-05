@@ -14,8 +14,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-
-
 #include <config.h>
 #include <common.h>
 #include <malloc.h>
@@ -47,6 +45,7 @@ static const char *const mtdids_default = MTDIDS_DEFAULT;
 static const char *const mtdids_default = "nand0:nand";
 #endif
 
+static LIST_HEAD(nand_list);
 static	struct sfc_flash *flash;
 
 struct nand_param_from_burner nand_param_from_burner;
@@ -497,25 +496,13 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 }
 
-static void get_params_from_spinand(struct sfc_flash *flash)
+static void get_partition_from_spinand(struct sfc_flash *flash)
 {
 	int retlen, i;
 	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET, sizeof(struct jz_sfc_nand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
 	jz_sfc_nand_burner_param.partition = malloc(sizeof(struct jz_spinand_partition) * jz_sfc_nand_burner_param.partition_num);
 	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfc_nand_burner_param) - 4, sizeof(struct jz_spinand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen, jz_sfc_nand_burner_param.partition);
 #ifdef DEBUG
-	printf("pagesize = %d\n", jz_sfc_nand_burner_param.param.param.pagesize);
-	printf("blocksize = %d\n", jz_sfc_nand_burner_param.param.param.blocksize);
-	printf("oobsize = %d\n", jz_sfc_nand_burner_param.param.param.oobsize);
-	printf("flashsize = %d\n", jz_sfc_nand_burner_param.param.param.flashsize);
-
-	printf("tHOLD = %d\n", jz_sfc_nand_burner_param.param.param.tHOLD);
-	printf("tSETUP = %d\n", jz_sfc_nand_burner_param.param.param.tSETUP);
-	printf("tSHSL_R = %d\n", jz_sfc_nand_burner_param.param.param.tSHSL_R);
-	printf("tSHSL_W = %d\n", jz_sfc_nand_burner_param.param.param.tSHSL_W);
-	printf("ecc_max = %d\n", jz_sfc_nand_burner_param.param.param.ecc_max);
-	printf("need_quad = %d\n", jz_sfc_nand_burner_param.param.param.need_quad);
-
 	for(i = 0; i < jz_sfc_nand_burner_param.partition_num; i++) {
 		printf("name = %s\n", jz_sfc_nand_burner_param.partition[i].name);
 		printf("size = %x\n", jz_sfc_nand_burner_param.partition[i].size);
@@ -582,6 +569,7 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_nand_descri
 			printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 			return -EIO;
 		}
+
 		list_for_each_entry(nand_device, &nand_list, nand) {
 			if(nand_device->id_manufactory == id_buf[0]) {
 				nand_desc->id_manufactory = id_buf[0];
@@ -589,23 +577,22 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_nand_descri
 				break;
 			}
 		}
-		if(nand_desc->id_manufactory && nand_desc->id_device)
+		if(nand_desc->id_manufactory && nand_desc->id_device) {
 			break;
+		}
+		udelay(500);
 	}
 
 	if(!nand_desc->id_manufactory && !nand_desc->id_device) {
-		printf(" ERROR!: don`t support this nand manufactory, please add nand driver\n");
+		printf("ERROR!: don`t support this nand manufactory, please add nand driver, id_buf[0]= %x\n", id_buf[0]);
 		return -ENODEV;
 	}else {
 		struct device_id_struct *device_id = nand_device->id_device_list;
 		int32_t id_count = nand_device->id_device_count;
 		while(id_count--) {
 			if(device_id->id_device == nand_desc->id_device) {
-#ifndef  CONFIG_PARAM_FROM_BURNER
 				/*notice :base_param and partition param should read from nand*/
 				nand_desc->param = *device_id->param;
-				nand_desc->partition = *device_id->partition;
-#endif
 				break;
 			}
 			device_id++;
@@ -616,36 +603,9 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_nand_descri
 		}
 	}
 	nand_desc->ops = &nand_device->ops;
-	printf("id_manufactory = %x, id_device = %x\n", nand_desc->id_manufactory, nand_desc->id_device);
-#ifdef CONFIG_BURNER
-	return nand_desc->id_manufactory << 8 | nand_desc->id_device;
-#endif
 
 	return 0;
 }
-
-#ifdef CONFIG_BURNER
-int burner_get_nand_id()
-{
-	struct jz_nand_descriptor nand_desc;
-	memset(&nand_desc, 0, sizeof(struct jz_nand_base_param));
-	if(!flash){
-		flash = malloc(sizeof(struct sfc_flash));
-		if (!flash) {
-			printf("ERROR: %s %d kzalloc() error !\n",__func__,__LINE__);
-			return -1;
-		}
-		memset(flash, 0, sizeof(struct sfc_flash));
-		flash->sfc =sfc_res_init();
-	}
-	flash->flash_info = &nand_desc;
-
-	if (spinand_moudle_init())
-		return -EINVAL;
-
-	return jz_sfc_nand_try_id(flash,&nand_desc);
-}
-#endif
 
 int jz_spinand_register(struct jz_nand_device *flash) {
 
@@ -744,27 +704,6 @@ static int32_t sfc_nand_special_init(struct sfc_flash *flash)
 	sfc_nand_enable_ecc(flash);
 }
 
-static int sfc_nand_detect_pagesize(struct sfc_flash *flash)
-{
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	uint32_t buffer[4] = {0};
-	uint32_t pagesize, blocksize;
-	int32_t  count = 5;
-
-	while((jz_sfc_nand_read(flash, 0, 0, (char *)buffer, 12) < 0) && count--);
-	if(count < 0) {
-		    printf("ERROR: read pagesize from nand flash failed !\n");
-		    return -EIO;
-	}
-	pagesize = ((buffer[2] >> 24) & 0xff) * 1024;
-	blocksize = ((buffer[2] >> 16) & 0xff) * 32 * pagesize;
-	nand_desc->param.pagesize = pagesize;
-	nand_desc->param.blocksize = blocksize;
-
-	return 0;
-
-}
-
 int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 {
 	struct nand_chip *chip;
@@ -796,14 +735,11 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 	jz_sfc_nand_try_id(flash, nand_desc);
 #ifdef CONFIG_BURNER
 	/* for burner get pt indext */
-	nand_desc->param = param->param.param;
 	nand_desc->partition.num_partition = param->partition_num;
 	nand_desc->partition.partition = &param->partition;
 #else
-	sfc_nand_detect_pagesize(flash);
 	mtd->writesize = nand_desc->param.pagesize;
-	get_params_from_spinand(flash);
-	nand_desc->param = jz_sfc_nand_burner_param.param.param;
+	get_partition_from_spinand(flash);
 	nand_desc->partition.num_partition =jz_sfc_nand_burner_param.partition_num;
 	nand_desc->partition.partition = jz_sfc_nand_burner_param.partition;
 #endif

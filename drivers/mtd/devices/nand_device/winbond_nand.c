@@ -1,4 +1,3 @@
-/*#define CONFIG_PARAM_FROM_BURNER*/
 #include <errno.h>
 #include <malloc.h>
 #include <linux/mtd/partitions.h>
@@ -13,7 +12,6 @@
 #define WINDOND_DIE_SELECT	0xC2
 #define WINDOND_RESET		0xFF
 
-#ifndef CONFIG_PARAM_FROM_BURNER
 static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 	[0] = {
 		/*W25N01GV*/
@@ -49,54 +47,10 @@ static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 	}
 };
 
-static struct mtd_partition partition[4] = {
-	{
-		.name = "uboot",
-		.size = 0x100000,
-		.offset = 0,
-		.mask_flags = 0,
-	},
-	{
-		.name = "kernel",
-		.size = 0x800000,
-		.offset = 0x100000,
-		.mask_flags = 0,
-	},
-	{
-		.name = "rootfs",
-		.size = 0x2800000,
-		.offset = 0x900000,
-		.mask_flags = 0,
-	},
-	{
-		.name = "data",
-		.size = 0,
-		.offset = 0x3100000,
-		.mask_flags = 0,
-	}
-};
-
-static struct jz_nand_partition_param winbond_partition = {
-
-	.partition = partition,
-	.num_partition = 4,
-
-};
-
 static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xAA, "W25N01GV", &winbond_param[0], &winbond_partition),
-	DEVICE_ID_STRUCT(0xAB, "W25M02GV", &winbond_param[1], &winbond_partition),
+	DEVICE_ID_STRUCT(0xAA, "W25N01GV", &winbond_param[0]),
+	DEVICE_ID_STRUCT(0xAB, "W25M02GV", &winbond_param[1]),
 };
-
-#else
-
-static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xAA, "W25N01GV"),
-	DEVICE_ID_STRUCT(0xAB, "W25M02GV"),
-};
-#endif
-
-
 
 static struct sfc_flash *winbond_flash = NULL;
 

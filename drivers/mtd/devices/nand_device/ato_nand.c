@@ -1,4 +1,3 @@
-/*#define CONFIG_PARAM_FROM_BURNER*/
 #include <errno.h>
 #include <malloc.h>
 #include <linux/mtd/partitions.h>
@@ -11,7 +10,6 @@
 #define	TSHSL_R		30
 #define	TSHSL_W		30
 
-#ifndef CONFIG_PARAM_FROM_BURNER
 static struct jz_nand_base_param ato25d1ga_param = {
 
 	.pagesize = 2 * 1024,
@@ -29,49 +27,9 @@ static struct jz_nand_base_param ato25d1ga_param = {
 
 };
 
-static struct mtd_partition partition[4] = {
-	{
-		.name = "uboot",
-		.size = 0x100000,
-		.offset = 0,
-		.mask_flags = 0,
-	},
-	{
-		.name = "kernel",
-		.size = 0x800000,
-		.offset = 0x100000,
-		.mask_flags = 0,
-	},
-	{
-		.name = "rootfs",
-		.size = 0x2800000,
-		.offset = 0x900000,
-		.mask_flags = 0,
-	},
-	{
-		.name = "data",
-		.size = 0x0,
-		.offset = 0x3100000,
-		.mask_flags = 0,
-	}
-};
-
-static struct jz_nand_partition_param ato_partition = {
-
-	.partition = partition,
-	.num_partition = 4,
-
-};
-
 static struct device_id_struct device_id[ATO_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x12, "ATO25D1GA", &ato25d1ga_param, &ato_partition),
+	DEVICE_ID_STRUCT(0x12, "ATO25D1GA", &ato25d1ga_param),
 };
-#else
-
-static struct device_id_struct device_id[ATO_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x12, "ATO25D1GA"),
-};
-#endif
 
 static int32_t ato_get_read_feature(struct sfc_flash *flash, uint8_t device_id) {
 	struct sfc_transfer transfer;

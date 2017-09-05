@@ -38,11 +38,6 @@ int clmd_spisfc_info(struct cloner *cloner)
 		id_code = get_norflash_id();
 	}
 #endif
-#ifdef CONFIG_MTD_SFCNAND
-	if(policy_args->use_sfc_nand){
-		id_code = burner_get_nand_id();
-	}
-#endif
 
 	if(id_code < 0) {
 		printf("ERR : (get flash_info) try id err, %d\n", id_code);

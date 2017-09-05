@@ -35,21 +35,12 @@
 #define SPINAND_OP_BL_128K      (128 * 1024)
 
 /********************************************/
-#define  CONFIG_PARAM_FROM_BURNER
 
-#ifndef CONFIG_PARAM_FROM_BURNER
-#define DEVICE_ID_STRUCT(id, name_string, parameter, part) {      \
+#define DEVICE_ID_STRUCT(id, name_string, parameter) {      \
                 .id_device = id,          \
                 .name = name_string,                      \
 		.param = parameter,			    \
-		.partition = part,		    \
 }
-#else
-#define DEVICE_ID_STRUCT(id, name_string) {      \
-                .id_device = id,          \
-                .name = name_string,                      \
-}
-#endif
 /********************************************/
 
 struct jz_nand_base_param {
@@ -84,10 +75,7 @@ struct jz_nand_partition_param {
 struct device_id_struct {
 	uint8_t id_device;
 	char *name;
-#ifndef CONFIG_PARAM_FROM_BURNER
 	struct jz_nand_base_param *param;
-	struct jz_nand_partition_param *partition;
-#endif
 };
 
 struct jz_nand_read {
@@ -126,7 +114,6 @@ struct jz_nand_device {
 	struct list_head nand;
 };
 
-
 struct jz_nand_descriptor {
 	uint8_t id_manufactory;
 	uint8_t id_device;
@@ -136,19 +123,16 @@ struct jz_nand_descriptor {
 	struct jz_nand_ops *ops;
 };
 
-
 struct jz_sfc_nand_param {
 	char name[32];
 	short nand_id;
 	struct jz_nand_base_param param;
 };
+
 struct jz_sfc_nand_burner_param {
 	unsigned int magic_num;
-	char version;
-	struct jz_sfc_nand_param param;
 	int partition_num;
 	struct jz_spinand_partition *partition;
-
 };
 
 int jz_nand_register(struct jz_nand_device *flash);
@@ -163,8 +147,6 @@ int jz_nand_register(struct jz_nand_device *flash);
 
 
 int jz_spinand_register(struct jz_nand_device *flash);
-
-static LIST_HEAD(nand_list);
 
 typedef int (*spinand_regcall_t)(void);
 
