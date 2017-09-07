@@ -426,6 +426,8 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 
 	synopGMACWriteReg((u32 *)gmacdev->DmaBase,DmaTxBaseAddr, virt_to_phys(_tx_desc));
 
+	flush_dcache_all();
+
 	/* setup rx_desc */
 	for (i = 0; i < NUM_RX_DESCS; i++) {
 		DmaDesc *curr_desc = rx_desc + i;
@@ -444,8 +446,6 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 		curr_desc->status = DescOwnByDma;
 	}
 	synopGMACWriteReg((u32 *)gmacdev->DmaBase,DmaRxBaseAddr, virt_to_phys(_rx_desc));
-
-	flush_dcache_all();
 
 #ifdef SYNOP_DEBUG
 	jzmac_dump_all_regs(__func__, __LINE__);
