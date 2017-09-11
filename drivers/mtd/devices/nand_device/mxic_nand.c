@@ -119,6 +119,8 @@ static int32_t get_ecc_value(struct sfc_flash *flash) {
 try_read_again:
 	memset(&transfer, 0, sizeof(transfer));
 	memset(&cmd, 0, sizeof(cmd));
+	sfc_message_init(&message);
+
 	cmd.cmd = MXIC_CMD_GET_ECC;
 	transfer.sfc_mode = TM_STD_SPI;
 
