@@ -583,7 +583,7 @@ int sfc_nor_flash_init()
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
 
-	flash->sfc = sfc_res_init();
+	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_RATE);
 
 	sfc_nor_reset();
 

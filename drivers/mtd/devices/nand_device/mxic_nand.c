@@ -24,7 +24,7 @@ static struct jz_nand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.ecc_max = 0x3,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 	[1] = {
@@ -39,7 +39,7 @@ static struct jz_nand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.ecc_max = 0x3,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 	[2] = {
@@ -116,11 +116,10 @@ static int32_t get_ecc_value(struct sfc_flash *flash) {
 	uint32_t buf = 0;
 	int8_t count = 5;
 
+	sfc_message_init(&message);
 try_read_again:
 	memset(&transfer, 0, sizeof(transfer));
 	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
-
 	cmd.cmd = MXIC_CMD_GET_ECC;
 	transfer.sfc_mode = TM_STD_SPI;
 
@@ -185,11 +184,7 @@ static int32_t mxic_get_read_feature(struct sfc_flash *flash, uint8_t device_id)
 				    ret = 0;
 				    break;
 			    case 0x1:
-
-				    if((ret = get_ecc_value(flash)) < 0)
-					    break;
-				    if(ret < 4)
-					   ret = 0;
+				    ret = get_ecc_value(flash);
 				    break;
 			    case 0x2:
 				    ret = -EBADMSG;

@@ -717,7 +717,7 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 			return -1;
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
-		flash->sfc = sfc_res_init();
+		flash->sfc = sfc_res_init(CONFIG_SFC_NAND_RATE);
 	}
 	mtd = &nand_info[0];
 	nand_desc = kzalloc(sizeof(struct jz_nand_descriptor), GFP_KERNEL);

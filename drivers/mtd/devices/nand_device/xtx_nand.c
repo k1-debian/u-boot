@@ -24,7 +24,7 @@ static struct jz_nand_base_param xtx_param[XTX_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.ecc_max = 0x3,
+		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
 	[1] = {
@@ -39,7 +39,7 @@ static struct jz_nand_base_param xtx_param[XTX_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.ecc_max = 0x3,
+		.ecc_max = 0x8,
 		.need_quad = 1,
 	}
 

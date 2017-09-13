@@ -22,7 +22,7 @@ static struct jz_nand_base_param ato25d1ga_param = {
 	.tSHSL_R = TSHSL_R,
 	.tSHSL_W = TSHSL_W,
 
-	.ecc_max = 0,//0x3,
+	.ecc_max = 0,
 	.need_quad = 1,
 
 };

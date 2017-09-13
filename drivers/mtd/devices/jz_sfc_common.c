@@ -593,7 +593,7 @@ void sfc_message_init(struct sfc_message *m)
 }
 
 
- int sfc_ctl_init(struct sfc *sfc)
+int sfc_ctl_init(struct sfc *sfc)
 {
 	sfc_init(sfc);
 	sfc_stop(sfc);
@@ -620,7 +620,7 @@ void sfc_message_init(struct sfc_message *m)
 	return 0;
 }
 
-struct sfc *sfc_res_init()
+struct sfc *sfc_res_init(unsigned int sfc_rate)
 {
 	struct sfc *sfc = NULL;
 	sfc = malloc(sizeof(struct sfc));
@@ -630,7 +630,7 @@ struct sfc *sfc_res_init()
 	}
 	memset(sfc, 0, sizeof(struct sfc));
 
-	sfc->src_clk = CONFIG_SFC_RATE;
+	sfc->src_clk = sfc_rate;
 	clk_set_rate(SFC, sfc->src_clk);
 
 	sfc->threshold = THRESHOLD;

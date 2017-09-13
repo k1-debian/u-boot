@@ -479,7 +479,7 @@
   #define CONFIG_UBOOT_OFFSET             (4<<12)
   #define CONFIG_JZ_SFC_PA_6BIT
  #ifdef	CONFIG_SPL_SFC_NAND
-  #define CONFIG_SFC_RATE    150000000
+  #define CONFIG_SFC_NAND_RATE    100000000
   #define CONFIG_SPIFLASH_PART_OFFSET     0x3c00
   #define CONFIG_SPI_NAND_BPP			(2048 +64)		/*Bytes Per Page*/
   #define CONFIG_SPI_NAND_PPB			(64)		/*Page Per Block*/
@@ -577,7 +577,7 @@
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SFC_QUAD
-#define CONFIG_SFC_RATE    150000000
+#define CONFIG_SFC_NOR_RATE    150000000
 #endif
 
 #ifdef CONFIG_JZ_SFC_NOR
