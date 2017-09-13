@@ -549,6 +549,11 @@ char* spl_sfc_nor_load_image(void)
 	if((updata_flag & 0x3) != 0x3) {
 		spl_load_kernel(bootimg_addr);
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+	} else {
+		struct image_header *header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+		memset(header, 0, sizeof(struct image_header));
+		spl_parse_image_header(header);
+		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned int*)CONFIG_SYS_TEXT_BASE);
 	}
     #else /* define CONFIG_NV_INFO_AS_IAD */
 	nvinfo = spl_get_nvinfo(nv_rw_addr);
