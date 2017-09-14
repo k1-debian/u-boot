@@ -23,8 +23,17 @@
 #ifdef CONFIG_DDR3_H5TQ1G83DFR_H9C
 #include "./chips/DDR3_H5TQ1G83DFR_H9C.h"
 #endif
+
 #ifdef CONFIG_DDR3_H5TQ2G83CFR_H9C
 #include "./chips/DDR3_H5TQ2G83CFR_H9C.h"
+#endif
+
+#ifdef CONFIG_DDR3_H5TQ2G63GFR_RDC
+#include "./chips/DDR3_H5TQ2G63GFR_RDC.h"
+#endif
+
+#ifdef CONFIG_DDR3_MT41K128M16_JT
+#include "./chips/DDR3_MT41K128M16_JT.h"
 #endif
 
 #ifdef CONFIG_DDR3_TSD34096M1333C9_E
