@@ -267,6 +267,7 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	uint32_t rlen;
 	int32_t ret = 0;
 
+	*retlen = len;
 	while(len) {
 		pageaddr = (uint32_t)from / pagesize;
 		columnaddr = (uint32_t)from % pagesize;
@@ -279,7 +280,6 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 		from += rlen;
 		buf += rlen;
 	}
-	*retlen = len;
 	return ret;
 }
 
