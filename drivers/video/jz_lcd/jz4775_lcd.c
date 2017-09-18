@@ -1085,7 +1085,7 @@ void lcd_ctrl_init(void *lcd_base)
 	lcd_config_info.lcdbaseoff = 0;
 	lcd_set_flush_dcache(1);
 	refresh_pixclock_auto_adapt(&lcd_config_info);
-	pixel_clock_rate = PICOS2KHZ(lcd_config_info.modes->pixclock);
+	pixel_clock_rate = PICOS2KHZ(lcd_config_info.modes->pixclock) * 1000;
 
 	/* smart lcd WR freq = (lcd pixel clock)/2 */
 	if (lcd_config_info.lcd_type == LCD_TYPE_LCM) {
@@ -1113,7 +1113,7 @@ void lcd_ctrl_init(void *lcd_base)
 
 	flush_cache_all();
 
-#ifdef DEFAULT_BACKLIGHT_LEVEL
+#ifdef	CONFIG_SYS_BACKLIGHT_LEVEL
 	lcd_set_backlight_level(CONFIG_SYS_BACKLIGHT_LEVEL);
 #else
 	lcd_set_backlight_level(80);

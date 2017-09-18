@@ -26,10 +26,15 @@
 
 void board_set_lcd_power_on(void)
 {
+#ifndef CONFIG_MENSA_V20
 	char *id = "OUT7";
 	struct regulator *lcd_regulator = regulator_get(id);
 	regulator_set_voltage(lcd_regulator, 3300000, 3300000);
 	regulator_enable(lcd_regulator);
+#else
+	unsigned int LCD_PW_EN = GPIO_PE(3);
+	gpio_direction_output(LCD_PW_EN, 1);
+#endif
 }
 #ifdef CONFIG_VIDEO_KFM701A_21_1A
 static struct smart_lcd_data_table kfm701a21_1a_data_table[] = {
