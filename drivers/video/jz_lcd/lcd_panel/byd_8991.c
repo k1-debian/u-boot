@@ -45,6 +45,7 @@ void panel_pin_init(void)
 	gpio_direction_output(byd_8991_pdata.gpio_spi_clk, 1);
 	gpio_direction_output(byd_8991_pdata.gpio_spi_mosi, 1);
 	gpio_direction_input(byd_8991_pdata.gpio_spi_miso);
+	gpio_direction_output(byd_8991_pdata.gpio_lcd_back_sel, 1);
 	serial_puts("8991ftgf panel display pin init\n");
 }
 

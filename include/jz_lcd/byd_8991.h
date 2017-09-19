@@ -42,6 +42,7 @@ struct byd_8991_data {
 	unsigned int gpio_spi_clk;
 	unsigned int gpio_spi_mosi;
 	unsigned int gpio_spi_miso;
+	unsigned int gpio_lcd_back_sel;
 };
 
 extern struct byd_8991_data byd_8991_pdata;

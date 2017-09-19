@@ -72,6 +72,7 @@ void lcd_set_backlight_level(int num)
 
 void lcd_close_backlight(void)
 {
+	pwm_disable(CONFIG_SYS_PWM_CHN);
         gpio_direction_output(CONFIG_GPIO_LCD_PWM,0);
 }
 

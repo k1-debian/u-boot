@@ -221,5 +221,6 @@ struct byd_8991_data byd_8991_pdata = {
 	.gpio_spi_clk = GPIO_PC(1),
 	.gpio_spi_mosi = GPIO_PC(10),
 	.gpio_spi_miso = GPIO_PC(11),
+	.gpio_lcd_back_sel = GPIO_PC(20),
 };
 #endif /* CONFIG_VIDEO_BM347WV_F_8991FTGF */
