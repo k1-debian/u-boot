@@ -93,4 +93,14 @@ static struct jz_gpio_func_def gpio_func[] = {
 #ifdef CONFIG_CMD_SPI
 	{ .port = GPIO_PORT_A, .func = GPIO_FUNC_2, .pins = 0x9c0000,},
 #endif
+#ifdef CONFIG_NET_JZ4775
+#ifdef CONFIG_MENSA_V20
+	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x1 << 4, },
+	{ .port = GPIO_PORT_F, .func = GPIO_FUNC_0, .pins = 0x7ff << 4, },
+#else
+	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x1 << 4, },
+	{ .port = GPIO_PORT_D, .func = GPIO_FUNC_1, .pins = 0x3c << 24, },
+	{ .port = GPIO_PORT_F, .func = GPIO_FUNC_0, .pins = 0xfff << 4, },
+#endif
+#endif
 };

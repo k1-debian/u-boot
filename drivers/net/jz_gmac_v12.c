@@ -534,11 +534,7 @@ int jz_net_initialize(bd_t *bis)
 	gpio_set_value(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
 	mdelay(10);
 
-	/* initialize jz4775 gpio */
-	gpio_set_func(GPIO_PORT_B, GPIO_FUNC_1, 0x0003fc10);
-	gpio_set_func(GPIO_PORT_D, GPIO_FUNC_1, 0x3c000000);
-	gpio_set_func(GPIO_PORT_F, GPIO_FUNC_0, 0x0000fff0);
-	udelay(100000);
+
 #else
 	/* PB7 */
 	gpio_set_func(GPIO_PORT_B, GPIO_FUNC_1, 0x00000080);
