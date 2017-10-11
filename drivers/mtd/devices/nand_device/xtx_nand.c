@@ -50,10 +50,14 @@ static struct device_id_struct device_id[XTX_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xE2, "PN26G02AW", &xtx_param[1]),
 };
 
-static int32_t xtx_get_read_feature(struct sfc_flash *flash, uint8_t device_id) {
+static int32_t xtx_get_read_feature(struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
+	uint8_t device_id = nand_desc->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 

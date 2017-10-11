@@ -65,6 +65,13 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 	struct sfc_transfer transfer[2];
 	struct sfc_message message;
 	struct cmd_info cmd[2];
+	struct flash_operation_message op_info = {
+		.flash = flash,
+		.pageaddr = pageaddr,
+		.columnaddr = 0,
+		.buffer = NULL,
+		.len = 0,
+	};
 	int32_t ret;
 
 	memset(transfer, 0, sizeof(transfer));
@@ -73,9 +80,9 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 
 	/*1. write enable */
 	if(nand_erase_ops->write_enable)
-		nand_erase_ops->write_enable(flash, transfer, cmd, nand_desc->id_device, pageaddr);
+		nand_erase_ops->write_enable(transfer, cmd, &op_info);
 	else
-		nand_write_enable(transfer, cmd);
+		nand_write_enable(transfer, cmd, &op_info);
 	sfc_message_add_tail(transfer, &message);
 
 	if(sfc_sync(flash->sfc, &message)) {
@@ -85,9 +92,9 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 
 	/*2. block erase*/
 	if(nand_erase_ops->block_erase)
-		nand_erase_ops->block_erase(&transfer[1], &cmd[1], pageaddr, nand_desc->id_device);
+		nand_erase_ops->block_erase(&transfer[1], &cmd[1], &op_info);
 	else
-		nand_block_erase(&transfer[1], &cmd[1], pageaddr);
+		nand_block_erase(&transfer[1], &cmd[1], &op_info);
 	sfc_message_add_tail(&transfer[1], &message);
 	if(sfc_sync(flash->sfc, &message)) {
 		printf( "sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
@@ -96,9 +103,9 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 
 	/*3. get feature*/
 	if(nand_erase_ops->get_feature)
-		ret = nand_erase_ops->get_feature(flash);
+		ret = nand_erase_ops->get_feature(&op_info);
 	else
-		ret = nand_get_erase_feature(flash);
+		ret = nand_get_erase_feature(&op_info);
 
 	if(ret)
 		printf("Erase error,get state error ! %s %s %d \n",__FILE__,__func__,__LINE__);
@@ -141,6 +148,13 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 	struct sfc_transfer transfer[3];
 	struct sfc_message message;
 	struct cmd_info cmd[3];
+	struct flash_operation_message op_info = {
+		.flash = flash,
+		.pageaddr = pageaddr,
+		.columnaddr = columnaddr,
+		.buffer = buffer,
+		.len = len,
+	};
 	int32_t ret = 0;
 
 	memset(transfer, 0, sizeof(transfer));
@@ -149,25 +163,26 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 
 	/*1. write enable*/
 	if(nand_write_ops->write_enable)
-		nand_write_ops->write_enable(flash, transfer, cmd, nand_desc->id_device, pageaddr);
+		nand_write_ops->write_enable(transfer, cmd, &op_info);
 	else
-		nand_write_enable(transfer, cmd);
+		nand_write_enable(transfer, cmd, &op_info);
 	sfc_message_add_tail(transfer, &message);
 	if(sfc_sync(flash->sfc, &message)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
+
 	/*2. write to cache*/
 	if(nand_desc->param.need_quad) {
 		if(nand_write_ops->quad_load)
-			nand_write_ops->quad_load(&transfer[1], &cmd[1], columnaddr, buffer, len, nand_desc->id_device, pageaddr);
+			nand_write_ops->quad_load(&transfer[1], &cmd[1], &op_info);
 		else
-			nand_quad_load(&transfer[1], &cmd[1], columnaddr, buffer, len);
+			nand_quad_load(&transfer[1], &cmd[1], &op_info);
 	} else {
 		if(nand_write_ops->single_load)
-			nand_write_ops->single_load(&transfer[1], &cmd[1], columnaddr, buffer, len, nand_desc->id_device, pageaddr);
+			nand_write_ops->single_load(&transfer[1], &cmd[1], &op_info);
 		else
-			nand_single_load(&transfer[1], &cmd[1], columnaddr, buffer, len);
+			nand_single_load(&transfer[1], &cmd[1], &op_info);
 	}
 	sfc_message_add_tail(&transfer[1], &message);
 	if(sfc_sync(flash->sfc, &message)) {
@@ -177,9 +192,9 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 
 	/*3. program exec*/
 	if(nand_write_ops->program_exec)
-		nand_write_ops->program_exec(&transfer[2], &cmd[2], pageaddr, nand_desc->id_device);
+		nand_write_ops->program_exec(&transfer[2], &cmd[2], &op_info);
 	else
-		nand_program_exec(&transfer[2], &cmd[2], pageaddr);
+		nand_program_exec(&transfer[2], &cmd[2], &op_info);
 	sfc_message_add_tail(&transfer[2], &message);
 	if(sfc_sync(flash->sfc, &message)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
@@ -188,9 +203,9 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 
 	/*4. get status to be sure nand wirte completed*/
 	if(nand_write_ops->get_feature)
-		ret = nand_write_ops->get_feature(flash);
+		ret = nand_write_ops->get_feature(&op_info);
 	else
-		ret = nand_get_program_feature(flash);
+		ret = nand_get_program_feature(&op_info);
 
 	return  ret;
 }
@@ -202,6 +217,13 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
+	struct flash_operation_message op_info = {  .flash = flash,
+						    .pageaddr = pageaddr,
+						    .columnaddr = columnaddr,
+						    .buffer = buffer,
+						    .len = len,
+						};
+
 	int32_t ret = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
@@ -209,26 +231,28 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 	sfc_message_init(&message);
 
 	if(nand_read_ops->pageread_to_cache)
-		nand_read_ops->pageread_to_cache(flash, &transfer, &cmd, pageaddr, nand_desc->id_device);
+		nand_read_ops->pageread_to_cache(&transfer, &cmd, &op_info);
 	else
-		nand_pageread_to_cache(&transfer, &cmd, pageaddr);
+		nand_pageread_to_cache(&transfer, &cmd, &op_info);
 	sfc_message_add_tail(&transfer, &message);
 	if(sfc_sync(flash->sfc, &message)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
+
 	if(nand_read_ops->get_feature) {
-		ret = nand_read_ops->get_feature(flash, nand_desc->id_device);
+		ret = nand_read_ops->get_feature(&op_info);
 	} else {
 		printf("ERROR: nand device must have get_read_feature function,id_manufactory= %02x, id_device=%02x\n", nand_desc->id_manufactory, nand_desc->id_device);
 		ret = -EIO;
 	}
+
 	if(ret == -EIO)
 		return ret;
 
 	if(nand_desc->param.need_quad) {
 		if(nand_read_ops->quad_read) {
-			nand_read_ops->quad_read(&transfer, &cmd, columnaddr, buffer, len, nand_desc->id_device);
+			nand_read_ops->quad_read(&transfer, &cmd, &op_info);
 		} else {
 		    /*
 		     *	default transfer format:
@@ -236,11 +260,11 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 		     *	addrlen = 2, data_dummy_bits = 8;
 		     *
 		     * */
-			nand_quad_read(&transfer, &cmd, columnaddr, 2, buffer, len);   //notice!!!
+			nand_quad_read(&transfer, &cmd, &op_info, 2);
 		}
 	} else {
 		if(nand_read_ops->single_read) {
-			nand_read_ops->single_read(&transfer, &cmd, columnaddr, buffer, len, nand_desc->id_device);
+			nand_read_ops->single_read(&transfer, &cmd, &op_info);
 		} else {
 		    /*
 		     *	default transfer format:
@@ -248,7 +272,7 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 		     *	addrlen = 2, data_dummy_bits = 8;
 		     *
 		     * */
-			nand_single_read(&transfer, &cmd, columnaddr, 2, buffer, len);
+			nand_single_read(&transfer, &cmd, &op_info, 2);
 		}
 	}
 	sfc_message_add_tail(&transfer, &message);

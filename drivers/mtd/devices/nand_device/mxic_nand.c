@@ -68,7 +68,12 @@ static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
 
 static uint8_t plane_select = 0;
 
-static void mxic_pageread_to_cache(struct sfc_flash *flash, struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr, uint8_t device_id) {
+static void mxic_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint32_t pageaddr = op_info->pageaddr;
+	uint8_t device_id = nand_desc->id_device;
 
 	switch(device_id) {
 	    case 0x20:
@@ -143,10 +148,14 @@ try_read_again:
 	return buf;
 }
 
-static int32_t mxic_get_read_feature(struct sfc_flash *flash, uint8_t device_id) {
+static int32_t mxic_get_read_feature(struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
+	uint8_t device_id = nand_desc->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 
@@ -204,16 +213,20 @@ static int32_t mxic_get_read_feature(struct sfc_flash *flash, uint8_t device_id)
 	return ret;
 }
 
-static void mxic_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint32_t device_id) {
+static void mxic_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t columnaddr = op_info->columnaddr;
 
 	switch(device_id) {
 	    case 0x20:
 	    case 0x22:
-		    if(plane_select)
+		    if(op_info->pageaddr > (64 * 1024 - 1))
 			    columnaddr |= (1 << 12);
 		    else
 			    columnaddr &= ~(1 << 12);
-		    plane_select = 0;
 		    break;
 	    case 0x12:
 		    break;
@@ -229,8 +242,8 @@ static void mxic_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
@@ -239,16 +252,20 @@ static void mxic_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd
 	return;
 }
 
-static void mxic_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint32_t device_id) {
+static void mxic_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t columnaddr = op_info->columnaddr;
 
 	switch(device_id) {
 	    case 0x20:
 	    case 0x22:
-		    if(plane_select)
+		    if(op_info->pageaddr > (64 * 1024 - 1))
 			    columnaddr |= (1 << 12);
 		    else
 			    columnaddr &= ~(1 << 12);
-		    plane_select = 0;
 		    break;
 	    case 0x12:
 		    break;
@@ -264,8 +281,8 @@ static void mxic_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
@@ -274,12 +291,17 @@ static void mxic_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 	return;
 }
 
-static void mxic_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint8_t device_id, uint32_t pageaddr) {
+static void mxic_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t columnaddr = op_info->columnaddr;
 
 	switch(device_id) {
 		case 0x20:
 		case 0x22:
-			if(pageaddr > 65535) {
+			if(op_info->pageaddr > 65535) {
 				columnaddr |= (1 << 12);
 			} else {
 				columnaddr &= ~(1 << 12);
@@ -299,8 +321,8 @@ static void mxic_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_WRITE;
 
 	transfer->data_dummy_bits = 0;
@@ -308,12 +330,17 @@ static void mxic_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd
 	transfer->ops_mode = DMA_OPS;
 }
 
-static void mxic_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint8_t device_id, uint32_t pageaddr) {
+static void mxic_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t columnaddr = op_info->columnaddr;
 
 	switch(device_id) {
 		case 0x20:
 		case 0x22:
-			if(pageaddr > 65535) {
+			if(op_info->pageaddr > 65535) {
 				columnaddr |= (1 << 12);
 			} else {
 				columnaddr &= ~(1 << 12);
@@ -333,8 +360,8 @@ static void mxic_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_WRITE;
 
 	transfer->data_dummy_bits = 0;
@@ -343,7 +370,12 @@ static void mxic_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 
 }
 
-static void mxic_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr, uint8_t device_id) {
+static void mxic_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
 	    case 0x20:

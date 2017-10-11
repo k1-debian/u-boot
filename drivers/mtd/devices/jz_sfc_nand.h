@@ -78,25 +78,34 @@ struct device_id_struct {
 	struct jz_nand_base_param *param;
 };
 
+
+/*this informtion is used by nand devices*/
+struct flash_operation_message {
+	struct sfc_flash *flash;
+	uint32_t pageaddr;
+	uint32_t columnaddr;
+	u_char *buffer;
+	size_t len;
+};
 struct jz_nand_read {
-	void (*pageread_to_cache)(struct sfc_flash *,struct sfc_transfer *, struct cmd_info *, uint32_t, uint8_t);
-	int32_t (*get_feature)(struct sfc_flash *, uint8_t);
-	void (*single_read)(struct sfc_transfer *, struct cmd_info *, uint32_t, void *, uint32_t, uint32_t);
-	void (*quad_read)(struct sfc_transfer *, struct cmd_info *, uint32_t, void *, uint32_t, uint32_t);
+	void (*pageread_to_cache)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	int32_t (*get_feature)(struct flash_operation_message *);
+	void (*single_read)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	void (*quad_read)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
 };
 
 struct jz_nand_write {
-	void (*write_enable)(struct sfc_flash *, struct sfc_transfer *, struct cmd_info *, uint8_t, uint32_t);
-	void (*single_load)(struct sfc_transfer *, struct cmd_info *, uint32_t, void *, uint32_t, uint8_t, uint32_t);
-	void (*quad_load)(struct sfc_transfer *, struct cmd_info *, uint32_t, void *, uint32_t, uint8_t, uint32_t);
-	void (*program_exec)(struct sfc_transfer *, struct cmd_info *, uint32_t, uint8_t);
-	int32_t (*get_feature)(struct sfc_flash *);
+	void (*write_enable)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	void (*single_load)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	void (*quad_load)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	void (*program_exec)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	int32_t (*get_feature)(struct flash_operation_message *);
 };
 
 struct jz_nand_erase {
-	void (*write_enable)(struct sfc_flash *,struct sfc_transfer *, struct cmd_info *, uint8_t, uint32_t);
-	void (*block_erase)(struct sfc_transfer *, struct cmd_info *, uint32_t, uint8_t);
-	int32_t (*get_feature)(struct sfc_flash *);
+	void (*write_enable)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	void (*block_erase)(struct sfc_transfer *, struct cmd_info *, struct flash_operation_message *);
+	int32_t (*get_feature)(struct flash_operation_message *);
 };
 
 struct jz_nand_ops {

@@ -114,7 +114,11 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5]),
 };
 
-static void gd_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint32_t device_id) {
+static void gd_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
 	uint8_t addr_len = 0;
 	switch(device_id) {
 	    case 0xB1 ... 0xB4:
@@ -129,11 +133,15 @@ static void gd_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 		    break;
 	}
 
-	nand_single_read(transfer, cmd, columnaddr, addr_len, buffer, len);
+	nand_single_read(transfer, cmd, op_info, addr_len);
 	return;
 }
 
-static void gd_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, uint32_t device_id) {
+static void gd_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
 	uint8_t addr_len = 0;
 	switch(device_id) {
 	    case 0xB1 ... 0xB4:
@@ -147,7 +155,7 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, ui
 		    addr_len = 2;
 		    break;
 	}
-	nand_quad_read(transfer, cmd, columnaddr, addr_len, buffer, len);
+	nand_quad_read(transfer, cmd, op_info, addr_len);
 	return;
 }
 
@@ -156,7 +164,6 @@ static int32_t gd_get_f0_register_value(struct sfc_flash *flash) {
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
-	uint8_t ecc_status;
 	uint32_t buf = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
@@ -171,7 +178,7 @@ static int32_t gd_get_f0_register_value(struct sfc_flash *flash) {
 
 	cmd.dataen = ENABLE;
 	transfer.len = 1;
-	transfer.data = &buf;
+	transfer.data = (u_char *)&buf;
 	transfer.direction = GLB_TRAN_DIR_READ;
 
 	transfer.data_dummy_bits = 0;
@@ -186,10 +193,14 @@ static int32_t gd_get_f0_register_value(struct sfc_flash *flash) {
 	return buf;
 }
 
-static int32_t gd_get_read_feature(struct sfc_flash *flash, uint8_t device_id) {
+static int32_t gd_get_read_feature(struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
+	uint8_t device_id = nand_desc->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 

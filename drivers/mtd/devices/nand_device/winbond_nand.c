@@ -52,9 +52,7 @@ static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xAB, "W25M02GV", &winbond_param[1]),
 };
 
-static struct sfc_flash *winbond_flash = NULL;
-
-static void active_die(uint8_t die_id) {
+static void active_die(struct sfc_flash *flash, uint8_t die_id) {
 
 	struct sfc_transfer transfer;
 	struct sfc_message message;
@@ -78,13 +76,13 @@ static void active_die(uint8_t die_id) {
 	transfer.ops_mode = CPU_OPS;
 
 	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(winbond_flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &message)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return;
 	}
 }
-
-static void winbond_reset() {
+#ifdef WINBOND_DEBUG
+static void winbond_reset(struct sfc_flash *flash) {
 
 	struct sfc_transfer transfer;
 	struct sfc_message message;
@@ -108,21 +106,49 @@ static void winbond_reset() {
 	transfer.ops_mode = CPU_OPS;
 
 	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(winbond_flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &message)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return;
 	}
 }
 
-static void winbond_pageread_to_cache(struct sfc_flash *flash,struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr, uint8_t device_id) {
+static void winbond_print_register(struct sfc_flash *flash, uint8_t register_addr) {
 
-	winbond_flash = flash;
+	struct sfc_transfer transfer;
+	struct sfc_message message;
+	struct cmd_info cmd;
+	uint8_t ret = 0;
+
+	memset(&transfer, 0, sizeof(transfer));
+	memset(&cmd, 0, sizeof(cmd));
+
+	sfc_message_init(&message);
+	nand_get_feature(&transfer, &cmd, register_addr, &ret);
+	sfc_message_add_tail(&transfer, &message);
+
+	if(sfc_sync(flash->sfc, &message)) {
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return;
+	}
+
+	printf("printk register (%x) = %x\n", register_addr, ret);
+
+}
+
+#endif
+
+static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+
 	switch(device_id) {
 		case 0xAB:
-			if(pageaddr > 65535)
-				active_die(1);
+			if(op_info->pageaddr > 65535)
+				active_die(flash, 1);
 			else
-				active_die(0);
+				active_die(flash, 0);
 		case 0xAA:
 			break;
 		default:
@@ -132,7 +158,7 @@ static void winbond_pageread_to_cache(struct sfc_flash *flash,struct sfc_transfe
 	cmd->cmd = SPINAND_CMD_PARD;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = pageaddr;
+	transfer->addr = op_info->pageaddr;
 	transfer->addr_len = 3;
 
 	cmd->dataen = DISABLE;
@@ -144,17 +170,17 @@ static void winbond_pageread_to_cache(struct sfc_flash *flash,struct sfc_transfe
 	return;
 }
 
-static void winbond_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, ...) {
+static void winbond_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_FRCH;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = columnaddr;
+	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
@@ -163,17 +189,17 @@ static void winbond_single_read(struct sfc_transfer *transfer, struct cmd_info *
 	return;
 }
 
-static void winbond_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len, ...) {
+static void winbond_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_RDCH_X4;
 	transfer->sfc_mode = TM_QI_QO_SPI;
 
-	transfer->addr = columnaddr;
+	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
@@ -182,10 +208,14 @@ static void winbond_quad_read(struct sfc_transfer *transfer, struct cmd_info *cm
 	return;
 }
 
-static int32_t winbond_get_read_feature(struct sfc_flash *flash, uint8_t device_id) {
+static int32_t winbond_get_read_feature(struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
+	uint8_t device_id = nand_desc->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 
@@ -238,17 +268,43 @@ static int32_t winbond_get_read_feature(struct sfc_flash *flash, uint8_t device_
 	return ret;
 }
 
-static void winbond_write_enable(struct sfc_flash *flash, struct sfc_transfer *transfer, struct cmd_info *cmd, uint8_t device_id, uint32_t pageaddr) {
+static void winbond_set_register(struct sfc_flash *flash, uint8_t register_addr, uint8_t val) {
 
-	winbond_reset();
-	winbond_flash = flash;
+	struct sfc_transfer transfer;
+	struct sfc_message message;
+	struct cmd_info cmd;
+
+	memset(&transfer, 0, sizeof(transfer));
+	memset(&cmd, 0, sizeof(cmd));
+
+	sfc_message_init(&message);
+	nand_set_feature(&transfer, &cmd, register_addr, val);
+	sfc_message_add_tail(&transfer, &message);
+
+	if(sfc_sync(flash->sfc, &message)) {
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return;
+	}
+
+}
+
+static void winbond_write_enable(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+
 	switch(device_id) {
 		case 0xAB:
-		    if(pageaddr > 65535) {
-			    active_die(1);
-		    } else {
-			    active_die(0);
-		    }
+			if(op_info->pageaddr > 65535) {
+				active_die(flash, 1);
+				/*clear protect bits, because each die
+				 * has a set of state registers. */
+				winbond_set_register(flash, SPINAND_ADDR_PROTECT, 0);
+				winbond_set_register(flash, SPINAND_ADDR_FEATURE, (1 << 4) | (1 << 3));
+			} else {
+				active_die(flash, 0);
+			}
 		case 0xAA:
 		    break;
 		default:
@@ -270,7 +326,12 @@ static void winbond_write_enable(struct sfc_flash *flash, struct sfc_transfer *t
 	return;
 }
 
-static void winbond_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr, uint8_t device_id) {
+static void winbond_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
 	    case 0xAB:
@@ -296,13 +357,17 @@ static void winbond_program_exec(struct sfc_transfer *transfer, struct cmd_info 
 	transfer->ops_mode = CPU_OPS;
 }
 
-static void winbond_block_erase(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr, uint8_t device_id) {
+static void winbond_block_erase(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	uint8_t device_id = nand_desc->id_device;
+	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
 	    case 0xAB:
-		if(pageaddr > 65535) {
-			pageaddr -= 65536;
-		}
+		if(pageaddr > 65535)
+		    pageaddr -= 65536;
 	    case 0xAA:
 		break;
 	    default:

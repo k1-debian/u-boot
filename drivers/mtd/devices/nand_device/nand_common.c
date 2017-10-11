@@ -1,11 +1,11 @@
 #include "../jz_sfc_nand.h"
 
-void nand_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr) {
+void nand_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_PARD;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = pageaddr;
+	transfer->addr = op_info->pageaddr;
 	transfer->addr_len = 3;
 
 	cmd->dataen = DISABLE;
@@ -18,17 +18,17 @@ void nand_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_info *cmd,
 }
 EXPORT_SYMBOL_GPL(nand_pageread_to_cache);
 
-void nand_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, uint8_t columnlen, void *buffer, uint32_t len) {
+void nand_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info, uint8_t columnlen) {
 
 	cmd->cmd = SPINAND_CMD_FRCH;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = columnaddr;
+	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = columnlen;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
@@ -38,17 +38,17 @@ void nand_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint3
 }
 EXPORT_SYMBOL_GPL(nand_single_read);
 
-void nand_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, uint8_t columnlen, void *buffer, uint32_t len) {
+void nand_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info, uint8_t columnlen) {
 
 	cmd->cmd = SPINAND_CMD_RDCH_X4;
 	transfer->sfc_mode = TM_QI_QO_SPI;
 
-	transfer->addr = columnaddr;
+	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = columnlen;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
@@ -58,7 +58,7 @@ void nand_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_
 }
 EXPORT_SYMBOL_GPL(nand_quad_read);
 
-void nand_write_enable(struct sfc_transfer *transfer, struct cmd_info *cmd) {
+void nand_write_enable(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_WREN;
 	transfer->sfc_mode = TM_STD_SPI;
@@ -76,17 +76,17 @@ void nand_write_enable(struct sfc_transfer *transfer, struct cmd_info *cmd) {
 }
 EXPORT_SYMBOL_GPL(nand_write_enable);
 
-void nand_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len) {
+void nand_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_PRO_LOAD;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = columnaddr;
+	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_WRITE;
 
 	transfer->data_dummy_bits = 0;
@@ -96,17 +96,17 @@ void nand_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd, uint3
 }
 EXPORT_SYMBOL_GPL(nand_single_load);
 
-void nand_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t columnaddr, void *buffer, uint32_t len) {
+void nand_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_PRO_LOAD_X4;
 	transfer->sfc_mode = TM_QI_QO_SPI;
 
-	transfer->addr = columnaddr;
+	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = 2;
 
 	cmd->dataen = ENABLE;
-	transfer->data = buffer;
-	transfer->len = len;
+	transfer->data = op_info->buffer;
+	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_WRITE;
 
 	transfer->data_dummy_bits = 0;
@@ -116,12 +116,12 @@ void nand_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_
 }
 EXPORT_SYMBOL_GPL(nand_quad_load);
 
-void nand_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr) {
+void nand_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_PRO_EN;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = pageaddr;
+	transfer->addr = op_info->pageaddr;
 	transfer->addr_len = 3;
 
 	cmd->dataen = DISABLE;
@@ -133,8 +133,9 @@ void nand_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, uint
 }
 EXPORT_SYMBOL_GPL(nand_program_exec);
 
-int32_t nand_get_program_feature(struct sfc_flash *flash) {
+int32_t nand_get_program_feature(struct flash_operation_message *op_info) {
 
+	struct sfc_flash *flash = op_info->flash;
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
@@ -169,12 +170,12 @@ int32_t nand_get_program_feature(struct sfc_flash *flash) {
 }
 EXPORT_SYMBOL_GPL(nand_get_program_feature);
 
-void nand_block_erase(struct sfc_transfer *transfer, struct cmd_info *cmd, uint32_t pageaddr) {
+void nand_block_erase(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
 
 	cmd->cmd = SPINAND_CMD_ERASE_128K;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = pageaddr;
+	transfer->addr = op_info->pageaddr;
 	transfer->addr_len = 3;
 
 	cmd->dataen = DISABLE;
@@ -187,8 +188,9 @@ void nand_block_erase(struct sfc_transfer *transfer, struct cmd_info *cmd, uint3
 }
 EXPORT_SYMBOL_GPL(nand_block_erase);
 
-int32_t nand_get_erase_feature(struct sfc_flash *flash) {
+int32_t nand_get_erase_feature(struct flash_operation_message *op_info) {
 
+	struct sfc_flash *flash = op_info->flash;
 	struct sfc_transfer transfer;
 	struct sfc_message message;
 	struct cmd_info cmd;
