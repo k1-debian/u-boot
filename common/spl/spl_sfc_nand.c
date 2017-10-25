@@ -18,31 +18,8 @@ struct jz_spinand_partition {
 	u_int32_t manager_mode;     /* manager_mode mtd or ubi */
 };
 
-struct jz_nand_base_param {
-	uint32_t pagesize;
-	uint32_t blocksize;
-	uint32_t oobsize;
-	uint32_t flashsize;
-
-	uint16_t tHOLD;
-	uint16_t tSETUP;
-	uint16_t tSHSL_R;
-	uint16_t tSHSL_W;
-
-	uint8_t ecc_max;
-	uint8_t need_quad;
-};
-
-struct jz_sfc_nand_param {
-	char name[32];
-	short nand_id;
-	struct jz_nand_base_param param;
-};
-
 struct jz_sfc_nand_burner_param {
 	unsigned int magic_num;
-	char version;
-	struct jz_sfc_nand_param param;
 	int partition_num;
 	struct jz_spinand_partition *partition;
 
