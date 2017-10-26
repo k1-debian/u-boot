@@ -99,7 +99,7 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.ecc_max = 0x3,
+		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
 

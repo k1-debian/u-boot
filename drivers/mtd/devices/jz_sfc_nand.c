@@ -289,22 +289,34 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	uint32_t pageaddr;
 	uint32_t columnaddr;
 	uint32_t rlen;
-	int32_t ret = 0;
+	int32_t ret = 0, reterr = 0, ret_eccvalue = 0;
 
-	*retlen = len;
+	*retlen = 0;
 	while(len) {
 		pageaddr = (uint32_t)from / pagesize;
 		columnaddr = (uint32_t)from % pagesize;
 		rlen = min_t(uint32_t, len, pagesize - columnaddr);
 		ret = jz_sfc_nand_read(flash, pageaddr, columnaddr, buf, rlen);
 		if(ret < 0) {
-			return ret;
+			printf("%s %s %d: jz_sfc_nand_read error, ret = %d, \
+				pageaddr = %u, columnaddr = %u, rlen = %u\n",
+				__FILE__, __func__, __LINE__,
+				ret, pageaddr, columnaddr, rlen);
+			reterr = ret;
+			if(ret == -EIO)
+				break;
+		} else if (ret > 0) {
+			printf("%s %s %d: jz_sfc_nand_read, ecc value = %d\n",
+				__FILE__, __func__, __LINE__, ret);
+			ret_eccvalue = ret;
 		}
+
 		len -= rlen;
 		from += rlen;
 		buf += rlen;
+		*retlen += rlen;
 	}
-	return ret;
+	return reterr ? reterr : (ret_eccvalue ? ret_eccvalue : ret);
 }
 
 static int jz_sfcnand_write_oob(struct mtd_info *mtd, loff_t addr, struct mtd_oob_ops *ops)
@@ -367,13 +379,13 @@ static int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd
 	if(ops->datbuf) {
 		ret = jz_sfc_nand_read(flash, pageaddr, 0, ops->datbuf, mtd->writesize);
 		if(ret < 0) {
-			printf("spi nand read error %s %s %d \n",__FILE__,__func__,__LINE__);
+			printf("spi nand read error %s %s %d ,ret = %d\n", __FILE__, __func__,  __LINE__, ret);
 			return ret;
 		}
 	}
 	ret = jz_sfc_nand_read(flash, pageaddr, mtd->writesize + ops->ooboffs, ops->oobbuf, ops->ooblen);
 	if(ret < 0){
-		printf("spi nand read error %s %s %d \n",__FILE__,__func__,__LINE__);
+		printf("spi nand read error %s %s %d ,ret = %d\n", __FILE__, __func__, __LINE__, ret);
 	}
 	return ret;
 }

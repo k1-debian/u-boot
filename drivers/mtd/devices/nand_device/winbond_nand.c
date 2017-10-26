@@ -265,6 +265,9 @@ static int32_t winbond_get_read_feature(struct flash_operation_message *op_info)
 
 	}
 
+	if(ret < 0)
+		printf("%s %s %d, ecc_status = %x, ret = %d\n",
+			__FILE__, __func__, __LINE__, ecc_status, ret);
 	return ret;
 }
 
