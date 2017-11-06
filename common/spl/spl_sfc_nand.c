@@ -9,6 +9,7 @@
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
 
+#define SPINAND_PARAM_SIZE	1024
 #ifdef CONFIG_SPL_OS_BOOT
 struct jz_spinand_partition {
 	char name[32];         /* identifier string */
@@ -272,12 +273,11 @@ static int spinand_bad_block_check(int len, unsigned char *buf)
 	return 0;
 }
 
-static int spinand_read_page(unsigned int page, unsigned char *dst_addr,
-			    unsigned int pagesize)
+static int spinand_read_page(unsigned int page, unsigned int column, unsigned char *dst_addr,
+			    unsigned int len, unsigned int pagesize)
 {
 	struct jz_sfc sfc;
 	unsigned int read_buf;
-	int column = 0;
 	int oob_flag = 0;
 	unsigned char i;
 	unsigned char checklen = 1;
@@ -285,7 +285,7 @@ static int spinand_read_page(unsigned int page, unsigned char *dst_addr,
 read_oob:
 	if (oob_flag) {
 		column = pagesize;
-		pagesize = 4;
+		len = 4;
 		dst_addr = (unsigned char *)&read_buf;
 	}
 
@@ -305,11 +305,11 @@ read_oob:
 	}
 
 #ifndef CONFIG_SPI_STANDARD
-	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE_QUAD, pagesize, column, curr_device->addrlen, 8, 1, 0);
+	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE_QUAD, len, column, curr_device->addrlen, 8, 1, 0);
 #else
-	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE, pagesize, column, curr_device->addrlen, 8, 1, 0);
+	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE, len, column, curr_device->addrlen, 8, 1, 0);
 #endif
-	sfc_read_data((unsigned int *)dst_addr, pagesize);
+	sfc_read_data((unsigned int *)dst_addr, len);
 
 	if (!oob_flag && !(page % CONFIG_SPI_NAND_PPB)) {
 		oob_flag = 1;
@@ -395,23 +395,19 @@ static int spinand_init(void)
 
 static int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_addr)
 {
-	unsigned int page, pagesize;
-	unsigned int pagecopy_cnt = 0;
+	unsigned int pageaddr, columnaddr, rlen;
 	unsigned int ret, try_count = 5;
 	unsigned char *buf = (unsigned char *)dst_addr;
+	unsigned int pagesize = curr_device->pagesize;
 
-	pagesize = curr_device->pagesize;
-
-	if (src_addr % pagesize)
-		debug("\n\tWarning: offset 0x%x not align with page size 0x%x.\n",
-				src_addr, pagesize);
-
-	page = src_addr / pagesize;
-	while (pagecopy_cnt * pagesize < count) {
-		ret = spinand_read_page(page, buf, pagesize);
+	while (count) {
+		pageaddr = src_addr / pagesize;
+		columnaddr = src_addr % pagesize;
+		rlen = (pagesize - columnaddr) < count ? (pagesize - columnaddr) : count;
+		ret = spinand_read_page(pageaddr, columnaddr, buf, rlen, pagesize);
 		if (ret > 0) {
-			debug("bad block %d\n", page / CONFIG_SPI_NAND_PPB);
-			page += CONFIG_SPI_NAND_PPB;
+			debug("bad block %d\n", pageaddr / CONFIG_SPI_NAND_PPB);
+			src_addr += CONFIG_SPI_NAND_PPB * pagesize;
 			continue;
 		} else if (ret < 0 && try_count--) {
 		/*read page err, try again*/
@@ -419,13 +415,13 @@ static int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int
 		}
 
 		if (ret < 0 && try_count < 0) {
-			debug("ERR: read page ECC error, page addr = %u\n", page);
+			debug("ERR: read page ECC error, page addr = %u\n", pageaddr);
 			return -1;
 		}
 
-		buf += pagesize;
-		page++;
-		pagecopy_cnt++;
+		buf += rlen;
+		src_addr += rlen;
+		count -= rlen;
 		try_count = 5;
 	}
 
@@ -450,8 +446,8 @@ void spl_sfc_nand_load_image(void)
 
 #ifdef CONFIG_SPL_OS_BOOT
 	/*read burn param*/
-	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, 1, CONFIG_SYS_TEXT_BASE);
-	burn_param = (void *)(CONFIG_SYS_TEXT_BASE + CONFIG_SPIFLASH_PART_OFFSET % curr_device->pagesize);
+	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
+	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
 	partition = &burn_param->partition;
 
 	for(i = 0; i < burn_param->partition_num; i++) {
@@ -462,7 +458,7 @@ void spl_sfc_nand_load_image(void)
 	}
 
 	/*read image head*/
-	sfc_nand_load(bootimg_addr, 1, CONFIG_SYS_TEXT_BASE);
+	sfc_nand_load(bootimg_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
 	sfc_nand_load(bootimg_addr, spl_image.size, spl_image.load_addr);
 #else
