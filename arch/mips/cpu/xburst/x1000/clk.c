@@ -246,6 +246,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 #endif
 	return;
 }
+
 void clk_init(void)
 {
 	unsigned int reg_clkgr = cpm_inl(CPM_CLKGR);
@@ -287,6 +288,7 @@ void enable_uart_clk(void)
 	default:
 		break;
 	}
+	clkgr &= ~CPM_CLKGR_OST;
 	cpm_outl(clkgr, CPM_CLKGR);
 }
 

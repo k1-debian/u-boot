@@ -31,48 +31,39 @@ DECLARE_GLOBAL_DATA_PTR;
 
 unsigned int multiple __attribute__ ((section(".data")));
 
-static uint32_t tcu_readl(uint32_t off)
+static inline uint32_t ost_readl(uint32_t off)
 {
-	return readl((void __iomem *)TCU_BASE + off);
+	return readl((void __iomem *)OST_BASE + off);
 }
 
-static void tcu_writew(uint16_t val, uint32_t off)
+static inline void ost_writel(uint32_t val, uint32_t off)
 {
-	writew(val, (void __iomem *)TCU_BASE + off);
-}
-
-static void tcu_writel(uint32_t val, uint32_t off)
-{
-	writel(val, (void __iomem *)TCU_BASE + off);
+	writel(val, (void __iomem *)OST_BASE + off);
 }
 
 #define USEC_IN_1SEC 1000000
 int timer_init(void)
 {
-#ifdef CONFIG_BURNER
-	multiple = gd->arch.gi->extal / USEC_IN_1SEC / OST_DIV;
-#else
-	multiple = CONFIG_SYS_EXTAL / USEC_IN_1SEC / OST_DIV;
-#endif
+	multiple = CONFIG_SYS_EXTAL / USEC_IN_1SEC / OST_DIV_16;
 
 	reset_timer();
-	tcu_writel(OSTCSR_CNT_MD | OSTCSR_PRESCALE | OSTCSR_EXT_EN, TCU_OSTCSR);
-	tcu_writew(TER_OSTEN, TCU_TESR);
 
+	ost_writel(OSTCSR_PRESCALE(OST_DIV_16, OSTCSR_PRESCALE2), OSTCCR);
+	ost_writel(OST2CLR, OSTCR);
+	ost_writel(OST2ENS, OSTESR);
 	return 0;
 }
 
 void reset_timer(void)
 {
-	tcu_writel(0, TCU_OSTCNTH);
-	tcu_writel(0, TCU_OSTCNTL);
-	tcu_writel(0, TCU_OSTDR);
+	ost_writel(0, OST2CNTH);
+	ost_writel(0, OST2CNTL);
 }
 
 static uint64_t get_timer64(void)
 {
-	uint32_t low = tcu_readl(TCU_OSTCNTL);
-	uint32_t high = tcu_readl(TCU_OSTCNTHBUF);
+	uint32_t low = ost_readl(OST2CNTL);
+	uint32_t high = ost_readl(OSTCNT2HBUF);
 	return ((uint64_t)high << 32) | low;
 }
 

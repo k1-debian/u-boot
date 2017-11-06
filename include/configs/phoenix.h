@@ -179,10 +179,20 @@
     #endif
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
+             #undef CONFIG_SPL_BOOTARGS
+	#ifdef  CONFIG_SPL_SFC_NOR
              #define CONFIG_PAT_USERFS_NAME   "userfs"
              #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
-             #undef CONFIG_SPL_BOOTARGS
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+	#else
+		#define CONFIG_NVRW_ADDR	0X100000
+		#define CONFIG_NVRW_SIZE	0X60000
+		#define CONFIG_RECOVERY_ADDR	0X3200000
+		#define CONFIG_SYSTEM_ADDR	0X1400000
+		#define CONFIG_KERNEL_ADDR	0Xc00000
+		#define CONFIG_SPL_BOOTARGS     BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=5 root=ubi0:system rootfstype=ubifs rw"
+		#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rdinit=/linuxrc"
+	#endif
       #else
              #define CONFIG_SOFT_BURNER
              #define CONFIG_AUDIO_CAL_DIV
@@ -192,6 +202,7 @@
 
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+     #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"

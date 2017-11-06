@@ -21,7 +21,3 @@ void spl_board_prepare_for_linux(void)
 #endif
 }
 
-int cleanup_before_linux (void)
-{
-	printf("mach cleanup_before_linux\n");
-}

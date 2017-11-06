@@ -464,7 +464,7 @@ void sdram_init(void)
 	ddr_controller_init(bypass,type);
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(bypass,type);
-	printf("DDRC_DLP:%x\n",ddr_readl(DDRC_DLP));
+	debug("DDRC_DLP:%x\n",ddr_readl(DDRC_DLP));
 	dump_ddrc_register();
 	/* DDRC address remap configure*/
 	debug("sdram init finished\n");

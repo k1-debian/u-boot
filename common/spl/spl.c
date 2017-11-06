@@ -227,11 +227,13 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		cmdargs = spl_sfc_nor_load_image();
 		break;
 #endif
+
 #ifdef CONFIG_SPL_SFC_NAND
 	case BOOT_DEVICE_SFC_NAND:
-		spl_sfc_nand_load_image();
+		cmdargs = spl_sfc_nand_load_image();
 		break;
 #endif
+
 #ifdef CONFIG_SPL_ETH_SUPPORT
 	case BOOT_DEVICE_CPGMAC:
 #ifdef CONFIG_SPL_ETH_DEVICE

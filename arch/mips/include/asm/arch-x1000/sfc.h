@@ -20,7 +20,6 @@ struct cmd_info{
 };
 
 struct sfc_transfer {
-
 #ifndef CONFIG_SPL_BUILD
 	struct cmd_info *cmd_info;
 #else
@@ -68,8 +67,8 @@ struct sfc{
 
 
 struct spi_nor_flash_ops {
-	int (*set_4byte_mode)();
-	int (*set_quad_mode)();
+	int (*set_4byte_mode)(void);
+	int (*set_quad_mode)(void);
 };
 
 
@@ -118,9 +117,11 @@ struct sfc_flash {
 #define	SFC_RM_DR			(0x1000)
 
 /* For SFC_GLB */
-#define	GLB_TRAN_DIR			(1 << 13)
+#define	GLB_TRAN_DIR_OFFSET			(13)
+#define	GLB_TRAN_DIR			(1 << GLB_TRAN_DIR_OFFSET)
 #define GLB_TRAN_DIR_WRITE		(1)
 #define GLB_TRAN_DIR_READ		(0)
+
 #define	GLB_THRESHOLD_OFFSET		(7)
 #define GLB_THRESHOLD_MSK		(0x3f << GLB_THRESHOLD_OFFSET)
 #define GLB_OP_MODE			(1 << 6)
@@ -270,17 +271,28 @@ struct sfc_flash {
 #ifdef CONFIG_SPL_SFC_NAND
 
 #ifdef CONFIG_SPL_BUILD
+
+typedef union sfc_tranconf_r {
+	/** raw register data */
+	unsigned int d32;
+	/** register bits */
+	struct {
+		unsigned cmd:16;
+		unsigned data_en:1;
+		unsigned dmy_bits:6;
+		unsigned phase_format:1;
+		unsigned cmd_en:1;
+		unsigned poll_en:1;
+		unsigned addr_width:3;
+		unsigned tran_mode:3;
+	} reg;
+} sfc_tranconf_r;
+
 struct jz_sfc {
+	sfc_tranconf_r tranconf;
     unsigned int  addr;
     unsigned int  len;
-    unsigned int  cmd;
     unsigned int  addr_plus;
-    unsigned int  sfc_mode;
-    unsigned char daten;
-    unsigned char addr_len;
-    unsigned char pollen;
-    unsigned char phase;
-    unsigned char dummy_byte;
 };
 #endif
 
@@ -295,25 +307,26 @@ struct jz_sfc {
     } while (0)
 #endif
 
-#define  SFC_SEND_COMMAND(sfc, a, b, c, d, e, f, g)   do{                       \
-        ((struct jz_sfc *)sfc)->cmd = a;                                        \
-        ((struct jz_sfc *)sfc)->len = b;                                        \
-        ((struct jz_sfc *)sfc)->addr = c;                                       \
-        ((struct jz_sfc *)sfc)->addr_len = d;                                   \
-        ((struct jz_sfc *)sfc)->addr_plus = 0;                                  \
-        ((struct jz_sfc *)sfc)->dummy_byte = e;                                 \
-        ((struct jz_sfc *)sfc)->daten = f;                                      \
-	if(a == CMD_FR_CACHE_QUAD) {						\
-		((struct jz_sfc *)sfc)->sfc_mode = TRAN_SPI_QUAD;		\
-	} else {								\
-		((struct jz_sfc *)sfc)->sfc_mode = TRAN_SPI_STANDARD;		\
-	}									\
-        sfc_send_cmd(sfc, g);                                                   \
-} while(0)
+#define  SFC_SEND_COMMAND(sfc, a, b, c, d, e, f, g)   do{				\
+        ((struct jz_sfc *)sfc)->tranconf.reg.cmd_en = 1;				\
+		((struct jz_sfc *)sfc)->tranconf.reg.cmd = a;					\
+        ((struct jz_sfc *)sfc)->len = b;								\
+        ((struct jz_sfc *)sfc)->addr = c;								\
+        ((struct jz_sfc *)sfc)->tranconf.reg.addr_width = d;			\
+        ((struct jz_sfc *)sfc)->addr_plus = 0;							\
+        ((struct jz_sfc *)sfc)->tranconf.reg.dmy_bits = e;				\
+        ((struct jz_sfc *)sfc)->tranconf.reg.data_en = f;				\
+		if(a == CMD_FR_CACHE_QUAD) {									\
+			((struct jz_sfc *)sfc)->tranconf.reg.tran_mode = TRAN_SPI_QUAD; \
+		} else {														\
+			((struct jz_sfc *)sfc)->tranconf.reg.tran_mode = TRAN_SPI_STANDARD; \
+		}																\
+        sfc_send_cmd(sfc, g);											\
+	} while(0)
+
+
 
 #endif
 
 
 #endif
-
-
