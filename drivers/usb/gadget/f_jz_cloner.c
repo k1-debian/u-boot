@@ -307,6 +307,27 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 			break;
 #endif
 		case OPS(MEMORY,RAW):
+			{
+				unsigned char *dest_addr = (void *)(cloner->cmd->write.partition + cloner->cmd->write.offset);
+				unsigned char *src_addr = cloner->write_req->buf;
+				unsigned int len = cloner->cmd->write.length;
+				//memset(dest_addr, 0, len);
+				memcpy(dest_addr, src_addr, len);
+				if(debug_args->write_back_chk)
+				{
+					printf("src:%p----dest:%p-----len:%d\n",src_addr, dest_addr, len);
+					int i=0;
+					for(; i < len; i++)
+					{
+						if(dest_addr[i] != src_addr[i])
+						{
+							printf("compare error: dest_addr:0x%p = 0x%02x,src_addr:0x%p = 0x%02x\n",
+									dest_addr+i, dest_addr[i], src_addr+i, src_addr[i]);
+							break;
+						}
+					}
+				}
+			}
 			cloner->ack = 0;
 			break;
 		case OPS(REGISTER,RAW):

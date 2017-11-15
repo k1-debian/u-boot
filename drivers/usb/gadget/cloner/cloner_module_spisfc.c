@@ -33,11 +33,9 @@ int clmd_spisfc_info(struct cloner *cloner)
 		memset(global_args->data, 0, sizeof(*policy_args));
 	}
 
-#ifdef CONFIG_JZ_SFC_NOR
 	if(policy_args->use_sfc_nor){
 		id_code = get_norflash_id();
 	}
-#endif
 
 	if(id_code < 0) {
 		printf("ERR : (get flash_info) try id err, %d\n", id_code);
@@ -63,20 +61,18 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 		printf("Not fount policy parameters (%s)\n",__func__);
 		return -EINVAL;
 	}
-#ifdef CONFIG_JZ_SFC_NOR
+
 	if(policy_args->use_sfc_nor){
 		ret = norflash_get_params_from_burner((unsigned char *)spi_args + sizeof(struct spi_param));
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
 			sfc_erase();
 		}
 	}
-#endif
-#if CONFIG_MTD_SFCNAND
+
 	if(policy_args->use_sfc_nand){
 		get_burner_nandinfo(spi_args->flash_info);
 		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,spi_args->flash_info);
 	}
-#endif
 
 	return ret;
 }
@@ -86,16 +82,12 @@ int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 	int ret = 0;
 	switch(sub_type)
 	{
-#ifdef CONFIG_JZ_SFC_NOR
 		case SFC_NOR:
 			ret = sfc_program(cloner);
 			break;
-#endif
-#if CONFIG_MTD_SFCNAND
 		case SFC_NAND:
 			ret = spinand_program(cloner);
 			break;
-#endif
 		default:
 			printf("Not found sfc sub_type!\n");
 			return -EINVAL;
