@@ -163,7 +163,6 @@ read_oob:
 
 	SFC_SEND_COMMAND(&sfc, CMD_PARD, 0, page, 3, 0, 0, 0);
 	clear_end();
-	udelay(10);
 	do {
 		SFC_SEND_COMMAND(&sfc, CMD_GET_FEATURE, 1, FEATURE_REG_STATUS1, 1, 0, 1, 0);
 		sfc_read_data(&read_buf, 1);
@@ -226,7 +225,6 @@ static int spinand_probe_id(struct jz_sfc *sfc)
 	for(i = 0; i < sizeof(addrlen); i++) {
 		SFC_SEND_COMMAND(sfc, CMD_RDID, 2, 0, addrlen[i], 0, 1, 0);
 		sfc_read_data((unsigned int *)id, 2);
-
 		if (!probe_id_list(id))
 			    break;
 	}

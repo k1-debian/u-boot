@@ -65,10 +65,11 @@ struct sfc{
 	struct sfc_transfer *transfer;
 };
 
+struct sfc_flash;
 
 struct spi_nor_flash_ops {
-	int (*set_4byte_mode)(void);
-	int (*set_quad_mode)(void);
+	int (*set_4byte_mode)(struct sfc_flash *flash);
+	int (*set_quad_mode)(struct sfc_flash *flash);
 };
 
 
@@ -308,6 +309,7 @@ struct jz_sfc {
 #endif
 
 #define  SFC_SEND_COMMAND(sfc, a, b, c, d, e, f, g)   do{				\
+        ((struct jz_sfc *)sfc)->tranconf.d32 = 0;				\
         ((struct jz_sfc *)sfc)->tranconf.reg.cmd_en = 1;				\
 		((struct jz_sfc *)sfc)->tranconf.reg.cmd = a;					\
         ((struct jz_sfc *)sfc)->len = b;								\
