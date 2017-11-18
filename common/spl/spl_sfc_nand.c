@@ -174,6 +174,8 @@ read_oob:
 			return -1;
 	}
 
+	if(curr_device->device_id == 0x20 | curr_device->device_id == 0x22)/*MXIC 2G plane select*/
+		column |= (((page >> 6) & 1) << 12);
 #ifndef CONFIG_SPI_STANDARD
 	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE_QUAD, len, column, curr_device->addrlen, 8, 1, 0);
 #else

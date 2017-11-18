@@ -75,30 +75,6 @@ static void mxic_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_inf
 	uint32_t pageaddr = op_info->pageaddr;
 	uint8_t device_id = nand_desc->id_device;
 
-	switch(device_id) {
-	    case 0x20:
-	    case 0x22:
-		    {
-			    uint32_t blockaddr;
-			    if(pageaddr > (64 * 1024 - 1)) {
-				    pageaddr -= 65536;
-				    blockaddr =	(pageaddr & (~(64 - 1))) << 1;
-				    pageaddr = blockaddr | (1 << 6) | (pageaddr & (64 - 1));
-				    plane_select = 1;
-			    } else {
-				    blockaddr =	(pageaddr & (~(64 - 1))) << 1;
-				    pageaddr = blockaddr | (pageaddr & (64 - 1));
-				    plane_select = 0;
-			    }
-		    }
-		    break;
-	    case 0x12:
-		    break;
-	    default:
-		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
-		    break;
-	}
-
 	cmd->cmd = SPINAND_CMD_PARD;
 	transfer->sfc_mode = TM_STD_SPI;
 
@@ -219,14 +195,13 @@ static void mxic_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd
 	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	uint8_t device_id = nand_desc->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
+	int plane_flag = 0;
 
 	switch(device_id) {
 	    case 0x20:
 	    case 0x22:
-		    if(op_info->pageaddr > (64 * 1024 - 1))
-			    columnaddr |= (1 << 12);
-		    else
-			    columnaddr &= ~(1 << 12);
+			plane_flag = (op_info->pageaddr >> 6) & 1;
+			columnaddr |= (plane_flag << 12);
 		    break;
 	    case 0x12:
 		    break;
@@ -258,14 +233,13 @@ static void mxic_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	uint8_t device_id = nand_desc->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
+	int plane_flag = 0;
 
 	switch(device_id) {
 	    case 0x20:
 	    case 0x22:
-		    if(op_info->pageaddr > (64 * 1024 - 1))
-			    columnaddr |= (1 << 12);
-		    else
-			    columnaddr &= ~(1 << 12);
+			plane_flag = (op_info->pageaddr >> 6 ) & 1;
+			columnaddr |= (plane_flag << 12);
 		    break;
 	    case 0x12:
 		    break;
@@ -297,15 +271,13 @@ static void mxic_single_load(struct sfc_transfer *transfer, struct cmd_info *cmd
 	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	uint8_t device_id = nand_desc->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
+	int plane_flag = 0;
 
 	switch(device_id) {
 		case 0x20:
 		case 0x22:
-			if(op_info->pageaddr > 65535) {
-				columnaddr |= (1 << 12);
-			} else {
-				columnaddr &= ~(1 << 12);
-			}
+			plane_flag = (op_info->pageaddr >> 6) & 1;
+			columnaddr |= (plane_flag << 12);
 			break;
 		case 0x12:
 		    break;
@@ -336,15 +308,13 @@ static void mxic_quad_load(struct sfc_transfer *transfer, struct cmd_info *cmd, 
 	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	uint8_t device_id = nand_desc->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
+	int plane_flag = 0;
 
 	switch(device_id) {
 		case 0x20:
 		case 0x22:
-			if(op_info->pageaddr > 65535) {
-				columnaddr |= (1 << 12);
-			} else {
-				columnaddr &= ~(1 << 12);
-			}
+			plane_flag = (op_info->pageaddr >> 6) & 1;
+			columnaddr |= (plane_flag << 12);
 			break;
 		case 0x12:
 		    break;
@@ -377,27 +347,6 @@ static void mxic_program_exec(struct sfc_transfer *transfer, struct cmd_info *cm
 	uint8_t device_id = nand_desc->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
-	switch(device_id) {
-	    case 0x20:
-	    case 0x22:
-		    {
-			    uint32_t blockaddr;
-			    if(pageaddr > (64 * 1024 - 1)) {
-				    pageaddr -= 65536;
-				    blockaddr =	(pageaddr & (~(64 - 1))) << 1;
-				    pageaddr = blockaddr | (1 << 6) | (pageaddr & (64 - 1));
-			    } else {
-				    blockaddr =	(pageaddr & (~(64 - 1))) << 1;
-				    pageaddr = blockaddr | (pageaddr & (64 - 1));
-			    }
-		    }
-		    break;
-	    case 0x12:
-		    break;
-	    default:
-		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
-		    break;
-	}
 
 	cmd->cmd = SPINAND_CMD_PRO_EN;
 	transfer->sfc_mode = TM_STD_SPI;
