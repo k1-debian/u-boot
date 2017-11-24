@@ -189,9 +189,13 @@
 		#define CONFIG_NVRW_SIZE	0X60000
 		#define CONFIG_RECOVERY_ADDR	0X3200000
 		#define CONFIG_SYSTEM_ADDR	0X1400000
-		#define CONFIG_KERNEL_ADDR	0Xc00000
+		#define CONFIG_KERNEL_ADDR	0xc00000
+		#define	CONFIG_RAMDISK_ADDR	0x3c00000
+		#define CONFIG_RAMDISK_SIZE	0x500000
+		#define	CONFIG_RAMDISK_LOAD_ADDR	0x80a00000
 		#define CONFIG_SPL_BOOTARGS     BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=5 root=ubi0:system rootfstype=ubifs rw"
-		#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rdinit=/linuxrc"
+		#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rd_start=0x80a00000 rd_size=0x500000"
+		/*#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
 	#endif
       #else
              #define CONFIG_SOFT_BURNER
