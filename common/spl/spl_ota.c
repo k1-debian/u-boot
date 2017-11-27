@@ -12,6 +12,7 @@
 #include <asm/arch/sfc_params.h>
 #include "../../drivers/mtd/devices/jz_sfc_nand.h"
 
+#define OTA_RAMDISK_OUT
 
 #define UPDATE_FINISHING 0x1
 #define UPDATE_KERNEL_FS 0x9
@@ -57,7 +58,7 @@ char* spl_ota_load_image(void)
 	ota_ops->flash_read(src_addr, count, nv_buf);
 	updata_flag = nv_buf[1];
 
-
+#ifndef OTA_RAMDISK_OUT
 	if((updata_flag == UPDATE_RECOVERY) || (updata_flag == UPDATE_KERNEL_FS) || (updata_flag == UPDATE_FINISHING)) {
 		bootimg_addr = CONFIG_RECOVERY_ADDR;
 		cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
@@ -68,7 +69,20 @@ char* spl_ota_load_image(void)
 		bootimg_addr = CONFIG_KERNEL_ADDR;
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 	}
-
+#else
+	if((updata_flag == UPDATE_RECOVERY) || (updata_flag == UPDATE_KERNEL_FS) || (updata_flag == UPDATE_FINISHING)) {
+		bootimg_addr = CONFIG_RECOVERY_ADDR;
+		cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
+		ota_ops->flash_read(CONFIG_RAMDISK_ADDR, CONFIG_RAMDISK_SIZE, CONFIG_RAMDISK_LOAD_ADDR);
+	} else if (updata_flag == UPDATE_WRITE_NEW_RECOVERY) {
+		bootimg_addr = CONFIG_KERNEL_ADDR;
+		cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
+		ota_ops->flash_read(CONFIG_RAMDISK_ADDR, CONFIG_RAMDISK_SIZE, CONFIG_RAMDISK_LOAD_ADDR);
+	} else {
+		bootimg_addr = CONFIG_KERNEL_ADDR;
+		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+	}
+#endif
 	spl_load_kernel(bootimg_addr);
 
 	return cmdargs;
