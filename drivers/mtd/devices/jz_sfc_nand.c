@@ -890,12 +890,11 @@ int mtd_sfcnand_probe_burner(int *erase_mode,int sfc_quad_mode,struct jz_sfc_nan
 
 	/*0: none 1, force-erase, force erase contain creat bbt*/
 	if (*erase_mode == 1)
-		ret = run_command("nand scrub.chip -y", 0);
-	else {
-		chip = mtd->priv;
-		chip->scan_bbt(mtd);
-		chip->options |= NAND_BBT_SCANNED;
-	}
+		if((ret = run_command("nand erase.chip -y", 0)))
+			    return ret;
+	chip = mtd->priv;
+	chip->scan_bbt(mtd);
+	chip->options |= NAND_BBT_SCANNED;
 	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num, &param->partition);
 	return 0;
 }
