@@ -62,10 +62,11 @@ static inline void sfc_tranconf_init(struct jz_sfc *sfc, unsigned int channel)
 	sfc_writel(sfc->tranconf.d32, SFC_TRAN_CONF(channel));
 }
 
+
 static void sfc_set_transfer(struct jz_sfc *sfc, unsigned int dir)
 {
-	sfc_transfer_direction(dir);
 	sfc_tranconf_init(sfc, 0);
+	sfc_transfer_direction(dir);
 	sfc_set_length(sfc->len);
 	sfc_dev_addr(0, sfc->addr);
 }
@@ -75,6 +76,7 @@ static void clear_end(void)
         sfc_writel(CLR_END, SFC_SCR);
 
 }
+
 static void sfc_send_cmd(struct jz_sfc *sfc, unsigned char dir)
 {
 	sfc_writel(1 << 1, SFC_TRIG);
@@ -174,8 +176,9 @@ read_oob:
 			return -1;
 	}
 
-	if(curr_device->device_id == 0x20 | curr_device->device_id == 0x22)/*MXIC 2G plane select*/
+	if(curr_device->device_id == 0x20 || curr_device->device_id == 0x22)/*MXIC 2G plane select*/
 		column |= (((page >> 6) & 1) << 12);
+
 #ifndef CONFIG_SPI_STANDARD
 	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE_QUAD, len, column, curr_device->addrlen, 8, 1, 0);
 #else
