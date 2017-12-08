@@ -52,7 +52,7 @@ static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xAB, "W25M02GV", &winbond_param[1]),
 };
 
-static void active_die(struct sfc_flash *flash, uint8_t die_id) {
+void active_die(struct sfc_flash *flash, uint8_t die_id) {
 
 	struct sfc_transfer transfer;
 	struct sfc_message message;
@@ -142,13 +142,16 @@ static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 	uint8_t device_id = nand_desc->id_device;
+	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
 		case 0xAB:
-			if(op_info->pageaddr > 65535)
+			if(pageaddr > 65535) {
 				active_die(flash, 1);
-			else
+				pageaddr -= 65536;
+			} else {
 				active_die(flash, 0);
+			}
 		case 0xAA:
 			break;
 		default:
@@ -158,7 +161,7 @@ static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_
 	cmd->cmd = SPINAND_CMD_PARD;
 	transfer->sfc_mode = TM_STD_SPI;
 
-	transfer->addr = op_info->pageaddr;
+	transfer->addr = pageaddr;
 	transfer->addr_len = 3;
 
 	cmd->dataen = DISABLE;

@@ -119,6 +119,7 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 	uint32_t addr = (uint32_t)instr->addr;
 	uint32_t end;
 	int32_t ret;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 
 	if(addr % mtd->erasesize) {
 		printf("ERROR:%s line %d eraseaddr no align\n", __func__,__LINE__);
@@ -134,6 +135,10 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 		}
 		addr += mtd->erasesize;
 	}
+
+	if(nand_desc->id_manufactory == 0xEF &&
+	    nand_desc->id_device == 0xAB)
+		active_die(flash, 0);
 
 	instr->state = MTD_ERASE_DONE;
 erase_exit:
@@ -290,6 +295,7 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	uint32_t columnaddr;
 	uint32_t rlen;
 	int32_t ret = 0, reterr = 0, ret_eccvalue = 0;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 
 	*retlen = 0;
 	while(len) {
@@ -316,6 +322,10 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 		buf += rlen;
 		*retlen += rlen;
 	}
+
+	if(nand_desc->id_manufactory == 0xEF &&
+	    nand_desc->id_device == 0xAB)
+		active_die(flash, 0);
 	return reterr ? reterr : (ret_eccvalue ? ret_eccvalue : ret);
 }
 
@@ -449,6 +459,7 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 	uint32_t columnaddr;
 	uint32_t wlen;
 	int32_t ret;
+	struct jz_nand_descriptor *nand_desc = flash->flash_info;
 
 	while(len) {
 		pageaddr = (uint32_t)to / pagesize;
@@ -464,6 +475,11 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		to += wlen;
 		buf += wlen;
 	}
+
+	if(nand_desc->id_manufactory == 0xEF &&
+	    nand_desc->id_device == 0xAB)
+		active_die(flash, 0);
+
 	return ret;
 }
 
