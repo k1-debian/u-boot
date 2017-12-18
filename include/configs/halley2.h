@@ -184,10 +184,29 @@
     #endif
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
+             #undef CONFIG_SPL_BOOTARGS
+	#ifdef  CONFIG_SPL_SFC_NOR
              #define CONFIG_PAT_USERFS_NAME   "userfs"
              #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
-             #undef CONFIG_SPL_BOOTARGS
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+	#else
+		#define CONFIG_NVRW_ADDR	0X100000
+		#define CONFIG_NVRW_SIZE	0X60000
+		#define CONFIG_RECOVERY_ADDR	0X3200000
+		#define CONFIG_SYSTEM_ADDR	0X1400000
+		#define CONFIG_KERNEL_ADDR	0xc00000
+		#define	CONFIG_RAMDISK_ADDR	0x3c00000
+		#define CONFIG_RAMDISK_SIZE	0x500000
+		#define	CONFIG_RAMDISK_LOAD_ADDR	0x80a00000
+		#define CONFIG_SPL_BOOTARGS     BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=5 root=ubi0:system rootfstype=ubifs rw"
+		#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rd_start=0x80a00000 rd_size=0x500000"
+		/*#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
+	#endif
+      #else
+             #define CONFIG_SOFT_BURNER
+             #define CONFIG_AUDIO_CAL_DIV
+             #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
+             #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
      #endif /*CONFIG_OTA_VERSION20*/
      #ifdef CONFIG_BOOT_VMLINUX
              #undef CONFIG_SPL_BOOTARGS
