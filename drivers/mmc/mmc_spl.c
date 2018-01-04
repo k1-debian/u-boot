@@ -496,20 +496,20 @@ static int mmc_startup(struct mmc *mmc)
 			mmc->tran_speed = 24000000;
 	} else {
 #ifndef CONFIG_FPGA
-#ifdef CONFIG_JZ_MMC_MSC0_PA_8BIT
+	#if defined(CONFIG_JZ_MMC_MSC0_PA_8BIT) || defined(CONFIG_SPL_JZ_MSC_BUS_8BIT)
 		mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
 			   EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_8);
 		mmc_set_bus_width(mmc, 8);
-#else
+	#else
 		mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
 			   EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_4);
 		mmc_set_bus_width(mmc, 4);
-#endif
+	#endif
 #else
 		mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
 			   EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_1);
 		mmc_set_bus_width(mmc, 1);
-#endif
+#endif //CONFIG_FPGA
 		mmc->tran_speed = 24000000;
 	}
 

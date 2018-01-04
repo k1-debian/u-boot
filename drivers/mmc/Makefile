@@ -33,7 +33,9 @@ COBJS-$(CONFIG_FTSDC010) += ftsdc010_mci.o
 ifndef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_GENERIC_MMC) += mmc.o
 else
+ifdef CONFIG_SPL_MMC_SUPPORT
 COBJS-$(CONFIG_GENERIC_MMC) += mmc_spl.o
+endif
 endif
 COBJS-$(CONFIG_GENERIC_ATMEL_MCI) += gen_atmel_mci.o
 COBJS-$(CONFIG_MMC_SPI) += mmc_spi.o
@@ -54,9 +56,11 @@ COBJS-$(CONFIG_EXYNOS_DWMMC) += exynos_dw_mmc.o
 COBJS-$(CONFIG_ZYNQ_SDHCI) += zynq_sdhci.o
 ifndef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_JZ_MMC) += jz_mmc.o
+COBJS-$(CONFIG_JZ_SDHCI) += jz_sdhci.o
 else
 ifdef CONFIG_SPL_MMC_SUPPORT
 COBJS-$(CONFIG_JZ_MMC) += jz_mmc.o
+COBJS-$(CONFIG_JZ_SDHCI) += jz_sdhci.o
 endif
 endif
 ifndef CONFIG_SPL_BUILD

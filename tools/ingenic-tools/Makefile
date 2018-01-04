@@ -29,6 +29,7 @@ DDR-$(CONFIG_DDR_PARAMS_CREATOR)	+= ddr_params_creator ddr_reg_values.h
 MBR-$(CONFIG_MBR_CREATOR)		+= mbr_creator mbr.bin
 GPT-$(CONFIG_GPT_CREATOR)		+= mbr-gpt.bin
 SPI-$(CONFIG_SPI_SPL_CHECK)		+= spi_checksum
+MMC-$(CONFIG_MMC_SPL_PARAMS)		+= mmc_params
 SPI-$(CONFIG_SPL_SFC_SUPPORT)		+= sfc_timing_val.h
 SPI-$(CONFIG_SPL_SFC_NAND)		+= sfc_nand_params.h
 SPL-$(CONFIG_SPL_PARAMS_FIXER)		+= spl_params_fixer
@@ -44,23 +45,31 @@ ifndef CONFIG_BATTERYDET_LED
 RLE_CHARGE_LOGO_H = $(OBJTREE)/include/rle_charge_logo.h
 endif
 
-TOOLS	= $(DDR-y) $(MBR-y) $(GPT-y) $(SPI-y) $(SPL-y) $(LOGO-y) $(CHARGE_LOGO-y) $(AUDIO-y) #$(IMG2RLE-y) $(BIN2ARRAY-y)
+TOOLS	= $(DDR-y) $(MBR-y) $(GPT-y) $(SPI-y) $(MMC-y) $(SPL-y) $(LOGO-y) $(CHARGE_LOGO-y) $(AUDIO-y) #$(IMG2RLE-y) $(BIN2ARRAY-y)
 TOOLS	:= $(addprefix $(obj),$(TOOLS))
 
 ifndef CONFIG_BURNER
-DDR-TYPE-y = ddr_params_creator.o
-DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR3) += lpddr3_params.o
-DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR2) += lpddr2_params.o
-DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR) += lpddr_params.o
-DDR-TYPE-$(CONFIG_DDR_TYPE_DDR2) += ddr2_params.o
-DDR-TYPE-$(CONFIG_DDR_TYPE_DDR3) += ddr3_params.o
+
+
+DDR_CREATOR_DIR := ddr_creator
+
+ifdef CONFIG_X2000
+DDR_CREATOR_DIR := ddr_creator_x2000
+endif
+
+DDR-TYPE-y = $(DDR_CREATOR_DIR)/ddr_params_creator.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR3) += $(DDR_CREATOR_DIR)/lpddr3_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR2) += $(DDR_CREATOR_DIR)/lpddr2_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR) += $(DDR_CREATOR_DIR)/lpddr_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_DDR2) += $(DDR_CREATOR_DIR)/ddr2_params.o
+DDR-TYPE-$(CONFIG_DDR_TYPE_DDR3) += $(DDR_CREATOR_DIR)/ddr3_params.o
 
 define PRIVATE_BUILD
 $(1):$(2) $(3)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -c -o $(1) $(2)
 endef
 
-ALL_INCLUDE_PRIVATE := $(SRCTREE)/include/configs/$(BOARD).h ddr_params_creator.h
+ALL_INCLUDE_PRIVATE := $(SRCTREE)/include/configs/$(BOARD).h $(DDR_CREATOR_DIR)/ddr_params_creator.h
 all:	$(obj).depend $(TOOLS)
 
 $(obj)ddr_params_creator: $(DDR-TYPE-y)
@@ -114,6 +123,10 @@ $(obj)mbr-gpt.bin:	$(obj)mbr.bin
 endif
 
 $(obj)spi_checksum:	spi_checksum.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
+
+$(obj)mmc_params:	mmc_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 

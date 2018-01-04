@@ -37,7 +37,7 @@ struct arch_global_data {
 	unsigned long tbl;
 	unsigned long lastinc;
 #endif
-#ifdef CONFIG_CPU_XBURST
+#if defined(CONFIG_CPU_XBURST) || defined(CONFIG_CPU_XBURST2)
 	struct global_info *gi;
 #endif
 };

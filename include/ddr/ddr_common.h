@@ -10,4 +10,12 @@
 #include <ddr/ddrp_dwc.h>
 #endif
 
+
+#ifdef CONFIG_X2000
+#include <asm/ddr_innophy.h>
+#include <ddr/ddrp_inno.h>
+#include <ddr/ddrc_x2000.h>
+#endif
+
+
 #endif /* __DDR_COMMON_H__ */

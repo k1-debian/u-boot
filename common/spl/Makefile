@@ -23,7 +23,11 @@ endif
 COBJS-$(CONFIG_SPL_ONENAND_SUPPORT) += spl_onenand.o
 COBJS-$(CONFIG_SPL_NET_SUPPORT) += spl_net.o
 COBJS-$(CONFIG_SPL_MMC_SUPPORT) += spl_mmc.o
+ifdef CONFIG_SPL_JZSDHCI
+COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzsdhci.o
+else
 COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzmmc.o
+endif
 COBJS-$(CONFIG_SPL_SFC_NOR) += spl_sfc_nor.o
 COBJS-$(CONFIG_SPL_SFC_NAND) += spl_sfc_nand.o
 COBJS-$(CONFIG_SPL_SPI_NAND) += spl_spi_nand.o

@@ -39,10 +39,12 @@
 #include "jz_gpio/m150_gpio.c"
 #elif defined (CONFIG_X1000)
 #include "jz_gpio/x1000_gpio.c"
+#elif defined (CONFIG_X2000)
+#include "jz_gpio/x2000_gpio.c"
 #endif
 DECLARE_GLOBAL_DATA_PTR;
 
-static inline is_gpio_from_chip(int gpio_num)
+static inline int is_gpio_from_chip(int gpio_num)
 {
 	return gpio_num < (GPIO_NR_PORTS * 32) ? 1 : 0;
 }

@@ -52,6 +52,10 @@
 #include "./chips/MCP_H9TP32A8JDMC_PRKGM_LPDDR2.h"
 #endif
 
+#ifdef CONFIG_LPDDR2_EDBA232B2PB_1DF
+#include "./chips/LPDDR2_EDBA232B2PB_1DF.h"
+#endif
+
 #ifdef CONFIG_FMT4D32UAB_25LC_LPDDR2
 #include "./chips/FMT4D32UAB_25LC_LPDDR2.h"
 #endif
