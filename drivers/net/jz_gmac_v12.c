@@ -5,6 +5,7 @@
 #include <command.h>
 #include <asm/io.h>
 #include <asm/cache.h>
+#include <asm/arch/clk.h>
 
 #include "SynopGMAC_Dev.h"
 
@@ -309,7 +310,7 @@ static int jz_send(struct eth_device* dev, void *packet, int length)
 
 	memset(&tx_buff[next_tx * 2048], 0, 2048);
 	memcpy((void *)&tx_buff[next_tx * 2048], packet, length);
-	flush_dcache_all();
+	flush_cache(&tx_buff[next_tx * 2048], length);
 
 	/* prepare DMA data */
 	desc->length |= (((length <<DescSize1Shift) & DescSize1Mask)
@@ -320,8 +321,6 @@ static int jz_send(struct eth_device* dev, void *packet, int length)
 	/* ENH_DESC */
 	desc->status |=  (DescTxFirst | DescTxLast | DescTxIntEnable);
 	desc->status |= DescOwnByDma;
-
-//	flush_dcache_all();
 
 	/* start tx operation*/
 	jzmac_restart_tx_dma();
@@ -377,13 +376,14 @@ static int jz_recv(struct eth_device* dev)
 			return -1;
 		}
 #endif
+		flush_cache(NetRxPackets[next_rx], length);
+
 		NetReceive(NetRxPackets[next_rx], length - 4);
 		/* after got data, make sure the dma owns desc to recv data from MII */
 		desc->status = DescOwnByDma;
 
 		synopGMAC_resume_dma_rx(gmacdev);
 
-		flush_dcache_all();
 
 		next_rx++;
 		if (next_rx >= NUM_RX_DESCS)
@@ -406,7 +406,7 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 	/* init global pointers */
 	tx_desc = (DmaDesc *)((unsigned long)_tx_desc | 0xa0000000);
 	rx_desc = (DmaDesc *)((unsigned long)_rx_desc | 0xa0000000);
-
+	flush_cache_all();
 #if (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RMII)
 	u32 cpm_mphyc = 0;
 	cpm_mphyc = read_cpm_mphyc();
@@ -480,7 +480,7 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 
 	synopGMACWriteReg((u32 *)gmacdev->DmaBase,DmaRxBaseAddr, virt_to_phys(_rx_desc));
 
-	flush_dcache_all();
+	flush_cache_all();
 
 	//jz47xx_mac_configure();
 
@@ -513,6 +513,61 @@ static void jz_halt(struct eth_device *dev)
 	synopGMAC_tx_enable(gmacdev);
 }
 
+#ifdef CONFIG_NET_JZ4775
+static int jz_gmac_phy_reset(void)
+{
+#ifndef CONFIG_FPGA
+       /*  reset DM9161 */
+       gpio_direction_output(CONFIG_GPIO_DM9161_RESET, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+       mdelay(10);
+       gpio_set_value(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+       mdelay(10);
+
+       /*  initialize jz4775 gpio */
+       gpio_set_func(GPIO_PORT_B, GPIO_FUNC_1, 0x0003fc10);
+       gpio_set_func(GPIO_PORT_D, GPIO_FUNC_1, 0x3c000000);
+       gpio_set_func(GPIO_PORT_F, GPIO_FUNC_0, 0x0000fff0);
+       udelay(100000);
+#else
+       /*  PB7 */
+       gpio_set_func(GPIO_PORT_B, GPIO_FUNC_1, 0x00000080);
+       udelay(10);
+
+       /*  reset PE10 */
+       gpio_direction_output(CONFIG_GPIO_DM9161_RESET, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+       udelay(10);
+       gpio_direction_output(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+       udelay(10);
+
+
+       /*  output 1 PB7 */
+       gpio_direction_output(32 * 1 + 7, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+       udelay(100000);
+#endif
+}
+#endif
+
+#ifdef CONFIG_NET_X2000
+static int jz_gmac_phy_reset(void)
+{
+#ifndef CONFIG_FPGA
+	clk_set_rate(MACPHY, 50000000);
+#endif
+
+	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_SET_FUNC,\
+		      CONFIG_GMAC_CRLT_PORT_PINS);
+	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+	mdelay(10);
+	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+	mdelay(10);
+
+	/* initialize mac gpio func*/
+	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_INIT_FUNC,\
+		      CONFIG_GMAC_CRLT_PORT_PINS);
+	udelay(10);
+}
+#endif
+
 int jz_net_initialize(bd_t *bis)
 {
 	struct eth_device *dev;
@@ -527,29 +582,9 @@ int jz_net_initialize(bd_t *bis)
 #define JZ_GMAC_BASE 0xb34b0000
 	gmacdev->DmaBase =  JZ_GMAC_BASE + DMABASE;
 	gmacdev->MacBase =  JZ_GMAC_BASE + MACBASE;
-#ifndef CONFIG_FPGA
-	/* reset DM9161 */
-	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
-	mdelay(10);
-	gpio_set_value(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
-	mdelay(10);
 
+	jz_gmac_phy_reset();
 
-#else
-	/* PB7 */
-	gpio_set_func(GPIO_PORT_B, GPIO_FUNC_1, 0x00000080);
-	udelay(10);
-
-	/* reset PE10 */
-	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
-	udelay(10);
-	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
-	udelay(10);
-
-	/* output 1 PB7 */
-	gpio_direction_output(32 * 1 + 7, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
-	udelay(100000);
-#endif
 	dev = (struct eth_device *)malloc(sizeof(struct eth_device));
 	if(dev == NULL) {
 		printf("struct eth_device malloc fail\n");

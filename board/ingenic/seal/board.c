@@ -30,7 +30,7 @@
 #include <asm/arch/mmc.h>
 
 
-#ifdef CONFIG_NET_JZ4775
+#ifdef CONFIG_NET_X2000
 extern int jz_net_initialize(bd_t *bis);
 #else
 static inline int jz_net_initialize(bd_t *bis) { return 0;}
