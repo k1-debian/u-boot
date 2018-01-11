@@ -24,10 +24,20 @@
 #include <common.h>
 #include <watchdog.h>
 #include <asm/io.h>
+#include <asm/arch/base.h>
 #include <asm/arch/wdt.h>
+#include <asm/arch/tcu.h>
+#include <asm/arch/cpm.h>
+#include <asm/arch/rtc.h>
 
 #define wdt_write(value, reg) writel(value, WDT_BASE + reg)
 #define wdt_read(reg) readl(WDT_BASE + reg)
+
+#define tcu_writel(value, reg) writel(value, reg)
+#define tcu_readl(reg) readl(reg)
+
+#define rtc_writel(value, reg) writel(value, RTC_BASE + reg)
+#define rtc_readl(reg) readl(RTC_BASE + reg)
 
 struct {
         int div;
@@ -48,10 +58,37 @@ static int wdt_settimeout(unsigned int timeout) /* timeout: ms */
         unsigned int base_freq;
         int wdt_div_num = -1;
         unsigned int tdr, clk_in;
+		int div_num = sizeof(wdt_div_table) / sizeof(wdt_div_table[0]);
 
 #if defined(CONFIG_WDT_FREQ_BY_RTC)
-        base_freq = RTC_FREQ;
         clk_in = TCSR_RTC_EN;
+
+#ifdef CONFIG_RTC_SELEXC_BY_RTC
+		{
+			unsigned int val;
+			base_freq = RTC_FREQ;
+			val = cpm_readl(CPM_OPCR);
+			val |= (1 << 2);
+			cpm_writel(val, CPM_OPCR);
+
+			val = rtc_readl(RTC_RTCCR);
+			val &= ~(1 << 1);
+			rtc_writel(val, RTC_RTCCR);
+		}
+#else
+		{
+			unsigned int val;
+			base_freq = CONFIG_SYS_EXTAL/512;
+			val = cpm_readl(CPM_OPCR);
+			val &= ~(1 << 2);
+			cpm_writel(val, CPM_OPCR);
+
+			val = rtc_readl(RTC_RTCCR);
+			val |= 1 << 1;
+			rtc_writel(val, RTC_RTCCR);
+		}
+#endif
+
 #elif defined(CONFIG_WDT_FREQ_BY_EXCLK)
         base_freq = CONFIG_SYS_EXTAL;
         clk_in = TCSR_EXT_EN;
@@ -60,26 +97,20 @@ static int wdt_settimeout(unsigned int timeout) /* timeout: ms */
 #else
         goto err;
 #endif
-
-        unsigned long counter_min, counter_max;
-        for ( i=0; i<sizeof(wdt_div_table); i++ ) {
-                counter_min = wdt_div_table[i].div * 0x2 * 1000 / base_freq; //WDT_TDR set should bigger than 0x1
-                counter_max = wdt_div_table[i].div * 0xffff * 1000 / base_freq;
-                if (timeout >= counter_min
-                                && timeout <= counter_max
-                                && (base_freq * 2 / wdt_div_table[i].div < CONFIG_SYS_EXTAL)) {
-                        wdt_div_num = i;
-                        tdr = timeout * base_freq / wdt_div_table[i].div / 1000 + 1;
-                        break;
-                }
+		for (i = 0; i < div_num; i++) {
+			tdr = base_freq / wdt_div_table[i].div * (timeout / 1000);
+			if(tdr < 65535) {
+				wdt_div_num = i;
+				break;
+			}
         }
 
-        if (wdt_div_num == -1)
-                goto err;
+		if(i == div_num) {
+			tdr = 65535;
+			wdt_div_num = i - 1;
+		}
 
-        reg = wdt_read( WDT_TCER);                                              // shutdown wdt frist
-        wdt_write(reg & ~TCER_TCEN, WDT_TCER);
-
+		tcu_writel(1 << 16, TCU_TSCR);
         wdt_write(tdr, WDT_TDR);                                                // set contrast count
         wdt_write(clk_in | wdt_div_table[wdt_div_num].value, WDT_TCSR);         // set clk config
         wdt_write(0x0, WDT_TCNT);                                               // clean counter
@@ -91,10 +122,8 @@ static int wdt_settimeout(unsigned int timeout) /* timeout: ms */
         debug("WDT_TDR:       0x%x\n" , wdt_read(WDT_TDR));
         debug("WDT_TCSR:      0x%x\n" , wdt_read(WDT_TCSR));
 #endif
-
-        reg = wdt_read(WDT_TCER);                                               // restart wdt
-        wdt_write(reg | TCER_TCEN, WDT_TCER);
-
+        wdt_write(0, WDT_TCER);
+        wdt_write(1, WDT_TCER);
         return 0;
 err:
         printf("Unable to provide the timeout, please check it!");
@@ -104,6 +133,7 @@ err:
 void hw_watchdog_disable(void)
 {
         wdt_write(wdt_read(WDT_TCER) & ~TCER_TCEN, WDT_TCER);
+		tcu_writel(1 << 16, TCU_TSSR);
 }
 
 void hw_watchdog_reset(void)
@@ -116,4 +146,3 @@ void hw_watchdog_init(void)
 {
         wdt_settimeout(CONFIG_WDT_TIMEOUT_BY_MS);
 }
-
