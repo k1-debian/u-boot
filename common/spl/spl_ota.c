@@ -77,7 +77,7 @@ char* spl_ota_load_image(void)
 	} else if (updata_flag == UPDATE_WRITE_NEW_RECOVERY) {
 		bootimg_addr = CONFIG_KERNEL_ADDR;
 		cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
-		ota_ops->flash_read(CONFIG_RAMDISK_ADDR, CONFIG_RAMDISK_SIZE, CONFIG_RAMDISK_LOAD_ADDR);
+		ota_ops->flash_read(CONFIG_SYSTEM_ADDR, CONFIG_RAMDISK_SIZE, CONFIG_RAMDISK_LOAD_ADDR);
 	} else {
 		bootimg_addr = CONFIG_KERNEL_ADDR;
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
