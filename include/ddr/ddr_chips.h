@@ -16,6 +16,11 @@
 #ifdef CONFIG_MDDR_EMD56164PC_50I
 #include "./chips/MDDR_EMD56164PC_50I.h"
 #endif
+
+#ifdef CONFIG_MDDR_PMD606416ATR_5IN
+#include "./chips/MDDR_PMD606416ATR_5IN.h"
+#endif
+
 #ifdef CONFIG_MDDR_JSD12164PAI_KGD
 #include "./chips/MDDR_JSD12164PAI_KGD.h"
 #endif

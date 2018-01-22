@@ -34,6 +34,7 @@ static enum socid {
 	X1000 = 0xff00,
 	X1000E = 0xff01,
 	X1500 = 0xff02,
+	X1500L_NEW = 0xff04,
 	X1000_NEW = 0xff08,
 	X1000E_NEW = 0xff09,
 	X1500_NEW = 0xff0a,
@@ -117,6 +118,7 @@ int check_socid()
 	switch(socid) {
 	case X1000_NEW:
 	case X1500_NEW:
+	case X1500L_NEW:
 		gd->arch.gi->ddr_change_param.ddr_autosr = 1;
 		break;
 	case X1000E:
