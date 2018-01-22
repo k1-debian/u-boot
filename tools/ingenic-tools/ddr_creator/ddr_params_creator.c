@@ -22,6 +22,21 @@
 #include "ddr_params_creator.h"
 
 unsigned int __ps_per_tck = -1;
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+struct ddrc_mmap {
+	unsigned int size_m;
+	unsigned int cs;
+	unsigned int mmap0;
+	unsigned int mmap1;
+};
+
+static struct ddrc_mmap dmmap[] = {
+	{8, 0, 0, 0},
+	{8, 1, 0, 0},
+	{16, 0, 0, 0},
+	{16, 1, 0, 0},
+};
+
 /**
  * ps2cycle:   translate timing(ps) to clk count
  *       ps:   timing(ps)
@@ -254,6 +269,18 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	memsize_cs0 = p->size.chip0;
 	memsize_cs1 = p->size.chip1;
 	memsize = memsize_cs0 + memsize_cs1;
+	{
+		int i;
+		unsigned int size;
+		for(i = 0; i < ARRAY_SIZE(dmmap); i++) {
+			size = dmmap[i].size_m * 1024*1024;
+			if(size == memsize && dmmap[i].cs == memsize_cs1) {
+				ddrc->mmap[0] = dmmap[i].mmap0;
+				ddrc->mmap[1] = dmmap[i].mmap1;
+				return;
+			}
+		}
+	}
 
 	if (memsize > 0x20000000) {
 		if (memsize_cs1) {
