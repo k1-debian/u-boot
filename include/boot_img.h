@@ -30,7 +30,7 @@ typedef struct boot_img_hdr boot_img_hdr;
 #define BOOT_NAME_SIZE 16
 #define BOOT_ARGS_SIZE 512
 
-#define CONFIG_PARAM_BASE                      0x80004000 /* The base address of parameters*/
+#define CONFIG_PARAM_BASE                      0x80000800 /* The base address of parameters*/
 #define CONFIG_RAMDISK_DST                      0x81a00000          /* initrd address */
 
 struct boot_img_hdr
