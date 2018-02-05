@@ -27,7 +27,7 @@ static void pll_sets(void)
 	}
 	if(MPLL_EN_VALUE) {
 		val = (MPLL_EN_VALUE << 7)  | (MPLL_M_VALUE << 24) | (MPLL_N_VALUE << 18) |
-			(MPLL_BS_VALUE << 31) | (MPLL_BS_VALUE << 31);
+			(MPLL_OD_VALUE << 16) | (MPLL_BS_VALUE << 31);
 		cpm_writel(val,CPM_CPMPCR);
 	}
 	if(APLL_EN_VALUE){
