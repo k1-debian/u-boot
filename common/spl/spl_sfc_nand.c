@@ -171,6 +171,7 @@ read_oob:
 	}while(read_buf & 0x1);
 	/*ecc check*/
 	for(i = 0; i < curr_device->eccstat_count; i++) {
+		read_buf = read_buf & 0xff;
 		if(((read_buf >> curr_device->ecc_bit) &
 		(~(0xff << curr_device->bit_counts))) == curr_device->eccerrstatus[i])
 			return -1;
@@ -267,7 +268,7 @@ static int spinand_init(void)
 int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_addr)
 {
 	unsigned int pageaddr, columnaddr, rlen;
-	int ret;
+	int ret, retry_count = 5;
 	unsigned char *buf = (unsigned char *)dst_addr;
 	unsigned int pagesize = curr_device->pagesize;
 
@@ -282,9 +283,20 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 			continue;
 		}
 
+		if(ret < 0 && retry_count--) {
+			continue;
+		}
+#if 0
+		if(retry_count < 0) {
+			debug("read page ecc error, pageaddr = %d, columnaddr = %d\n", pageaddr,
+				columnaddr);
+			return -1;
+		}
+#endif
 		buf += rlen;
 		src_addr += rlen;
 		count -= rlen;
+		retry_count = 5;
 	}
 
 	return 0;
