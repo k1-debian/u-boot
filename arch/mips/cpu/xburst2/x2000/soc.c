@@ -40,13 +40,25 @@
 DECLARE_GLOBAL_DATA_PTR;
 gd_t gdata __attribute__ ((section(".data")));
 
+#ifndef CONFIG_BURNER
+#include <generated/ddr_reg_values.h>
 struct global_info ginfo __attribute__ ((section(".data"))) = {
 	.extal		= CONFIG_SYS_EXTAL,
 	.cpufreq	= CONFIG_SYS_CPU_FREQ,
 	.ddrfreq	= CONFIG_SYS_MEM_FREQ,
 	.uart_idx	= CONFIG_SYS_UART_INDEX,
 	.baud_rate	= CONFIG_BAUDRATE,
+
+	.ddr_change_param = {
+		DDRC_CFG_VALUE,
+		DDRC_MMAP0_VALUE,
+		DDRC_MMAP1_VALUE,
+		DDRC_TIMING4_VALUE,
+		DDRC_AUTOSR_EN_VALUE,
+		.ddr_remap_array = REMMAP_ARRAY
+	}
 };
+#endif
 
 extern void gpio_init(void);
 extern void pll_init(void);
@@ -61,7 +73,12 @@ void board_init_f(ulong dummy)
 	gd = &gdata;
 
 	/* Setup global info */
+#ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
+#else
+	burner_param_info();
+#endif
+
 	gpio_init();
 
 	*(volatile unsigned int *)0xb0000020 = 0;	//clk gate enable.

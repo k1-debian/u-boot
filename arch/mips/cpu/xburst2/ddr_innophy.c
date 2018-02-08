@@ -26,8 +26,23 @@
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
+#ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
-
+#undef DDRC_CFG_VALUE
+#undef DDRC_MMAP0_VALUE
+#undef DDRC_MMAP1_VALUE
+#undef DDRC_TIMING4_VALUE
+#undef DDRC_AUTOSR_EN_VALUE
+#define DDRC_CFG_VALUE          (gd->arch.gi->ddr_change_param.ddr_cfg)
+#define DDRC_MMAP0_VALUE        (gd->arch.gi->ddr_change_param.ddr_mmap0)
+#define DDRC_MMAP1_VALUE        (gd->arch.gi->ddr_change_param.ddr_mmap1)
+#define DDRC_TIMING4_VALUE      (gd->arch.gi->ddr_change_param.ddr_timing4)
+#define DDRC_AUTOSR_EN_VALUE    (gd->arch.gi->ddr_change_param.ddr_autosr)
+#define remap_array             (gd->arch.gi->ddr_change_param.ddr_remap_array)
+#else
+#include "ddr_reg_data.h"
+#define remap_array REMMAP_ARRAY
+#endif
 #include <asm/io.h>
 #include <asm/arch/clk.h>
 #define CONFIG_DWC_DEBUG 0
@@ -128,10 +143,10 @@ static void dump_ddrp_register(void)
 static void mem_remap(void)
 {
 	int i;
-	unsigned int remap_array[] = REMMAP_ARRAY;
+	unsigned int *remap = remap_array;
 	for(i = 0;i < ARRAY_SIZE(remap_array);i++)
 	{
-		ddr_writel(remap_array[i],DDRC_REMAP(i+1));
+		ddr_writel(remap[i],DDRC_REMAP(i+1));
 	}
 }
 

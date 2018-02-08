@@ -1,9 +1,8 @@
 #
-# (C) Copyright 2000-2007
-# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+# Ingenic burner makefile
 #
-# See file CREDITS for list of people who contributed to this
-# project.
+# Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
+# Author: Zoro <ykli@ingenic.cn>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -12,7 +11,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -23,30 +22,16 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	:= $(obj)libcloner_module_mg.o
+LIB	= $(obj)lib$(BOARD).o
 
-COBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += extend_policy_manager.o
-SUBOBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += expy/libexpy.o
+COBJS	:= board.o
 
-COBJS-$(if $(CONFIG_JZ_SPI)||$(CONFIG_MTD_SPINAND)||$(CONFIG_MTD_SFCNAND)||$(CONFIG_JZ_SFC_NOR),y,n) += cloner_module_spisfc.o
-COBJS-$(CONFIG_JZ_MMC) += cloner_module_mmc.o
-COBJS-$(CONFIG_JZ_SDHCI) += cloner_module_mmc.o
-COBJS-$(if $(CONFIG_JZ_NAND_MGR)||$(CONFIG_MTD_NAND_JZ),y,n) += cloner_module_nand.o
+SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
-COBJS	:= $(COBJS-y)
-SRCS	:= $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS))
-SUBOBJS := $(addprefix $(obj),$(SUBOBJS-y))
-OBJS	+= $(SUBOBJS)
-
-all:	$(LIB)
-
-.PHONY : $(SUBOBJS)
-$(LIB):	$(obj).depend $(OBJS)
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
 	$(call cmd_link_o_target, $(OBJS))
 
-$(SUBOBJS):
-	$(MAKE) -C $(dir $(SUBOBJS))
 #########################################################################
 
 # defines $(obj).depend target

@@ -193,6 +193,7 @@ int cloner_init(struct cloner *cloner)
 {
 	int i = 0;
 	struct ParameterInfo *p = global_args;
+	struct ParameterInfo	*m = NULL;
 	while(1)
 	{
 		if(((int)p%4==0) && ((char*)p>=(char*)global_args)
@@ -212,16 +213,17 @@ int cloner_init(struct cloner *cloner)
 					L.enable = debug_args->log_enabled;
 					break;
 				default:
-					clmg_init(cloner, p);
+					m = p;
 					break;
 			}
 		}
 		else
 		{
-			return 0;
+			break;
 		}
 		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t) * 2);
 	}
+	return clmg_init(cloner, m);
 }
 
 void *realloc_buf(struct cloner *cloner, size_t realloc_size)

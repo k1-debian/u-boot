@@ -36,6 +36,7 @@ COBJS-y += ../ddr_innophy.o
 
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
 COBJS-$(CONFIG_DDR_AUTO_REFRESH_TEST) += ../ddr_test_auto_refresh.o
+COBJS-$(CONFIG_BURNER) += ../param_manage.o
 
 
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)

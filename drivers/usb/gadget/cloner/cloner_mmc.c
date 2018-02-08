@@ -1,6 +1,6 @@
 #include <mmc.h>
 
-#ifdef CONFIG_JZ_MMC
+#if defined(CONFIG_JZ_MMC) || defined(CONFIG_JZ_SDHCI)
 
 #define MMC_BYTE_PER_BLOCK 512
 
