@@ -846,10 +846,11 @@ static void udc_fetch_data_packet(struct dwc2_ep *dep, int flush_fifo)
 	fifo_count = (rxsts_pop&GRXSTSP_BYTE_CNT_MASK) >> GRXSTSP_BYTE_CNT_BIT;
 	dwords = (fifo_count + 3) / 4;
 
-	//printf("fetch %d start:",fifo_count);
+	pr_info("fetch %d start:",fifo_count);
+
 	for (i = 0; i < dwords; i++) {
 		dat = udc_read_reg(EP_FIFO(epnum));
-		//printf("%x,",dat);
+		pr_info("%x,",dat);
 		if (!flush_fifo || request) {
 			if (request->xfersize == 1){
 				*((u8 *)(request->req.buf + request->req.actual + 0)) = dat & 0xff;
@@ -879,7 +880,13 @@ static void udc_fetch_data_packet(struct dwc2_ep *dep, int flush_fifo)
 			}
 		}
 	}
-	//printf("ok \n");
+	if(fifo_count < dwords*4){
+		request->req.actual = fifo_count;
+		request->xfersize -= fifo_count;
+		if(request->xfersize < 0)
+			request->xfersize = 0;
+	}
+	pr_info("ok \n");
 	return;
 }
 
