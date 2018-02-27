@@ -25,6 +25,7 @@
 
 extern int jz_usb_serial_register(const char *type);
 extern int usb_gadget_handle_interrupts(void);
+bool jz_usb_serial_flag = 0;
 
 static int do_gser(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -34,8 +35,9 @@ static int do_gser(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return CMD_RET_USAGE;
 
 	jz_usb_serial_register(s);
+	jz_usb_serial_flag = 0;
 
-	while(1)
+	while(!jz_usb_serial_flag)
 	{
 		usb_gadget_handle_interrupts();
 	}
