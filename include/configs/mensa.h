@@ -75,7 +75,7 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS3,115200 mem=256M@0x0 mem=256M@0x30000000"
+#define BOOTARGS_COMMON "console=ttyS3,115200 mem=256M@0x0 mem=256M@0x30000000 root_wait "
 
 #ifdef CONFIG_BOOT_ANDROID
   #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/init"
@@ -83,8 +83,8 @@
   #ifdef CONFIG_SPL_MMC_SUPPORT
 /*    #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.250:192.168.4.1:192.168.4.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw"*/
 /*	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc" */
-  #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 rootdelay=2 init=/linuxrc root=/dev/mmcblk0p1 rw"
-  #elif defined(CONFIG_JZ_NAND_MGR)
+  #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 init=/linuxrc root=/dev/mmcblk0p1 rw"
+#elif defined(CONFIG_JZ_NAND_MGR)
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/ndsystem rw"
   #else
     /*#define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 ubi.mtd=2 root=ubi1:ndsystem rootfstype=ubifs rw"*/
