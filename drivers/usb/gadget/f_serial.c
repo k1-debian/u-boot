@@ -77,6 +77,7 @@ acm_iad_descriptor = {
 	.bFunctionSubClass =	USB_CDC_SUBCLASS_ACM,
 	.bFunctionProtocol =	USB_CDC_ACM_PROTO_AT_V25TER,
 	/* .iFunction =		DYNAMIC */
+	.iFunction =		7,
 };
 
 
@@ -89,6 +90,7 @@ static struct usb_interface_descriptor acm_control_interface_desc = {
 	.bInterfaceSubClass =	USB_CDC_SUBCLASS_ACM,
 	.bInterfaceProtocol =	USB_CDC_ACM_PROTO_AT_V25TER,
 	/* .iInterface = DYNAMIC */
+	.iInterface  = 5,
 };
 
 static struct usb_interface_descriptor acm_data_interface_desc = {
@@ -100,6 +102,7 @@ static struct usb_interface_descriptor acm_data_interface_desc = {
 	.bInterfaceSubClass =	0,
 	.bInterfaceProtocol =	0,
 	/* .iInterface = DYNAMIC */
+	.iInterface  = 6,
 };
 
 static struct usb_cdc_header_desc acm_header_desc = {
@@ -158,29 +161,6 @@ static struct usb_endpoint_descriptor acm_hs_out_desc = {
 	.bDescriptorType =	USB_DT_ENDPOINT,
 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
 	.wMaxPacketSize =	cpu_to_le16(512),
-};
-
-
-#define ACM_CTRL_IDX	0
-#define ACM_DATA_IDX	1
-#define ACM_IAD_IDX	2
-
-/* static strings, in UTF-8 */
-static struct usb_string acm_string_defs[] = {
-	[ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
-	[ACM_DATA_IDX].s = "CDC ACM Data",
-	[ACM_IAD_IDX ].s = "CDC Serial",
-	{  } /* end of list */
-};
-
-static struct usb_gadget_strings acm_string_table = {
-	.language =		0x0409,	/* en-us */
-	.strings =		acm_string_defs,
-};
-
-static struct usb_gadget_strings *acm_strings[] = {
-	&acm_string_table,
-	NULL,
 };
 
 
@@ -274,6 +254,8 @@ static int gser_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 	struct f_gser		*gser = func_to_gser(f);
 	struct usb_composite_dev *cdev = f->config->cdev;
 	int status;
+
+	debug("%s---%d, intf = %d, alt = %d, first_enable_endpoint = %d\n", __func__, __LINE__, intf, alt, first_enable_endpoint);
 	if(first_enable_endpoint == 0){
 
 		status = usb_ep_enable(gser->epin, &acm_hs_in_desc);
@@ -303,6 +285,22 @@ failed:
 
 static void gser_disable(struct usb_function *f)
 {
+}
+
+static struct usb_cdc_line_coding port_line_coding;
+static void acm_complete_set_line_coding(struct usb_ep *ep,
+		struct usb_request *req)
+{
+	struct usb_cdc_line_coding	*value = req->buf;
+	port_line_coding.dwDTERate = value->dwDTERate;
+	port_line_coding.bCharFormat = value->bCharFormat;
+	port_line_coding.bParityType = value->bParityType;
+	port_line_coding.bDataBits = value->bDataBits;
+	debug("%s----%d, dwDTERate =%d,bCharFormat = %d, bParityType = %d, bDataBits =%d\n", __func__, __LINE__,
+			port_line_coding.dwDTERate,
+			port_line_coding.bCharFormat,
+			port_line_coding.bParityType,
+			port_line_coding.bDataBits);
 }
 
 
@@ -339,7 +337,28 @@ static int gser_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl
 			| USB_CDC_REQ_SET_LINE_CODING:
 		value = w_length;
 		req->length = value;
-		debug("%s-----%d, value = 0x%x\n", __func__, __LINE__, value);
+		req->complete = acm_complete_set_line_coding;
+		debug("%s-----%d set, value = 0x%x\n", __func__, __LINE__, value);
+		ret = usb_ep_queue(cdev->gadget->ep0, req, 0);
+		if (ret) {
+			printf("%s: Error in usb_ep_queue,%d\n", __func__, ret);
+			return ret;
+		}
+		break;
+
+	case ((USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
+			| USB_CDC_REQ_GET_LINE_CODING:
+
+
+		value = min_t(unsigned, w_length,
+				sizeof(struct usb_cdc_line_coding));
+
+		debug("%s----%d,get dwDTERate =%d,bCharFormat = %d, bParityType = %d, bDataBits =%d\n", __func__, __LINE__,
+			port_line_coding.dwDTERate,
+			port_line_coding.bCharFormat,
+			port_line_coding.bParityType,
+			port_line_coding.bDataBits);
+		memcpy(req->buf, &port_line_coding, value);
 		ret = usb_ep_queue(cdev->gadget->ep0, req, 0);
 		if (ret) {
 			printf("%s: Error in usb_ep_queue,%d\n", __func__, ret);
@@ -375,20 +394,15 @@ static int gser_bind(struct usb_configuration *c, struct usb_function *f)
 	/* REVISIT might want instance-specific strings to help
 	 * distinguish instances ...
 	 */
-	gser->data_id = status;
 	gser->name = "ingenic";
-	acm_control_interface_desc.iInterface = acm_string_defs[ACM_CTRL_IDX].id;
-	acm_data_interface_desc.iInterface = acm_string_defs[ACM_DATA_IDX].id;
-	acm_iad_descriptor.iFunction = acm_string_defs[ACM_IAD_IDX].id;
-
 
 	status = usb_interface_id(c, f);
 	if (status < 0)
 		goto fail;
 	acm_iad_descriptor.bFirstInterface = status;
-
 	acm_control_interface_desc.bInterfaceNumber = status;
-	acm_union_desc .bMasterInterface0 = status;
+	acm_union_desc.bMasterInterface0 = status;
+
 	status = usb_interface_id(c, f);
 	if (status < 0)
 		goto fail;

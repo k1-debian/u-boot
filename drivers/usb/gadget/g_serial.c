@@ -50,7 +50,6 @@ USB_GADGET_COMPOSITE_OPTIONS();
 /* string IDs are assigned dynamically */
 
 #define STRING_DESCRIPTION_IDX		USB_GADGET_FIRST_AVAIL_IDX
-
 #define USB_CLASS_COMM			2
 
 enum {
@@ -58,14 +57,19 @@ enum {
 	USB_GADGET_PRODUCT_IDX,
 	USB_GADGET_SERIAL_IDX,
 	USB_GADGET_FIRST_AVAIL_IDX,
+	ACM_CTRL_IDX,
+	ACM_DATA_IDX,
+	ACM_IAD_IDX,
 };
-
 
 static struct usb_string strings_dev[] = {
 	[USB_GADGET_MANUFACTURER_IDX].s = "Linux 3.10.14-00004-g79978f3-dirty with dwc2-gadget",
 	[USB_GADGET_PRODUCT_IDX].s = GS_VERSION_NAME,
 	[USB_GADGET_SERIAL_IDX].s = "",
 	[STRING_DESCRIPTION_IDX].s = NULL /* updated; f(use_acm) */,
+	[ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
+	[ACM_DATA_IDX].s = "CDC ACM Data",
+	[ACM_IAD_IDX ].s = "CDC Serial",
 	{  } /* end of list */
 };
 
@@ -110,12 +114,7 @@ static const struct usb_descriptor_header *otg_desc[] = {
 	NULL,
 };
 
-
-
 extern int gser_bind_config(struct usb_configuration *c);
-
-
-
 static struct usb_configuration serial_config_driver = {
 	/* .label = f(use_acm) */
 	/* .bConfigurationValue = f(use_acm) */
@@ -123,11 +122,6 @@ static struct usb_configuration serial_config_driver = {
 	.bmAttributes	= USB_CONFIG_ATT_SELFPOWER,
 	.bind = gser_bind_config,
 };
-
-
-
-
-
 
 static int g_serial_unbind(struct usb_composite_dev *cdev)
 {
@@ -156,7 +150,6 @@ static int g_serial_do_config(struct usb_configuration *c)
 
 static int g_serial_register(struct usb_composite_dev *cdev)
 {
-
 	debug("%s---%d, iConfiguration = %d, bConfigurationValue = %d, bmAttributes = 0x%x\n", __func__, __LINE__,
 			serial_config_driver.iConfiguration, serial_config_driver.bConfigurationValue, serial_config_driver.bmAttributes);
 	return usb_add_config(cdev, &serial_config_driver);
