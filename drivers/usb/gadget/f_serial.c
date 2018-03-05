@@ -36,6 +36,15 @@
 #define RET_IN_LENGTH	64
 #define RET_OUT_LENGTH	512*1024
 
+static struct jz_acm_param
+{
+	unsigned int magic;
+	unsigned int size;
+	unsigned int offset;
+//	unsigned int reserve[125];
+};
+
+
 struct f_gser {
 	struct usb_function              func;
 
@@ -52,6 +61,8 @@ struct f_gser {
 	u8				data_id;
 	u8				port_num;
 	char				*name;
+	struct jz_nor_param		*context;
+	int				magic;
 };
 
 
@@ -224,18 +235,7 @@ static struct usb_gadget_strings *gser_strings[] = {
 };
 
 
-
-
 /*-------------------------------------------------------------------------*/
-
-static struct jz_acm_param
-{
-	unsigned int magic;
-	unsigned int size;
-	unsigned int offset;
-};
-
-
 static struct jz_nor_param
 {
 	unsigned int offset;
@@ -245,6 +245,8 @@ static struct jz_nor_param
 #define MAGIC_ROOTFS	('R' << 24) | ('O' << 16) | ('O' << 8) | ('T' << 0)
 #define MAGIC_RESET	('R' << 24) | ('E' << 16) | ('S' << 8) | ('E' << 0)
 #define MAGIC_ERASE	('E' << 24) | ('R' << 16) | ('A' << 8) | ('S' << 0)
+#define MAGIC_DATA	('D' << 24) | ('A' << 16) | ('T' << 8) | ('A' << 0)
+#define MAGIC_SHOW      ('S' << 24) | ('H' << 16) | ('O' << 8) | ('W' << 0)
 /*-------------------------------------------------------------------------*/
 
 static int first_enable_endpoint = 0;
@@ -460,6 +462,10 @@ fail:
 	return status;
 }
 
+static void gser_unbind(struct usb_configuration *c, struct usb_function *f)
+{
+}
+
 int gser_bind_config(struct usb_configuration *c)
 {
 	int status;
@@ -472,6 +478,7 @@ int gser_bind_config(struct usb_configuration *c)
 	gser->func.name = "usb_serial";
 	gser->func.strings = gser_strings;
 	gser->func.bind = gser_bind;
+	gser->func.unbind = gser_unbind;
 	gser->func.set_alt = gser_set_alt;
 	gser->func.setup = gser_setup;
 	gser->func.disable = gser_disable;
@@ -486,34 +493,57 @@ int gser_bind_config(struct usb_configuration *c)
 }
 
 
+
+
+static void gser_epout_cmd_complete(struct usb_ep *, struct usb_request *);
+extern bool jz_usb_serial_flag;
 static void gser_epin_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	struct f_gser *f_gser = req->context;
 	int ret = 0;
 	char *buf = req->buf;
 
-	debug("IN, req->actual = %d,  req->status = %d, req->buf = 0x%x, 0x%x\n", req->actual, req->status, buf[0], buf[1]);
-	req->status = 0;
-	req->actual = 0;
-#if 0
-	ret = usb_ep_queue(ep, req, 0);
-	if (ret) {
-		printf("%s: Error in usb_ep_queue,%d\n", __func__, ret);
-		return ret;
+	if(req->status == -ETIMEDOUT){
+		debug("IN: %s---%d\n", __func__, __LINE__);
+		ret = usb_ep_queue(ep, req, 0);
+		if (ret) {
+			printf("%s: Error in usb_ep_queue,%d\n", __func__, ret);
+			return ret;
+		}
 	}
-#endif
-
 }
 
 
-static void gser_epout_cmd_complete(struct usb_ep *, struct usb_request *);
-extern bool jz_usb_serial_flag;
+
+static void gser_cmd_echo(struct usb_ep *ep, struct usb_request *req, int data)
+{
+	int ret = 0;
+	int *buf = req->buf;
+	buf[0] = data;
+	req->length = 4;
+	ret = usb_ep_queue(ep, req, 0);
+	if (ret)
+		printf("%s: Error in usb_ep_queue,%d \n", __func__, ret);
+}
 
 static void gser_epout_data_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	int ret = 0;
-	struct jz_nor_param *q = (struct jz_nor_param *)req->context;
-	debug("%s---%d, req->actual = %d, q->offset = %d\n", __func__, __LINE__,req->actual, q->offset);
+	struct f_gser *gser = (struct jz_nor_param *)req->context;
+	struct jz_nor_param *q = (struct jz_nor_param *)gser->context;
+	debug("OUT: %s---%d, req->actual = %d, q->offset = %d\n", __func__, __LINE__,req->actual, q->offset);
+
+
+	struct jz_acm_param *p = (struct jz_acm_param *)req->buf;
+	if((p->magic == MAGIC_SHOW)&&(req->actual == sizeof(struct jz_acm_param)))
+	{
+		printf("MAGIC_show\n");
+		ret = usb_ep_queue(ep, req, 0);
+		if (ret)
+			printf("%s: Error in usb_ep_queue,%d \n", __func__, ret);
+		gser_cmd_echo(gser->epin, gser->datain_req, gser->magic);
+		return;
+	}
 
 	if(req->actual != req->length)
 		printf("%s: Error in usb_transfer!!! req->actual = %d, req->length = %d\n", __func__, req->actual, req->length);
@@ -524,15 +554,20 @@ static void gser_epout_data_complete(struct usb_ep *ep, struct usb_request *req)
 	ret = usb_ep_queue(ep, req, 0);
 	if (ret)
 		printf("%s: Error in usb_ep_queue,%d \n", __func__, ret);
+
+
+	gser->magic = MAGIC_DATA;
+	gser_cmd_echo(gser->epin, gser->datain_req, MAGIC_DATA);
 }
 
 
 static void gser_epout_cmd_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	int ret = 0;
-	char *buf = req->buf;
+	bool echo_flag = 0;
 	struct jz_acm_param *p = (struct jz_acm_param *)req->buf;
-	struct jz_nor_param *q = (struct jz_nor_param *)req->context;
+	struct f_gser *gser = (struct f_gser *)req->context;
+	struct jz_nor_param *q = (struct jz_nor_param *)gser->context;
 	int i = 0;
 
 	debug("OUT, req->actual = %d,  p->magic = %c%c%c%c\n", req->actual, p->magic&0xFF, (p->magic>>8)&0xFF, (p->magic>>16)&0xFF, (p->magic>>24)&0xFF);
@@ -550,21 +585,32 @@ static void gser_epout_cmd_complete(struct usb_ep *ep, struct usb_request *req)
 			req->complete = gser_epout_data_complete;
 			req->length = p->size;
 			q->offset = p->offset;
-			printf("MAGIC_KERNEL,p-----.size = %d , offset = %d \n", p->size, p->offset);
+			echo_flag = 1;
+			gser->magic = p->magic;
+			printf("MAGIC_KERNEL,p-----.size = %d , offset = %d, actual = %d\n", p->size, p->offset, req->actual);
 			break;
 		case  MAGIC_ROOTFS:
 			req->complete = gser_epout_data_complete;
 			req->length = p->size;
 			q->offset = p->offset;
-			printf("MAGIC_ROOTFS,p-----.size = %d , offset = %d \n", p->size, p->offset);
+			echo_flag = 1;
+			gser->magic = p->magic;
+			printf("MAGIC_ROOTFS,p-----.size = %d , offset = %d, actual = %d \n", p->size, p->offset, req->actual);
 			break;
 		case  MAGIC_RESET:
 			jz_usb_serial_flag = 1;
+			gser->magic = p->magic;
 			printf("MAGIC_RESET\n");
-			break;
+			return;
 		case  MAGIC_ERASE:
-			printf("MAGIC_ERASE,p-----.size = %d , offset = %d \n", p->size, p->offset);
+			printf("MAGIC_ERASE,p-----.size = %d , offset = %d, actual = %d\n", p->size, p->offset, req->actual);
+			echo_flag = 1;
+			gser->magic = p->magic;
 			sfc_nor_erase(p->offset, p->size);
+			break;
+		case  MAGIC_SHOW:
+			printf("MAGIC_show\n");
+			echo_flag = 1;
 			break;
 		default:
 			printf("DEFAULT\n");
@@ -574,6 +620,10 @@ static void gser_epout_cmd_complete(struct usb_ep *ep, struct usb_request *req)
 	ret = usb_ep_queue(ep, req, 0);
 	if (ret)
 		printf("%s: Error in usb_ep_queue,%d \n", __func__, ret);
+
+	if(echo_flag)
+		gser_cmd_echo(gser->epin, gser->datain_req, gser->magic);
+
 	return;
 }
 
@@ -589,6 +639,7 @@ int gser_process_handle(struct f_gser *gser)
 		return -ENOMEM;
 	}
 
+	gser->context = dataout_context;
 	gser->datain_req = usb_ep_alloc_request(gser->epin, 0);
 	if (!gser->datain_req){
 		printf("%s--%d, error\n", __func__, __LINE__);
@@ -617,15 +668,10 @@ int gser_process_handle(struct f_gser *gser)
 	gser->datain_req->length = RET_IN_LENGTH;
 	gser->datain_req->complete = gser_epin_complete;
 
-	ret = usb_ep_queue(gser->epin, gser->datain_req, 0);
-	if (ret) {
-		printf("%s: Error in usb_ep_queue,%d\n", __func__, ret);
-		return ret;
-	}
 
 	gser->dataout_req->buf = gser->dataout_buf;
-	gser->dataout_req->length = RET_OUT_LENGTH;
-	gser->dataout_req->context = (void *)dataout_context;
+	gser->dataout_req->length = sizeof(struct jz_acm_param);
+	gser->dataout_req->context = (void *)gser;
 	gser->dataout_req->complete = gser_epout_cmd_complete;
 
 	ret = usb_ep_queue(gser->epout, gser->dataout_req, 0);

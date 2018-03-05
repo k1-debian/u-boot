@@ -974,7 +974,7 @@ void inep0_transfer_complete (struct dwc2_ep *dep)
 	return;
 }
 
-void inepx_transfer_complete(struct dwc2_ep *dep)
+void inepx_transfer_complete(struct dwc2_ep *dep, int status)
 {
 	struct dwc2_request	*request = next_request(&dep->urb_list);
 	int is_last = 0;
@@ -992,7 +992,7 @@ void inepx_transfer_complete(struct dwc2_ep *dep)
 		request->zlp_transfered = true;
 	} else if (is_last) {
 		udc_set_reg((1 << epnum),0,DIEP_EMPMSK);
-		dwc2_giveback_urb(dep,request,0);
+		dwc2_giveback_urb(dep,request,status);
 	}
 	dwc2_start_transfer(dep);
 	dep->wait_inxfer_complete = 0;
@@ -1075,9 +1075,8 @@ void handle_inep_intr(struct dwc2_udc *dev)
 		ep_pending = (ep_intr&ep_msk);
 
 		if (ep_pending & DEP_XFER_COMP) {
-err_inack_disappear:
 			if (ep_num(dep))
-				inepx_transfer_complete(dep);
+				inepx_transfer_complete(dep, 0);
 			else
 				inep0_transfer_complete(dep);
 			udc_write_reg(DEP_XFER_COMP, DIEP_INT(epnum));
@@ -1097,14 +1096,20 @@ err_inack_disappear:
 		if (ep_pending & DEP_TXFIFO_EMPTY) {
 			pr_info("DEP_TXFIFO_EMPTY %d\n",epnum);
 			if ((udc_read_reg(DIEP_EMPMSK) & (1 << epnum))) {
+				int status = 0;
 				dwc2_fill_tx_fifo(dep);
-				if (in_xfer_timeout_detect(dep)) {
+				status  = in_xfer_timeout_detect(dep);
+				if (status) {
 					printf("%s in xfer timeout\n", dep->name);
 					udc_set_reg((1 << epnum),0,DIEP_EMPMSK);
 					__dwc2_stop_in_transfer(dep);
-					udc_write_reg(DEP_TXFIFO_EMPTY, DIEP_INT(epnum));
-					goto err_inack_disappear;
+					if (ep_num(dep))
+						inepx_transfer_complete(dep, status);
+					else
+						inep0_transfer_complete(dep);
+
 				}
+
 			}
 			udc_write_reg(DEP_TXFIFO_EMPTY, DIEP_INT(epnum));
 		}
