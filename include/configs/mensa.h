@@ -83,12 +83,16 @@
   #ifdef CONFIG_SPL_MMC_SUPPORT
 /*    #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.250:192.168.4.1:192.168.4.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw"*/
 /*	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc" */
-  #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 init=/linuxrc root=/dev/mmcblk0p1 rw"
-#elif defined(CONFIG_JZ_NAND_MGR)
-    #define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/ndsystem rw"
+      #ifdef CONFIG_JZ_MMC_SPLMSC
+         #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 init=/linuxrc root=/dev/mmcblk1p1 rw"
+      #else
+         #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 init=/linuxrc root=/dev/mmcblk0p1 rw"
+      #endif
+  #elif defined(CONFIG_JZ_NAND_MGR)
+      #define CONFIG_BOOTARGS BOOTARGS_COMMON " root=/dev/ndsystem rw"
   #else
-    /*#define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 ubi.mtd=2 root=ubi1:ndsystem rootfstype=ubifs rw"*/
-    #define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=2 root=ubi0:ndsystem rootfstype=ubifs rw"
+/*#define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 ubi.mtd=2 root=ubi1:ndsystem rootfstype=ubifs rw"*/
+      #define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=2 root=ubi0:ndsystem rootfstype=ubifs rw"
   #endif
 #endif
 
@@ -99,33 +103,37 @@
  */
 #define CONFIG_BOOTDELAY  1
 #ifdef CONFIG_BOOT_ANDROID
-  #ifdef CONFIG_SPL_MMC_SUPPORT
-    #define CONFIG_BOOTCOMMAND	\
-	  "batterydet; cls; boota mmc 0 0x80f00000 6144"
-    #define CONFIG_NORMAL_BOOT CONFIG_BOOTCOMMAND
-    #define CONFIG_RECOVERY_BOOT "boota mmc 0 0x80f00000 24576"
-  #else
-    /*#define CONFIG_BOOTCOMMAND "boota nand 0 0x80f00000 6144"*/
-		#define CONFIG_BOOTCOMMAND  "nand_zm read ndboot 0 0x400000 0x80f00000;boota mem 0x80f00000"
-    #define CONFIG_NORMAL_BOOT CONFIG_BOOTCOMMAND
-    #define CONFIG_RECOVERY_BOOT "boota nand 0 0x80f00000 24576"
-  #endif
+#ifdef CONFIG_SPL_MMC_SUPPORT
+#define CONFIG_BOOTCOMMAND							\
+	"batterydet; cls; boota mmc 0 0x80f00000 6144"
+#define CONFIG_NORMAL_BOOT CONFIG_BOOTCOMMAND
+#define CONFIG_RECOVERY_BOOT "boota mmc 0 0x80f00000 24576"
+#else
+/*#define CONFIG_BOOTCOMMAND "boota nand 0 0x80f00000 6144"*/
+#define CONFIG_BOOTCOMMAND  "nand_zm read ndboot 0 0x400000 0x80f00000;boota mem 0x80f00000"
+#define CONFIG_NORMAL_BOOT CONFIG_BOOTCOMMAND
+#define CONFIG_RECOVERY_BOOT "boota nand 0 0x80f00000 24576"
+#endif
 #else  /* CONFIG_BOOT_ANDROID */
-  #ifdef CONFIG_SPL_MMC_SUPPORT
-    #define CONFIG_BOOTCOMMAND "mmc dev 0;mmc read 0x80f00000 0x1800 0x3000; bootm 0x80f00000"
-    /* #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/bliu/mensa/uImage ;bootm 0x80600000" */
-  #else
-	#ifdef CONFIG_JZ_NAND_MGR
-		#define CONFIG_BOOTCOMMAND  "nand_zm read ndboot 0 0x400000 0x80600000;bootm"
-                                                            /*order ops pt offset len dst */
-		/*#define CONFIG_BOOTCOMMAND        "nand_zm read ndboot;bootm"*/
-	#else
-    #define CONFIG_BOOTCOMMAND						\
+#ifdef CONFIG_SPL_MMC_SUPPORT
+   #ifdef CONFIG_JZ_MMC_SPLMSC
+      #define CONFIG_BOOTCOMMAND "mmc dev 1;mmc read 0x80f00000 0x1800 0x3000; bootm 0x80f00000"
+   #else
+      #define CONFIG_BOOTCOMMAND "mmc dev 0;mmc read 0x80f00000 0x1800 0x3000; bootm 0x80f00000"
+   #endif
+/* #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/bliu/mensa/uImage ;bootm 0x80600000" */
+#else
+#ifdef CONFIG_JZ_NAND_MGR
+#define CONFIG_BOOTCOMMAND  "nand_zm read ndboot 0 0x400000 0x80600000;bootm"
+/*order ops pt offset len dst */
+/*#define CONFIG_BOOTCOMMAND        "nand_zm read ndboot;bootm"*/
+#else
+#define CONFIG_BOOTCOMMAND												\
 	"mtdparts default; ubi part kernel; ubi read 0x80f00000 ndboot 0x400000; bootm 0x80f00000"
-	/*"mtdparts default; ubi part kernel; ubifsmount ubi:ndboot;" \
-	"ubifsload 0x80f00000 uImage; bootm 0x80f00000"*/
-	#endif /* endif config_jz_nand_MGR*/
-  #endif
+/*"mtdparts default; ubi part kernel; ubifsmount ubi:ndboot;" \
+  "ubifsload 0x80f00000 uImage; bootm 0x80f00000"*/
+#endif /* endif config_jz_nand_MGR*/
+#endif
 #endif /* CONFIG_BOOT_ANDROID */
 
 /**
@@ -163,13 +171,13 @@
 #define CONFIG_GENERIC_MMC		1
 #define CONFIG_MMC			1
 #define CONFIG_JZ_MMC 1
-#ifndef CONFIG_JZ_MMC_SPLMSC
+#ifdef CONFIG_JZ_MMC_SPLMSC
+#define CONFIG_JZ_MMC_MSC1 1
+#define CONFIG_JZ_MMC_MSC1_PE 1
+#else
 #define CONFIG_JZ_MMC_MSC0 1
 #define CONFIG_JZ_MMC_MSC0_PA_4BIT 1
 #define CONFIG_JZ_MMC_SPLMSC 0
-#else
-#define CONFIG_JZ_MMC_MSC1 1
-#define CONFIG_JZ_MMC_MSC1_PE 1
 #endif
 
 
@@ -361,8 +369,8 @@
 #define CONFIG_CMD_NAND_LOCK_UNLOCK
 #define CONFIG_CMD_UBIFS
 /*#define CONFIG_MTD_UBI_DEBUG_MSG
-#define CONFIG_MTD_UBI_DEBUG_MSG_IO
-#define CONFIG_MTD_UBI_DEBUG_MSG_BLD*/
+  #define CONFIG_MTD_UBI_DEBUG_MSG_IO
+  #define CONFIG_MTD_UBI_DEBUG_MSG_BLD*/
 #ifdef CONFIG_MTD_NAND_JZ_AUTO_PARAMS
 #define CONFIG_SYS_NAND_SELF_INIT
 #define CONFIG_SYS_SPL_NAND_FLAG_ADDR   0xf4000800
@@ -380,28 +388,28 @@
 #define CONFIG_SYS_NAND_ECCSTRENGTH	24
 #define CONFIG_SYS_NAND_ECCBYTES	(CONFIG_SYS_NAND_ECCSTRENGTH * 14 / 8)
 #define CONFIG_SYS_NAND_OOBSIZE		224
-#define CONFIG_SYS_NAND_ECCPOS { \
-56 , 57 , 58 , 59 , 60 , 61 , 62 , 63 , \
-64 , 65 , 66 , 67 , 68 , 69 , 70 , 71 , \
-72 , 73 , 74 , 75 , 76 , 77 , 78 , 79 , \
-80 , 81 , 82 , 83 , 84 , 85 , 86 , 87 , \
-88 , 89 , 90 , 91 , 92 , 93 , 94 , 95 , \
-96 , 97 , 98 , 99 , 100, 101, 102, 103, \
-104, 105, 106, 107, 108, 109, 110, 111, \
-112, 113, 114, 115, 116, 117, 118, 119, \
-120, 121, 122, 123, 124, 125, 126, 127, \
-128, 129, 130, 131, 132, 133, 134, 135, \
-136, 137, 138, 139, 140, 141, 142, 143, \
-144, 145, 146, 147, 148, 149, 150, 151, \
-152, 153, 154, 155, 156, 157, 158, 159, \
-160, 161, 162, 163, 164, 165, 166, 167, \
-168, 169, 170, 171, 172, 173, 174, 175, \
-176, 177, 178, 179, 180, 181, 182, 183, \
-184, 185, 186, 187, 188, 189, 190, 191, \
-192, 193, 194, 195, 196, 197, 198, 199, \
-200, 201, 202, 203, 204, 205, 206, 207, \
-208, 209, 210, 211, 212, 213, 214, 215, \
-216, 217, 218, 219, 220, 221, 222, 223}
+#define CONFIG_SYS_NAND_ECCPOS {				\
+		56 , 57 , 58 , 59 , 60 , 61 , 62 , 63 , \
+		64 , 65 , 66 , 67 , 68 , 69 , 70 , 71 , \
+		72 , 73 , 74 , 75 , 76 , 77 , 78 , 79 , \
+		80 , 81 , 82 , 83 , 84 , 85 , 86 , 87 , \
+		88 , 89 , 90 , 91 , 92 , 93 , 94 , 95 , \
+		96 , 97 , 98 , 99 , 100, 101, 102, 103, \
+		104, 105, 106, 107, 108, 109, 110, 111, \
+		112, 113, 114, 115, 116, 117, 118, 119, \
+		120, 121, 122, 123, 124, 125, 126, 127, \
+		128, 129, 130, 131, 132, 133, 134, 135, \
+		136, 137, 138, 139, 140, 141, 142, 143, \
+		144, 145, 146, 147, 148, 149, 150, 151, \
+		152, 153, 154, 155, 156, 157, 158, 159, \
+		160, 161, 162, 163, 164, 165, 166, 167, \
+		168, 169, 170, 171, 172, 173, 174, 175, \
+		176, 177, 178, 179, 180, 181, 182, 183, \
+		184, 185, 186, 187, 188, 189, 190, 191, \
+		192, 193, 194, 195, 196, 197, 198, 199, \
+		200, 201, 202, 203, 204, 205, 206, 207, \
+		208, 209, 210, 211, 212, 213, 214, 215, \
+		216, 217, 218, 219, 220, 221, 222, 223}
 #endif
 #endif /*CONFIG_MTD_NAND_JZ*/
 
