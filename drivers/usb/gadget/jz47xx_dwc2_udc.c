@@ -1289,6 +1289,8 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	struct dwc2_udc *dev = the_controller;
 
 	printf("usb_gadget_unregister_driver %p\n",&driver->unbind);
+	if (driver->disconnect)
+		driver->disconnect(&dev->gadget);
 	if (driver->unbind)
 		driver->unbind(&dev->gadget);
 
