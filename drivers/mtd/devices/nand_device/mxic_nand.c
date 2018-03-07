@@ -169,7 +169,8 @@ static int32_t mxic_get_read_feature(struct flash_operation_message *op_info) {
 				    ret = 0;
 				    break;
 			    case 0x1:
-				    ret = get_ecc_value(flash);
+				    if((ret = get_ecc_value(flash)) > 0x4)
+					    ret = -EBADMSG;
 				    break;
 			    case 0x2:
 				    ret = -EBADMSG;

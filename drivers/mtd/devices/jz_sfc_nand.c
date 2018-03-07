@@ -384,35 +384,40 @@ static int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd
 {
 	uint32_t addr = (uint32_t)from;
 	uint32_t pageaddr = addr / mtd->writesize;
-	int32_t ret = 0;
+	int32_t ret = 0, ret_eccvalue = 0;
 
 	if(ops->datbuf) {
 		ret = jz_sfc_nand_read(flash, pageaddr, 0, ops->datbuf, mtd->writesize);
 		if(ret < 0) {
 			printf("spi nand read error %s %s %d ,ret = %d\n", __FILE__, __func__,  __LINE__, ret);
-			return ret;
+			if(ret == -EIO) {
+				return ret;
+			} else {
+				ret_eccvalue = ret;
+			}
 		}
 	}
-	ret = jz_sfc_nand_read(flash, pageaddr, mtd->writesize + ops->ooboffs, ops->oobbuf, ops->ooblen);
-	if(ret < 0){
-		printf("spi nand read error %s %s %d ,ret = %d\n", __FILE__, __func__, __LINE__, ret);
+	if(ops->oobbuf){
+		ret = jz_sfc_nand_read(flash, pageaddr, mtd->writesize + ops->ooboffs, ops->oobbuf, ops->ooblen);
+		if(ret < 0)
+		            printf("%s %s %d : spi nand read oob error ,ret= %d\n", __FILE__, __func__, __LINE__, ret);
+
+		if(ret != -EIO)
+		            ops->oobretlen = ops->ooblen;
 	}
-	return ret;
+	return ret ? ret : ret_eccvalue;
 }
 
 static int badblk_check(int len,unsigned char *buf)
 {
-	int i,bit0_cnt = 0;
-	unsigned short *check_buf = (unsigned short *)buf;
+	int j = 0;
+	unsigned char *check_buf = buf;
 
-	if(check_buf[0] != 0xff){
-		for(i = 0; i < len * 8; i++){
-			if(!((check_buf[0] >> i) & 0x1))
-				bit0_cnt++;
-		}
+	for(j = 0; j < len; j++){
+	    if(check_buf[j] != 0xff){
+		return 1;
+	    }
 	}
-	if(bit0_cnt > 6 * len)
-		return 1; // is bad blk
 
 	return 0;
 }
@@ -440,7 +445,7 @@ static int jz_sfcnand_block_bad_check(struct mtd_info *mtd, loff_t ofs,int getch
 	struct mtd_oob_ops ops;
 
 	memset(&ops, 0, sizeof(ops));
-	if (!(chip->options & NAND_BUSWIDTH_16))
+	if (chip->options & NAND_BUSWIDTH_16)
 		check_len = 2;
 
 	ops.oobbuf = check_buf;
@@ -814,7 +819,6 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 	chip->block_markbad = jz_sfcnand_block_markbad;
 	chip->ecc.layout= &gd5f_ecc_layout_128; // for erase ops
 	chip->bbt_erase_shift = chip->phys_erase_shift = ffs(mtd->erasesize) - 1;
-
 	if (!(chip->options & NAND_OWN_BUFFERS))
 		chip->buffers = memalign(ARCH_DMA_MINALIGN,sizeof(*chip->buffers));
 
