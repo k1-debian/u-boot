@@ -464,6 +464,19 @@ fail:
 
 static void gser_unbind(struct usb_configuration *c, struct usb_function *f)
 {
+	struct f_gser		*gser = func_to_gser(f);
+	int			status;
+	status = usb_ep_disable(gser->epnotify);
+	if(status)
+		printk("%s---%d, failed\n", __func__, __LINE__);
+
+	status = usb_ep_disable(gser->epout);
+	if(status)
+		printk("%s---%d, failed\n", __func__, __LINE__);
+
+	status = usb_ep_disable(gser->epin);
+	if(status)
+		printk("%s---%d, failed\n", __func__, __LINE__);
 }
 
 int gser_bind_config(struct usb_configuration *c)
