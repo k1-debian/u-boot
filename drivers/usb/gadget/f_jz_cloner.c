@@ -212,8 +212,13 @@ int cloner_init(struct cloner *cloner)
 					debug_args = p->data;
 					L.enable = debug_args->log_enabled;
 					break;
-				default:
+				case MAGIC_SFC:
+				case MAGIC_MMC:
+				case MAGIC_NAND:
 					m = p;
+					break;
+				default:
+					printf("Unknown magic!!!\n");
 					break;
 			}
 		}
@@ -560,13 +565,13 @@ int f_cloner_bind(struct usb_configuration *c,
 	cloner->read_req = usb_ep_alloc_request(cloner->ep_in,0);
 
 	cloner->buf_size = ARGS_LEN;
-	cloner->buf = malloc(ARGS_LEN);
+	cloner->buf = calloc(1,ARGS_LEN);
 	cloner->write_req->complete = handle_write;
 	cloner->write_req->buf = cloner->buf;
 	cloner->write_req->length = ARGS_LEN;
 	cloner->write_req->context = cloner;
 
-	cloner->args = malloc(ARGS_LEN);
+	cloner->args = calloc(1,ARGS_LEN);
 	global_args = (struct ParameterInfo*)(cloner->args);
 	cloner->args_req->complete = handle_write;
 	cloner->args_req->buf = cloner->args;
