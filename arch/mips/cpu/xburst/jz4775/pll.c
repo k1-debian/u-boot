@@ -46,11 +46,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define DIV_PCLK		8
 #define DIV_H2			4
 #endif
-#ifdef CONFIG_SYS_MEM_DIV
-#define DIV_H0			CONFIG_SYS_MEM_DIV
-#else
-#define DIV_H0			gd->arch.gi->ddr_div
-#endif
+#define DIV_H0          DIV_H2
 #define DIV_L2			2
 #define DIV_CPU			1
 #define CPCCR_CFG		(((SEL_SCLKA & 0x3) << 30)		\
