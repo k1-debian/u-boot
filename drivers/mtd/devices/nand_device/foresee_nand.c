@@ -4,19 +4,19 @@
 #include "../jz_sfc_nand.h"
 #include "nand_common.h"
 
-#define XTX_DEVICES_NUM         2
+#define FS_DEVICES_NUM         1
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
 #define	TSHSL_W		20
 
-static struct jz_nand_base_param xtx_param[XTX_DEVICES_NUM] = {
+static struct jz_nand_base_param fs_param[FS_DEVICES_NUM] = {
 
 	[0] = {
-		/*PN26G01AW*/
+		/*FS35ND01G*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
-		.oobsize = 128,
+		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
 		.tSETUP  = TSETUP,
@@ -24,33 +24,17 @@ static struct jz_nand_base_param xtx_param[XTX_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.ecc_max = 0x8,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
-	[1] = {
-		/*PN26G02AW */
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 128,
-		.flashsize = 2 * 1024 * 64 * 2048,
-
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.ecc_max = 0x8,
-		.need_quad = 1,
-	}
 
 };
 
-static struct device_id_struct device_id[XTX_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xE1, "PN26G01AW", &xtx_param[0]),
-	DEVICE_ID_STRUCT(0xE2, "PN26G02AW", &xtx_param[1]),
+static struct device_id_struct device_id[FS_DEVICES_NUM] = {
+	DEVICE_ID_STRUCT(0xA1, "FS35ND01G", &fs_param[0]),
 };
 
-static int32_t xtx_get_read_feature(struct flash_operation_message *op_info) {
+static int32_t fs_get_read_feature(struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_nand_descriptor *nand_desc = flash->flash_info;
@@ -89,16 +73,12 @@ static int32_t xtx_get_read_feature(struct flash_operation_message *op_info) {
 	ecc_status = sfc_get_sta_rt(flash->sfc);
 
 	switch(device_id) {
-		case 0xE1 ... 0xE2:
-			switch((ecc_status >> 4) & 0x3) {
-			    case 0x02:
-				    ret = -EBADMSG;
-				    break;
-			    case 0x03:
-				    ret = 0x8;
-				    break;
-			    default:
-				    ret = 0;
+		case 0xA1:
+			switch((ret = ((ecc_status >> 4) & 0x7))) {
+				case 0x0 ... 0x4:
+					break;
+				default:
+					ret = -EBADMSG;
 			}
 			break;
 		default:
@@ -109,19 +89,19 @@ static int32_t xtx_get_read_feature(struct flash_operation_message *op_info) {
 	return ret;
 }
 
-static int xtx_nand_init(void) {
-	struct jz_nand_device *xtx_nand;
-	xtx_nand = kzalloc(sizeof(*xtx_nand), GFP_KERNEL);
-	if(!xtx_nand) {
-		pr_err("alloc xtx_nand struct fail\n");
+static int fs_nand_init(void) {
+	struct jz_nand_device *fs_nand;
+	fs_nand = kzalloc(sizeof(*fs_nand), GFP_KERNEL);
+	if(!fs_nand) {
+		pr_err("alloc fs_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	xtx_nand->id_manufactory = 0xA1;
-	xtx_nand->id_device_list = device_id;
-	xtx_nand->id_device_count = XTX_DEVICES_NUM;
+	fs_nand->id_manufactory = 0xCD;
+	fs_nand->id_device_list = device_id;
+	fs_nand->id_device_count = FS_DEVICES_NUM;
 
-	xtx_nand->ops.nand_read_ops.get_feature = xtx_get_read_feature;
-	return jz_spinand_register(xtx_nand);
+	fs_nand->ops.nand_read_ops.get_feature = fs_get_read_feature;
+	return jz_spinand_register(fs_nand);
 }
-SPINAND_MOUDLE_INIT(xtx_nand_init);
+SPINAND_MOUDLE_INIT(fs_nand_init);

@@ -363,7 +363,7 @@ static void mxic_program_exec(struct sfc_transfer *transfer, struct cmd_info *cm
 	transfer->ops_mode = CPU_OPS;
 }
 
-int mxic_nand_init(void) {
+static int mxic_nand_init(void) {
 	struct jz_nand_device *mxic_nand;
 	mxic_nand = kzalloc(sizeof(*mxic_nand), GFP_KERNEL);
 	if(!mxic_nand) {

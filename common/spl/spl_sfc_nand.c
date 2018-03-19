@@ -170,6 +170,7 @@ read_oob:
 		sfc_read_data(&read_buf, 1);
 	}while(read_buf & 0x1);
 	/*ecc check*/
+
 	for(i = 0; i < curr_device->eccstat_count; i++) {
 		read_buf = read_buf & 0xff;
 		if(((read_buf >> curr_device->ecc_bit) &
@@ -276,6 +277,7 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 		pageaddr = src_addr / pagesize;
 		columnaddr = src_addr % pagesize;
 		rlen = (pagesize - columnaddr) < count ? (pagesize - columnaddr) : count;
+
 		ret = spinand_read_page(pageaddr, columnaddr, buf, rlen, pagesize);
 		if (ret > 0) {
 			debug("bad block %d\n", pageaddr / CONFIG_SPI_NAND_PPB);
@@ -302,7 +304,7 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 	return 0;
 }
 
-
+#ifdef CONFIG_OTA_VERSION20
 void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int nv_size)
 {
 	unsigned int buf[6][2] = {0};
@@ -331,7 +333,7 @@ void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int nv_
 	}
 	*base_addr = nv_addr + nv_off *	blocksize;
 }
-
+#endif
 
 void spl_load_kernel(long offset)
 {
@@ -361,7 +363,6 @@ void spl_sfc_nand_load(void)
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_init();
-
 #ifdef CONFIG_SPL_OS_BOOT
 	/*read burn param*/
 	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
@@ -380,14 +381,18 @@ void spl_sfc_nand_load(void)
 #else
 	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (void *)CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
+
 #endif
+
 }
 
+#ifdef CONFIG_OTA_VERSION20
 static struct ota_ops ota_ops = {
 	.flash_init = sfc_init,
 	.flash_read = sfc_nand_load,
 	/* .flash_get_partitions = sfc_nand_get_partition, */
 };
+#endif
 
 char* spl_sfc_nand_load_image(void)
 {

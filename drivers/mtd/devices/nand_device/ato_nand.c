@@ -75,7 +75,7 @@ static int32_t ato_get_read_feature(struct flash_operation_message *op_info) {
 	}
 }
 
-int ato_nand_init(void) {
+static int ato_nand_init(void) {
 	struct jz_nand_device *ato_nand;
 	ato_nand = kzalloc(sizeof(*ato_nand), GFP_KERNEL);
 	if(!ato_nand) {

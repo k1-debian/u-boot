@@ -156,11 +156,15 @@ int jz_nand_register(struct jz_nand_device *flash);
 
 
 int jz_spinand_register(struct jz_nand_device *flash);
-
 typedef int (*spinand_regcall_t)(void);
 
+#define ingenic_entry_declare(_type, _name, _list)				\
+	static _type ingenic_##_list##_2_##_name __aligned(4)			\
+			__attribute__((used,					\
+			section(".u_boot_list_2_"#_list"_2_"#_name)))
+
 #define SPINAND_MOUDLE_INIT(fn)      \
-	ll_entry_declare(spinand_regcall_t, _1##fn, flash) = fn
+	ingenic_entry_declare(spinand_regcall_t, _1##fn, flash) = fn
 
 static inline int spinand_moudle_init(void)
 {

@@ -273,7 +273,7 @@ static int32_t gd_get_read_feature(struct flash_operation_message *op_info) {
 	return ret;
 }
 
-int gd_nand_init(void) {
+static int gd_nand_init(void) {
 	struct jz_nand_device *gd_nand;
 	gd_nand = kzalloc(sizeof(*gd_nand), GFP_KERNEL);
 	if(!gd_nand) {

@@ -395,7 +395,7 @@ static void winbond_block_erase(struct sfc_transfer *transfer, struct cmd_info *
 
 }
 
-int winbond_nand_init(void) {
+static int winbond_nand_init(void) {
 	struct jz_nand_device *winbond_nand;
 	winbond_nand = kzalloc(sizeof(*winbond_nand), GFP_KERNEL);
 	if(!winbond_nand) {
