@@ -76,4 +76,9 @@
 #ifdef CONFIG_DDR2_PWE809416BBR_E7DN
 #include "./chips/DDR2_PWE809416BBR-E7DN.h"
 #endif
+
+#ifdef CONFIG_LPDDR2_EDB4432BBBJ
+#include "./chips/LPDDR2_EDB4432BBBJ.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */
