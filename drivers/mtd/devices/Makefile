@@ -40,6 +40,7 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/nand_common.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/winbond_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/xtx_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/foresee_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/zetta_nand.o
 endif
 
 

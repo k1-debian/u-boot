@@ -6,6 +6,7 @@ int gd_nand_register_func(void);
 int mxic_nand_register_func(void);
 int winbond_nand_register_func(void);
 int xtx_nand_register_func(void);
+int zetta_nand_register_func(void);
 static void *nand_param[] = {
 /*##################*/
 (void *)ato_nand_register_func,
@@ -24,6 +25,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)xtx_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)zetta_nand_register_func,
 /*##################*/
 };
 #endif
