@@ -92,7 +92,6 @@ int spinand_program(struct cloner *cloner)
 			if (partition->manager_mode == MTD_D_MODE)
 				pt_index = startaddr / block_size;
 			if (pt_index != pt_index_bak) {
-				pt_index_bak = pt_index;
 				memset(command, 0 , 128);
 				if (partition->manager_mode == MTD_D_MODE)
 					sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
@@ -105,6 +104,10 @@ int spinand_program(struct cloner *cloner)
 			}
 		}
 
+		if (pt_index != pt_index_bak) {
+			pt_index_bak = pt_index;
+			bad_len = 0;
+		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
 			startaddr = sfc_nand_skip_bad(startaddr);
 			ret = nand_write(nand, startaddr, &length, databuf);
