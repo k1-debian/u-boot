@@ -49,6 +49,8 @@ static void add_sfc_nor_params_to_flash(unsigned char *buf)
 			break;
 	}
 
+	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
+		*(volatile unsigned int *)(buf + 512) = 0x1111;
 }
 
 int sfc_program(struct cloner *cloner)

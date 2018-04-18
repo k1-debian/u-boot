@@ -26,7 +26,11 @@ static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 		.tSHSL_W =TSHSL_W,
 
 		.ecc_max = 0x4,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
+#endif
 	},
 
 	[1] = {
@@ -42,8 +46,11 @@ static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 		.tSHSL_W =TSHSL_W,
 
 		.ecc_max = 0x4,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
-
+#endif
 	}
 };
 

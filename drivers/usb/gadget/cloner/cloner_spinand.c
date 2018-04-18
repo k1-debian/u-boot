@@ -202,5 +202,7 @@ void add_information_to_spl(char *databuf)
 	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfc_nand_burner_param) - 4);
 	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfc_nand_burner_param) - 4, bp.partition, sizeof(struct jz_spinand_partition) * bp.partition_num);
 
+	if(*(volatile unsigned int *)(databuf + 512) == 0 || *(volatile unsigned int *)(databuf + 512) > 65535)
+		*(volatile unsigned int *)(databuf + 512) = 0x1111;
 }
 #endif

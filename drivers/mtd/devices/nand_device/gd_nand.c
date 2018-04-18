@@ -24,7 +24,11 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
+#endif
 	},
 	[1] = {
 		 /*GD5F2GQ4UB*/
@@ -39,7 +43,11 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
+#endif
 	},
 	[2] = {
 		/*GD5F4GQ4UB*/
@@ -54,7 +62,11 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
+#endif
 	},
 	[3] = {
 		/*GD5F1GQ4UC*/
@@ -69,8 +81,11 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
-
+#endif
 	},
 	[4] = {
 		/*GD5F2GQ4UC*/
@@ -85,7 +100,11 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
+#endif
 	},
 	[5] = {
 		/*GD5F4GQ4UC*/
@@ -100,7 +119,11 @@ static struct jz_nand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
 		.need_quad = 1,
+#endif
 	},
 
 };

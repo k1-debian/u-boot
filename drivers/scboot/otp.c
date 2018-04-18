@@ -40,7 +40,7 @@ static int efuse_update_state(void)
 	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
 	*reg_ctrl = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0x1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RDEN;
 	while(!(*reg_stat & EFUSE_REG_STAT_RDDONE));
-//	printf("xxxxxxx state updated: %x\n", *reg_stat);
+	printf("xxxxxxx state updated: %x\n", *reg_stat);
 }
 
 static int efuse_config(void)
@@ -138,6 +138,7 @@ void otp_init(void)
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	efuse_config();
 	efuse_update_state();
+	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
 }
 
 int cpu_wtotp(int opera)
@@ -177,7 +178,7 @@ int cpu_burn_rckey(void)
 	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
 
 //	printf("xxxxxxxxxxx func : %s\n",__func__);
-
+	return 0;
 	if(EFUSTATE_NKU_PRT)
 		return 0;
 
@@ -212,9 +213,6 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 
 	set_rsakey(idata+2,length-8);
 
-	if(EFUSTATE_NKU_PRT)
-		return 0;
-
 	nku[0] = rsakeylen * 8;
 	nku[1] = rsakeylen * 8;
 
@@ -236,6 +234,9 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 
 int cpu_burn_nku(void *idata,unsigned int length)
 {
+	if(EFUSTATE_NKU_PRT)
+		return 0;
+
 	if(cpu_load_nku(idata, length) < 0)
 		return -ESEC;
 
@@ -336,7 +337,22 @@ int cpu_burn_secboot_enable(void)
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
-	*reg_data1 = (1 << EFUSE_PTCOFF_SEC | 1 << EFUSE_PTCOFF_SCB); /* security boot enable, security boot enable protected */
+	*reg_data1 = (1 << EFUSE_PTCOFF_SEC); /* security boot enable, security boot enable protected */
+	*reg_ctrl &= ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
+	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address */
+	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
+
+	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
+
+	gpio_output_value(debug_args->efuse_gpio, 1);
+	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+
+	efuse_update_state();
+
+	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
+	gpio_output_value(debug_args->efuse_gpio, 0);
+
+	*reg_data1 = (1 << EFUSE_PTCOFF_SCB); /* security boot enable, security boot enable protected */
 	*reg_ctrl &= ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
 	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address */
 	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/

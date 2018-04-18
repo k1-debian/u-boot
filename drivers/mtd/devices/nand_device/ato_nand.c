@@ -23,8 +23,11 @@ static struct jz_nand_base_param ato25d1ga_param = {
 	.tSHSL_W = TSHSL_W,
 
 	.ecc_max = 0,
+#ifdef CONFIG_BURNER
+	.need_quad = 0,
+#else
 	.need_quad = 1,
-
+#endif
 };
 
 static struct device_id_struct device_id[ATO_DEVICES_NUM] = {
