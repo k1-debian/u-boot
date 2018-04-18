@@ -295,14 +295,14 @@ static void jz_mmc_set_ios(struct mmc *mmc)
 
 static int jz_mmc_core_init(struct mmc *mmc)
 {
-	int tmp;
 	struct jz_mmc_priv *priv = mmc->priv;
 	unsigned int clkrt = jz_mmc_readl(priv, MSC_CLKRT);
 
 	/* reset */
 	jz_mmc_writel(MSC_STRPCL_RESET, priv, MSC_STRPCL);
 
-#if defined(CONFIG_M200) || defined(CONFIG_X1000)
+#if defined(CONFIG_M200) || defined(CONFIG_X1000) || defined(CONFIG_X1630)
+	int tmp;
 	tmp = jz_mmc_readl(priv, MSC_STRPCL);
 	tmp &= ~MSC_STRPCL_RESET;
 	jz_mmc_writel(tmp, priv, MSC_STRPCL);

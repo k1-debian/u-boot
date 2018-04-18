@@ -54,7 +54,11 @@ static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p
 		assert(1);
 	}
 	if(ddrc->timing2.b.tRL > 1)
+#ifdef CONFIG_X1XXX_INNOPHY
+		ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 3;
+#else
 		ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 2;
+#endif
 	else{
 		out_error("DDR_RL too small! check %s %d\n",__FILE__,__LINE__);
 		assert(1);
@@ -110,8 +114,14 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	}
 
 	tmp = ps2cycle_ceil(params->tWR, 1);
-	BETWEEN(tmp,2,8);  // debug, BETWEEN(tmp,2,6)
+#ifdef CONFIG_X1XXX_INNOPHY
+	if (tmp > 8)
+		tmp = 8;
+	BETWEEN(tmp,2,9);  // debug, BETWEEN(tmp,2,6)
 	ddrp->mr0.ddr2.WR = tmp - 1;
+#else
+	BETWEEN(tmp,2,8);
+#endif
 
 #ifdef DDR2_CHIP_DRIVER_OUT_STRENGTH
 	ddrp->mr1.ddr2.DIC = DDR2_CHIP_DRIVER_OUT_STRENGTH;
@@ -138,7 +148,11 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	/* AL = 0,other's cann't support by controller. */
 	tmp = p->bl / 2 +
 		MAX(ps2cycle_ceil(params->tRTP,1),2) - 2;
+#ifdef CONFIG_X1XXX_INNOPHY
+	BETWEEN(tmp,2,7);
+#else
 	BETWEEN(tmp,2,6);
+#endif
 	ddrp->dtpr0.b.tRTP = tmp;
 	ddrp->dtpr0.b.tCCD = 0;
 

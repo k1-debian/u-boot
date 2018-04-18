@@ -29,6 +29,7 @@
 #include <ingenic_soft_i2c.h>
 #include <jz_pca953x.h>
 
+#define JZGPIO_GROUP_OFFSET     (0x100)
 #if defined (CONFIG_JZ4775)
 #include "jz_gpio/jz4775_gpio.c"
 #elif defined (CONFIG_JZ4780)
@@ -39,6 +40,10 @@
 #include "jz_gpio/m150_gpio.c"
 #elif defined (CONFIG_X1000)
 #include "jz_gpio/x1000_gpio.c"
+#elif defined (CONFIG_X1630)
+#undef JZGPIO_GROUP_OFFSET
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/x1630_gpio.c"
 #elif defined (CONFIG_X2000)
 #include "jz_gpio/x2000_gpio.c"
 #endif
@@ -51,7 +56,7 @@ static inline int is_gpio_from_chip(int gpio_num)
 
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 {
-	unsigned int base = GPIO_BASE + 0x100 * n;
+	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * n;
 
 	writel(func & 0x8? pins : 0, base + PXINTS);
 	writel(func & 0x4? pins : 0, base + PXMSKS);
@@ -63,8 +68,10 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x2? 0 : pins, base + PXPAT1C);
 	writel(func & 0x1? 0 : pins, base + PXPAT0C);
 
+#if defined(PXPES) && defined(PXPEC) && defined(PXPE)
 	writel(func & 0x10? pins : 0, base + PXPEC);
 	writel(func & 0x10? 0 : pins, base + PXPES);
+#endif
 }
 
 int gpio_request(unsigned gpio, const char *label)
@@ -127,6 +134,7 @@ int gpio_get_value(unsigned gpio)
 	return pca953x_get_value(gpio);
 #endif
 	}
+	return 0;
 }
 
 int gpio_get_flag(unsigned int gpio)
@@ -279,7 +287,7 @@ void dump_gpio_func( unsigned int gpio)
 	unsigned group = gpio / 32;
 	unsigned pin = gpio % 32;
 	int d = 0;
-	unsigned int base = GPIO_BASE + 0x100 * group;
+	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * group;
 	d = d | ((readl(base + PXINT) >> pin) & 1) << 3;
 	d = d | ((readl(base + PXMSK) >> pin) & 1) << 2;
 	d = d | ((readl(base + PXPAT1) >> pin) & 1) << 1;
