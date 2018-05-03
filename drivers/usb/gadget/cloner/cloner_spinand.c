@@ -1,14 +1,11 @@
 #if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
 #include <common.h>
-#include <asm/arch-x1000/spi.h>
 #include <nand.h>
-#include "../../../spi/jz_spi.h"
 #include <linux/mtd/mtd.h>
 #include <ingenic_nand_mgr/nand_param.h>
-#include "../../../mtd/devices/jz_sfc_nand.h"
+#include <asm/arch/spinand.h>
 
-extern struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
-extern struct nand_param_from_burner nand_param_from_burner;
+extern struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
 /*******************************************************************************
  * in burner init,we find spinand information from stage2_arg
  * and change it to struct nand_param_from_burner which uboot can use
@@ -17,23 +14,23 @@ extern struct nand_param_from_burner nand_param_from_burner;
  *pointer addr changed to the address which param we probe.
  * ******************************************************************************/
 
-struct jz_sfc_nand_burner_param bp;
+struct jz_sfcnand_burner_param bp;
 void get_burner_nandinfo(char *flash_info)
 {
 	int i;
-	struct jz_sfc_nand_burner_param *tmpbp = (struct jz_sfc_nand_burner_param*)flash_info;
+	struct jz_sfcnand_burner_param *tmpbp = (struct jz_sfcnand_burner_param*)flash_info;
 
 	bp.magic_num = tmpbp->magic_num;
 	bp.partition_num= tmpbp->partition_num;
 
-	bp.partition = malloc(sizeof(struct jz_spinand_partition) * bp.partition_num);
+	bp.partition = malloc(sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
-	memcpy(bp.partition, &tmpbp->partition, sizeof(struct jz_spinand_partition) * bp.partition_num);
+	memcpy(bp.partition, &tmpbp->partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
 #ifdef DEBUG
-	struct jz_spinand_partition *partition = bp.partition;
+	struct jz_sfcnand_partition *partition = bp.partition;
 	printf("**** magic num = %x\n",bp.magic_num);
-	printf("**** partition_num =  %x\n",bp.partition_num);
+	printf("**** partition_num = %x\n",bp.partition_num);
 
 	for(i = 0; i < bp.partition_num; i++){
 		printf("name = %s\n",partition[i].name);
@@ -71,7 +68,7 @@ int spinand_program(struct cloner *cloner)
 	u32 startaddr = cloner->cmd->write.partition + (cloner->cmd->write.offset);
 	char command[128];
 	volatile int pt_index = -1;
-	struct jz_spinand_partition *partition;
+	struct jz_sfcnand_partition *partition;
 	int ret;
 
 	static int pt_index_bak = -1;
@@ -90,8 +87,8 @@ int spinand_program(struct cloner *cloner)
 	if ((partition->manager_mode == MTD_MODE) || (partition->manager_mode == MTD_D_MODE)) {
 		if (!spi_args->spi_erase) {
 			if (partition->manager_mode == MTD_D_MODE)
-				pt_index = startaddr / block_size;
-			if (pt_index != pt_index_bak) {
+				startaddr = sfc_nand_skip_bad(startaddr);
+			if (pt_index != pt_index_bak || (partition->manager_mode == MTD_D_MODE && !(startaddr % block_size))) {
 				memset(command, 0 , 128);
 				if (partition->manager_mode == MTD_D_MODE)
 					sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
@@ -109,7 +106,8 @@ int spinand_program(struct cloner *cloner)
 			bad_len = 0;
 		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
-			startaddr = sfc_nand_skip_bad(startaddr);
+			if (partition->manager_mode == MTD_MODE)
+				startaddr = sfc_nand_skip_bad(startaddr);
 			ret = nand_write(nand, startaddr, &length, databuf);
 			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
 					startaddr, length, ret ? "ERROR" : "OK");
@@ -199,8 +197,8 @@ out:
  * **************************************************************************************/
 void add_information_to_spl(char *databuf)
 {
-	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfc_nand_burner_param) - 4);
-	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfc_nand_burner_param) - 4, bp.partition, sizeof(struct jz_spinand_partition) * bp.partition_num);
+	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfcnand_burner_param) - 4);
+	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, bp.partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
 	if(*(volatile unsigned int *)(databuf + 512) == 0 || *(volatile unsigned int *)(databuf + 512) > 65535)
 		*(volatile unsigned int *)(databuf + 512) = 0x1111;

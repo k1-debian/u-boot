@@ -19,25 +19,13 @@
 #include <malloc.h>
 #include <errno.h>
 #include <nand.h>
-#include <spi.h>
-#include <spi_flash.h>
 #include <linux/list.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
-#include <asm/arch/spi.h>
 #include <asm/io.h>
-#include <ingenic_nand_mgr/nand_param.h>
-#include "../spi/spi_flash_internal.h"
-#include "../../spi/jz_spi.h"
-#include "jz_sfc_nand.h"
-#include <asm/arch/sfc-jz.h>
-
+#include <asm/arch/spinand.h>
 #include "jz_sfc_common.h"
-
-#include <cloner/cloner.h>
-#include <asm/arch/cpm.h>
-#include <asm/arch/clk.h>
-
+#include "./nand_device/nand_common.h"
 
 #ifdef MTDIDS_DEFAULT
 static const char *const mtdids_default = MTDIDS_DEFAULT;
@@ -48,8 +36,8 @@ static const char *const mtdids_default = "nand0:nand";
 static LIST_HEAD(nand_list);
 static	struct sfc_flash *flash;
 
-struct nand_param_from_burner nand_param_from_burner;
-struct jz_sfc_nand_burner_param jz_sfc_nand_burner_param;
+/*struct nand_param_from_burner nand_param_from_burner;*/
+struct jz_sfcnand_burner_param jz_sfc_nand_burner_param;
 
 static int sfcnand_block_checkbad(struct mtd_info *mtd, loff_t ofs,int getchip,int allowbbt);
 static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs);
@@ -60,11 +48,9 @@ static struct nand_ecclayout gd5f_ecc_layout_128 = {
 
 static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 {
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	struct jz_nand_erase *nand_erase_ops = &(nand_desc->ops->nand_erase_ops);
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	struct jz_sfcnand_erase *nand_erase_ops = &nand_info->ops.nand_erase_ops;
 	struct sfc_transfer transfer[2];
-	struct sfc_message message;
-	struct cmd_info cmd[2];
 	struct flash_operation_message op_info = {
 		.flash = flash,
 		.pageaddr = pageaddr,
@@ -75,37 +61,23 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 	int32_t ret;
 
 	memset(transfer, 0, sizeof(transfer));
-	memset(cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(transfer);
 
 	/*1. write enable */
-	if(nand_erase_ops->write_enable)
-		nand_erase_ops->write_enable(transfer, cmd, &op_info);
-	else
-		nand_write_enable(transfer, cmd, &op_info);
-	sfc_message_add_tail(transfer, &message);
-
-	if(sfc_sync(flash->sfc, &message)) {
-		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
+	nand_erase_ops->write_enable(transfer, &op_info);
 
 	/*2. block erase*/
-	if(nand_erase_ops->block_erase)
-		nand_erase_ops->block_erase(&transfer[1], &cmd[1], &op_info);
-	else
-		nand_block_erase(&transfer[1], &cmd[1], &op_info);
-	sfc_message_add_tail(&transfer[1], &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	nand_erase_ops->block_erase(&transfer[1], &op_info);
+	sfc_list_add_tail(&transfer[1], transfer);
+
+	if(sfc_sync(flash->sfc, transfer)) {
 		printf( "sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
+	mdelay(nand_info->param.tBE);
 	/*3. get feature*/
-	if(nand_erase_ops->get_feature)
-		ret = nand_erase_ops->get_feature(&op_info);
-	else
-		ret = nand_get_erase_feature(&op_info);
+	ret = nand_erase_ops->get_feature(&op_info);
 
 	if(ret)
 		printf("Erase error,get state error ! %s %s %d \n",__FILE__,__func__,__LINE__);
@@ -119,7 +91,7 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 	uint32_t addr = (uint32_t)instr->addr;
 	uint32_t end;
 	int32_t ret;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	if(addr % mtd->erasesize) {
 		printf("ERROR:%s line %d eraseaddr no align\n", __func__,__LINE__);
@@ -136,8 +108,8 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 		addr += mtd->erasesize;
 	}
 
-	if(nand_desc->id_manufactory == 0xEF &&
-	    nand_desc->id_device == 0xAB)
+	if(nand_info->id_manufactory == 0xEF &&
+	    nand_info->id_device == 0xAB)
 		active_die(flash, 0);
 
 	instr->state = MTD_ERASE_DONE;
@@ -148,11 +120,9 @@ erase_exit:
 
 static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32_t pageaddr, uint32_t columnaddr, size_t len)
 {
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	struct jz_nand_write *nand_write_ops = &nand_desc->ops->nand_write_ops;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	struct jz_sfcnand_write *nand_write_ops = &nand_info->ops.nand_write_ops;
 	struct sfc_transfer transfer[3];
-	struct sfc_message message;
-	struct cmd_info cmd[3];
 	struct flash_operation_message op_info = {
 		.flash = flash,
 		.pageaddr = pageaddr,
@@ -163,65 +133,40 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 	int32_t ret = 0;
 
 	memset(transfer, 0, sizeof(transfer));
-	memset(cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(transfer);
 
 	/*1. write enable*/
-	if(nand_write_ops->write_enable)
-		nand_write_ops->write_enable(transfer, cmd, &op_info);
-	else
-		nand_write_enable(transfer, cmd, &op_info);
-	sfc_message_add_tail(transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
-		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
+	nand_write_ops->write_enable(transfer, &op_info);
 
 	/*2. write to cache*/
-	if(nand_desc->param.need_quad) {
-		if(nand_write_ops->quad_load)
-			nand_write_ops->quad_load(&transfer[1], &cmd[1], &op_info);
-		else
-			nand_quad_load(&transfer[1], &cmd[1], &op_info);
+	if(nand_info->param.need_quad) {
+		nand_write_ops->quad_load(&transfer[1], &op_info);
 	} else {
-		if(nand_write_ops->single_load)
-			nand_write_ops->single_load(&transfer[1], &cmd[1], &op_info);
-		else
-			nand_single_load(&transfer[1], &cmd[1], &op_info);
+		nand_write_ops->single_load(&transfer[1], &op_info);
 	}
-	sfc_message_add_tail(&transfer[1], &message);
-	if(sfc_sync(flash->sfc, &message)) {
-		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
+	sfc_list_add_tail(&transfer[1], transfer);
 
 	/*3. program exec*/
-	if(nand_write_ops->program_exec)
-		nand_write_ops->program_exec(&transfer[2], &cmd[2], &op_info);
-	else
-		nand_program_exec(&transfer[2], &cmd[2], &op_info);
-	sfc_message_add_tail(&transfer[2], &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	nand_write_ops->program_exec(&transfer[2], &op_info);
+	sfc_list_add_tail(&transfer[2], transfer);
+
+	if(sfc_sync(flash->sfc, transfer)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
+	udelay(nand_info->param.tPP);
 	/*4. get status to be sure nand wirte completed*/
-	if(nand_write_ops->get_feature)
-		ret = nand_write_ops->get_feature(&op_info);
-	else
-		ret = nand_get_program_feature(&op_info);
+	ret = nand_write_ops->get_feature(&op_info);
 
 	return  ret;
 }
 
 static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32_t columnaddr, char *buffer, size_t len)
 {
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	struct jz_nand_read *nand_read_ops = &nand_desc->ops->nand_read_ops;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	struct jz_sfcnand_read *nand_read_ops = &nand_info->ops.nand_read_ops;
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	struct flash_operation_message op_info = {  .flash = flash,
 						    .pageaddr = pageaddr,
 						    .columnaddr = columnaddr,
@@ -232,56 +177,33 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 	int32_t ret = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(&transfer);
 
-	if(nand_read_ops->pageread_to_cache)
-		nand_read_ops->pageread_to_cache(&transfer, &cmd, &op_info);
-	else
-		nand_pageread_to_cache(&transfer, &cmd, &op_info);
-	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	/*1. pageread_to_cache*/
+	nand_read_ops->pageread_to_cache(&transfer, &op_info);
+	if(sfc_sync(flash->sfc, &transfer)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
-	if(nand_read_ops->get_feature) {
-		ret = nand_read_ops->get_feature(&op_info);
-	} else {
-		printf("ERROR: nand device must have get_read_feature function,id_manufactory= %02x, id_device=%02x\n", nand_desc->id_manufactory, nand_desc->id_device);
-		ret = -EIO;
-	}
+	/*2. read delay	*/
+	udelay(nand_info->param.tRD);
 
+	/*3. read feature*/
+	ret = nand_read_ops->get_feature(&op_info);
 	if(ret == -EIO)
 		return ret;
 
-	if(nand_desc->param.need_quad) {
-		if(nand_read_ops->quad_read) {
-			nand_read_ops->quad_read(&transfer, &cmd, &op_info);
-		} else {
-		    /*
-		     *	default transfer format:
-		     *
-		     *	addrlen = 2, data_dummy_bits = 8;
-		     *
-		     * */
-			nand_quad_read(&transfer, &cmd, &op_info, 2);
-		}
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
+
+	/*4. read data to mem*/
+	if(nand_info->param.need_quad) {
+		nand_read_ops->quad_read(&transfer, &op_info);
 	} else {
-		if(nand_read_ops->single_read) {
-			nand_read_ops->single_read(&transfer, &cmd, &op_info);
-		} else {
-		    /*
-		     *	default transfer format:
-		     *
-		     *	addrlen = 2, data_dummy_bits = 8;
-		     *
-		     * */
-			nand_single_read(&transfer, &cmd, &op_info, 2);
-		}
+		nand_read_ops->single_read(&transfer, &op_info);
 	}
-	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &transfer)) {
 		printf("sfc_sync error ! %s %s %d\n", __FILE__, __func__, __LINE__);
 		ret = -EIO;
 	}
@@ -295,7 +217,7 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	uint32_t columnaddr;
 	uint32_t rlen;
 	int32_t ret = 0, reterr = 0, ret_eccvalue = 0;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	*retlen = 0;
 	while(len) {
@@ -323,8 +245,8 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 		*retlen += rlen;
 	}
 
-	if(nand_desc->id_manufactory == 0xEF &&
-	    nand_desc->id_device == 0xAB)
+	if(nand_info->id_manufactory == 0xEF &&
+	    nand_info->id_device == 0xAB)
 		active_die(flash, 0);
 	return reterr ? reterr : (ret_eccvalue ? ret_eccvalue : ret);
 }
@@ -371,7 +293,7 @@ static int jz_sfcnand_erase(struct mtd_info *mtd, struct erase_info *instr)
 	int ret;
 	if((ret = jz_sfc_nand_erase(mtd, instr))) {
 		printf("WARNING: block %d erase fail !\n",(uint32_t)instr->addr / mtd->erasesize);
-		if(ret = jz_sfcnand_block_markbad(mtd, instr->addr)) {
+		if((ret = jz_sfcnand_block_markbad(mtd, instr->addr))) {
 			printf("mark bad block error, there will occur error,so exit !\n");
 			return -1;
 		}
@@ -464,7 +386,7 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 	uint32_t columnaddr;
 	uint32_t wlen;
 	int32_t ret;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	while(len) {
 		pageaddr = (uint32_t)to / pagesize;
@@ -472,7 +394,10 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		wlen = min_t(uint32_t, pagesize - columnaddr, len);
 
 		if((ret = jz_sfc_nand_write(flash, buf, pageaddr, columnaddr, wlen))) {
-			printf("spi nand write fail %s %s %d\n",__FILE__,__func__,__LINE__);
+			printf("%s %s %d : spi nand write fail, ret = %d, \
+				pageaddr = %u, columnaddr = %u, wlen = %u\n",
+				__FILE__, __func__, __LINE__, ret,
+				pageaddr, columnaddr, wlen);
 			break;
 		}
 		*retlen += wlen;
@@ -481,8 +406,8 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		buf += wlen;
 	}
 
-	if(nand_desc->id_manufactory == 0xEF &&
-	    nand_desc->id_device == 0xAB)
+	if(nand_info->id_manufactory == 0xEF &&
+	    nand_info->id_device == 0xAB)
 		active_die(flash, 0);
 
 	return ret;
@@ -542,12 +467,7 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 	/* Update flash-based bad block table */
 	if (chip->bbt_options & NAND_BBT_USE_FLASH) {
 		res = nand_update_bbt(mtd, ofs);
-		if (!ret)
-			ret = res;
 	}
-
-	if (!ret)
-		mtd->ecc_stats.badblocks++;
 
 	return ret;
 
@@ -555,10 +475,10 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 static void get_partition_from_spinand(struct sfc_flash *flash)
 {
-	int retlen, i;
-	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET, sizeof(struct jz_sfc_nand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
-	jz_sfc_nand_burner_param.partition = malloc(sizeof(struct jz_spinand_partition) * jz_sfc_nand_burner_param.partition_num);
-	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfc_nand_burner_param) - 4, sizeof(struct jz_spinand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen, jz_sfc_nand_burner_param.partition);
+	int32_t retlen, i;
+	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET, sizeof(struct jz_sfcnand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
+	jz_sfc_nand_burner_param.partition = malloc(sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num);
+	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen, jz_sfc_nand_burner_param.partition);
 #ifdef DEBUG
 	for(i = 0; i < jz_sfc_nand_burner_param.partition_num; i++) {
 		printf("name = %s\n", jz_sfc_nand_burner_param.partition[i].name);
@@ -569,33 +489,74 @@ static void get_partition_from_spinand(struct sfc_flash *flash)
 #endif
 }
 
-static void sfc_nand_reset(void)
+static int32_t sfc_nand_reset(void)
 {
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+
+	sfc_list_init(&transfer);
 	transfer.sfc_mode = TM_STD_SPI;
-	cmd.cmd = 0xff;
+	transfer.cmd_info.cmd = 0xff;
 
-	transfer.direction = 1;
+	transfer.direction = GLB_TRAN_DIR_WRITE;
 
-	transfer.cmd_info = &cmd;
 	transfer.ops_mode = CPU_OPS;
-	sfc_message_add_tail(&transfer, &message);
 
-	sfc_sync(flash->sfc, &message);
-
+	if(sfc_sync(flash->sfc, &transfer)) {
+		printf("%s %s %d: sfc sync failed!\n", __FILE__, __func__, __LINE__);
+		return -EIO;
+	}
+	return 0;
 }
 
-static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_nand_descriptor *nand_desc)
+static int32_t jz_sfcnand_fill_ops(struct sfc_flash *flash, struct jz_sfcnand_ops *slave_ops) {
+
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	/*master ops:sfcnand driver ops*/
+	struct jz_sfcnand_ops *master_ops = &nand_info->ops;
+	struct jz_sfcnand_read *master_read_ops = &master_ops->nand_read_ops;
+	struct jz_sfcnand_write *master_write_ops = &master_ops->nand_write_ops;
+	struct jz_sfcnand_erase *master_erase_ops = &master_ops->nand_erase_ops;
+
+	*master_ops = *slave_ops;
+
+	/*read ops*/
+	master_read_ops->pageread_to_cache ? : (master_read_ops->pageread_to_cache = nand_pageread_to_cache);
+
+	if(!master_read_ops->get_feature) {
+		printf("ERROR: nand device must have get_read_feature function,id_manufactory= %02x, id_device=%02x\n", nand_info->id_manufactory, nand_info->id_device);
+		return -EIO;
+	}
+
+	master_read_ops->single_read ? : (master_read_ops->single_read = nand_single_read);
+
+	master_read_ops->quad_read ? : (master_read_ops->quad_read = nand_quad_read);
+
+	/*write ops*/
+	master_write_ops->write_enable ? : (master_write_ops->write_enable = nand_write_enable);
+
+	master_write_ops->single_load ? : (master_write_ops->single_load = nand_single_load);
+
+	master_write_ops->quad_load ? : (master_write_ops->quad_load = nand_quad_load);
+
+	master_write_ops->program_exec ? : (master_write_ops->program_exec = nand_program_exec);
+
+	master_write_ops->get_feature ? : (master_write_ops->get_feature = nand_get_program_feature);
+
+	/*erase ops*/
+	master_erase_ops->write_enable ? : (master_erase_ops->write_enable = nand_write_enable);
+
+	master_erase_ops->block_erase ? : (master_erase_ops->block_erase = nand_block_erase);
+
+	master_erase_ops->get_feature ? : (master_erase_ops->get_feature = nand_get_erase_feature);
+
+	return 0;
+}
+
+static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_flashinfo *nand_info)
 {
-	struct jz_nand_device *nand_device;
+	struct jz_sfcnand_device *nand_device;
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	uint8_t addr_len[2] = {0, 1};
 	uint8_t id_buf[2] = {0};
 	uint8_t i = 0;
@@ -604,213 +565,243 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_nand_descri
 
 		memset(id_buf, 0, 2);
 		memset(&transfer, 0, sizeof(transfer));
-		memset(&cmd, 0, sizeof(cmd));
-		sfc_message_init(&message);
+		sfc_list_init(&transfer);
 		transfer.sfc_mode = TM_STD_SPI;
-		cmd.cmd = SPINAND_CMD_RDID;
+		transfer.cmd_info.cmd = SPINAND_CMD_RDID;
 
 		transfer.addr = 0;
 		transfer.addr_len = addr_len[i];
 
-		cmd.dataen = ENABLE;
+		transfer.cmd_info.dataen = ENABLE;
 		transfer.data = id_buf;
 		transfer.len = sizeof(id_buf);
 		transfer.direction = GLB_TRAN_DIR_READ;
 		transfer.data_dummy_bits = 0;
 
-		transfer.cmd_info = &cmd;
 		transfer.ops_mode = CPU_OPS;
-		sfc_message_add_tail(&transfer, &message);
 
-		if(sfc_sync(flash->sfc, &message)){
+		if(sfc_sync(flash->sfc, &transfer)){
 			printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 			return -EIO;
 		}
 
-		list_for_each_entry(nand_device, &nand_list, nand) {
+		list_for_each_entry(nand_device, &nand_list, list) {
 			if(nand_device->id_manufactory == id_buf[0]) {
-				nand_desc->id_manufactory = id_buf[0];
-				nand_desc->id_device = id_buf[1];
+				nand_info->id_manufactory = id_buf[0];
+				nand_info->id_device = id_buf[1];
 				break;
 			}
 		}
-		if(nand_desc->id_manufactory && nand_desc->id_device) {
+		if(nand_info->id_manufactory && nand_info->id_device) {
 			break;
 		}
 		udelay(500);
 	}
 
-	if(!nand_desc->id_manufactory && !nand_desc->id_device) {
+	if(!nand_info->id_manufactory && !nand_info->id_device) {
 		printf("ERROR!: don`t support this nand manufactory, please add nand driver, id_buf[0]= %x\n", id_buf[0]);
 		return -ENODEV;
-	}else {
+	} else {
 		struct device_id_struct *device_id = nand_device->id_device_list;
 		int32_t id_count = nand_device->id_device_count;
 		while(id_count--) {
-			if(device_id->id_device == nand_desc->id_device) {
+			if(device_id->id_device == nand_info->id_device) {
 				/*notice :base_param and partition param should read from nand*/
-				nand_desc->param = *device_id->param;
+				nand_info->param = *device_id->param;
 				break;
 			}
 			device_id++;
 		}
 		if(id_count < 0) {
-			printf("ERROR: do support this device, id_manufactory = 0x%02x, id_device = 0x%02x\n", nand_desc->id_manufactory, nand_desc->id_device);
+			printf("ERROR: do support this device, id_manufactory = 0x%02x, id_device = 0x%02x\n", nand_info->id_manufactory, nand_info->id_device);
 			return -ENODEV;
 		}
 	}
-	nand_desc->ops = &nand_device->ops;
 
-	return 0;
+	return jz_sfcnand_fill_ops(flash, &nand_device->ops);
 }
 
-int jz_spinand_register(struct jz_nand_device *flash) {
+int jz_sfcnand_register(struct jz_sfcnand_device *flash) {
 
 	if (!flash)
 		return -EINVAL;
-	list_add_tail(&flash->nand, &nand_list);
+	list_add_tail(&flash->list, &nand_list);
 	return 0;
 }
 
 /******************************************************************/
-static int sfc_nand_get_feature(struct sfc_flash *flash, unsigned char addr, char *val)
+static int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val)
 {
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	int32_t ret = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(&transfer);
 
-	cmd.cmd = 0x0f;
-	cmd.dataen = ENABLE;
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = 0x0f;
+
 	transfer.addr_len = 1;
 	transfer.addr = addr;
+
+	transfer.cmd_info.dataen = ENABLE;
 	transfer.len = 1;
 	transfer.data = val;
-	transfer.ops_mode = CPU_OPS;
-	transfer.sfc_mode = TM_STD_SPI;
 	transfer.direction = GLB_TRAN_DIR_READ;
-	transfer.cmd_info = &cmd;
 
-	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	transfer.ops_mode = CPU_OPS;
+
+	if(sfc_sync(flash->sfc, &transfer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
+	return 0;
 }
 
-static int sfc_nand_set_feature(struct sfc_flash *flash, int addr, int val)
+static int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8_t val)
 {
-	int ret;
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
-
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(&transfer);
 
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = 0x1f;
 
-	cmd.cmd = 0x1f;
-	cmd.dataen = ENABLE;
 	transfer.addr_len = 1;
 	transfer.addr = addr;
+
+	transfer.cmd_info.dataen = ENABLE;
 	transfer.len = 1;
 	transfer.data = &val;
-	transfer.ops_mode = CPU_OPS;
-	transfer.sfc_mode = TM_STD_SPI;
 	transfer.direction = GLB_TRAN_DIR_WRITE;
-	transfer.cmd_info = &cmd;
 
-	sfc_message_add_tail(&transfer, &message);
-	ret = sfc_sync(flash->sfc, &message);
-	if(ret) {
+	transfer.ops_mode = CPU_OPS;
+
+	if(sfc_sync(flash->sfc, &transfer)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		ret=-EIO;
+		return -EIO;
 	}
-	return ret;
-
+	return 0;
 }
 
-static int sfc_nand_clear_write_protect(struct sfc_flash *flash)
+static int32_t sfc_nand_clear_write_protect(struct sfc_flash *flash)
 {
-	char val = 0;
-//	sfc_nand_get_feature(flash, 0xa0, &val);
-
-	sfc_nand_set_feature(flash, 0xa0, val);
-
+	return sfc_nand_set_feature(flash, 0xa0, 0);
 }
 
-static int sfc_nand_enable_ecc(struct sfc_flash *flash)
+static int32_t sfc_nand_enable_ecc(struct sfc_flash *flash)
 {
-	char val = 0;
-	sfc_nand_get_feature(flash, 0xb0, &val);
+	int32_t ret = 0;
+	uint8_t val = 0;
+	if((ret = sfc_nand_get_feature(flash, 0xb0, &val))) {
+		printf(" %s %s %d: sfc_nand_get_feature failed, ret = %d\n",
+			__FILE__, __func__, __LINE__, ret);
+		return ret;
+	}
 
 	val |= 0x10;
 
-	sfc_nand_set_feature(flash, 0xb0, val);
+	if((ret = sfc_nand_set_feature(flash, 0xb0, val))) {
+		printf(" %s %s %d: sfc_nand_set_feature failed, ret = %d\n",
+			__FILE__, __func__, __LINE__, ret);
+	}
+	return ret;
 }
 
 static int32_t sfc_nand_special_init(struct sfc_flash *flash)
 {
-	sfc_nand_clear_write_protect(flash);
-	sfc_nand_enable_ecc(flash);
+	int32_t ret = 0;
+	ret = sfc_nand_clear_write_protect(flash);
+	if(ret) {
+		printf("sfc_nand_clear_write_protect failed!, ret= %d\n",ret);
+		return ret;
+	}
+	ret = sfc_nand_enable_ecc(flash);
+	if(ret) {
+		printf("sfc_nand_enable_ecc failed!, ret= %d\n", ret);
+	}
+	return ret;
 }
 
-int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
+static inline int32_t spinand_moudle_init(void)
+{
+	spinand_regcall_t *call = ll_entry_start(spinand_regcall_t, flash);
+	int ret = 0 , i, count;
+
+	for (i = 0, count = ll_entry_count(spinand_regcall_t, flash);
+		i < count;
+		call++, i++) {
+	    ret = (*call)();
+	    if (ret) {
+		printf("jz spi nand ops init func error\n");
+		break;
+	    }
+	}
+	return ret;
+}
+
+int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param)
 {
 	struct nand_chip *chip;
 	struct mtd_info *mtd;
-	struct jz_nand_descriptor *nand_desc;
+	struct jz_sfcnand_flashinfo *flash_info;
+	int32_t ret = 0;
 
 	if(!flash) {
 		flash = malloc(sizeof(struct sfc_flash));
 		if (!flash) {
-			printf("ERROR: %s %d kzalloc() error !\n",__func__,__LINE__);
+			printf("ERROR: %s %d alloc() error !\n",__func__,__LINE__);
 			return -1;
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
 		flash->sfc = sfc_res_init(CONFIG_SFC_NAND_RATE);
 	}
 	mtd = &nand_info[0];
-	nand_desc = kzalloc(sizeof(struct jz_nand_descriptor), GFP_KERNEL);
-	if(!nand_desc) {
-		printf("ERROR: %s %d kzalloc() error !\n",__func__,__LINE__);
+	flash_info = calloc(sizeof(struct jz_sfcnand_flashinfo), sizeof(uint8_t));
+	if(!flash_info) {
+		printf("ERROR: %s %d alloc() error !\n",__func__,__LINE__);
 		return -ENOMEM;
 	}
-	flash->flash_info = nand_desc;
+	flash->flash_info = flash_info;
 	flash->mtd = mtd;
 
-	if (spinand_moudle_init())
-		return -EINVAL;
-	sfc_nand_reset();
+	if (spinand_moudle_init()) {
+		ret = -EINVAL;
+		goto failed;
+	}
+	if((ret = sfc_nand_reset())) {
+		printf("ERR : sfc reset error!\n");
+		goto failed;
+	}
 
-	jz_sfc_nand_try_id(flash, nand_desc);
+	if((ret = jz_sfc_nand_try_id(flash, flash_info))) {
+		printf("ERR: sfc try id error!\n");
+		goto failed;
+	}
 #ifdef CONFIG_BURNER
 	/* for burner get pt indext */
-	nand_desc->partition.num_partition = param->partition_num;
-	nand_desc->partition.partition = &param->partition;
+	flash_info->partition.num_partition = param->partition_num;
+	flash_info->partition.partition = &param->partition;
 #else
-	mtd->writesize = nand_desc->param.pagesize;
+	mtd->writesize = flash_info->param.pagesize;
 	get_partition_from_spinand(flash);
-	nand_desc->partition.num_partition =jz_sfc_nand_burner_param.partition_num;
-	nand_desc->partition.partition = jz_sfc_nand_burner_param.partition;
+	flash_info->partition.num_partition =jz_sfc_nand_burner_param.partition_num;
+	flash_info->partition.partition = jz_sfc_nand_burner_param.partition;
 #endif
 
 	chip = malloc(sizeof(struct nand_chip));
-	if (!chip)
-		return -ENOMEM;
+	if (!chip) {
+		ret = -ENOMEM;
+		goto failed;
+	}
 	memset(chip,0,sizeof(struct nand_chip));
 
-	mtd->size = nand_desc->param.flashsize;
+	mtd->size = flash_info->param.flashsize;
 	mtd->flags |= MTD_CAP_NANDFLASH;
-	mtd->erasesize = nand_desc->param.blocksize;
-	mtd->writesize = nand_desc->param.pagesize;
-	mtd->oobsize = nand_desc->param.oobsize;
+	mtd->erasesize = flash_info->param.blocksize;
+	mtd->writesize = flash_info->param.pagesize;
+	mtd->oobsize = flash_info->param.oobsize;
 
 	chip->select_chip = NULL;
 	chip->badblockbits = 8;
@@ -832,34 +823,45 @@ int jz_sfc_nand_init(int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
 
 	mtd_sfcnand_init(mtd);
 
-	sfc_nand_special_init(flash);
+	if((ret = sfc_nand_special_init(flash))) {
+		printf("ERR :sfcnand special init failed!\n");
+		goto free_all;
+	}
 
 	nand_register(0);
 
-	return 0;
+	return ret;
+
+free_all:
+	free(chip);
+failed:
+	free(flash_info);
+	free(flash);
+	return ret;
 }
-static int mtd_sfcnand_partition_analysis(unsigned int blk_sz,int partcount,struct jz_spinand_partition *jz_mtd_spinand_partition)
+
+static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint8_t partcount, struct jz_sfcnand_partition *jz_mtd_spinand_partition)
 {
-	char mtdparts_env[X_ENV_LENGTH];
-	char command[X_COMMAND_LENGTH];
-	int ptcount = partcount;
-	int part, ret;
+	uint8_t mtdparts_env[X_ENV_LENGTH];
+	uint8_t command[X_COMMAND_LENGTH];
+	uint8_t part = 0;
+	int32_t ret;
 
 	memset(mtdparts_env, 0, X_ENV_LENGTH);
 	memset(command, 0, X_COMMAND_LENGTH);
 
 	/*MTD part*/
 	sprintf(mtdparts_env, "mtdparts=nand:");
-	for (part = 0; part < ptcount; part++) {
+	for (part = 0; part < partcount; part++) {
 		if (jz_mtd_spinand_partition[part].size == -1) {
 			sprintf(mtdparts_env,"%s-(%s)", mtdparts_env,
 					jz_mtd_spinand_partition[part].name);
 			break;
-		} else if (jz_mtd_spinand_partition[part].size  != 0) {
+		} else if (jz_mtd_spinand_partition[part].size != 0) {
 			if(jz_mtd_spinand_partition[part].size % blk_sz != 0)
-				printf("ERROR:the partition [%s] don't algin as block size [0x%08x] ,it will be error !\n",jz_mtd_spinand_partition[part].name,blk_sz);
+				printf("ERROR:the partition [%s] don't algin as block size [0x%08x] ,it will be error !\n",jz_mtd_spinand_partition[part].name, blk_sz);
 
-			sprintf(mtdparts_env,"%s%dK@%d(%s),", mtdparts_env,
+			sprintf(mtdparts_env, "%s%dK@%d(%s),", mtdparts_env,
 					jz_mtd_spinand_partition[part].size / 0x400,
 					jz_mtd_spinand_partition[part].offset,
 					jz_mtd_spinand_partition[part].name);
@@ -874,12 +876,12 @@ static int mtd_sfcnand_partition_analysis(unsigned int blk_sz,int partcount,stru
 }
 
 
-struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index)
+struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index)
 {
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	int i;
-	int ptcount = nand_desc->partition.num_partition;
-	struct jz_spinand_partition *jz_mtd_spinand_partition=nand_desc->partition.partition;
+	int ptcount = nand_info->partition.num_partition;
+	struct jz_sfcnand_partition *jz_mtd_spinand_partition=nand_info->partition.partition;
 	for(i = 0; i < ptcount; i++){
 		if(startaddr >= jz_mtd_spinand_partition[i].offset && (startaddr + length) <= (jz_mtd_spinand_partition[i].offset + jz_mtd_spinand_partition[i].size)){
 			*pt_index = i;
@@ -894,14 +896,11 @@ struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int mtd_sfcnand_probe_burner(int *erase_mode,int sfc_quad_mode,struct jz_sfc_nand_burner_param *param)
+int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param)
 {
-	int ret;
-	struct mtd_info *mtd;
-	mtd = &nand_info[0];
+	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
-	unsigned int i=0;
-	//int wppin = pinfo->gpio_wp;
+	int32_t ret;
 
 	if(jz_sfc_nand_init(sfc_quad_mode, param)) {
 		printf("ERR: jz_sfc_nand_init error!\n");

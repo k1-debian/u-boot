@@ -68,40 +68,6 @@ struct jz_spi_support {
 	struct spi_quad_mode quad_mode;
 };
 
-#ifdef CONFIG_JZ_SFC
-struct norflash_params {
-	char name[SIZEOF_NAME];
-	u32 pagesize;
-	u32 sectorsize;
-	u32 chipsize;
-	u32 erasesize;
-	int id;
-	/* Flash Address size, unit: Bytes */
-	int addrsize;
-
-	/* MAX Busytime for page program, unit: ms */
-	u32 pp_maxbusy;
-	/* MAX Busytime for sector erase, unit: ms */
-	u32 se_maxbusy;
-	/* MAX Busytime for chip erase, unit: ms */
-	u32 ce_maxbusy;
-
-	/* Flash status register num, Max support 3 register */
-	int st_regnum;
-	/* Some NOR flash has different blocksize and block erase command,
-	 *          * One command with One blocksize. */
-	struct spi_nor_block_info block_info;
-	struct spi_quad_mode quad_mode;
-};
-
-struct nor_sharing_params {
-	uint32_t magic;
-	uint32_t version;
-	struct norflash_params norflash_params;
-	struct norflash_partitions norflash_partitions;
-};
-#endif
-
 struct jz_spi_slave {
 	struct spi_slave slave;
 	unsigned int mode;

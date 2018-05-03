@@ -1,18 +1,24 @@
 #include <errno.h>
 #include <malloc.h>
 #include <linux/mtd/partitions.h>
-#include "../jz_sfc_nand.h"
+#include <asm/arch/spinand.h>
+#include "../jz_sfc_common.h"
 #include "nand_common.h"
+
 #define WINBOND_DEVICES_NUM         2
+
+#define WINDOND_DIE_SELECT	0xC2
+#define WINDOND_RESET		0xFF
 #define TSETUP		5
 #define THOLD		3
 #define	TSHSL_R		10
 #define	TSHSL_W		50
 
-#define WINDOND_DIE_SELECT	0xC2
-#define WINDOND_RESET		0xFF
+#define TRD		60
+#define TPP		700
+#define TBE		10
 
-static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 	[0] = {
 		/*W25N01GV*/
 		.pagesize = 2 * 1024,
@@ -21,9 +27,13 @@ static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 		.flashsize = 2 * 1024 * 64 * 1024,
 
 		.tSETUP  =TSETUP,
-		.tHOLD   =THOLD,
-		.tSHSL_R =TSHSL_R,
-		.tSHSL_W =TSHSL_W,
+                .tHOLD   =THOLD,
+                .tSHSL_R =TSHSL_R,
+                .tSHSL_W =TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
 
 		.ecc_max = 0x4,
 #ifdef CONFIG_BURNER
@@ -41,9 +51,13 @@ static struct jz_nand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 		.flashsize = 2 * 1024 * 64 * 2048,
 
 		.tSETUP  =TSETUP,
-		.tHOLD   =THOLD,
-		.tSHSL_R =TSHSL_R,
-		.tSHSL_W =TSHSL_W,
+                .tHOLD   =THOLD,
+                .tSHSL_R =TSHSL_R,
+                .tSHSL_W =TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
 
 		.ecc_max = 0x4,
 #ifdef CONFIG_BURNER
@@ -62,28 +76,23 @@ static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
 void active_die(struct sfc_flash *flash, uint8_t die_id) {
 
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(&transfer);
 
-	cmd.cmd = WINDOND_DIE_SELECT;
+	transfer.cmd_info.cmd = WINDOND_DIE_SELECT;
 	transfer.sfc_mode = TM_STD_SPI;
 
 	transfer.addr = die_id;
 	transfer.addr_len = 1;
 
-	cmd.dataen = DISABLE;
+	transfer.cmd_info.dataen = DISABLE;
 	transfer.len = 0;
 
 	transfer.data_dummy_bits = 0;
-	transfer.cmd_info = &cmd;
 	transfer.ops_mode = CPU_OPS;
 
-	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &transfer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return;
 	}
@@ -92,28 +101,24 @@ void active_die(struct sfc_flash *flash, uint8_t die_id) {
 static void winbond_reset(struct sfc_flash *flash) {
 
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
+
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(&transfer);
 
-	cmd.cmd = WINDOND_RESET;
+	transfer.cmd_info.cmd = WINDOND_RESET;
 	transfer.sfc_mode = TM_STD_SPI;
 
 	transfer.addr = 0;
 	transfer.addr_len = 0;
 
-	cmd.dataen = DISABLE;
+	transfer.cmd_info.dataen = DISABLE;
 	transfer.len = 0;
 
 	transfer.data_dummy_bits = 0;
-	transfer.cmd_info = &cmd;
 	transfer.ops_mode = CPU_OPS;
 
-	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &transer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return;
 	}
@@ -122,18 +127,14 @@ static void winbond_reset(struct sfc_flash *flash) {
 static void winbond_print_register(struct sfc_flash *flash, uint8_t register_addr) {
 
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	uint8_t ret = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
 
-	sfc_message_init(&message);
-	nand_get_feature(&transfer, &cmd, register_addr, &ret);
-	sfc_message_add_tail(&transfer, &message);
+	sfc_list_init(&transfer);
+	nand_get_feature(&transfer, register_addr, &ret);
 
-	if(sfc_sync(flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &transfer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return;
 	}
@@ -144,11 +145,11 @@ static void winbond_print_register(struct sfc_flash *flash, uint8_t register_add
 
 #endif
 
-static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	uint8_t device_id = nand_desc->id_device;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	uint8_t device_id = nand_info->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
@@ -165,55 +166,52 @@ static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct cmd_
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 	}
 
-	cmd->cmd = SPINAND_CMD_PARD;
+	transfer->cmd_info.cmd = SPINAND_CMD_PARD;
 	transfer->sfc_mode = TM_STD_SPI;
 
 	transfer->addr = pageaddr;
 	transfer->addr_len = 3;
 
-	cmd->dataen = DISABLE;
+	transfer->cmd_info.dataen = DISABLE;
 	transfer->len = 0;
 
 	transfer->data_dummy_bits = 0;
-	transfer->cmd_info = cmd;
 	transfer->ops_mode = CPU_OPS;
 	return;
 }
 
-static void winbond_single_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+static void winbond_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
-	cmd->cmd = SPINAND_CMD_FRCH;
+	transfer->cmd_info.cmd = SPINAND_CMD_FRCH;
 	transfer->sfc_mode = TM_STD_SPI;
 
 	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = 2;
 
-	cmd->dataen = ENABLE;
+	transfer->cmd_info.dataen = ENABLE;
 	transfer->data = op_info->buffer;
 	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
-	transfer->cmd_info = cmd;
 	transfer->ops_mode = DMA_OPS;
 	return;
 }
 
-static void winbond_quad_read(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+static void winbond_quad_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
-	cmd->cmd = SPINAND_CMD_RDCH_X4;
+	transfer->cmd_info.cmd = SPINAND_CMD_RDCH_X4;
 	transfer->sfc_mode = TM_QI_QO_SPI;
 
 	transfer->addr = op_info->columnaddr;
 	transfer->addr_len = 2;
 
-	cmd->dataen = ENABLE;
+	transfer->cmd_info.dataen = ENABLE;
 	transfer->data = op_info->buffer;
 	transfer->len = op_info->len;
 	transfer->direction = GLB_TRAN_DIR_READ;
 
 	transfer->data_dummy_bits = 8;
-	transfer->cmd_info = cmd;
 	transfer->ops_mode = DMA_OPS;
 	return;
 }
@@ -221,40 +219,38 @@ static void winbond_quad_read(struct sfc_transfer *transfer, struct cmd_info *cm
 static int32_t winbond_get_read_feature(struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
-	uint8_t device_id = nand_desc->id_device;
+	uint8_t device_id = nand_info->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 
+retry:
+	ecc_status = 0;
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
-	sfc_message_init(&message);
+	sfc_list_init(&transfer);
 
-	cmd.cmd = SPINAND_CMD_GET_FEATURE;
+	transfer.cmd_info.cmd = SPINAND_CMD_GET_FEATURE;
 	transfer.sfc_mode = TM_STD_SPI;
 
 	transfer.addr = SPINAND_ADDR_STATUS;
 	transfer.addr_len = 1;
 
-	cmd.dataen = DISABLE;
-	transfer.len = 0;
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.data = &ecc_status;
+	transfer.len = 1;
+	transfer.direction = GLB_TRAN_DIR_READ;
 
 	transfer.data_dummy_bits = 0;
-	cmd.sta_exp = (0 << 0);
-	cmd.sta_msk = SPINAND_IS_BUSY;
-	transfer.cmd_info = &cmd;
 	transfer.ops_mode = CPU_OPS;
 
-	sfc_message_add_tail(&transfer, &message);
-	if(sfc_sync(flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &transfer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
-	ecc_status = sfc_get_sta_rt(flash->sfc);
+	if(ecc_status & SPINAND_IS_BUSY)
+		goto retry;
 
 	switch(device_id) {
 		case 0xAA ... 0xAB:
@@ -281,31 +277,27 @@ static int32_t winbond_get_read_feature(struct flash_operation_message *op_info)
 	return ret;
 }
 
-static void winbond_set_register(struct sfc_flash *flash, uint8_t register_addr, uint8_t val) {
+static void winbond_set_register(struct sfc_flash *flash, uint8_t register_addr, uint32_t val) {
 
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
 
-	sfc_message_init(&message);
-	nand_set_feature(&transfer, &cmd, register_addr, val);
-	sfc_message_add_tail(&transfer, &message);
+	sfc_list_init(&transfer);
+	nand_set_feature(&transfer, register_addr, &val);
 
-	if(sfc_sync(flash->sfc, &message)) {
+	if(sfc_sync(flash->sfc, &transfer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return;
 	}
 
 }
 
-static void winbond_write_enable(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+static void winbond_write_enable(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	uint8_t device_id = nand_desc->id_device;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	uint8_t device_id = nand_info->id_device;
 
 	switch(device_id) {
 		case 0xAB:
@@ -324,86 +316,83 @@ static void winbond_write_enable(struct sfc_transfer *transfer, struct cmd_info 
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 	}
 
-	cmd->cmd = SPINAND_CMD_WREN;
+	transfer->cmd_info.cmd = SPINAND_CMD_WREN;
 	transfer->sfc_mode = TM_STD_SPI;
 
 	transfer->addr = 0;
 	transfer->addr_len = 0;
 
-	cmd->dataen = DISABLE;
+	transfer->cmd_info.dataen = DISABLE;
 	transfer->len = 0;
 
 	transfer->data_dummy_bits = 0;
-	transfer->cmd_info = cmd;
 	transfer->ops_mode = CPU_OPS;
 	return;
 }
 
-static void winbond_program_exec(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+static void winbond_program_exec(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	uint8_t device_id = nand_desc->id_device;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	uint8_t device_id = nand_info->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
 	    case 0xAB:
 		if(pageaddr > 65535)
-		    pageaddr -= 65536;
+			pageaddr -= 65536;
 	    case 0xAA:
 		break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 	}
 
-	cmd->cmd = SPINAND_CMD_PRO_EN;
+	transfer->cmd_info.cmd = SPINAND_CMD_PRO_EN;
 	transfer->sfc_mode = TM_STD_SPI;
 
 	transfer->addr = pageaddr;
 	transfer->addr_len = 3;
 
-	cmd->dataen = DISABLE;
+	transfer->cmd_info.dataen = DISABLE;
 	transfer->len = 0;
 
 	transfer->data_dummy_bits = 0;
-	transfer->cmd_info = cmd;
 	transfer->ops_mode = CPU_OPS;
 }
 
-static void winbond_block_erase(struct sfc_transfer *transfer, struct cmd_info *cmd, struct flash_operation_message *op_info) {
+static void winbond_block_erase(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
-	struct jz_nand_descriptor *nand_desc = flash->flash_info;
-	uint8_t device_id = nand_desc->id_device;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	uint8_t device_id = nand_info->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
 	    case 0xAB:
 		if(pageaddr > 65535)
-		    pageaddr -= 65536;
+			pageaddr -= 65536;
 	    case 0xAA:
 		break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 	}
 
-	cmd->cmd = SPINAND_CMD_ERASE_128K;
+	transfer->cmd_info.cmd = SPINAND_CMD_ERASE_128K;
 	transfer->sfc_mode = TM_STD_SPI;
 
 	transfer->addr = pageaddr;
 	transfer->addr_len = 3;
 
-	cmd->dataen = DISABLE;
+	transfer->cmd_info.dataen = DISABLE;
 	transfer->len = 0;
 
 	transfer->data_dummy_bits = 0;
-	transfer->cmd_info = cmd;
 	transfer->ops_mode = CPU_OPS;
 
 }
 
 static int winbond_nand_init(void) {
-	struct jz_nand_device *winbond_nand;
+	struct jz_sfcnand_device *winbond_nand;
 	winbond_nand = kzalloc(sizeof(*winbond_nand), GFP_KERNEL);
 	if(!winbond_nand) {
 		pr_err("alloc winbond_nand struct fail\n");
@@ -425,6 +414,6 @@ static int winbond_nand_init(void) {
 	winbond_nand->ops.nand_erase_ops.write_enable = winbond_write_enable;
 	winbond_nand->ops.nand_erase_ops.block_erase = winbond_block_erase;
 
-	return jz_spinand_register(winbond_nand);
+	return jz_sfcnand_register(winbond_nand);
 }
 SPINAND_MOUDLE_INIT(winbond_nand_init);

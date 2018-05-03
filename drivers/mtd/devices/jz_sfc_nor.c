@@ -2,12 +2,8 @@
 #include <malloc.h>
 #include <ubi_uboot.h>
 #include <asm/io.h>
-
-#include <asm/arch/sfc_params.h>
-#include <asm/arch/sfc.h>
-#include <asm/arch/spi_nor.h>
+#include <asm/arch/spinor.h>
 #include "jz_sfc_common.h"
-
 
 struct sfc_flash *flash = NULL;
 struct burner_params params;
@@ -18,38 +14,35 @@ struct mini_spi_nor_info mini_params;
 unsigned int burn_mode = 0;
 #endif
 
-int sfc_nor_reset()
+int32_t sfc_nor_reset()
 {
-	struct sfc_transfer transfer[1];
-	struct sfc_message message;
-	struct cmd_info cmd[1];
-	int ret;
+	struct sfc_transfer transfer;
+	int32_t ret = 0;
 
-	sfc_message_init(&message);
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	sfc_list_init(&transfer);
 
-	cmd[0].cmd = SPINOR_OP_RSTEN;
-	cmd[0].dataen = DISABLE;
-	transfer[0].cmd_info = &cmd[0];
-	transfer[0].sfc_mode = 0;
-	sfc_message_add_tail(&transfer[0], &message);
-	ret = sfc_sync(flash->sfc, &message);
+	transfer.cmd_info.cmd = SPINOR_OP_RSTEN;
+	transfer.cmd_info.dataen = DISABLE;
+	transfer.sfc_mode = TM_STD_SPI;
+
+	ret = sfc_sync(flash->sfc, &transfer);
 	if(ret) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		ret=-EIO;
+		ret = -EIO;
 	}
 
-	cmd[0].cmd = SPINOR_OP_RST;
-	cmd[0].dataen = DISABLE;
-	transfer[0].cmd_info = &cmd[0];
-	transfer[0].sfc_mode = 0;
-	sfc_message_add_tail(&transfer[0], &message);
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
 
-	ret = sfc_sync(flash->sfc, &message);
+	transfer.cmd_info.cmd = SPINOR_OP_RST;
+	transfer.cmd_info.dataen = DISABLE;
+	transfer.sfc_mode = 0;
+
+	ret = sfc_sync(flash->sfc, &transfer);
 	if(ret) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		ret=-EIO;
+		ret = -EIO;
 	}
 
 	udelay(100);
@@ -58,32 +51,28 @@ int sfc_nor_reset()
 
 unsigned int sfc_nor_read_id(unsigned int command, unsigned int addr, int addr_len, unsigned int len, int dummy_byte)
 {
-
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	int ret;
 	unsigned int chip_id = 0;
 
-	sfc_message_init(&message);
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	sfc_list_init(&transfer);
 
-	cmd.cmd = command;
-	cmd.dataen = ENABLE;
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = command;
 
 	transfer.addr_len = addr_len;
-	transfer.data_dummy_bits = dummy_byte;
 	transfer.addr = addr;
-	transfer.len = len;
-	transfer.data =(unsigned char *)&chip_id;
-	transfer.ops_mode = CPU_OPS;
-	transfer.sfc_mode = TM_STD_SPI;
-	transfer.direction = GLB_TRAN_DIR_READ;
-	transfer.cmd_info = &cmd;
-	sfc_message_add_tail(&transfer, &message);
 
-	ret = sfc_sync(flash->sfc, &message);
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.len = len;
+	transfer.data =(uint8_t *)&chip_id;
+	transfer.direction = GLB_TRAN_DIR_READ;
+
+	transfer.data_dummy_bits = dummy_byte;
+	transfer.ops_mode = CPU_OPS;
+
+	ret = sfc_sync(flash->sfc, &transfer);
 	if(ret) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		ret=-EIO;
@@ -104,33 +93,22 @@ unsigned int get_norflash_id()
 	return sfc_nor_read_id(SPINOR_OP_RDID, addr, addr_len, id_len, dummy);
 }
 
-static int get_current_operate_cmd()
+static int32_t get_current_operate_cmd()
 {
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	struct spi_nor_cmd_info *read_standard = &spi_nor_info->read_standard;
+	struct spi_nor_cmd_info *read_quad = &spi_nor_info->read_quad;
+	struct spi_nor_cmd_info *write_standard = &spi_nor_info->write_standard;
+	struct spi_nor_cmd_info *write_quad = &spi_nor_info->write_quad;
 
-	struct spi_nor_info *spi_nor_info;
-	struct spi_nor_cmd_info *read_standard;
-	struct spi_nor_cmd_info *read_quad;
-	struct spi_nor_cmd_info *write_standard;
-	struct spi_nor_cmd_info *write_quad;
-	struct spi_nor_cmd_info *cur_r_cmd;
-	struct spi_nor_cmd_info *cur_w_cmd;
-
-	spi_nor_info = flash->g_nor_info;
-	read_standard = &spi_nor_info->read_standard;
-	read_quad = &spi_nor_info->read_quad;
-	write_standard = &spi_nor_info->write_standard;
-	write_quad = &spi_nor_info->write_quad;
-
-	if (flash->quad_succeed){
-		cur_r_cmd = read_quad;
-		cur_w_cmd = write_quad;
+	if (nor_info->quad_succeed){
+		nor_info->cur_r_cmd = read_quad;
+		nor_info->cur_w_cmd = write_quad;
 	} else {
-		cur_r_cmd = read_standard;
-		cur_w_cmd = write_standard;
+		nor_info->cur_r_cmd = read_standard;
+		nor_info->cur_w_cmd = write_standard;
 	}
-
-	flash->cur_r_cmd = cur_r_cmd;
-	flash->cur_w_cmd = cur_w_cmd;
 
 	return 0;
 }
@@ -142,201 +120,174 @@ static unsigned int sfc_nor_read_params(unsigned int addr, unsigned char *buf, u
 	int addr_size;
 	int transfer_mode;
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	int ret;
 
-	sfc_message_init(&message);
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	sfc_list_init(&transfer);
 
-	cmd.cmd = SPINOR_OP_READ;
-	cmd.dataen = ENABLE;
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = SPINOR_OP_READ;
+
 	transfer.addr_len = DEF_ADDR_LEN;
 	transfer.addr = addr;
+
+	transfer.cmd_info.dataen = ENABLE;
 	transfer.len = len;
 	transfer.data = buf;
-	transfer.ops_mode = CPU_OPS;
-	transfer.sfc_mode = TM_STD_SPI;
 	transfer.direction = GLB_TRAN_DIR_READ;
-	transfer.cmd_info = &cmd;
-	sfc_message_add_tail(&transfer, &message);
 
-	ret = sfc_sync(flash->sfc, &message);
+	transfer.ops_mode = CPU_OPS;
+
+	ret = sfc_sync(flash->sfc, &transfer);
 	if(ret) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		ret=-EIO;
 	}
 
-	return message.actual_length;
+	return transfer.cur_len;
 }
 
 
 static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned int len)
 {
-	unsigned char command;
-	int dummy_byte;
-	int addr_size;
-	int transfer_mode;
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	unsigned char command = nor_info->cur_r_cmd->cmd;
+	int dummy_byte = nor_info->cur_r_cmd->dummy_byte;
+	int addr_size= nor_info->cur_r_cmd->addr_nbyte;
+	int transfer_mode= nor_info->cur_r_cmd->transfer_mode;
 	struct sfc_transfer transfer;
-	struct sfc_message message;
-	struct cmd_info cmd;
 	int ret;
 
-	command = flash->cur_r_cmd->cmd;
-	dummy_byte = flash->cur_r_cmd->dummy_byte;
-	addr_size = flash->cur_r_cmd->addr_nbyte;
-	transfer_mode = flash->cur_r_cmd->transfer_mode;
-
-	sfc_message_init(&message);
 	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	sfc_list_init(&transfer);
 
-	cmd.cmd = command;
-	cmd.dataen = ENABLE;
+	transfer.sfc_mode = transfer_mode;
+	transfer.cmd_info.cmd = command;
+
 	transfer.addr_len = addr_size;
-	transfer.data_dummy_bits = dummy_byte;
 	transfer.addr = addr;
+
+	transfer.cmd_info.dataen = ENABLE;
 	transfer.len = len;
 	transfer.data = buf;
-	transfer.ops_mode = CPU_OPS;
-	transfer.sfc_mode = transfer_mode;
 	transfer.direction = GLB_TRAN_DIR_READ;
-	transfer.cmd_info = &cmd;
-	sfc_message_add_tail(&transfer, &message);
 
-	ret = sfc_sync(flash->sfc, &message);
+	transfer.ops_mode = CPU_OPS;
+	transfer.data_dummy_bits = dummy_byte;
+
+	ret = sfc_sync(flash->sfc, &transfer);
 	if(ret) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		ret=-EIO;
 	}
 
-	return message.actual_length;
+	return transfer.cur_len;
 }
 static unsigned  int sfc_do_write(unsigned int addr, unsigned int len, const unsigned char *buf)
 {
-	unsigned char command;
-	int dummy_byte;
-	int transfer_mode;
-	int addr_size;
-	struct sfc_transfer transfer[3];
-	struct sfc_message message;
-	struct cmd_info cmd[3];
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	struct spi_nor_cmd_info *wr_en = &spi_nor_info->wr_en;
+	struct spi_nor_st_info *busy = &spi_nor_info->busy;
+
+	unsigned char command = nor_info->cur_w_cmd->cmd;
+	int dummy_byte = nor_info->cur_w_cmd->dummy_byte;
+	int transfer_mode = nor_info->cur_w_cmd->transfer_mode;
+	int addr_size = nor_info->cur_w_cmd->addr_nbyte;
+	struct sfc_transfer transfer[2];
+	uint32_t sta_reg = 0;
 	int ret;
-	struct spi_nor_info *spi_nor_info;
-	struct spi_nor_cmd_info *wr_en;
-	struct spi_nor_st_info *busy;
 
-	spi_nor_info = flash->g_nor_info;
-	wr_en = &spi_nor_info->wr_en;
-	busy = &spi_nor_info->busy;
-
-	command = flash->cur_w_cmd->cmd;
-	dummy_byte = flash->cur_w_cmd->dummy_byte;
-	addr_size = flash->cur_w_cmd->addr_nbyte;
-	transfer_mode = flash->cur_w_cmd->transfer_mode;
-
-	sfc_message_init(&message);
-	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	memset(transfer, 0, sizeof(transfer));
+	sfc_list_init(transfer);
 
 	/* write enable */
-	cmd[0].cmd = wr_en->cmd;
-	cmd[0].dataen = DISABLE;
-	transfer[0].cmd_info = &cmd[0];
-	transfer[0].addr_len = wr_en->addr_nbyte;
 	transfer[0].sfc_mode = transfer_mode;
+	transfer[0].cmd_info.cmd = wr_en->cmd;
+
+	transfer[0].addr_len = wr_en->addr_nbyte;
+
+	transfer[0].cmd_info.dataen = DISABLE;
+
 	transfer[0].data_dummy_bits = wr_en->dummy_byte;
-	sfc_message_add_tail(&transfer[0], &message);
 
 	/* write ops */
-	cmd[1].cmd = command;
-	cmd[1].dataen = ENABLE;
-	transfer[1].addr = addr;
-	transfer[1].addr_len = addr_size;
-	transfer[1].len = len;
-	transfer[1].data_dummy_bits = dummy_byte;
-	transfer[1].data = buf;
-	transfer[1].ops_mode = CPU_OPS;
 	transfer[1].sfc_mode = transfer_mode;
+	transfer[1].cmd_info.cmd = command;
+
+	transfer[1].addr_len = addr_size;
+	transfer[1].addr = addr;
+
+	transfer[1].cmd_info.dataen = ENABLE;
+	transfer[1].len = len;
+	transfer[1].data = buf;
 	transfer[1].direction = GLB_TRAN_DIR_WRITE;
-	transfer[1].cmd_info = &cmd[1];
-	sfc_message_add_tail(&transfer[1], &message);
 
-	cmd[2].cmd = busy->cmd;
-	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = busy->val << busy->bit_shift;
-	cmd[2].sta_msk = busy->mask << busy->bit_shift;
-	transfer[2].cmd_info = &cmd[2];
-	sfc_message_add_tail(&transfer[2], &message);
+	transfer[1].data_dummy_bits = dummy_byte;
+	transfer[1].ops_mode = CPU_OPS;
+	sfc_list_add_tail(&transfer[1], transfer);
 
-	ret = sfc_sync(flash->sfc, &message);
-	if(ret) {
+	if(sfc_sync(flash->sfc, transfer)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		ret=-EIO;
 	}
 
-	return message.actual_length;
+	do {
+		sta_reg = get_status(flash, busy->cmd, busy->len);
+		sta_reg = (sta_reg >> busy->bit_shift) & busy->mask;
+	} while (sta_reg != busy->val);
+
+	return transfer[1].cur_len;
 }
 
 static int sfc_do_erase(uint32_t addr)
 {
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	struct spi_nor_cmd_info *sector_erase = &spi_nor_info->sector_erase;
+	struct spi_nor_cmd_info *wr_en = &spi_nor_info->wr_en;
+	struct spi_nor_st_info *busy = &spi_nor_info->busy;
 	struct sfc_transfer transfer[3];
-	struct sfc_message message;
-	struct cmd_info cmd[3];
-	int ret;
+	uint32_t sta_reg = 0;
+	int addr_size = sector_erase->addr_nbyte;
 
-	struct spi_nor_info *spi_nor_info;
-	struct spi_nor_cmd_info *sector_erase;
-	struct spi_nor_cmd_info *wr_en;
-	struct spi_nor_st_info *busy;
-	int addr_size;
-
-
-	spi_nor_info = flash->g_nor_info;
-	sector_erase = &spi_nor_info->sector_erase;
-	wr_en = &spi_nor_info->wr_en;
-	busy = &spi_nor_info->busy;
-	addr_size = sector_erase->addr_nbyte;
-
-	sfc_message_init(&message);
-	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	memset(transfer, 0, sizeof(transfer));
+	sfc_list_init(transfer);
 
 	/* write enable */
-	cmd[0].cmd = wr_en->cmd;
-	cmd[0].dataen = DISABLE;
-	transfer[0].cmd_info = &cmd[0];
-	transfer[0].addr_len = wr_en->addr_nbyte;
 	transfer[0].sfc_mode = wr_en->transfer_mode;
+	transfer[0].cmd_info.cmd = wr_en->cmd;
+
+	transfer[0].addr_len = wr_en->addr_nbyte;
+
+	transfer[0].cmd_info.dataen = DISABLE;
+
 	transfer[0].data_dummy_bits = wr_en->dummy_byte;
-	sfc_message_add_tail(&transfer[0], &message);
 
 	/* erase ops */
-	cmd[1].cmd = sector_erase->cmd;
-	cmd[1].dataen = DISABLE;
-	transfer[1].addr_len = addr_size;
-	transfer[1].data_dummy_bits = sector_erase->dummy_byte;
-	transfer[1].addr = addr;
 	transfer[1].sfc_mode = TM_STD_SPI;
+	transfer[1].cmd_info.cmd = sector_erase->cmd;
+
+	transfer[1].addr_len = addr_size;
+	transfer[1].addr = addr;
+
+	transfer[1].cmd_info.dataen = DISABLE;
+
+	transfer[1].data_dummy_bits = sector_erase->dummy_byte;
 	transfer[1].direction = GLB_TRAN_DIR_WRITE;
-	transfer[1].cmd_info = &cmd[1];
-	sfc_message_add_tail(&transfer[1], &message);
+	sfc_list_add_tail(&transfer[1], transfer);
 
-	cmd[2].cmd = busy->cmd;
-	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = busy->val << busy->bit_shift;
-	cmd[2].sta_msk = busy->mask << busy->bit_shift;
-	transfer[2].cmd_info = &cmd[2];
-	sfc_message_add_tail(&transfer[2], &message);
-
-	ret = sfc_sync(flash->sfc, &message);
-	if(ret) {
+	if(sfc_sync(flash->sfc, transfer)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		ret=-EIO;
+		return -EIO;
 	}
 
-	return ret;
+	do {
+		sta_reg = get_status(flash, busy->cmd, busy->len);
+		sta_reg = (sta_reg >> busy->bit_shift) & busy->mask;
+	} while (sta_reg != busy->val);
+
+	return 0;
+
 }
 
 static int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
@@ -355,15 +306,16 @@ static int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
 
 int sfc_nor_read(unsigned int from, unsigned int len, unsigned char *buf)
 {
+	struct spinor_flashinfo *nor_info = flash->flash_info;
 
 #ifndef CONFIG_BURNER
 	int i;
-	if(flash->norflash_partitions->num_partition_info && (flash->norflash_partitions->num_partition_info != 0xffffffff)) {
-		for(i = 0; i < flash->norflash_partitions->num_partition_info; i++){
-			if(from >= flash->norflash_partitions->nor_partition[i].offset && \
-					from < (flash->norflash_partitions->nor_partition[i].offset + \
-						flash->norflash_partitions->nor_partition[i].size) && \
-					(flash->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_WO)){
+	if(nor_info->norflash_partitions->num_partition_info && (nor_info->norflash_partitions->num_partition_info != 0xffffffff)) {
+		for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
+			if(from >= nor_info->norflash_partitions->nor_partition[i].offset && \
+					from < (nor_info->norflash_partitions->nor_partition[i].offset + \
+						nor_info->norflash_partitions->nor_partition[i].size) && \
+					(nor_info->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_WO)){
 				printf("the partiton can't read,please check the partition RW mode\n");
 				return 0;
 			}
@@ -377,22 +329,23 @@ int sfc_nor_read(unsigned int from, unsigned int len, unsigned char *buf)
 
 int sfc_nor_page_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	uint32_t writesize = spi_nor_info->page_size;
 	unsigned int page_offset, actual_len;
 	int ret;
-	struct spi_nor_info *spi_nor_info;
-	int writesize;
 
-	spi_nor_info = flash->g_nor_info;
-	writesize = spi_nor_info->page_size;
+/*	spi_nor_info = flash->g_nor_info;*/
+/*	writesize = spi_nor_info->page_size;*/
 
 #ifndef CONFIG_BURNER
 	int i;
-	if(flash->norflash_partitions->num_partition_info && (flash->norflash_partitions->num_partition_info != 0xffffffff)) {
-		for(i = 0; i < flash->norflash_partitions->num_partition_info; i++){
-			if(to >= flash->norflash_partitions->nor_partition[i].offset && \
-					to < (flash->norflash_partitions->nor_partition[i].offset + \
-						flash->norflash_partitions->nor_partition[i].size) && \
-					(flash->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_RO)){
+	if(nor_info->norflash_partitions->num_partition_info && (nor_info->norflash_partitions->num_partition_info != 0xffffffff)) {
+		for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
+			if(to >= nor_info->norflash_partitions->nor_partition[i].offset && \
+					to < (nor_info->norflash_partitions->nor_partition[i].offset + \
+						nor_info->norflash_partitions->nor_partition[i].size) && \
+					(nor_info->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_RO)){
 				printf("the partiton can't write,please check the partition RW mode\n");
 				return 0;
 			}
@@ -487,23 +440,20 @@ int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 
 int sfc_nor_erase(unsigned int addr, unsigned int len)
 {
-	int ret;
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	int erasesize = spi_nor_info->erase_size;
 	uint32_t end;
-	int erasesize;
-
-	struct spi_nor_info *spi_nor_info;
-
-	spi_nor_info = flash->g_nor_info;
-	erasesize = spi_nor_info->erase_size;
+	int ret;
 
 #ifndef CONFIG_BURNER
 	int i;
-	if(flash->norflash_partitions->num_partition_info && (flash->norflash_partitions->num_partition_info != 0xffffffff)) {
-		for(i = 0; i < flash->norflash_partitions->num_partition_info; i++){
-			if(addr >= flash->norflash_partitions->nor_partition[i].offset && \
-					addr < (flash->norflash_partitions->nor_partition[i].offset + \
-						flash->norflash_partitions->nor_partition[i].size) && \
-					(flash->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_RO)){
+	if(nor_info->norflash_partitions->num_partition_info && (nor_info->norflash_partitions->num_partition_info != 0xffffffff)) {
+		for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
+			if(addr >= nor_info->norflash_partitions->nor_partition[i].offset && \
+					addr < (nor_info->norflash_partitions->nor_partition[i].offset + \
+						nor_info->norflash_partitions->nor_partition[i].size) && \
+					(nor_info->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_RO)){
 				printf("the partiton can't erase,please check the partition RW mode\n");
 				return 0;
 			}
@@ -527,54 +477,48 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	return 0;
 }
 
-int sfc_nor_do_special_func()
+int32_t sfc_nor_do_special_func()
 {
-	int tchsh;
-	int tslch;
-	int tshsl_rd;
-	int tshsl_wr;
-	struct spi_nor_info *spi_nor_info;
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	uint32_t tchsh = spi_nor_info->tCHSH;
+	uint32_t tslch = spi_nor_info->tSLCH;
+	uint32_t tshsl_rd = spi_nor_info->tSHSL_RD;
+	uint32_t tshsl_wr = spi_nor_info->tSHSL_WR;
 
-	spi_nor_info = flash->g_nor_info;
-
-	tchsh = spi_nor_info->tCHSH;
-	tslch = spi_nor_info->tSLCH;
-	tshsl_rd = spi_nor_info->tSHSL_RD;
-	tshsl_wr = spi_nor_info->tSHSL_WR;
 	set_flash_timing(flash->sfc, tchsh, tslch, tshsl_rd, tshsl_wr);
 
 	sfc_nor_get_special_ops(flash);
 
-	flash->quad_succeed = 0;
+	nor_info->quad_succeed = 0;
 #ifndef CONFIG_BURNER
-	if (params.uk_quad) {
+	if (params.nor_pri_data.uk_quad) {
 #else
 	if (burn_mode) {
 #endif
-		if (flash->nor_flash_ops->set_quad_mode) {
-			flash->nor_flash_ops->set_quad_mode(flash);
-		}
-		if (flash->quad_succeed)
+		if (nor_info->nor_flash_ops->set_quad_mode)
+			nor_info->nor_flash_ops->set_quad_mode(flash);
+
+		if (nor_info->quad_succeed)
 			printf("nor flash quad mode is set, now use quad mode!\n");
 	}
 
 	/* if nor flash size is greater than 16M, use 4byte mode */
 	if(spi_nor_info->chip_size > 0x1000000) {
-		if (flash->nor_flash_ops->set_4byte_mode) {
-			flash->nor_flash_ops->set_4byte_mode(flash);
-		}
+		if (nor_info->nor_flash_ops->set_4byte_mode)
+			nor_info->nor_flash_ops->set_4byte_mode(flash);
 	}
 
 	get_current_operate_cmd(flash);
 }
 
 
-int sfc_nor_flash_init()
+int32_t sfc_nor_flash_init()
 {
-	int ret = 0;
-	int chip_id = 0;
 	struct spi_nor_info *spi_nor_info;
-	int i;
+	struct spinor_flashinfo *nor_info;
+	int32_t ret = 0, i;
+	int32_t chip_id = 0;
 
 	flash = malloc(sizeof(struct sfc_flash));
 	if (!flash) {
@@ -582,6 +526,13 @@ int sfc_nor_flash_init()
 		return -1;
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
+
+	nor_info = calloc(sizeof(*nor_info), sizeof(uint8_t));
+	if(!nor_info) {
+		printf("ERR : alloc mem failed!\n");
+		return -ENOMEM;
+	}
+	flash->flash_info = nor_info;
 
 	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_RATE);
 
@@ -596,121 +547,89 @@ int sfc_nor_flash_init()
 		return -1;
 	}
 
-	flash->g_nor_info = &(params.spi_nor_info);
-	flash->norflash_partitions = &params.norflash_partitions;
+	nor_info->nor_flash_info = &params.spi_nor_info;
+	nor_info->norflash_partitions = &params.norflash_partitions;
 
 	sfc_nor_do_special_func();
 
 #else
-	flash->g_nor_info = malloc(sizeof(struct spi_nor_info));
-	flash->norflash_partitions = malloc(sizeof(struct norflash_partitions));
+	nor_info->nor_flash_info = malloc(sizeof(struct spi_nor_info));
+	nor_info->norflash_partitions = malloc(sizeof(struct norflash_partitions));
 #endif
 	return 0;
-
 }
 
 int jz_sfc_chip_erase()
 {
-	printf("chip erasing...\n");
-	struct sfc_transfer transfer[3];
-	struct sfc_message message;
-	struct cmd_info cmd[3];
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	struct spi_nor_cmd_info *wr_en = &spi_nor_info->wr_en;
+	struct spi_nor_st_info *busy = &spi_nor_info->busy;
+	struct sfc_transfer transfer[2];
+	uint32_t sta_reg = 0;
 	int ret;
 
-	struct spi_nor_info *spi_nor_info;
-	struct spi_nor_cmd_info *wr_en;
-	struct spi_nor_st_info *busy;
-
-
-	spi_nor_info = flash->g_nor_info;
-	wr_en = &spi_nor_info->wr_en;
-	busy = &spi_nor_info->busy;
-
-	sfc_message_init(&message);
-	memset(&transfer, 0, sizeof(transfer));
-	memset(&cmd, 0, sizeof(cmd));
+	printf("chip erasing...\n");
+	memset(transfer, 0, sizeof(transfer));
+	sfc_list_init(transfer);
 
 	/* write enable */
-	cmd[0].cmd = wr_en->cmd;
-	cmd[0].dataen = DISABLE;
-	transfer[0].cmd_info = &cmd[0];
-	transfer[0].addr_len = wr_en->addr_nbyte;
 	transfer[0].sfc_mode = wr_en->transfer_mode;
+	transfer[0].cmd_info.cmd = wr_en->cmd;
+
+	transfer[0].addr_len = wr_en->addr_nbyte;
+
+	transfer[0].cmd_info.dataen = DISABLE;
 	transfer[0].data_dummy_bits = wr_en->dummy_byte;
-	sfc_message_add_tail(&transfer[0], &message);
 
 	/* erase ops */
-	cmd[1].cmd = spi_nor_info->chip_erase_cmd;
-	cmd[1].dataen = DISABLE;
 	transfer[1].sfc_mode = TM_STD_SPI;
+	transfer[1].cmd_info.cmd = spi_nor_info->chip_erase_cmd;
+
+	transfer[1].cmd_info.dataen = DISABLE;
 	transfer[1].direction = GLB_TRAN_DIR_WRITE;
-	transfer[1].cmd_info = &cmd[1];
-	sfc_message_add_tail(&transfer[1], &message);
+	sfc_list_add_tail(&transfer[1], transfer);
 
-	cmd[2].cmd = busy->cmd;
-	cmd[2].dataen = DISABLE;
-	cmd[2].sta_exp = busy->val << busy->bit_shift;
-	cmd[2].sta_msk = busy->mask << busy->bit_shift;
-	transfer[2].cmd_info = &cmd[2];
-	sfc_message_add_tail(&transfer[2], &message);
-
-	ret = sfc_sync(flash->sfc, &message);
-	if (ret) {
+	if(sfc_sync(flash->sfc, transfer)) {
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		ret=-EIO;
+		return -EIO;
 	}
 
-	return ret;
+	do {
+	            sta_reg = get_status(flash, busy->cmd, busy->len);
+		    sta_reg = (sta_reg >> busy->bit_shift) & busy->mask;
+	} while (sta_reg != busy->val);
+
+	return 0;
 }
 
 #ifdef CONFIG_BURNER
 struct nor_partition *get_partition_index(u32 offset, u32 length, int *pt_index)
 {
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
 	int i;
-	struct spi_nor_info *spi_nor_info;
 
-	spi_nor_info = flash->g_nor_info;
-
-	for(i = 0; i < flash->norflash_partitions->num_partition_info; i++){
-		if(offset >= flash->norflash_partitions->nor_partition[i].offset && \
-				(offset + length) <= (flash->norflash_partitions->nor_partition[i].offset + \
-					flash->norflash_partitions->nor_partition[i].size)){
+	for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
+		if(offset >= nor_info->norflash_partitions->nor_partition[i].offset && \
+				(offset + length) <= (nor_info->norflash_partitions->nor_partition[i].offset + \
+					nor_info->norflash_partitions->nor_partition[i].size)){
 			*pt_index = i;
 			break;
-		}else if(offset >= flash->norflash_partitions->nor_partition[i].offset && \
+		}else if(offset >= nor_info->norflash_partitions->nor_partition[i].offset && \
 				offset < (spi_nor_info->chip_size) && \
-				(flash->norflash_partitions->nor_partition[i].size == 0xffffffff)){ /*size == -1*/
-			flash->norflash_partitions->nor_partition[i].size=spi_nor_info->chip_size-flash->norflash_partitions->nor_partition[i].offset;
+				(nor_info->norflash_partitions->nor_partition[i].size == 0xffffffff)){ /*size == -1*/
+			nor_info->norflash_partitions->nor_partition[i].size = spi_nor_info->chip_size-nor_info->norflash_partitions->nor_partition[i].offset;
 			*pt_index = i;
 			break;
 		}
 	}
-	if(i >= flash->norflash_partitions->num_partition_info){
+	if(i >= nor_info->norflash_partitions->num_partition_info){
 		*pt_index = -1;
 		printf("partition size not align with write transfer size \n");
 		return NULL;
 	}
-	return &flash->norflash_partitions->nor_partition[i];
-}
-
-int check_offset(u32 offset,u32 length)
-{
-	int i;
-
-	for(i = 1; i < flash->norflash_partitions->num_partition_info; i++){
-		if(offset < flash->norflash_partitions->nor_partition[i].offset && \
-				offset > (flash->norflash_partitions->nor_partition[i-1].offset + \
-					flash->norflash_partitions->nor_partition[i-1].size)){
-			break;
-		}
-	}
-	if(i >= flash->norflash_partitions->num_partition_info){
-		return i;
-	}else if((offset+length) > flash->norflash_partitions->nor_partition[i].offset ){
-		return -1;
-	}else{
-		return i;
-	};
+	return &nor_info->norflash_partitions->nor_partition[i];
 }
 
 #ifdef SFC_NOR_CLONER_DEBUG
@@ -855,9 +774,9 @@ static void dump_mini_cloner_params()
 }
 #endif
 
-
 int norflash_get_params_from_burner(unsigned char *addr)
 {
+	struct spinor_flashinfo *nor_info = flash->flash_info;
 	unsigned int chip_id ,chipnum,i;
 	struct spi_nor_info *spi_nor_info;
 	struct mini_spi_nor_info *mini_spi_nor_info;
@@ -866,6 +785,7 @@ int norflash_get_params_from_burner(unsigned char *addr)
 	unsigned int id_addr_len = 0;
 	unsigned int dummy = 0;
 	struct spiflash_info *spiflash_info;
+
 
 	spiflash_info = (struct spiflash_info *)addr;
 
@@ -876,40 +796,27 @@ int norflash_get_params_from_burner(unsigned char *addr)
 	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
 	burn_mode = spiflash_info->b_quad;
 
-
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();
 	dump_mini_cloner_params();
-	printf("fs_erase_size=%d\n", params.fs_erase_size);
+	printf("fs_erase_size=%d\n", params.nor_pri_data.fs_erase_size);
 	printf("uk_quad=%d\n", params.uk_quad);
 	printf("burner_quad_mode=%d\n",spiflash_info->b_quad);
 #endif
 
-	if (!memcmp(&params.spi_nor_info, 0, sizeof(struct spi_nor_info))) {
-		printf("unsupport nor flash, no params in burner\n");
-		return -1;
-	}
-	if (!memcmp(&mini_params, 0, sizeof(struct mini_spi_nor_info))) {
-		printf("unsupport nor flash, no mini params in burner\n");
-		return -1;
-	}
-
-
-	memcpy(flash->g_nor_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
-	memcpy(flash->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));
+	memcpy(nor_info->nor_flash_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
+	memcpy(nor_info->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));
 	sfc_nor_do_special_func();
 
 #ifdef SFC_NOR_CLONER_DEBUG
-	printf("partition num=%d\n", flash->norflash_partitions->num_partition_info);
-	for (i = 0; i < flash->norflash_partitions->num_partition_info; i++) {
-		printf("p[%d].name=%s\n", i, flash->norflash_partitions->nor_partition[i].name);
-		printf("p[%d].size=%x\n", i, flash->norflash_partitions->nor_partition[i].size);
-		printf("p[%d].offset=%x\n", i, flash->norflash_partitions->nor_partition[i].offset);
+	printf("partition num=%d\n", nor_info->norflash_partitions->num_partition_info);
+	for (i = 0; i < nor_info->norflash_partitions->num_partition_info; i++) {
+		printf("p[%d].name=%s\n", i, nor_info->norflash_partitions->nor_partition[i].name);
+		printf("p[%d].size=%x\n", i, nor_info->norflash_partitions->nor_partition[i].size);
+		printf("p[%d].offset=%x\n", i, nor_info->norflash_partitions->nor_partition[i].offset);
 	}
 #endif
 	return 0;
 }
-
-
 
 #endif

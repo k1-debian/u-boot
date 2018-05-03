@@ -310,6 +310,9 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	bd->bi_flashoffset = 0;
 #endif
 
+#ifdef CONFIG_CMD_SFCNAND
+	sfc_nand_init();
+#endif
 #ifdef CONFIG_CMD_NAND
 	puts("NAND:  ");
 	nand_init();		/* go init the NAND */
@@ -317,9 +320,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #ifdef CONFIG_CMD_SPINAND
 	spi_nand_init();
 #endif
-#ifdef CONFIG_CMD_SFCNAND
-	sfc_nand_init();
-#endif
+
 #ifdef CONFIG_CMD_SFC_NOR
 	sfc_nor_flash_init();
 #endif

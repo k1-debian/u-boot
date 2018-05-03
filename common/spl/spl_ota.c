@@ -6,11 +6,9 @@
 #include <linux/err.h>
 #include <malloc.h>
 #include <div64.h>
+#include <asm/arch/spinand.h>
 
-#include "spl_ota.h"
-
-#include <asm/arch/sfc_params.h>
-#include "../../drivers/mtd/devices/jz_sfc_nand.h"
+#include "./spl_ota.h"
 
 #define OTA_RAMDISK_OUT
 
@@ -24,6 +22,7 @@ extern void spl_load_kernel(long offset);
 
 
 static struct ota_ops *ota_ops = NULL;
+
 void register_ota_ops(struct ota_ops *ops)
 {
 	ota_ops = ops;
@@ -39,23 +38,19 @@ static int ota_init(void)
 char* spl_ota_load_image(void)
 {
 	char *cmdargs = NULL;
-	unsigned int nv_rw_addr = 0;
-	unsigned int nv_rw_size = 0;
 	unsigned int src_addr, updata_flag = 0;
 	unsigned int nv_buf[2] = {0};
 	int count = 8;
 	unsigned int bootimg_addr = 0;
-	unsigned int bootimg_size = 0;
-	struct jz_spinand_partition partition;
-	struct jz_nand_partition_param partitions;
+	struct jz_sfcnand_burner_param param;
+	struct jz_sfcnand_partition partition;
 
 	ota_init();
 
-	nv_rw_addr = CONFIG_NVRW_ADDR;
-	nv_rw_size = CONFIG_NVRW_SIZE;
+	nv_map_area(&src_addr, CONFIG_NVRW_ADDR, CONFIG_NVRW_SIZE);
 
-	nv_map_area((unsigned int *)&src_addr, nv_rw_addr, nv_rw_size);
 	ota_ops->flash_read(src_addr, count, nv_buf);
+
 	updata_flag = nv_buf[1];
 
 #ifndef OTA_RAMDISK_OUT

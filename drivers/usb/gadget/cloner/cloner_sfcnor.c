@@ -1,6 +1,5 @@
 #ifdef CONFIG_JZ_SFC
-
-#include <asm/arch/sfc_params.h>
+#include <asm/arch/spinor.h>
 
 extern struct debug_param *debug_args;
 extern struct nor_partition *get_partition_index(u32 offset,u32 length,int *pt_index);

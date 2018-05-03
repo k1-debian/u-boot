@@ -29,7 +29,7 @@
 #include <malloc.h>
 #include <search.h>
 #include <errno.h>
-#include <asm/arch/sfc_params.h>
+#include <asm/arch/spinor.h>
 
 extern struct burner_params params;
 

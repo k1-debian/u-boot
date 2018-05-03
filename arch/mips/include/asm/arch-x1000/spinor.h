@@ -1,6 +1,6 @@
-#ifndef SFC_PARAMS_H
-#define SFC_PARAMS_H
-
+#ifndef __SPINOR_H
+#define __SPINOR_H
+#include <asm/arch/spinor_cmd.h>
 
 #define SIZEOF_NAME			32
 
@@ -32,8 +32,6 @@ struct spi_nor_st_info {
 	unsigned char len; //length of byte to operate from register
 	unsigned char dummy;
 };
-
-
 
 struct spi_nor_info {
 	unsigned char name[32];
@@ -109,15 +107,20 @@ struct norflash_partitions {
 	uint32_t num_partition_info;
 };
 
+struct nor_private_data {
+	unsigned int fs_erase_size;
+	unsigned char uk_quad;
+};
+
 struct burner_params {
 	uint32_t magic;
 	uint32_t version;
 	struct spi_nor_info spi_nor_info;
 	struct norflash_partitions norflash_partitions;
-	unsigned int fs_erase_size;
-	unsigned char uk_quad;	//for uboot kernel set quad mode
+/*	unsigned int fs_erase_size;*/
+/*	unsigned char uk_quad;	//for uboot kernel set quad mode*/
+	struct nor_private_data nor_pri_data;
 };
-
 
 struct spiflash_info {
 	struct burner_params burner_params;
@@ -125,10 +128,22 @@ struct spiflash_info {
 	unsigned char b_quad;	//for burner set quad mode
 };
 
+struct spi_nor_flash_ops {
+	int (*set_4byte_mode)(struct sfc_flash *flash);
+	int (*set_quad_mode)(struct sfc_flash *flash);
+};
 
+struct spinor_flashinfo {
 
+	int quad_succeed;
+	struct spi_nor_flash_ops *nor_flash_ops;
+	struct spi_nor_info *nor_flash_info;
+	struct spi_nor_cmd_info *cur_r_cmd;
+	struct spi_nor_cmd_info *cur_w_cmd;
+	struct norflash_partitions *norflash_partitions;
+	struct nor_private_data *nor_pri_data;
 
-
+};
 
 struct nor_block_info {
 	unsigned int blocksize;
@@ -180,19 +195,5 @@ struct legacy_params {
 
 };
 
-struct spl_nand_param {
-		unsigned int pagesize:16;
-		unsigned int id_manufactory:8;
-		unsigned int device_id:8;
-
-		unsigned int addrlen:2;
-		unsigned int ecc_bit:3;
-		unsigned int bit_counts:3;
-
-		unsigned char eccstat_count;
-		unsigned char eccerrstatus[2];
-} __attribute__((aligned(4)));
 
 #endif
-
-

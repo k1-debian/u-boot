@@ -32,6 +32,7 @@
 #include <mmc.h>
 #include <boot_img.h>
 #include <asm/arch/sfc.h>
+#include <asm/arch/spinor.h>
 
 extern void flush_cache_all(void);
 

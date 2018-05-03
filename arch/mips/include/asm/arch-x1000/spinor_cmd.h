@@ -1,7 +1,5 @@
-#ifndef __LINUX_SPI_NOR_H
-#define __LINUX_SPI_NOR_H
-
-
+#ifndef __SPINOR_CMD_H
+#define __SPINOR_CMD_H
 
 /* Flash opcodes. */
 #define SPINOR_OP_RSTEN		0x66	/* reset enable */

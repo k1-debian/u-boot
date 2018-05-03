@@ -5,11 +5,9 @@
 #include <spl.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/sfc.h>
-#include <asm/arch/spi_nand.h>
+#include <asm/arch/spinand.h>
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
-#include "../../drivers/mtd/devices/jz_sfc_nand.h"
-
 #include "spl_ota.h"
 
 #define SPINAND_PARAM_SIZE	1024
@@ -61,7 +59,6 @@ static inline void sfc_tranconf_init(struct jz_sfc *sfc, unsigned int channel)
 {
 	sfc_writel(sfc->tranconf.d32, SFC_TRAN_CONF(channel));
 }
-
 
 static void sfc_set_transfer(struct jz_sfc *sfc, unsigned int dir)
 {
@@ -163,10 +160,10 @@ read_oob:
 		dst_addr = (unsigned char *)&read_buf;
 	}
 
-	SFC_SEND_COMMAND(&sfc, CMD_PARD, 0, page, 3, 0, 0, 0);
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_PARD, 0, page, 3, 0, 0, 0);
 	clear_end();
 	do {
-		SFC_SEND_COMMAND(&sfc, CMD_GET_FEATURE, 1, FEATURE_REG_STATUS1, 1, 0, 1, 0);
+		SFC_SEND_COMMAND(&sfc, SPINAND_CMD_GET_FEATURE, 1, SPINAND_ADDR_STATUS, 1, 0, 1, 0);
 		sfc_read_data(&read_buf, 1);
 	}while(read_buf & 0x1);
 	/*ecc check*/
@@ -182,9 +179,9 @@ read_oob:
 		column |= (((page >> 6) & 1) << 12);
 
 #ifndef CONFIG_SPI_STANDARD
-	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE_QUAD, len, column, curr_device->addrlen, 8, 1, 0);
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_RDCH_X4, len, column, curr_device->addrlen, 8, 1, 0);
 #else
-	SFC_SEND_COMMAND(&sfc, CMD_FR_CACHE, len, column, curr_device->addrlen, 8, 1, 0);
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_FRCH, len, column, curr_device->addrlen, 8, 1, 0);
 #endif
 	sfc_read_data((unsigned int *)dst_addr, len);
 
@@ -230,7 +227,7 @@ static int spinand_probe_id(struct jz_sfc *sfc)
 	unsigned char i;
 
 	for(i = 0; i < sizeof(addrlen); i++) {
-		SFC_SEND_COMMAND(sfc, CMD_RDID, 2, 0, addrlen[i], 0, 1, 0);
+		SFC_SEND_COMMAND(sfc, SPINAND_CMD_RDID, 2, 0, addrlen[i], 0, 1, 0);
 		sfc_read_data((unsigned int *)id, 2);
 		if (!probe_id_list(id))
 			    break;
@@ -256,11 +253,11 @@ static int spinand_init(void)
 
 	/* disable write protect */
 	x = 0;
-	SFC_SEND_COMMAND(&sfc, CMD_SET_FEATURE, 1, FEATURE_REG_PROTECT, 1, 0, 1, 1);
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_SET_FEATURE, 1, SPINAND_ADDR_PROTECT, 1, 0, 1, 1);
 	sfc_write_data(&x, 1);
 
 	x = BITS_QUAD_EN | BITS_ECC_EN | BITS_BUF_EN;
-	SFC_SEND_COMMAND(&sfc, CMD_SET_FEATURE, 1, FEATURE_REG_FEATURE1, 1, 0, 1, 1);
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_SET_FEATURE, 1, SPINAND_ADDR_FEATURE, 1, 0, 1, 1);
 	sfc_write_data(&x, 1);
 
 	return 0;
@@ -345,18 +342,19 @@ void spl_load_kernel(long offset)
 	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
 }
 
-void sfc_init(void)
+static void sfc_init(void)
 {
 	sfc_controler_init();
 	spinand_init();
 }
 
+#ifndef CONFIG_OTA_VERSION20
 void spl_sfc_nand_load(void)
 {
 	struct image_header *header;
 #ifdef CONFIG_SPL_OS_BOOT
-	struct jz_sfc_nand_burner_param *burn_param;
-	struct jz_spinand_partition *partition;
+	struct jz_sfcnand_burner_param *burn_param;
+	struct jz_sfcnand_partition *partition;
 	unsigned int bootimg_addr = 0;
 	unsigned int i = 0;
 #endif
@@ -367,7 +365,7 @@ void spl_sfc_nand_load(void)
 	/*read burn param*/
 	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
 	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
-	partition = (struct jz_spinand_partition *)&burn_param->partition;
+	partition = (struct jz_sfcnand_partition *)&burn_param->partition;
 
 	for(i = 0; i < burn_param->partition_num; i++) {
 		if (!strncmp(partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
@@ -385,6 +383,7 @@ void spl_sfc_nand_load(void)
 #endif
 
 }
+#endif
 
 #ifdef CONFIG_OTA_VERSION20
 static struct ota_ops ota_ops = {
