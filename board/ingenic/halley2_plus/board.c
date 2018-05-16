@@ -56,6 +56,14 @@ int board_early_init_f(void)
 	return 0;
 }
 
+char *spl_board_process_bootargs(char *arg)
+{
+	char *new_args = NULL;
+	new_args = 0x80000000;
+	memcpy(new_args, arg, strlen(arg));
+	return new_args;
+}
+
 #ifdef CONFIG_REGULATOR
 int regulator_init(void)
 {
@@ -176,4 +184,3 @@ void spl_board_init(void)
 }
 
 #endif /* CONFIG_SPL_BUILD */
-

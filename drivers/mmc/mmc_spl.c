@@ -510,7 +510,7 @@ static int mmc_startup(struct mmc *mmc)
 			   EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_1);
 		mmc_set_bus_width(mmc, 1);
 #endif //CONFIG_FPGA
-		mmc->tran_speed = 24000000;
+		mmc->tran_speed = 50000000;
 	}
 
 	mmc_set_clock(mmc, mmc->tran_speed);

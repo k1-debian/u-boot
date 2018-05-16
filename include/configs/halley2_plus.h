@@ -28,7 +28,7 @@
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
-#define CONFIG_MIPS32		/* MIPS32 CPU core */
+#define CONFIG_MIPS32R2		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_M200		/* M200 SoC */
@@ -85,7 +85,7 @@
  * console=ttyS1: kernel boot time (7s)
  * console=null:  kernel boot time (4s), for product board
  */
-#define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=255M@0x0 mem=256M@0x30000000"
+#define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=255M@0x0 mem=256M@0x30000000 loglevel=7 "
 /*#define BOOTARGS_COMMON "console=null, mem=255M@0x0 mem=256M@0x30000000"*/
 #ifdef CONFIG_SPL_MMC_SUPPORT
 /* #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.205:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.8.3:/home/nfsroot/bliu/buildroot rw" */
@@ -111,6 +111,13 @@
 	#define CONFIG_BOOTCOMMAND  "mtdparts default; ubi part kernel; ubifsmount ubi:ndboot;" \
 	"ubifsload 0x80f00000 uImage; bootm 0x80f00000"
 #endif
+
+#ifdef CONFIG_SPL_OS_BOOT
+#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc root=/dev/mmcblk0p7 rw rootwait lpj=5984256"
+#define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+#define CONFIG_LOAD_VMLINUX_ADDR    0x80010000
+#endif	/* CONFIG_SPL_OS_BOOT */
+#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0x1800 /* address 0xa0000 */
 
 /**
  * Drivers configuration.

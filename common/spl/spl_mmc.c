@@ -57,7 +57,7 @@ static int mmc_load_image_raw(struct mmc *mmc, unsigned long sector)
 
 	/* Read the header too to avoid extra memcpy */
 	err = mmc->block_dev.block_read(0, sector, image_size_sectors,
-					(void *)spl_image.load_addr);
+		(void *)spl_image.load_addr);
 
 end:
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
@@ -75,16 +75,17 @@ end:
 #ifdef CONFIG_SPL_OS_BOOT
 static int mmc_load_image_raw_os(struct mmc *mmc)
 {
+#ifdef CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR
 	if (!mmc->block_dev.block_read(0,
-				       CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR,
-				       CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS,
-				       (void *)CONFIG_SYS_SPL_ARGS_ADDR)) {
+			CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR,
+			CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS,
+			(void *)CONFIG_SYS_SPL_ARGS_ADDR)) {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 		printf("mmc args blk read error\n");
 #endif
 		return -1;
 	}
-
+#endif
 	return mmc_load_image_raw(mmc, CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR);
 }
 #endif
@@ -164,17 +165,28 @@ void spl_mmc_load_image(void)
 	boot_mode = spl_boot_mode();
 	if (boot_mode == MMCSD_MODE_RAW) {
 		debug("boot mode - RAW\n");
+#ifdef CONFIG_BOOT_VMLINUX
+		/**
+		 * warning!!!
+		 * kernel must set load-addr=0x80010000 when default CONFIG_BOOT_VMLINUX
+		 */
+		spl_image.os = IH_OS_LINUX;
+		spl_image.entry_point = CONFIG_LOAD_VMLINUX_ADDR;
+		spl_image.load_addr = CONFIG_LOAD_VMLINUX_ADDR;
+		err = mmc->block_dev.block_read(0, 0x1800, 0x6000,(void *)spl_image.load_addr);
+		return;
+#endif /* CONFIG_BOOT_VMLINUX */
 #ifdef CONFIG_SPL_OS_BOOT
 		if (spl_start_uboot() || mmc_load_image_raw_os(mmc))
 #endif
-		err = mmc_load_image_raw(mmc,
-					 CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+			err = mmc_load_image_raw(mmc,
+				CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
 #ifdef CONFIG_SPL_FAT_SUPPORT
 	} else if (boot_mode == MMCSD_MODE_FAT) {
 		debug("boot mode - FAT\n");
 
 		err = fat_register_device(&mmc->block_dev,
-					  CONFIG_SYS_MMC_SD_FAT_BOOT_PARTITION);
+			CONFIG_SYS_MMC_SD_FAT_BOOT_PARTITION);
 		if (err) {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 			printf("spl: fat register err - %d\n", err);
