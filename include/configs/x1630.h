@@ -92,7 +92,7 @@
 /**
  * Boot arguments & command definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS1," CONFIG_BAUDRATE_STR "n8 mem=128M@0x0"
+#define BOOTARGS_COMMON "console=ttyS1," CONFIG_BAUDRATE_STR "n8 mem=96M@0x0 rmem=32M@0x6000000"
 #define CONFIG_BOOTDELAY 1
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
   #define CONFIG_BOOTARGS BOOTARGS_COMMON " init=/linuxrc root=/dev/mmcblk0p3 rw rootdelay=1"
