@@ -1,5 +1,6 @@
 #ifndef SFC_COMMON_H
 #define SFC_COMMON_H
+#include <common.h>
 #include <asm/arch/sfc.h>
 #include <asm/arch/sfc_flash.h>
 

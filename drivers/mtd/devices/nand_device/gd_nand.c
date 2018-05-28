@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          6
+#define GD_DEVICES_NUM          7
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -157,6 +157,31 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 #endif
 	},
 
+	[6] = {
+		/*GD5F1GQ4RF9IG*/
+	    .pagesize = 2 * 1024,
+	    .blocksize = 2 * 1024 * 64,
+	    .oobsize = 64,
+	    .flashsize = 2 * 1024 * 64 * 1024,
+
+	    .tSETUP  = TSETUP,
+	    .tHOLD   = THOLD,
+	    .tSHSL_R = TSHSL_R,
+	    .tSHSL_W = TSHSL_W,
+
+	    .tRD = TRD,
+	    .tPP = TPP,
+	    .tBE = TBE,
+
+	    .ecc_max = 0x8,
+
+#ifdef CONFIG_BURNER
+	    .need_quad = 0,
+#else
+	    .need_quad = 1,
+#endif
+	},
+
 };
 
 static struct device_id_struct device_id[GD_DEVICES_NUM] = {
@@ -166,6 +191,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC",&gd_param[3]),
 	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4]),
 	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5]),
+	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
 };
 
 static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -176,6 +202,7 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
 	uint8_t addr_len = 0;
 	switch(device_id) {
 	    case 0xB1 ... 0xB4:
+	    case 0xA1:
 		    addr_len = 3;
 		    break;
 	    case 0xD1 ... 0xD4:
@@ -212,6 +239,7 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 	uint8_t addr_len = 0;
 	switch(device_id) {
 	    case 0xB1 ... 0xB4:
+	    case 0xA1:
 		    addr_len = 3;
 		    break;
 	    case 0xD1 ... 0xD4:
@@ -306,6 +334,7 @@ retry:
 
 	switch(device_id) {
 		case 0xB1 ... 0xB4:
+		case 0xA1:
 			switch((ecc_status >> 4) & 0x7) {
 				case 0x7:
 					ret = -EBADMSG;
