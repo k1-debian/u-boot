@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_DEVICES_NUM         2
+#define XTX_DEVICES_NUM         3
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -62,13 +62,38 @@ static struct jz_sfcnand_base_param xtx_param[XTX_DEVICES_NUM] = {
 #else
 		.need_quad = 1,
 #endif
-	}
+	},
+	[2] = {
+		/*PN26Q01AW */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x8,
+#ifdef CONFIG_BURNER
+		.need_quad = 0,
+#else
+		.need_quad = 1,
+#endif
+
+	},
 
 };
 
 static struct device_id_struct device_id[XTX_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xE1, "PN26G01AW", &xtx_param[0]),
 	DEVICE_ID_STRUCT(0xE2, "PN26G02AW", &xtx_param[1]),
+	DEVICE_ID_STRUCT(0xC1, "PN26Q01AW", &xtx_param[2]),
 };
 
 static int32_t xtx_get_read_feature(struct flash_operation_message *op_info) {
@@ -109,6 +134,7 @@ retry:
 
 	switch(device_id) {
 		case 0xE1 ... 0xE2:
+		case 0xC1:
 			switch((ecc_status >> 4) & 0x3) {
 			    case 0x02:
 				    ret = -EBADMSG;
