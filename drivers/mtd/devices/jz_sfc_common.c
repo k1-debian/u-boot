@@ -135,60 +135,31 @@ static void sfc_smp_delay(struct sfc *sfc, uint32_t value)
 	sfc_writel(sfc, SFC_DEV_CONF, tmp);
 }
 
-static void sfc_hold_delay(struct sfc *sfc, uint32_t value)
-{
-	uint32_t tmp;
-	tmp = sfc_readl(sfc, SFC_DEV_CONF);
-	tmp &= ~DEV_CONF_THOLD_MSK;
-	tmp |= value << DEV_CONF_THOLD_OFFSET;
-	sfc_writel(sfc, SFC_DEV_CONF, tmp);
-}
-
-static void sfc_setup_delay(struct sfc *sfc, uint32_t value)
-{
-	uint32_t tmp;
-	tmp = sfc_readl(sfc, SFC_DEV_CONF);
-	tmp &= ~DEV_CONF_TSETUP_MSK;
-	tmp |= value << DEV_CONF_TSETUP_OFFSET;
-	sfc_writel(sfc, SFC_DEV_CONF, tmp);
-}
-
-static void sfc_interval_delay(struct sfc *sfc, uint32_t value)
-{
-	uint32_t tmp;
-	tmp = sfc_readl(sfc, SFC_DEV_CONF);
-	tmp &= ~DEV_CONF_TSH_MSK;
-	tmp |= value << DEV_CONF_TSH_OFFSET;
-	sfc_writel(sfc, SFC_DEV_CONF, tmp);
-}
-
 int32_t set_flash_timing(struct sfc *sfc, uint32_t t_hold, uint32_t t_setup, uint32_t t_shslrd, uint32_t t_shslwr)
 {
 	uint32_t c_hold;
 	uint32_t c_setup;
-	uint32_t t_in, c_in, val;
+	uint32_t t_in, c_in;
 	uint32_t cycle;
-	uint32_t rate;
-	unsigned long long ns;
+	uint32_t rate, tmp;
 
 	rate = sfc->src_clk / 1000000;
 	cycle = 1000 / rate;
 
 	c_hold = t_hold / cycle;
-	if(c_hold > 0)
-		val = c_hold - 1;
-	sfc_hold_delay(sfc, val);
-
 	c_setup = t_setup / cycle;
-	if(c_setup > 0)
-		val = c_setup - 1;
-	sfc_setup_delay(sfc, val);
-
 	t_in = max(t_shslrd, t_shslwr);
 	c_in = t_in / cycle;
-	if(c_in > 0)
-		val = c_in - 1;
-	sfc_interval_delay(sfc, val);
+	if(c_in > 0xf)
+		c_in = 0xf;
+	tmp = sfc_readl(sfc, SFC_DEV_CONF);
+	tmp &= ~(DEV_CONF_THOLD_MSK | DEV_CONF_TSETUP_MSK | DEV_CONF_TSH_MSK);
+
+	tmp |= ((c_hold << DEV_CONF_THOLD_OFFSET) |
+		(c_setup << DEV_CONF_TSETUP_OFFSET) |
+		(c_in << DEV_CONF_TSH_OFFSET));
+
+	sfc_writel(sfc, SFC_DEV_CONF, tmp);
 
 	return 0;
 }

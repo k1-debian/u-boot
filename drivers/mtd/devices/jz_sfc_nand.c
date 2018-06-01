@@ -770,6 +770,14 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 		ret = -EINVAL;
 		goto failed;
 	}
+
+#define THOLD   5
+#define TSETUP  5
+#define TSHSL_R     20
+#define TSHSL_W     50
+
+	set_flash_timing(flash->sfc, THOLD, TSETUP, TSHSL_R, TSHSL_W);
+
 	if((ret = sfc_nand_reset())) {
 		printf("ERR : sfc reset error!\n");
 		goto failed;
@@ -779,6 +787,8 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 		printf("ERR: sfc try id error!\n");
 		goto failed;
 	}
+
+	set_flash_timing(flash->sfc, flash_info->param.tHOLD, flash_info->param.tSETUP, flash_info->param.tSHSL_R, flash_info->param.tSHSL_W);
 #ifdef CONFIG_BURNER
 	/* for burner get pt indext */
 	flash_info->partition.num_partition = param->partition_num;
