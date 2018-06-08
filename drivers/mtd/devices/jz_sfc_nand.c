@@ -800,7 +800,7 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 	flash_info->partition.partition = jz_sfc_nand_burner_param.partition;
 #endif
 
-	chip = malloc(sizeof(struct nand_chip));
+	chip = calloc(1, sizeof(struct nand_chip));
 	if (!chip) {
 		ret = -ENOMEM;
 		goto failed;

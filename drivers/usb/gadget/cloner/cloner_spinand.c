@@ -85,9 +85,11 @@ int spinand_program(struct cloner *cloner)
 	}
 
 	if ((partition->manager_mode == MTD_MODE) || (partition->manager_mode == MTD_D_MODE)) {
+		if (pt_index != pt_index_bak) {
+			bad_len = 0;
+		}
+		startaddr = sfc_nand_skip_bad(startaddr);
 		if (!spi_args->spi_erase) {
-			if (partition->manager_mode == MTD_D_MODE)
-				startaddr = sfc_nand_skip_bad(startaddr);
 			if (pt_index != pt_index_bak || (partition->manager_mode == MTD_D_MODE && !(startaddr % block_size))) {
 				memset(command, 0 , 128);
 				if (partition->manager_mode == MTD_D_MODE)
@@ -103,11 +105,8 @@ int spinand_program(struct cloner *cloner)
 
 		if (pt_index != pt_index_bak) {
 			pt_index_bak = pt_index;
-			bad_len = 0;
 		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
-			if (partition->manager_mode == MTD_MODE)
-				startaddr = sfc_nand_skip_bad(startaddr);
 			ret = nand_write(nand, startaddr, &length, databuf);
 			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
 					startaddr, length, ret ? "ERROR" : "OK");
