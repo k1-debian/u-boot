@@ -34,11 +34,7 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x4,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 	},
 
 };

@@ -35,11 +35,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x4,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 	},
 	[1] = {
 	/*MX35LF2GE4AB*/
@@ -58,11 +54,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x4,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 	},
 	[2] = {
 	/*MX35LF2G14AC*/
@@ -81,11 +73,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 	},
 
 };

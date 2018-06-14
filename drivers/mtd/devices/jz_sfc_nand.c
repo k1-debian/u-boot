@@ -347,22 +347,21 @@ static int badblk_check(int len,unsigned char *buf)
 static int sfcnand_block_checkbad(struct mtd_info *mtd, loff_t ofs,int getchip,int allowbbt)
 {
 	struct nand_chip *chip = mtd->priv;
-	if (!(chip->options & NAND_BBT_SCANNED)) {
-		chip->options |= NAND_BBT_SCANNED;
-		chip->scan_bbt(mtd);
-	}
-	if (!chip->bbt)
-		return chip->block_bad(mtd, ofs,getchip);
+	int ret = 0;
 
-	/* Return info from the table */
-	return nand_isbad_bbt(mtd, ofs, allowbbt);
+	if (chip->bbt && (chip->options & NAND_BBT_SCANNED))
+		ret = nand_isbad_bbt(mtd, ofs, allowbbt);
+	else
+		ret = chip->block_bad(mtd, ofs,getchip);
+
+	return ret;
 }
 
 
 static int jz_sfcnand_block_bad_check(struct mtd_info *mtd, loff_t ofs,int getchip)
 {
 	int check_len = 1;
-	unsigned char check_buf[] = {0xaa,0xaa};
+	unsigned char check_buf[] = {0xff, 0xff};
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
 	struct mtd_oob_ops ops;
 
@@ -700,7 +699,7 @@ static int32_t sfc_nand_enable_ecc(struct sfc_flash *flash)
 		return ret;
 	}
 
-	val |= 0x10;
+	val |= (1 << 4) | (1 << 3) | 0x1;
 
 	if((ret = sfc_nand_set_feature(flash, 0xb0, val))) {
 		printf(" %s %s %d: sfc_nand_set_feature failed, ret = %d\n",
@@ -789,6 +788,12 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 	}
 
 	set_flash_timing(flash->sfc, flash_info->param.tHOLD, flash_info->param.tSETUP, flash_info->param.tSHSL_R, flash_info->param.tSHSL_W);
+
+	if((ret = sfc_nand_special_init(flash))) {
+		printf("ERR :sfcnand special init failed!\n");
+		goto failed;
+	}
+
 #ifdef CONFIG_BURNER
 	/* for burner get pt indext */
 	flash_info->partition.num_partition = param->partition_num;
@@ -832,14 +837,7 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 	mtd->priv = chip;
 
 	mtd_sfcnand_init(mtd);
-
-	if((ret = sfc_nand_special_init(flash))) {
-		printf("ERR :sfcnand special init failed!\n");
-		goto free_all;
-	}
-
 	nand_register(0);
-
 	return ret;
 
 free_all:
@@ -916,12 +914,16 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, s
 		printf("ERR: jz_sfc_nand_init error!\n");
 		return -EIO;
 	}
-
+	chip = mtd->priv;
+	chip->scan_bbt(mtd);
+	chip->options |= NAND_BBT_SCANNED;
 	/*0: none 1, force-erase, force erase contain creat bbt*/
 	if (*erase_mode == 1)
 		if((ret = run_command("nand erase.chip -y", 0)))
 			    return ret;
-	chip = mtd->priv;
+
+	if(chip->bbt)
+			free(chip->bbt);
 	chip->scan_bbt(mtd);
 	chip->options |= NAND_BBT_SCANNED;
 	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num, &param->partition);

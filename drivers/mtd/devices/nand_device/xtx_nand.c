@@ -34,11 +34,7 @@ static struct jz_sfcnand_base_param xtx_param[XTX_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x8,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 	},
 	[1] = {
 		/*PN26G02AW */
@@ -57,11 +53,7 @@ static struct jz_sfcnand_base_param xtx_param[XTX_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x8,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 	},
 	[2] = {
 		/*PN26Q01AW */
@@ -80,11 +72,7 @@ static struct jz_sfcnand_base_param xtx_param[XTX_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x8,
-#ifdef CONFIG_BURNER
-		.need_quad = 0,
-#else
 		.need_quad = 1,
-#endif
 
 	},
 

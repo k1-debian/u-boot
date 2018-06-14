@@ -33,11 +33,7 @@ static struct jz_sfcnand_base_param ato25d1ga_param = {
 
 	.ecc_max = 0,//0x3,
 
-#ifdef CONFIG_BURNER
-    .need_quad = 0,
-#else
 	.need_quad = 1,
-#endif
 
 };
 
