@@ -516,7 +516,7 @@ $(obj)u-boot-with-spl.bin: $(obj)spl/u-boot-spl.bin $(obj)u-boot.bin
 		$(OBJCOPY) ${OBJCFLAGS} --pad-to=$(CONFIG_SPL_PAD_TO) \
 			-I binary -O binary $< $(obj)spl/u-boot-spl-pad.bin
 		cat $(obj)spl/u-boot-spl-pad.bin $(obj)u-boot.bin > $@
-		rm $(obj)spl/u-boot-spl-pad.bin
+		#rm $(obj)spl/u-boot-spl-pad.bin
 
 $(obj)u-boot-with-spl.imx: $(obj)spl/u-boot-spl.bin $(obj)u-boot.bin
 		$(MAKE) -C $(SRCTREE)/arch/arm/imx-common \

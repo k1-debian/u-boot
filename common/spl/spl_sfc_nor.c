@@ -522,6 +522,12 @@ char* spl_sfc_nor_load_image(void)
 	return cmdargs;
   #endif /* CONFIG_BOOT_VMLINUX */
 
+  #ifdef CONFIG_BOOT_RTOS
+	spl_image.entry_point = CONFIG_LOAD_ADDR;
+	sfc_read_data(bootimg_addr, bootimg_size, (unsigned int*)CONFIG_LOAD_ADDR);
+	return NULL;
+  #endif /* CONFIG_BOOT_RTOS */
+
   #ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
 	spl_load_kernel(bootimg_addr);
 	cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
