@@ -356,6 +356,7 @@ void spl_sfc_nand_load(void)
 	struct jz_sfcnand_burner_param *burn_param;
 	struct jz_sfcnand_partition *partition;
 	unsigned int bootimg_addr = 0;
+	unsigned int bootimg_size = 0;
 	unsigned int i = 0;
 #endif
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
@@ -370,18 +371,23 @@ void spl_sfc_nand_load(void)
 	for(i = 0; i < burn_param->partition_num; i++) {
 		if (!strncmp(partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
 			bootimg_addr = partition[i].offset;
+			bootimg_size = partition[i].size;
 			break;
 		}
 	}
 
+#ifdef CONFIG_BOOT_RTOS
+	spl_image.entry_point = CONFIG_LOAD_ADDR;
+	sfc_nand_load(bootimg_addr, bootimg_size, (unsigned int*)CONFIG_LOAD_ADDR);
+#else /* CONFIG_BOOT_RTOS */
 	/*read image head*/
 	spl_load_kernel(bootimg_addr);
+#endif
+
 #else
 	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (void *)CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
-
 #endif
-
 }
 #endif
 
