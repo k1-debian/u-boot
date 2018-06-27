@@ -20,6 +20,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+/*#define DUMP_CGU_SELECT*/
 /*#define DEBUG*/
 #include <config.h>
 #include <common.h>
@@ -70,7 +71,7 @@ void clk_prepare(void)
 			writel(regval, reg);
 		}
 #ifdef DUMP_CGU_SELECT
-		printf("%s(0x%x) :0x%x\n",clk_name[id] ,reg,  readl(reg));
+		printf("%s(0x%x) :0x%x\n",clk_name[i] ,reg,  readl(reg));
 #endif
 	}
 }
@@ -242,7 +243,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 	while (readl(reg) & (1 << cgu->busy))
 		;
 #ifdef DUMP_CGU_SELECT
-	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  cpm_inl(cgu->off));
+	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg, readl(reg));
 #endif
 	return;
 }

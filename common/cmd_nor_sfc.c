@@ -49,6 +49,6 @@ U_BOOT_CMD(
 	sfcnor, 6,	0,	do_sfcnor,
 	"sfc nor",
 	"sfcnor read   [src:nor flash addr] [bytes:0x..] [dst:ddr address]\n"
-	"sfcnor write  [src:nor flash addr] [bytes:0x..] [dst:der address] [force erase:1, nor erase:0]\n"
+	"sfcnor write  [dst:nor flash addr] [bytes:0x..] [src:ddr address] [force erase:1, no erase:0]\n"
 	"sfcnor erase  [src:nor flash addr] [bytes:0x..]\n "
 );

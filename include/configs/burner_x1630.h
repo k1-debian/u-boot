@@ -71,7 +71,7 @@
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_DDR2_M14D1G1664A
+#define CONFIG_DDR2_M14D5121632A
 #define CONFIG_X1XXX_INNOPHY
 #define DDR2_CHIP_DRIVER_OUT_STRENGTH 0
 #define CONFIG_DDR_PHY_IMPEDANCE 40000

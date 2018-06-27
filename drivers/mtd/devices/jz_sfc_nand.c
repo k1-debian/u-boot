@@ -27,6 +27,10 @@
 #include "jz_sfc_common.h"
 #include "./nand_device/nand_common.h"
 
+
+#define W25M02GV_MID	    (0xEF)
+#define W25M02GV_DID	    (0xAB)
+
 #ifdef MTDIDS_DEFAULT
 static const char *const mtdids_default = MTDIDS_DEFAULT;
 #else
@@ -108,8 +112,8 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 		addr += mtd->erasesize;
 	}
 
-	if(nand_info->id_manufactory == 0xEF &&
-	    nand_info->id_device == 0xAB)
+	if(nand_info->id_manufactory == W25M02GV_MID &&
+	    nand_info->id_device == W25M02GV_DID)
 		active_die(flash, 0);
 
 	instr->state = MTD_ERASE_DONE;
@@ -244,9 +248,8 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 		buf += rlen;
 		*retlen += rlen;
 	}
-
-	if(nand_info->id_manufactory == 0xEF &&
-	    nand_info->id_device == 0xAB)
+	if(nand_info->id_manufactory == W25M02GV_MID &&
+	    nand_info->id_device == W25M02GV_DID)
 		active_die(flash, 0);
 	return reterr ? reterr : (ret_eccvalue ? ret_eccvalue : ret);
 }
@@ -404,9 +407,8 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		to += wlen;
 		buf += wlen;
 	}
-
-	if(nand_info->id_manufactory == 0xEF &&
-	    nand_info->id_device == 0xAB)
+	if(nand_info->id_manufactory == W25M02GV_MID &&
+	    nand_info->id_device == W25M02GV_DID)
 		active_die(flash, 0);
 
 	return ret;
@@ -861,7 +863,7 @@ static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint8_t partcount, s
 	/*MTD part*/
 	sprintf(mtdparts_env, "mtdparts=nand:");
 	for (part = 0; part < partcount; part++) {
-		if (jz_mtd_spinand_partition[part].size == -1) {
+		if (jz_mtd_spinand_partition[part].size == -1UL || jz_mtd_spinand_partition[part].size == 0UL) {
 			sprintf(mtdparts_env,"%s-(%s)", mtdparts_env,
 					jz_mtd_spinand_partition[part].name);
 			break;
@@ -897,7 +899,7 @@ struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 		}
 	}
 	if(i >= ptcount){
-		printf("startaddr %s can't find the pt_index or you partition size  is not align with 128K\n",startaddr);
+		printf("startaddr 0x%x can't find the pt_index or you partition size 0x%x is not align with 128K\n",startaddr, length);
 		*pt_index = -1;
 		return NULL;
 	}

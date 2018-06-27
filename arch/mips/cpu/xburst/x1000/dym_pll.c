@@ -123,7 +123,7 @@ void pll_init(void)
 	unsigned int pll_value;
 	unsigned int tmp;
 	unsigned int cpccr = 0;
-	unsigned int sel = 0x1/*cpu sel apll default*/, sel_a = 0x2/*sclk_a use exclk default*/;
+	unsigned int sel = 0x1/*cpu sel apll default*/, sel_a = 0x1/*sclk_a use exclk default*/;
 #ifdef CONFIG_JZ_SLT
 	/*Slt select cpu freq on gpio*/
 	unsigned int freq_sel = 0;
@@ -182,19 +182,17 @@ void pll_init(void)
 	pll_value = nfro(gd->arch.gi->extal, gd->arch.gi->cpufreq);
 
 	if (cpm_inl(CPM_CPAPCR) & (1 << 8)) {
-		sel_a = 0x1;
+		sel_a = 0x2;
 		sel = 0x2;
 	}
 
 	if (sel == 0x1) {
-		sel_a = 0x1;
+		sel_a = 0x2;
 		cpm_outl(pll_value | (1 << 8) | 0x20, CPM_CPAPCR);
 		while(!(cpm_inl(CPM_CPAPCR) & (1 << 10)));
 	} else {
 		cpm_outl(pll_value | (1 << 7), CPM_CPMPCR);
 		while(!(cpm_inl(CPM_CPMPCR) & 1));
-		sel_a = 0x2;
-		sel = 0x1;
 	}
 
 	if(gd->arch.gi->cpufreq > 1000000000) {

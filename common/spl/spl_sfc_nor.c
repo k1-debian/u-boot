@@ -417,7 +417,7 @@ void *spl_get_nvinfo(struct mini_spi_nor_info *spi_nor_info, unsigned int nv_add
 	if (!nv_addr)
 		return NULL;
 
-	erasesize = flash->g_nor_info.erase_size;
+	erasesize = spi_nor_info->erase_size;
 
 	for (i = 0; i < 2; i++) {
 		sfc_read_data(nv_addr + i * erasesize, sizeof(nvinfo_t), nvinfo);

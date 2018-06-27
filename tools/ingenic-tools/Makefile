@@ -48,11 +48,7 @@ endif
 TOOLS	= $(DDR-y) $(MBR-y) $(GPT-y) $(SPI-y) $(MMC-y) $(SPL-y) $(LOGO-y) $(CHARGE_LOGO-y) $(AUDIO-y) #$(IMG2RLE-y) $(BIN2ARRAY-y)
 TOOLS	:= $(addprefix $(obj),$(TOOLS))
 
-ifndef CONFIG_BURNER
-
-
 DDR_CREATOR_DIR := ddr_creator
-
 ifdef CONFIG_X2000
 DDR_CREATOR_DIR := ddr_creator_x2000
 endif
@@ -90,7 +86,7 @@ $(obj)sfc_timing_val.h: $(obj)sfc_timing_params
 
 $(obj)sfc_nand_params.h: $(obj)sfc_nand_params
 	$(OBJTREE)/tools/ingenic-tools/sfc_nand_params > $(OBJTREE)/include/generated/$@
-endif
+
 $(obj)mbr_creator:	mbr_creator.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
