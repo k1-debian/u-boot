@@ -75,6 +75,17 @@ void board_usb_init(void)
 }
 #endif /* CONFIG_USB_GADGET */
 
+#ifdef CONFIG_USB_DWC2
+int board_usb_init_host(void /**/)
+{
+	/*Drive VBUS always ON in host mode.*/
+	gpio_direction_output(CONFIG_USB_DRV_VBUS, 1);
+
+	otg_phy_init(OTG_MODE, CONFIG_SYS_EXTAL);
+	return 0;
+}
+#endif	/* CONFIG_USB_DWC2 */
+
 int misc_init_r(void)
 {
 #if 0 /* TO DO */

@@ -92,8 +92,19 @@
 /* #define CONFIG_RTC_SELEXC_BY_EXCLK */
 #endif
 
-/* CONFIG_CMD_FASTBOOT */
+
+/*#define CONFIG_CMD_USB*/		/* USB host command */
+#ifdef CONFIG_CMD_USB
+#define CONFIG_USB_STORAGE	/* Support u-disk. */
+#define CONFIG_USB_DWC2		/* DWC2 Host Driver. */
+#define CONFIG_USB_DRV_VBUS	GPIO_PB(25)
+#endif
+
+
+#define CONFIG_CMD_FASTBOOT	/* USB device command */
+/*#define CONFIG_CMD_USBSERIAL*/
 #define CONFIG_ARDUINO
+
 #ifdef CONFIG_ARDUINO
 #define CONFIG_USB_GADGET
 #define CONFIG_USB_GADGET_DUALSPEED
@@ -273,6 +284,7 @@
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_NET     /* networking support*/
 #define CONFIG_CMD_PING
+/*#define CONFIG_CMD_GPIO*/
 
 /*#define CONFIG_CMD_EFUSE*/	/*efuse*/
 #ifdef CONFIG_CMD_EFUSE
