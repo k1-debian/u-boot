@@ -175,7 +175,7 @@ read_oob:
 			return -1;
 	}
 
-	if(curr_device->device_id == 0x20 || curr_device->device_id == 0x22)/*MXIC 2G plane select*/
+	if(curr_device->device_id == 0x20 || curr_device->device_id == 0x22 || (curr_device->device_id == 0x72))/*MXIC 2G plane select*/
 		column |= (((page >> 6) & 1) << 12);
 
 #ifndef CONFIG_SPI_STANDARD
