@@ -4,6 +4,7 @@
  * Copyright (C) 2014 Marek Vasut <marex@denx.de>
  */
 
+
 #include <common.h>
 //#include <dm.h>
 #include <errno.h>
@@ -857,7 +858,7 @@ static int dwc2_eptype[] = {
 
 static int transfer_chunk(struct dwc2_hc_regs *hc_regs, void *aligned_buffer,
 			  u8 *pid, int in, void *buffer, int num_packets,
-			  int xfer_len, int *actual_len, int odd_frame)
+			  int xfer_len, int *actual_len, int odd_frame, int nmulticnt)
 {
 	int ret = 0;
 	uint32_t sub;
@@ -896,7 +897,7 @@ static int transfer_chunk(struct dwc2_hc_regs *hc_regs, void *aligned_buffer,
 	clrsetbits_le32(&hc_regs->hcchar, DWC2_HCCHAR_MULTICNT_MASK |
 			DWC2_HCCHAR_CHEN | DWC2_HCCHAR_CHDIS |
 			DWC2_HCCHAR_ODDFRM,
-			(1 << DWC2_HCCHAR_MULTICNT_OFFSET) |
+			(nmulticnt << DWC2_HCCHAR_MULTICNT_OFFSET) |
 			(odd_frame << DWC2_HCCHAR_ODDFRM_OFFSET) |
 			DWC2_HCCHAR_CHEN);
 
@@ -938,8 +939,11 @@ int chunk_msg(struct dwc2_priv *priv, struct usb_device *dev,
 	uint32_t max_xfer_len;
 	int ssplit_frame_num = 0;
 
-	debug("%s: msg: pipe %lx pid %d in %d len %d\n", __func__, pipe, *pid,
-	      in, len);
+	int nmulticnt = 1 + ((max >>11) & 3);
+
+	max = max & 0x07ff;
+	debug("%s: msg: pipe %lx pid %d in %d len %d, max %d, nmulticnt %d\n", __func__, pipe, *pid,
+	      in, len, max, nmulticnt);
 
 	max_xfer_len = CONFIG_DWC2_MAX_PACKET_COUNT * max;
 	if (max_xfer_len > CONFIG_DWC2_MAX_TRANSFER_SIZE)
@@ -990,7 +994,7 @@ int chunk_msg(struct dwc2_priv *priv, struct usb_device *dev,
 		else if (do_split)
 			clrbits_le32(&hc_regs->hcsplt, DWC2_HCSPLT_COMPSPLT);
 
-		if (eptype == DWC2_HCCHAR_EPTYPE_INTR) {
+		if (eptype == DWC2_HCCHAR_EPTYPE_INTR || eptype == DWC2_HCCHAR_EPTYPE_ISOC) {
 			int uframe_num = readl(&host_regs->hfnum);
 			if (!(uframe_num & 0x1))
 				odd_frame = 1;
@@ -998,7 +1002,7 @@ int chunk_msg(struct dwc2_priv *priv, struct usb_device *dev,
 
 		ret = transfer_chunk(hc_regs, priv->aligned_buffer, pid,
 				     in, (char *)buffer + done, num_packets,
-				     xfer_len, &actual_len, odd_frame);
+				     xfer_len, &actual_len, odd_frame, nmulticnt);
 
 		hcint = readl(&hc_regs->hcint);
 		if (complete_split) {
@@ -1028,6 +1032,7 @@ int chunk_msg(struct dwc2_priv *priv, struct usb_device *dev,
 			stop_transfer = 1;
 
 		done += actual_len;
+
 
 	/* Transactions are done when when either all data is transferred or
 	 * there is a short transfer. In case of a SPLIT make sure the CSPLIT
@@ -1143,6 +1148,28 @@ int _submit_int_msg(struct dwc2_priv *priv, struct usb_device *dev,
 	}
 }
 
+int _submit_isoc_msg(struct dwc2_priv *priv, struct usb_device *dev,
+		    unsigned long pipe, void *buffer, int len, int interval)
+{
+	unsigned long timeout;
+	int ret;
+
+	/* FIXME: what is interval? */
+
+	timeout = get_timer(0) + USB_TIMEOUT_MS(pipe);
+	for (;;) {
+		if (get_timer(0) > timeout) {
+			printf("Timeout poll on isoc endpoint\n");
+			return -ETIMEDOUT;
+		}
+
+		ret = _submit_bulk_msg(priv, dev, pipe, buffer, len);
+		if (ret != -EAGAIN)
+			return ret;
+	}
+
+}
+
 static int dwc2_init_common(struct udevice *dev, struct dwc2_priv *priv)
 {
 	struct dwc2_core_regs *regs = priv->regs;
@@ -1222,6 +1249,12 @@ int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		   int len, int interval)
 {
 	return _submit_int_msg(&local, dev, pipe, buffer, len, interval);
+}
+
+int submit_isoc_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
+		   int len, int interval)
+{
+	return _submit_isoc_msg(&local, dev, pipe, buffer, len, interval);
 }
 
 /* U-Boot USB control interface */

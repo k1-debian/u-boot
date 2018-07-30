@@ -95,6 +95,8 @@
 
 /*#define CONFIG_CMD_USB*/		/* USB host command */
 #ifdef CONFIG_CMD_USB
+#define CONFIG_FAT_WRITE	/* Support fatfs write */
+#define CONFIG_USB_UVC		/* Support uvc. */
 #define CONFIG_USB_STORAGE	/* Support u-disk. */
 #define CONFIG_USB_DWC2		/* DWC2 Host Driver. */
 #define CONFIG_USB_DRV_VBUS	GPIO_PB(25)
@@ -388,6 +390,7 @@
 #define CONFIG_GENERIC_MMC		1
 #define CONFIG_MMC			1
 #define CONFIG_JZ_MMC			1
+
 
 #ifdef CONFIG_JZ_MMC_MSC0
 #define CONFIG_JZ_MMC_SPLMSC 0

@@ -206,6 +206,8 @@ ifdef CONFIG_CMD_USB
 COBJS-y += cmd_usb.o
 COBJS-y += usb.o usb_hub.o
 COBJS-$(CONFIG_USB_STORAGE) += usb_storage.o
+COBJS-$(CONFIG_USB_UVC) += uvc/uvc_driver.o
+COBJS-$(CONFIG_USB_UVC) += uvc/uvc_video.o
 endif
 COBJS-$(CONFIG_CMD_USB_MASS_STORAGE) += cmd_usb_mass_storage.o
 COBJS-$(CONFIG_CMD_XIMG) += cmd_ximg.o
