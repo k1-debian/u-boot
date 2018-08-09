@@ -930,6 +930,11 @@ static const void *boot_get_kernel(cmd_tbl_t *cmdtp, int flag, int argc,
 
 	bootstage_mark(BOOTSTAGE_ID_CHECK_MAGIC);
 
+#ifdef CONFIG_JZ_SCBOOT
+	/* security boot */
+	secure_scboot(img_addr, img_addr);
+#endif
+
 	/* copy from dataflash if needed */
 	img_addr = genimg_get_image(img_addr);
 

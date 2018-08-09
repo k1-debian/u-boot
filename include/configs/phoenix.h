@@ -627,4 +627,7 @@
 */
 #define CONFIG_SYS_NAND_SELF_INIT
 
+/* security boot */
+/* #define CONFIG_JZ_SCBOOT */
+
 #endif /* __CONFIG_PHOENIX_H__ */
