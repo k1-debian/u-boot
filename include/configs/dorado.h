@@ -71,6 +71,11 @@
 /*#define CONFIG_MCP_H9TP32A8JDMC_PRKGM_LPDDR2*/
 #define CONFIG_MCP_SAMSUNG_KMN5X000ZM_LPDDR2
 #endif // CONFIG_DORADO_V30
+/*
+#define CONFIG_DDR_TYPE_LPDDR3
+#define CONFIG_MCP_H9CKNNN8GTMPLR_NUH_LPDDR3
+#define CONFIG_MCP_EDF8132A3MA_LPDDR3
+*/
 
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
