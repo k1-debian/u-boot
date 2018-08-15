@@ -13,6 +13,18 @@
 #include "./chips/MDDR_ECM220ACBCN_50.h"
 #endif
 
+#ifdef CONFIG_MDDR_W94AD2KB_JX5E
+#include "./chips/MDDR_W94AD2KB_JX5E.h"
+#endif
+
+#ifdef CONFIG_MDDR_W94AD2KB_JX51
+#include "./chips/MDDR_W94AD2KB_JX51.h"
+#endif
+
+#ifdef CONFIG_MDDR_W94AD6KB_HX51
+#include "./chips/MDDR_W94AD6KB-HX51.h"
+#endif
+
 #ifdef CONFIG_MDDR_EMD56164PC_50I
 #include "./chips/MDDR_EMD56164PC_50I.h"
 #endif
@@ -77,6 +89,18 @@
 #include "./chips/DDR2_PWE809416BBR-E7DN.h"
 #endif
 
+#ifdef CONFIG_MCP_EDF8132A3MA_LPDDR3
+#include "./chips/MCP_EDF8132A3MA_LPDDR3.h"
+#endif
+
+#ifdef CONFIG_MCP_KMF5X0005A_LPDDR3
+#include "./chips/MCP_KMF5X0005A_LPDDR3.h"
+#endif
+
+#ifdef CONFIG_MCP_H9CKNNN8GTMPLR_NUH_LPDDR3
+#include "./chips/MCP_H9CKNNN8GTMPLR_NUH_LPDDR3.h"
+#endif
+
 #ifdef CONFIG_LPDDR2_EDB4432BBBJ
 #include "./chips/LPDDR2_EDB4432BBBJ.h"
 #endif
@@ -88,4 +112,5 @@
 #ifdef CONFIG_LPDDR2_EDB1332BD
 #include "./chips/LPDDR2_EDB1332BD.h"
 #endif
+
 #endif /* __DDR_CHIPS_H__ */
