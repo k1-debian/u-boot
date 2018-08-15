@@ -143,7 +143,7 @@ static void ddrp_params_creator_lpddr3(struct ddrp_reg *ddrp, struct ddr_params 
 	/* MRn registers */
 	tmp = ps2cycle_ceil(params->tWR, 1);
 	ASSERT_MASK(tmp,3);
-	if(tmp != 3 && tmp != 6 && tmp != 8 && tmp != 9) {
+	if(tmp != 3 && tmp != 6 && tmp != 8 && tmp != 9 && tmp != 4 && tmp != 5) {
 		out_error("WR(%d) should is 3 or 6 or 8 or 9\n", tmp);
 		assert(1);
 	}
