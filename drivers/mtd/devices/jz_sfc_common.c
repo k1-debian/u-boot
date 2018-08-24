@@ -17,6 +17,7 @@
 #include <linux/types.h>
 #include <linux/err.h>
 #include <common.h>
+#include <malloc.h>
 #include <asm/arch/sfc.h>
 
 //#define   DEBUG
@@ -279,18 +280,6 @@ uint32_t sfc_get_sta_rt(struct sfc *sfc)
 	return sfc_readl(sfc, SFC_DEV_STA_RT);
 }
 
-static void sfc_dev_pollen(struct sfc *sfc, int channel, unsigned int value)
-{
-	unsigned int tmp;
-	tmp = sfc_readl(sfc, SFC_TRAN_CONF(channel));
-	if(value == 1)
-		tmp |= TRAN_CONF_POLLEN;
-	else
-		tmp &= ~(TRAN_CONF_POLLEN);
-
-	sfc_writel(sfc, SFC_TRAN_CONF(channel), tmp);
-}
-
 static inline void sfc_dev_sta_exp(struct sfc *sfc, uint32_t value)
 {
 	sfc_writel(sfc, SFC_DEV_STA_EXP, value);
@@ -397,6 +386,7 @@ static void sfc_set_glb_config(struct sfc *sfc, struct sfc_transfer *transfer)
 	sfc_writel(sfc, SFC_GLB, tmp);
 }
 
+extern void flush_cache_all(void);
 static void sfc_glb_info_config(struct sfc *sfc, struct sfc_transfer *transfer)
 {
 	sfc_set_length(sfc, transfer->len);

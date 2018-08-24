@@ -28,6 +28,8 @@
 #include "./nand_device/nand_common.h"
 
 
+extern void active_die(struct sfc_flash *flash, uint8_t die_id);
+
 #define W25M02GV_MID	    (0xEF)
 #define W25M02GV_DID	    (0xAB)
 
@@ -122,7 +124,7 @@ erase_exit:
 	return ret;
 }
 
-static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32_t pageaddr, uint32_t columnaddr, size_t len)
+static int32_t jz_sfc_nand_write(struct sfc_flash *flash, const u_char *buffer, uint32_t pageaddr, uint32_t columnaddr, size_t len)
 {
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct jz_sfcnand_write *nand_write_ops = &nand_info->ops.nand_write_ops;
@@ -131,7 +133,7 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 		.flash = flash,
 		.pageaddr = pageaddr,
 		.columnaddr = columnaddr,
-		.buffer = buffer,
+		.buffer = (u_char *)buffer,
 		.len = len,
 	};
 	int32_t ret = 0;
@@ -166,7 +168,7 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, u_char *buffer, uint32
 	return  ret;
 }
 
-static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32_t columnaddr, char *buffer, size_t len)
+static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32_t columnaddr, uint8_t *buffer, size_t len)
 {
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct jz_sfcnand_read *nand_read_ops = &nand_info->ops.nand_read_ops;
@@ -433,7 +435,7 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 {
 	struct nand_chip *chip = mtd->priv;
 	uint8_t buf[2] = { 0, 0 };
-	int block, res, ret = 0, i = 0;
+	int res, ret = 0, i = 0;
 	int write_oob = !(chip->bbt_options & NAND_BBT_NO_OOB_BBM);
 
 	/* Write bad block marker to OOB */
@@ -476,16 +478,21 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 static void get_partition_from_spinand(struct sfc_flash *flash)
 {
-	int32_t retlen, i;
+	size_t retlen;
 	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET, sizeof(struct jz_sfcnand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
 	jz_sfc_nand_burner_param.partition = malloc(sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num);
-	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen, jz_sfc_nand_burner_param.partition);
+	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4,
+			sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen,
+			(u_char *)jz_sfc_nand_burner_param.partition);
 #ifdef DEBUG
+	{
+		int32_t i;
 	for(i = 0; i < jz_sfc_nand_burner_param.partition_num; i++) {
 		printf("name = %s\n", jz_sfc_nand_burner_param.partition[i].name);
 		printf("size = %x\n", jz_sfc_nand_burner_param.partition[i].size);
 		printf("offset = %x\n", jz_sfc_nand_burner_param.partition[i].offset);
 		printf("mask_flags = %x\n", jz_sfc_nand_burner_param.partition[i].mask_flags);
+	}
 	}
 #endif
 }
@@ -586,6 +593,7 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 			return -EIO;
 		}
 
+		printf("id_manufactory = %x, id_device %x\n", id_buf[0], id_buf[1]);
 		list_for_each_entry(nand_device, &nand_list, list) {
 			if(nand_device->id_manufactory == id_buf[0]) {
 				nand_info->id_manufactory = id_buf[0];
@@ -600,7 +608,7 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 	}
 
 	if(!nand_info->id_manufactory && !nand_info->id_device) {
-		printf("ERROR!: don`t support this nand manufactory, please add nand driver, id_buf[0]= %x\n", id_buf[0]);
+		printf("ERROR!: don`t support this nand manufactory, please add nand driver, id_manufactory %x id_device %x\n", id_buf[0], id_buf[1]);
 		return -ENODEV;
 	} else {
 		struct device_id_struct *device_id = nand_device->id_device_list;
@@ -634,7 +642,6 @@ int jz_sfcnand_register(struct jz_sfcnand_device *flash) {
 static int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val)
 {
 	struct sfc_transfer transfer;
-	int32_t ret = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
 	sfc_list_init(&transfer);
@@ -842,8 +849,6 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 	nand_register(0);
 	return ret;
 
-free_all:
-	free(chip);
 failed:
 	free(flash_info);
 	free(flash);
@@ -852,10 +857,9 @@ failed:
 
 static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint8_t partcount, struct jz_sfcnand_partition *jz_mtd_spinand_partition)
 {
-	uint8_t mtdparts_env[X_ENV_LENGTH];
-	uint8_t command[X_COMMAND_LENGTH];
+	char mtdparts_env[X_ENV_LENGTH];
+	char command[X_COMMAND_LENGTH];
 	uint8_t part = 0;
-	int32_t ret;
 
 	memset(mtdparts_env, 0, X_ENV_LENGTH);
 	memset(command, 0, X_COMMAND_LENGTH);
@@ -928,6 +932,7 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, s
 			free(chip->bbt);
 	chip->scan_bbt(mtd);
 	chip->options |= NAND_BBT_SCANNED;
-	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num, &param->partition);
+	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num,
+			(void *)&param->partition/*This is a structure rather than a pointer in burner*/);
 	return 0;
 }

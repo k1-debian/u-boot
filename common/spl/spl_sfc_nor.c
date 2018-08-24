@@ -16,10 +16,7 @@
 
 #define GS_RETRY_TIMES	100
 
-/*static struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);*/
 static struct spinor_flashinfo *nor_info = (void *)(CONFIG_SYS_TEXT_BASE + 0x500000);
-
-/*static struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);*/
 
 static inline void sfc_writel(unsigned short offset, u32 value)
 {
@@ -175,10 +172,6 @@ static void sfc_glb_info_config(struct sfc_transfer *transfer)
 
 static void sfc_sync(struct sfc_transfer *xfer)
 {
-/*	struct sfc_transfer *xfer;*/
-
-/*	xfer = sfc->transfer;*/
-
 	sfc_phase_transfer(xfer);
 	sfc_glb_info_config(xfer);
 	sfc_start_transfer(xfer);
