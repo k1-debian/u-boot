@@ -74,7 +74,7 @@ unsigned long mmc_berase(int dev_num, lbaint_t start, lbaint_t blkcnt)
 		return 0;
 
 	blk = start;
-	blk_r = blkcnt;
+	blk_r = start + blkcnt;
 	if ((start % mmc->erase_grp_size) || (blkcnt % mmc->erase_grp_size)){
 		printf("\n\nCaution! Your devices Erase group is 0x%x\n"
 				"The erase range would be change to "
