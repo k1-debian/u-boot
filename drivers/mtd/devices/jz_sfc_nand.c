@@ -197,8 +197,10 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 
 	/*3. read feature*/
 	ret = nand_read_ops->get_feature(&op_info);
-	if(ret == -EIO)
+	if(ret == -EIO) {
+		printf("sfc nand read get_feature error!\n");
 		return ret;
+	}
 
 	memset(&transfer, 0, sizeof(transfer));
 	sfc_list_init(&transfer);
@@ -261,11 +263,23 @@ static int jz_sfcnand_write_oob(struct mtd_info *mtd, loff_t addr, struct mtd_oo
 	uint32_t oob_addr = (uint32_t)addr;
 	int32_t ret;
 
-	if((ret = jz_sfc_nand_write(flash, ops->oobbuf, oob_addr / mtd->writesize, mtd->writesize, ops->ooblen))) {
-		printf( "spi nand write oob error %s %s %d \n",__FILE__,__func__,__LINE__);
-		goto write_oob_exit;
+	debug("write oob_addr %x, datalen %d ooboff %d, ooblen %d\n", oob_addr, ops->len, ops->ooboffs, ops->ooblen);
+
+	if(ops->datbuf && ops->len) {
+		if((ret = jz_sfc_nand_write(flash, ops->datbuf, oob_addr / mtd->writesize, 0, ops->len))) {
+			printf( "spi nand write oob data area error %s %s %d \n",__FILE__,__func__,__LINE__);
+			goto write_oob_exit;
+		}
 	}
-	ops->retlen = ops->ooblen;
+	if(ops->oobbuf && ops->ooblen) {
+		if((ret = jz_sfc_nand_write(flash, ops->oobbuf, oob_addr / mtd->writesize, mtd->writesize + ops->ooboffs, ops->ooblen))) {
+			printf( "spi nand write oob oob area error %s %s %d \n",__FILE__,__func__,__LINE__);
+			goto write_oob_exit;
+		}
+	}
+	ops->retlen = ops->len;
+	ops->oobretlen = ops->ooblen;
+
 write_oob_exit:
 	return ret;
 }
@@ -313,8 +327,8 @@ static int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd
 	uint32_t pageaddr = addr / mtd->writesize;
 	int32_t ret = 0, ret_eccvalue = 0;
 
-	if(ops->datbuf) {
-		ret = jz_sfc_nand_read(flash, pageaddr, 0, ops->datbuf, mtd->writesize);
+	if(ops->datbuf && ops->len) {
+		ret = jz_sfc_nand_read(flash, pageaddr, 0, ops->datbuf, ops->len);
 		if(ret < 0) {
 			printf("spi nand read error %s %s %d ,ret = %d\n", __FILE__, __func__,  __LINE__, ret);
 			if(ret == -EIO) {
@@ -323,11 +337,14 @@ static int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd
 				ret_eccvalue = ret;
 			}
 		}
+
+		ops->retlen = ops->len;
 	}
-	if(ops->oobbuf){
+	if(ops->oobbuf && ops->ooblen){
 		ret = jz_sfc_nand_read(flash, pageaddr, mtd->writesize + ops->ooboffs, ops->oobbuf, ops->ooblen);
 		if(ret < 0)
-		            printf("%s %s %d : spi nand read oob error ,ret= %d\n", __FILE__, __func__, __LINE__, ret);
+		            printf("%s %s %d : spi nand read oob error ,ret= %d , oob addr %x, ooboffs %d, ooblen %d\n",
+					__FILE__, __func__, __LINE__, ret, addr, ops->ooboffs, ops->ooblen);
 
 		if(ret != -EIO)
 		            ops->oobretlen = ops->ooblen;
@@ -626,6 +643,8 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 			return -ENODEV;
 		}
 	}
+
+	printf("Found nand: id_manufactory: 0x%02x id_device: 0x%02x\n", nand_info->id_manufactory, nand_info->id_device);
 
 	return jz_sfcnand_fill_ops(flash, &nand_device->ops);
 }
