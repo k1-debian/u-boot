@@ -1,4 +1,4 @@
-/*#define DEBUG*/
+//#define DEBUG
 #include <common.h>
 #include <errno.h>
 #include <asm/io.h>
@@ -285,13 +285,20 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 		if(ret < 0 && retry_count--) {
 			continue;
 		}
-#if 0
+
+		/*
+		 *  current block ecc cannot be corrected after 5 retries,
+		 *  skip this block as bad block.
+		 **/
 		if(retry_count < 0) {
 			debug("read page ecc error, pageaddr = %d, columnaddr = %d\n", pageaddr,
 				columnaddr);
-			return -1;
+			/* bad block */
+			retry_count = 5;
+			src_addr += CONFIG_SPI_NAND_PPB * pagesize;
+			continue;
 		}
-#endif
+
 		buf += rlen;
 		src_addr += rlen;
 		count -= rlen;
