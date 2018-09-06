@@ -86,7 +86,7 @@ struct mini_spi_nor_info {
 	unsigned int page_size;
 	unsigned int erase_size;
 
-	unsigned char spl_quad;	//reserve, for spl set quad mode
+//	unsigned char spl_quad;	//reserve, for spl set quad mode
 };
 
 
