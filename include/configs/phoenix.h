@@ -630,4 +630,10 @@
 /* security boot */
 /* #define CONFIG_JZ_SCBOOT */
 
+/*ckey aes*/
+#ifdef CONFIG_JZ_SCBOOT
+/* #define CONFIG_JZ_CKEYAES */
+#endif
+
+
 #endif /* __CONFIG_PHOENIX_H__ */

@@ -384,6 +384,12 @@ extern void board_usb_init(void);
 	puts("Net:   ");
 	eth_initialize(gd->bd);
 #endif
+#ifdef CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_CKEYAES
+	/* ckey aes */
+	ckey_aes();
+#endif
+#endif
 
 	/* main_loop() can return to retry autoboot, if so just run it again. */
 	for (;;)
