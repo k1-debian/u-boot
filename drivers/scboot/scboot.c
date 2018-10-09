@@ -41,7 +41,6 @@
 
 #define SECURE_SCBOOT_MAGIC		0x54424353
 
-#ifdef CONFIG_JZ_CKEYAES
 #define SPL_KENOFFSET    ((SC_MAGIC_SIZE + 16) / 4)
 #define SPL_CENOFFSET    ((SC_MAGIC_SIZE + 4) / 4)
 #define SPL_NLENOFFSET   ((SC_MAGIC_SIZE + 8) / 4)
@@ -65,7 +64,6 @@
 
 #define USERKEY_ENCRYPT  2
 #define CHIPKEY_ENCRYPT  1
-#endif
 
 extern int sfc_nor_read(unsigned int from, unsigned int len, unsigned char *buf);
 
