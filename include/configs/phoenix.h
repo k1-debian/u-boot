@@ -627,13 +627,15 @@
 */
 #define CONFIG_SYS_NAND_SELF_INIT
 
-/* security boot */
 /* #define CONFIG_JZ_SCBOOT */
 
-/*ckey aes*/
+/* security boot */
 #ifdef CONFIG_JZ_SCBOOT
+/* #define CONFIG_JZ_SECURE_SUPPORT */
+/*ckey aes*/
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 /* #define CONFIG_JZ_CKEYAES */
 #endif
-
+#endif
 
 #endif /* __CONFIG_PHOENIX_H__ */

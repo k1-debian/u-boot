@@ -930,7 +930,7 @@ static const void *boot_get_kernel(cmd_tbl_t *cmdtp, int flag, int argc,
 
 	bootstage_mark(BOOTSTAGE_ID_CHECK_MAGIC);
 
-#ifdef CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 	/* security boot */
 	secure_scboot(img_addr, img_addr);
 #endif
