@@ -155,7 +155,7 @@ int cpu_wtotp(int opera)
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
 	args->arg[0] = opera;
-	ret = secall(args, SC_FUNC_WTOTP, 0);
+	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
 
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
@@ -188,7 +188,7 @@ int cpu_burn_rckey(void)
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
-	secall(args, SC_FUNC_BURNRKCK, 0);
+	secall(args, SC_FUNC_BURNRKCK, 0, 1);
 
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
@@ -222,7 +222,7 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 		nku[iLoop + 2 + 32] = rsakey[iLoop + rsakeylen / 4];
 
 	args->arg[0] = MCU_TCSM_PADDR(nku);
-	ret = secall(args, SC_FUNC_BURNNKU, 0);
+	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		printf("burn nku err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
@@ -267,7 +267,7 @@ int cpu_get_enckey(unsigned int *odata)
 		nku[iLoop + 2 + 32] = rsakey[iLoop + rsakeylen / 4];
 
 	args->arg[0] = MCU_TCSM_PADDR(nku);
-	ret = secall(args, SC_FUNC_RSAENCK, 0);
+	ret = secall(args, SC_FUNC_RSAENCK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		printf("get rsa enckey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
@@ -314,7 +314,7 @@ int cpu_burn_ukey(void *idata)
 	args->arg[0] = 0;
 #endif
 	args->arg[1] = MCU_TCSM_PADDR(ukey);
-	ret = secall(args, SC_FUNC_BURNUK, 0);
+	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		printf("burn ukey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));

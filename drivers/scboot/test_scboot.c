@@ -142,7 +142,7 @@ static int start_scboot(void *spladdr, int spllen)
 
 		printf("splbinlen is :%d, new round:%d, end round:%d, len:%d\n", splbinlen, newround, endround, lens);
 		newround = 0;
-		ret = secall(args, SC_FUNC_SCBOOT, 0);
+		ret = secall(args, SC_FUNC_SCBOOT, 0, 1);
 		if(ret != 0x0e000000) {
 			printf("sc boot test faled.ret:%08x, %08x\n", ret, *(volatile unsigned int *)MCU_TCSM_RETVAL);
 		} else {

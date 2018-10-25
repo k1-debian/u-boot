@@ -18,23 +18,6 @@
  *
  * */
 
-#undef TCSM_CODE_ADDR
-#undef TCSM_SC_KEY_ADDR
-#undef MCU_TCSM_RETVAL
-#undef MCU_TCSM_SECALL_MSG
-
-#ifdef CONFIG_X1000
-#define TCSM_CODE_ADDR			(TCSM_BANK(1) + 0)
-#define TCSM_SC_KEY_ADDR		(TCSM_BANK(1) + 2048)
-#define MCU_TCSM_RETVAL			(TCSM_BANK(0) + 2048 + 1084) /* cal from sc_interface. */
-#define MCU_TCSM_SECALL_MSG		(TCSM_BANK(0) + 2048 + 128) /* MCU_TCSM_SECALL_MSG */
-#else
-#define TCSM_CODE_ADDR			(TCSM_BANK(1) + 0)
-#define TCSM_SC_KEY_ADDR		(TCSM_BANK(1) + 2048)
-#define MCU_TCSM_RETVAL			(TCSM_BANK(0) + 2048 + 1076) /* cal from sc_interface. */
-#define MCU_TCSM_SECALL_MSG		(TCSM_BANK(0) + 2048 + 128) /* MCU_TCSM_SECALL_MSG */
-#endif
-
 #define SC_MAX_SIZE_PERTIME		(2048)
 #define SC_MAGIC_SIZE			(512)
 #define SC_KEY_SIZE				(1536)
@@ -65,105 +48,15 @@
 #define USERKEY_ENCRYPT  2
 #define CHIPKEY_ENCRYPT  1
 
-void read_flash(unsigned int from, unsigned int len, unsigned char *buf)
-{
-	u32 boot_device;
-
-	boot_device = spl_boot_device();
-
-	switch(boot_device) {
-
-#ifdef CONFIG_JZ_SFC_NOR
-	case BOOT_DEVICE_SFC_NOR:
-		sfc_nor_read(from, len, buf);
-		break;
-	default:
-		printf("## ERROR ## Ckey aes only support sfc_nor ##\n");
-		hang();
-#endif
-	}
-}
-
-void write_flash(unsigned int from, unsigned int len, unsigned char *buf)
-{
-	u32 boot_device;
-
-	boot_device = spl_boot_device();
-
-	switch (boot_device) {
-
-#ifdef CONFIG_JZ_SFC_NOR
-	case BOOT_DEVICE_SFC_NOR:
-
-		if (sfc_nor_erase(from, len)) {
-			printf("sfcnor erase err!\n");
-			_machine_restart();
-		}
-
-		sfc_nor_write(from, len, buf);
-		break;
-#endif
-	default:
-		printf("## ERROR ## Ckey aes only support sfc_nor ##\n");
-		hang();
-	}
-}
-
-static void bin_aes(void *addr, int dataLen)
-{
-	volatile struct sc_args *args = (volatile struct sc_args *)(MCU_TCSM_SECALL_MSG);
-	volatile unsigned int *input = (volatile unsigned int *)(MCU_TCSM_INDATA);
-	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
-
-	unsigned int ret;
-	int iLoop = 0;
-	int *srcptr = (int *)(addr);
-	int *dstptr = (int *)(addr);
-
-	int endround = 0;
-	int pos = 0;
-	int pos1 = 0;
-
-	boot_up_mcu();
-	do {
-		memset(args, 0, sizeof(struct sc_args));
-		int lens = dataLen > AES_ONETIME_MAX ? AES_ONETIME_MAX : dataLen;
-
-		if (dataLen <= AES_ONETIME_MAX)
-				endround = 1;
-		args->arg[2] = MCU_TCSM_PADDR(input);
-		args->arg[3] = MCU_TCSM_PADDR(output);
-		args->arg[4] = lens;
-
-		args->arg[0] = 0;
-		args->arg[0] |= AES_BY_UKEY | AES_CRYPT;
-
-		for (iLoop = 0; iLoop < lens / 4; iLoop++)
-			input[iLoop] = srcptr[pos++];
-
-		secall(args, SC_FUNC_AESBYKEY, 0);
-
-		for (iLoop = 0; iLoop < lens / 4; iLoop++)
-			dstptr[pos - lens / 4 + iLoop] = output[iLoop];
-
-		args->arg[0] = 0;
-		args->arg[0] |= AES_BY_CKEY;
-
-		for (iLoop = 0; iLoop < lens / 4; iLoop++)
-			input[iLoop] = dstptr[pos1++];
-
-		secall(args, SC_FUNC_AESBYKEY, 0);
-
-		for (iLoop = 0; iLoop < lens / 4; iLoop++)
-			dstptr[pos1 - lens / 4 + iLoop] = output[iLoop];
-
-		dataLen -= AES_ONETIME_MAX;
-	}while (!endround);
-}
+extern void flush_cache_all(void);
+extern void read_flash(unsigned int from, unsigned int len, unsigned char *buf);
+extern void write_flash(unsigned int from, unsigned int len, unsigned char *buf);
+extern inline phys_addr_t virt_to_phys(volatile void * address);
 
 void ckey_aes(void)
 {
 	char *read_buf = NULL;
+	int n_paaddr, ku_paaddr, code_paaddr;
 	read_buf = (char *)malloc(SCKEY_INFO_LEN);
 	memset(read_buf, 0xff , SCKEY_INFO_LEN);
 	read_flash(SPL_SCKEY_START, SCKEY_INFO_LEN, read_buf);
@@ -194,7 +87,7 @@ void ckey_aes(void)
 
 	if (!((spl_kencrypt == USERKEY_ENCRYPT) || (spl_cencrypt == USERKEY_ENCRYPT) ||
 		(uboot_kencrypt == USERKEY_ENCRYPT) || (uboot_cencrypt == USERKEY_ENCRYPT)))
-		return 0 ;
+		return 0;
 
 	free(read_buf);
 	*read_buf = NULL;
@@ -203,16 +96,22 @@ void ckey_aes(void)
 	memset(read_buf, 0xff, image_len);
 
 	read_flash(IMAGE_START, image_len, read_buf);
+	flush_cache_all();
 
 	if (spl_kencrypt == USERKEY_ENCRYPT) {
 		spl_nlen = (spl_nlen / 8 + 15) & 0xFFFFFFF0;
 		spl_ulen = (spl_ulen / 8 + 15) & 0xFFFFFFF0;
-		bin_aes(read_buf + SC_MAGIC_SIZE + KN_OFFSET, spl_nlen);
-		bin_aes(read_buf + SC_MAGIC_SIZE + KU_OFFSET, spl_ulen);
+
+		n_paaddr = virt_to_phys(read_buf + SC_MAGIC_SIZE + KN_OFFSET);
+		ku_paaddr = virt_to_phys(read_buf + SC_MAGIC_SIZE + KU_OFFSET);
+
+		do_aes_dma((int *)n_paaddr, (int *)n_paaddr, spl_nlen, AES_BY_UKEY, 1);
+		do_aes_dma((int *)ku_paaddr, (int *)ku_paaddr, spl_ulen, AES_BY_UKEY, 1);
 		*((int *)read_buf + SPL_KENOFFSET) = CHIPKEY_ENCRYPT;
 	}
 	if (spl_cencrypt == USERKEY_ENCRYPT) {
-		bin_aes(read_buf + SC_MAX_SIZE_PERTIME, spl_len);
+		code_paaddr = virt_to_phys(read_buf + SC_MAX_SIZE_PERTIME);
+		do_aes_dma((int *)code_paaddr, (int *)code_paaddr, spl_len, AES_BY_UKEY, 1);
 		*((int *)read_buf + SPL_CENOFFSET) = CHIPKEY_ENCRYPT;
 
 		u8 crc = sec_crc(read_buf + SC_MAX_SIZE_PERTIME, spl_len);
@@ -222,25 +121,36 @@ void ckey_aes(void)
 	if (uboot_kencrypt == USERKEY_ENCRYPT) {
 		uboot_nlen = (uboot_nlen / 8 + 15) & 0xFFFFFFF0;
 		uboot_ulen = (uboot_ulen / 8 + 15) & 0xFFFFFFF0;
-		bin_aes(read_buf + CONFIG_UBOOT_OFFSET + SC_MAGIC_SIZE + KN_OFFSET, uboot_nlen);
-		bin_aes(read_buf + CONFIG_UBOOT_OFFSET + SC_MAGIC_SIZE + KU_OFFSET, uboot_ulen);
+
+		n_paaddr = virt_to_phys(read_buf + CONFIG_UBOOT_OFFSET + SC_MAGIC_SIZE + KN_OFFSET);
+		ku_paaddr = virt_to_phys(read_buf + CONFIG_UBOOT_OFFSET + SC_MAGIC_SIZE + KU_OFFSET);
+
+		do_aes_dma((int *)n_paaddr, (int *)n_paaddr, uboot_nlen, AES_BY_UKEY, 1);
+		do_aes_dma((int *)ku_paaddr, (int *)ku_paaddr, uboot_ulen, AES_BY_UKEY, 1);
 		*((int *)read_buf + UBOOT_KENOFFSET) = CHIPKEY_ENCRYPT;
 	}
 
 	if (uboot_cencrypt == USERKEY_ENCRYPT) {
-		bin_aes(read_buf + CONFIG_UBOOT_OFFSET + SC_MAX_SIZE_PERTIME, uboot_len);
+		int ulen = (uboot_len + 15) & 0xFFFFFFF0;
+
+		code_paaddr = virt_to_phys(read_buf + CONFIG_UBOOT_OFFSET + SC_MAX_SIZE_PERTIME);
+		do_aes_dma((int *)code_paaddr, (int *)code_paaddr, ulen, AES_BY_UKEY, 1);
+
 		*((int *)read_buf + UBOOT_CENOFFSET) = CHIPKEY_ENCRYPT;
 	}
 
 	write_flash(IMAGE_START, image_len, read_buf);
 
+	memset(read_buf, 0xff , SCKEY_INFO_LEN);
+
 	read_flash(SPL_SCKEY_START, SCKEY_INFO_LEN, read_buf);
+	flush_cache_all();
 
 	spl_kencrypt = *((int *)read_buf + 4);
 	spl_cencrypt = *((int *)read_buf + 1);
 
 	free(read_buf);
-	*read_buf = NULL;
+	read_buf = NULL;
 
 	if ((spl_cencrypt == 1) && (spl_kencrypt == 1)) {
 		printf("Spl chipkey aes success\n");

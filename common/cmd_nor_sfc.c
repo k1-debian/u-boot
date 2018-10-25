@@ -7,7 +7,7 @@ extern void sfc_nor_load(unsigned int src_addr, unsigned int count,unsigned int 
 
 static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int src_addr,count,dst_addr,erase_en = 0;;
+	unsigned int src_addr,count,dst_addr,erase_en = 0,ret;
 	if(argc < 4){
 		return CMD_RET_USAGE;
 	}
@@ -16,6 +16,15 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		count = simple_strtoul(argv[3],NULL,16);
 		dst_addr = simple_strtoul(argv[4],NULL,16);
 		printf("sfcnor read Image from 0x%x to  0x%x size is 0x%x ...\n",src_addr,dst_addr,count);
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+		printf("Security boot rsa...\n");
+		ret = secure_boot_rsa_nku(src_addr);
+		if(ret) {
+			printf("ERROR:  check NKU failed!!\n");
+			return CMD_RET_FAILURE;
+		}
+#endif
 		sfc_nor_read(src_addr,count, dst_addr);
 		printf("sfcnor read ok!\n");
 		return 0;

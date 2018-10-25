@@ -35,7 +35,7 @@ int test_wtotp(int opera){
 	args->arg[0] = opera;
 	*(volatile unsigned int *)0xb3540000 |= 1<<15; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
-	ret = secall(args,SC_FUNC_WTOTP,0);
+	ret = secall(args,SC_FUNC_WTOTP,0,1);
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	*(volatile unsigned int *)0xb3540000 &= ~(1<<15);
 
@@ -92,7 +92,7 @@ int test_burnukey(void)
 	args->arg[0] = 0;
 	args->arg[1] = MCU_TCSM_PADDR(MCU_TCSM_PUTUKEY);
 
-	ret = secall(args,SC_FUNC_BURNUK,0);
+	ret = secall(args,SC_FUNC_BURNUK,0,1);
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC){
 		printf("secall SC_FUNC_BURNUK fail 0x%08x\n", *(volatile unsigned int *)(MCU_TCSM_RETVAL));
 	}

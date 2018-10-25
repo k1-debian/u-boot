@@ -60,6 +60,7 @@ struct pdma_message {
 */
 /* **************** TCSM_BANK0 ***************/
 #define MCU_TCSM_PADDR(a)        ((unsigned int)a - PDMA_TCSM_BANK_BASE + 0xF4000000)
+#define MCU_TCSM_DDR(a)        ((unsigned int)(a) - PDMA_TCSM_BANK_BASE + PDMA_TCSM_BANK_BASE_PA)
 #define MCU_TCSM_PDMA_MSG_LEN 128
 #define MCU_TCSM_SECALL_MSG_LEN 128
 /*#define MCU_TCSM_PDMA_MSG TCSM_BANK7*/

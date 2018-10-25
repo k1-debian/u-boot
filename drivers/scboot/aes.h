@@ -41,8 +41,8 @@
 #define AES_REG_ASDO 0x1343001C
 #define AES_REG_ASKY 0x13430020
 #define AES_REG_ASIV 0x13430024
-
 int aes(void *bininput,void *binoutput,unsigned int len,unsigned int key,unsigned int crypt);
 int do_aes(void *binaddr,int len,int aeskey,int aescrypt);
+void do_aes_dma(void *in_paaddr, void *out_paaddr, int len, int aeskey, int aescrypt);
 
 #endif

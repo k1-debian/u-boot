@@ -21,7 +21,7 @@ int aes(void *bininput, void *binoutput, unsigned int len, unsigned int key, uns
 	args->arg[3] = MCU_TCSM_PADDR(output); //output
 	args->arg[4] = len; //len
 
-	ret = secall(args, SC_FUNC_AESBYKEY, 0);
+	ret = secall(args, SC_FUNC_AESBYKEY, 0, 1);
 
 	memcpy(binoutput, output, len);
 
@@ -46,4 +46,29 @@ int do_aes(void *binaddr, int len, int aeskey, int aescrypt)
 	}
 
 	return 0;
+}
+
+void do_aes_dma(void *in_paaddr, void *out_paaddr, int len, int aeskey, int aescrypt)
+{
+
+	volatile struct sc_args *args = (volatile struct sc_args *)(MCU_TCSM_SECALL_MSG);
+
+	boot_up_mcu();
+
+	args->arg[2] = in_paaddr;
+	args->arg[3] = out_paaddr;
+	args->arg[4] = len;
+
+	args->arg[0] = 0;
+	args->arg[0] |= aeskey | AES_CRYPT | AES_MODE;
+
+	secall(args, SC_FUNC_AESBYKEY, 0, 1);
+
+	if (aescrypt) {
+
+		args->arg[0] = 0;
+		args->arg[0] |= AES_BY_CKEY | AES_MODE;
+
+		secall(args, SC_FUNC_AESBYKEY, 0, 1);
+	}
 }

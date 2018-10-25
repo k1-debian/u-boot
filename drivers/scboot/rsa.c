@@ -45,7 +45,7 @@ int do_rsa(unsigned int *idata,unsigned int inputlen,unsigned int *odata,unsigne
 	args->arg[5] = MCU_TCSM_PADDR(key);
 	args->arg[6] = MCU_TCSM_PADDR(n);
 	args->arg[7] = MCU_TCSM_PADDR(output);
-	ret = secall(args,SC_FUNC_RSA,0);
+	ret = secall(args,SC_FUNC_RSA,0,1);
 
 	for(iLoop = 0; iLoop < output_len[0]; iLoop++)
 		odata[iLoop] = output[iLoop];

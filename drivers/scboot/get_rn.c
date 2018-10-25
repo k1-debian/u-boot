@@ -22,7 +22,7 @@ int cpu_get_rn(void)
 	args->arg[0] = 31; /* random cnt */
 	args->arg[1] = MCU_TCSM_PADDR(output);
 
-	ret = secall(args, SC_FUNC_RNG, 0);
+	ret = secall(args, SC_FUNC_RNG, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC){
 		printf("get random fail, ret val %x\n",*(volatile unsigned int *)MCU_TCSM_RETVAL);
