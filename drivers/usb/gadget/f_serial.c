@@ -31,7 +31,7 @@
 #include <linux/usb/gadget.h>
 #include <linux/usb/composite.h>
 #include <usb/lin_gadget_compat.h>
-#include <asm/arch/sfc_params.h>
+//#include <asm/arch/sfc_params.h>
 #include <linux/usb/cdc.h>
 #define RET_IN_LENGTH	64
 #define RET_OUT_LENGTH	512*1024
