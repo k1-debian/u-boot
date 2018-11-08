@@ -111,6 +111,10 @@ enum medium_type {
 enum spisfc_sub_type {
 	SFC_NOR = 0,
 	SFC_NAND,
+	SFC_NAND_SN_WRITE,
+	SFC_NAND_MAC_WRITE,
+	SFC_NAND_SN_READ,
+	SFC_NAND_MAC_READ,
 };
 
 enum data_type {

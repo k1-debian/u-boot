@@ -1,4 +1,4 @@
-#if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
+#ifdef CONFIG_MTD_SFCNAND
 #include <common.h>
 #include <nand.h>
 #include <linux/mtd/mtd.h>

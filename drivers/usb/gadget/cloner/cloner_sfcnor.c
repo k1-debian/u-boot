@@ -1,4 +1,4 @@
-#ifdef CONFIG_JZ_SFC
+#ifdef CONFIG_MTD_SFCNOR
 #include <asm/arch/spinor.h>
 
 extern struct debug_param *debug_args;

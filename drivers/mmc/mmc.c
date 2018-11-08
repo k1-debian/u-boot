@@ -811,7 +811,7 @@ void mmc_set_bus_width(struct mmc *mmc, uint width)
 
 	mmc_set_ios(mmc);
 }
-int get_mmc_csd_perm_w_protect()
+int get_mmc_csd_perm_w_protect(void)
 {
 	return mmc_csd_perm_w_protect;
 }

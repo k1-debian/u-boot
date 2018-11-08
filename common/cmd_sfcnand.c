@@ -9,10 +9,10 @@
 #include <common.h>
 #include <command.h>
 #include <nand.h>
+#include <asm/arch/spinand.h>
 #define X_COMMAND_LENGTH 128
 
-
-int do_sfcnand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+static int do_sfcnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *cmd;
 	unsigned int dst_addr,offset,len;
@@ -40,10 +40,8 @@ int do_sfcnand(cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 
 	return CMD_RET_SUCCESS;
 }
-U_BOOT_CMD(sfcnand, 5, 1, do_sfcnand,
-		"sfcnand    - SFC_NAND sub-system\n",
-		"sfcnand read from(offs) size dst_addr\n"
-		);
+
+extern int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param);
 void sfc_nand_init(void)
 {
 	struct nand_chip *chip;
@@ -56,3 +54,8 @@ void sfc_nand_init(void)
 	chip->scan_bbt(mtd);
 	chip->options |= NAND_BBT_SCANNED;
 }
+
+U_BOOT_CMD(sfcnand, 5, 1, do_sfcnand,
+		"sfcnand    - SFC_NAND sub-system\n",
+		"sfcnand read from(offs) size dst_addr\n"
+		);

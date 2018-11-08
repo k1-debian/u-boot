@@ -457,7 +457,7 @@ static void adjust_off_for_badblocks(loff_t *off, int dev)
 	loff_t start = ((8*128*nand->writesize) + nand->erasesize - 1) / nand->erasesize;
 	asm volatile ("nop\n\t");
 	start *= nand->erasesize;
-	for (start; start < off_align; start += nand->erasesize) {
+	for (; start < off_align; start += nand->erasesize) {
 		if (nand_block_isbad(nand, start)) {
 			printf("0x%llx is bad block\n", start);
 			*off += nand->erasesize;
@@ -465,7 +465,7 @@ static void adjust_off_for_badblocks(loff_t *off, int dev)
 		}
 	}
 	printf("off adjust to 0x%llx\n", *off);
-	return 0;
+	return;
 }
 
 static int do_nand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])

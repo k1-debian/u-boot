@@ -821,11 +821,28 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 		printf("ERR :sfcnand special init failed!\n");
 		goto failed;
 	}
+#if defined(CONFIG_JZ_SPINAND_SN) && defined(CONFIG_JZ_SPINAND_MAC)
+	mtd->size = flash_info->param.flashsize - CONFIG_SN_SIZE - CONFIG_MAC_SIZE;
+#else
+	mtd->size = flash_info->param.flashsize;
+#endif
 
 #ifdef CONFIG_BURNER
 	/* for burner get pt indext */
 	flash_info->partition.num_partition = param->partition_num;
 	flash_info->partition.partition = &param->partition;
+	{
+		int part = 0;
+		for (part = 0; part < flash_info->partition.num_partition; part++)
+			if (flash_info->partition.partition[part].size == 0UL ||
+					flash_info->partition.partition[part].size == -1UL)
+				break;
+		if (part != flash_info->partition.num_partition) {
+			flash_info->partition.partition[part].size = mtd->size -
+				flash_info->partition.partition[part].offset;
+			printf("flash size 0x%x, part size 0x%x\n", flash_info->param.flashsize, flash_info->partition.partition[part].size);
+		}
+	}
 #else
 	mtd->writesize = flash_info->param.pagesize;
 	get_partition_from_spinand(flash);
@@ -840,7 +857,6 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 	}
 	memset(chip,0,sizeof(struct nand_chip));
 
-	mtd->size = flash_info->param.flashsize;
 	mtd->flags |= MTD_CAP_NANDFLASH;
 	mtd->erasesize = flash_info->param.blocksize;
 	mtd->writesize = flash_info->param.pagesize;
@@ -945,10 +961,10 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, s
 	/*0: none 1, force-erase, force erase contain creat bbt*/
 	if (*erase_mode == 1)
 		if((ret = run_command("nand erase.chip -y", 0)))
-			    return ret;
+			return ret;
 
 	if(chip->bbt)
-			free(chip->bbt);
+		free(chip->bbt);
 	chip->scan_bbt(mtd);
 	chip->options |= NAND_BBT_SCANNED;
 	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num,

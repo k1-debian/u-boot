@@ -58,8 +58,9 @@ void __weak board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_OS_BOOT
 int __weak cleanup_before_linux (void)
 {
+	return 0;
 }
-
+extern void flush_cache_all(void);
 void __noreturn jump_to_image_linux(void *arg)
 {
 	debug("Entering kernel arg pointer: 0x%p\n", arg);
@@ -72,7 +73,7 @@ void __noreturn jump_to_image_linux(void *arg)
 	cleanup_before_linux();
 	param_addr = (u32 *)CONFIG_PARAM_BASE;
 	param_addr[0] = 0;
-	param_addr[1] = arg;
+	param_addr[1] = (u32)arg;
 	flush_cache_all();
 	image_entry(2, (char **)param_addr, NULL);
 }
