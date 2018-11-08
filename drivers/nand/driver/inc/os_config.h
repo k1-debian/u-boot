@@ -8,4 +8,6 @@
 #define CONFIG_SOC_M150
 #elif defined(CONFIG_M200)
 #define CONFIG_SOC_M200
+#elif defined(CONFIG_X1800)
+#define CONFIG_SOC_X1800
 #endif

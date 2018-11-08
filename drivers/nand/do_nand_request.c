@@ -277,7 +277,7 @@ unsigned int do_nand_request(unsigned int startaddr, void *data_buf, unsigned in
 				void *pf0_buf;
 			} parm_buf = {spl_buf, spl_buf + 64, spl_buf + 96, spl_buf + 128, spl_buf + 160};
 
-#elif defined(CONFIG_M200)
+#elif defined(CONFIG_M200) || defined(CONFIG_X1800)
 			struct parm_buf {
 				void *bw_buf;
 				void *tp_buf;
