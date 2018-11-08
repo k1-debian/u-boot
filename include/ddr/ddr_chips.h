@@ -49,6 +49,10 @@
 #include "./chips/DDR3_H5TQ2G63GFR_RDC.h"
 #endif
 
+#ifdef CONFIG_DDR3_M15T1G1664A_2C
+#include "./chips/DDR3_M15T1G1664A_2C.h"
+#endif
+
 #ifdef CONFIG_DDR3_MT41K128M16_JT
 #include "./chips/DDR3_MT41K128M16_JT.h"
 #endif

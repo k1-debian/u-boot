@@ -5,6 +5,7 @@ int foresee_nand_register_func(void);
 int gd_nand_register_func(void);
 int mxic_nand_register_func(void);
 int winbond_nand_register_func(void);
+int xtx_mid0b_nand_register_func(void);
 int xtx_nand_register_func(void);
 int zetta_nand_register_func(void);
 static void *nand_param[] = {
@@ -22,6 +23,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)winbond_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)xtx_mid0b_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)xtx_nand_register_func,
