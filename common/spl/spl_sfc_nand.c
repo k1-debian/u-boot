@@ -136,10 +136,10 @@ static void sfc_controler_init(void)
 
 static int spinand_bad_block_check(int len, unsigned char *check_buf)
 {
-	int i, j, bit0_cnt = 0;
+	int i;
 
-	for(j = 0; j < len; j++)
-		if(check_buf[j] != 0xff)
+	for(i = 0; i < len; i++)
+		if(check_buf[i] != 0xff)
 			return 1;
 	return 0;
 }

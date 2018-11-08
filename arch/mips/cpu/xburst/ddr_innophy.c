@@ -1,7 +1,7 @@
 
 /*
  * DDR driver for inno DDR PHY.
- * Used by x1630
+ * Used by x1xxx
  *
  * Copyright (C) 2017 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
@@ -29,11 +29,14 @@
 #include <generated/ddr_reg_values.h>
 #include <asm/arch/clk.h>
 #include "ddr_innophy.h"
-#define CONFIG_DWC_DEBUG 1
 #include "ddr_debug.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 extern unsigned int sdram_size(int cs, struct ddr_params *p);
+
+
+int current_ddr_type;
+
 
 struct ddr_params *ddr_params_p = NULL;
 extern void reset_dll(void);
@@ -78,19 +81,26 @@ static void dump_ddrc_register(void)
 
 static void reset_controller(void)
 {
-        ddr_writel(0xf << 20, DDRC_CTRL);
-        mdelay(5);
-        ddr_writel(0, DDRC_CTRL);
-        mdelay(5);
+	ddr_writel(0xf << 20, DDRC_CTRL);
+	mdelay(5);
+	ddr_writel(0x8 << 20, DDRC_CTRL);
+	mdelay(5);
 }
 
-void ddr_controller_init(void)
+static void ddrc_post_init(void)
+{
+	ddr_writel(DDRC_REFCNT_VALUE, DDRC_REFCNT);
+	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
+	ddr_writel(DDRC_CTRL_VALUE, DDRC_CTRL);
+}
+
+static void ddrc_prev_init(void)
 {
 	dwc_debug("DDR Controller init\n");
-	ddr_writel(DDRC_CTRL_CKE | DDRC_CTRL_ALH, DDRC_CTRL);
-	ddr_writel(0, DDRC_CTRL);
+//	ddr_writel(DDRC_CTRL_CKE | DDRC_CTRL_ALH, DDRC_CTRL);
+//	ddr_writel(0, DDRC_CTRL);
 	/* DDRC CFG init*/
-	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
+//	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
 	/* DDRC timing init*/
 	ddr_writel(DDRC_TIMING1_VALUE, DDRC_TIMING(1));
 	ddr_writel(DDRC_TIMING2_VALUE, DDRC_TIMING(2));
@@ -102,133 +112,218 @@ void ddr_controller_init(void)
 	/* DDRC memory map configure*/
 	ddr_writel(DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(DDRC_MMAP1_VALUE, DDRC_MMAP1);
-	ddr_writel(DDRC_CTRL_CKE | DDRC_CTRL_ALH, DDRC_CTRL);
-	ddr_writel(DDRC_REFCNT_VALUE, DDRC_REFCNT);
+//	ddr_writel(DDRC_CTRL_CKE | DDRC_CTRL_ALH, DDRC_CTRL);
+//	ddr_writel(DDRC_REFCNT_VALUE, DDRC_REFCNT);
 	ddr_writel(DDRC_CTRL_VALUE & 0xffff8fff, DDRC_CTRL);
-}
-
-/*
- * Name     : phy_calibration()
- * Function : control the RX DQS window delay to the DQS
- *
- * a_low_8bit_delay		= al8_2x * clk_2x + al8_1x * clk_1x;
- * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
- *
- * */
-void phy_calibration(int al8_1x,int ah8_1x,int al8_2x,int ah8_2x)
-{
-	printf("X1630_0x5: %x\n",readl(PHY_BASE + 0x14));
-	printf("X1630_0x15: %x\n",readl(PHY_BASE + 0x54));
-	printf("X1630_0x4: %x\n",readl(PHY_BASE + 0x10));
-	printf("X1630_0x14: %x\n",readl(PHY_BASE + 0x50));
-
-	int m=phy_readl(INNO_TRAINING_CTRL);
-	printf("INNO_TRAINING_CTRL 1: %x\n", phy_readl(INNO_TRAINING_CTRL));
-	m=(0xa1);
-	phy_writel(m,INNO_TRAINING_CTRL);
-	printf("INNO_TRAINING_CTRL 2: %x\n", phy_readl(INNO_TRAINING_CTRL));
-	while (0x3 != readl((PHY_BASE + 0xcc)));
-	printf("X1630_cc: %x\n", readl((PHY_BASE + 0xcc)));
-	phy_writel(0xa0,INNO_TRAINING_CTRL);
-	printf("INNO_TRAINING_CTRL 3: %x\n", phy_readl(INNO_TRAINING_CTRL));
-	printf("X1630_190: %x\n", readl((PHY_BASE + 0x190)));
-	printf("X1630_194: %x\n", readl((PHY_BASE + 0x194)));
-	printf("X1630_REG56: %x\n", readl(X1630_REG56));
-
 }
 
 void ddr_inno_phy_init(void)
 {
 	u32 reg = 0;
-	printf("ddr_inno_phy_init ..!\n");
+	/*
+	 * ddr phy pll initialization
+	 */
+	phy_writel(0x14, INNO_PLL_FBDIV);
+	phy_writel(0x5, INNO_PLL_PDIV);
+	phy_writel(0x1a, INNO_PLL_CTRL);
+	phy_writel(0x18, INNO_PLL_CTRL);
+	printf("ddrp pll lock 0x%x\n", phy_readl(INNO_PLL_LOCK));
+	while(!(readl(DDR_APB_PHY_INIT) & (1<<2))); //polling pll lock
 
-	phy_writel(0x14,INNO_PLL_FBDIV);
-	phy_writel(0x1a,INNO_PLL_CTRL);
-	phy_writel(0x5,INNO_PLL_PDIV);
-	phy_writel(0x18,INNO_PLL_CTRL);
+	/*
+	 * ddr phy register cfg
+	 */
+	phy_writel(0x3, INNO_DQ_WIDTH);
 
-	phy_writel(0x0,INNO_TRAINING_CTRL);
-	phy_writel(0x03,INNO_DQ_WIDTH);
+	if(current_ddr_type == DDR3) {
+		phy_writel(DDRP_MEMCFG_VALUE, INNO_MEM_CFG);
+		phy_writel(DDRP_CWL_VALUE, INNO_CWL);
+		phy_writel(DDRP_CL_VALUE, INNO_CL);
 
-	phy_writel(0x11,INNO_MEM_CFG);  // MEMSEL  =  DDR2  ,    BURSEL = burst8
-	phy_writel(0x0d,INNO_CHANNEL_EN);
-	phy_writel(((DDRP_MR0_VALUE&0xf0)>>4)-1, INNO_CWL);
-	reg = ((DDRP_MR0_VALUE&0xf0)>>4);
-	phy_writel(reg, INNO_CL);
-	printf("phy reg = 0x%x, CL = 0x%x\n", reg, phy_readl(INNO_CL));
-	phy_writel(0x00,INNO_AL);
+	} else if(current_ddr_type == DDR2) {
+		phy_writel(0x11,INNO_MEM_CFG);  // MEMSEL  =  DDR2  ,    BURSEL = burst8
+		phy_writel(0x0d,INNO_CHANNEL_EN);
+		phy_writel(((DDR_MR0_VALUE&0xf0)>>4)-1, INNO_CWL);
+		reg = ((DDR_MR0_VALUE&0xf0)>>4);
+		phy_writel(reg, INNO_CL);
+	}
+	phy_writel(0x0, INNO_AL);
 
-        writel(0,DDR_APB_PHY_INIT); //start high
-	while(!(readl(DDR_APB_PHY_INIT) & (1<<2)));//pll locked
-	printf("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
-        writel(0,REG_DDR_CTRL);
-
-        while(!(readl(DDR_APB_PHY_INIT) & (1<<1))); //init_complete
-	printf("ddr_inno_phy_init ..! 22:  %X\n", readl(DDR_APB_PHY_INIT));
-        while(!readl(X1630_INIT_COMP));
-	printf("ddr_inno_phy_init ..! 33:  %X\n", readl(DDR_APB_PHY_INIT));
-	writel(0,REG_DDR_CTRL);
-
-	writel(DDRC_CFG_VALUE,REG_DDR_CFG);// r=13 , c=10 , bank=4 , bitwidth=16 ,  0x0a688a40
-	writel(0x0a,REG_DDR_CTRL);
-
-	writel(0x211,REG_DDR_LMR);
-        printf("REG_DDR_LMR: %x\n",readl(REG_DDR_LMR));
-	writel(0,REG_DDR_LMR);
-
-        writel(0x311,REG_DDR_LMR);
-	printf("REG_DDR_LMR: %x\n", readl(REG_DDR_LMR));
-	writel(0,REG_DDR_LMR);
-
-	writel(0x111,REG_DDR_LMR);
-	printf("REG_DDR_LMR: %x\n", readl(REG_DDR_LMR));
-	writel(0,REG_DDR_LMR);
-
-	reg = ((DDRP_MR0_VALUE)<<12)|0x011;
-	writel(reg, REG_DDR_LMR);
-	printf("REG_DDR_LMR, MR0: %x\n", reg);
-	writel(0,REG_DDR_LMR);
-
-        phy_calibration(0x1,0x1,0x1,0x1);
-
-	writel(0x51,0xb3011004);
-	writel(0x24,0xb3011028);
-	dwc_debug("DDR PHY init OK\n");
+	printf("CWL = 0x%x\n", phy_readl(INNO_CWL));
+	printf("CL = 0x%x\n", phy_readl(INNO_CL));
+	printf("AL = 0x%x\n", phy_readl(INNO_AL));
 }
 
-void phy_dqs_delay(int delay_l,int delay_h)
+void ddrc_dfi_init(void)
 {
-	writel(delay_l,X1630_DQS_DELAY_L);
-	writel(delay_h,X1630_DQS_DELAY_H);
+	u32 reg = 0;
 
-	printf("X1630_DQS_DELAY_L: %x\n",readl(X1630_DQS_DELAY_L));
-	printf("X1630_DQS_DELAY_H: %x\n",readl(X1630_DQS_DELAY_H));
+	writel(1, DDR_APB_PHY_INIT); //start high
+	writel(0, DDR_APB_PHY_INIT); //start low
+	while(!(readl(DDR_APB_PHY_INIT) & (1<<1))); //polling dfi init comp
+	printf("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
+
+	ddr_writel(0, DDRC_CTRL);
+	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
+	ddr_writel(0x2, DDRC_CTRL);
+
+	if(current_ddr_type == DDR3) {
+#define DDRC_LMR_MR(n)						\
+	DDRC_DLMR_VALUE | 0x1 | (2 << 3) |			\
+		((DDR_MR##n##_VALUE & 0xffff) << 12) |		\
+		(((DDR_MR##n##_VALUE >> 16) & 0x7) << 8)
+
+	printf("MR0 : 0x%x\n", DDRC_LMR_MR(0));
+	printf("MR1 : 0x%x\n", DDRC_LMR_MR(1));
+	printf("MR2 : 0x%x\n", DDRC_LMR_MR(2));
+	printf("MR3 : 0x%x\n", DDRC_LMR_MR(3));
+	printf("ZQCL : 0x%x\n", DDRC_DLMR_VALUE | (0x4 << 3) | 0x1);
+
+	ddr_writel(DDRC_LMR_MR(0)/*0x1a30011*/, DDRC_LMR); //MR0
+	ddr_writel(DDRC_LMR_MR(1)/*0x6111*/, DDRC_LMR); //MR1
+	ddr_writel(DDRC_LMR_MR(2)/*0x8211*/, DDRC_LMR); //MR2
+	ddr_writel(DDRC_LMR_MR(3)/*0x311*/, DDRC_LMR); //MR3
+	ddr_writel(DDRC_DLMR_VALUE | (0x4 << 3) | 0x1/*0x19*/, DDRC_LMR);
+
+#undef DDRC_LMR_MR
+	} else {
+		/*DDR2*/
+
+		ddr_writel(0x211,DDRC_LMR);
+		printf("DDRC_LMR: %x\n",ddr_readl(DDRC_LMR));
+		ddr_writel(0,DDRC_LMR);
+
+		ddr_writel(0x311,DDRC_LMR);
+		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
+		ddr_writel(0,DDRC_LMR);
+
+		ddr_writel(0x111,DDRC_LMR);
+		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
+		ddr_writel(0,DDRC_LMR);
+
+		reg = ((DDR_MR0_VALUE)<<12)|0x011;
+		ddr_writel(reg, DDRC_LMR);
+		printf("DDRC_LMR, MR0: %x\n", reg);
+		ddr_writel(0,DDRC_LMR);
+
+	}
+}
+
+void ddrp_wl_training(void)
+{
+
+	if(current_ddr_type == DDR3) {
+		//write level
+		printf("WL_MODE1 : 0x%x\n", DDR_MR1_VALUE & 0xff);
+		phy_writel(DDR_MR1_VALUE & 0xff, INNO_WL_MODE1);
+		phy_writel(0x40, INNO_WL_MODE2);
+		phy_writel(0xa4, INNO_TRAINING_CTRL);
+		while (0x3 != phy_readl(INNO_WL_DONE));
+		phy_writel(0xa1, INNO_TRAINING_CTRL);
+	}
+
+	/* ???? */
+	if(current_ddr_type == DDR3)
+		phy_writel(0x50, INNO_MEM_CFG);
+	else
+		phy_writel(0x51, INNO_MEM_CFG);
+
+	writel(0x24,0xb3011028);
+}
+
+/*
+ * Name     : phy_calibration()
+ * Function : control the RX DQS window delay to the DQS
+ * */
+void phy_calibration(void)
+{
+	int m = phy_readl(INNO_TRAINING_CTRL);
+	printf("INNO_TRAINING_CTRL 1: %x\n", phy_readl(INNO_TRAINING_CTRL));
+	m = 0xa1;
+	phy_writel(m,INNO_TRAINING_CTRL);
+	printf("INNO_TRAINING_CTRL 2: %x\n", phy_readl(INNO_TRAINING_CTRL));
+	while (0x3 != phy_readl(INNO_CALIB_DONE));
+	printf("calib done: %x\n", phy_readl(INNO_CALIB_DONE));
+	phy_writel(0xa0,INNO_TRAINING_CTRL);
+	printf("INNO_TRAINING_CTRL 3: %x\n", phy_readl(INNO_TRAINING_CTRL));
+}
+
+int get_ddr_type(void)
+{
+	int type;
+#ifndef CONFIG_MULT_DDR_PARAMS_CREATOR
+#ifdef CONFIG_DDR_TYPE_DDR3
+	type = DDR3;
+#else /*CONFIG_DDR_TYPE_DDR2*/
+	type = DDR2;
+#endif
+
+#else
+
+#define EFUSE_BASE	0xb3540000
+#define EFUSE_CTRL		0x0
+#define EFUSE_STATE		0x8
+#define EFUSE_DATA		0xC
+#define DDR_INFO_ADDR	0xE
+
+	unsigned int val, data;
+
+	writel(0, EFUSE_BASE + EFUSE_STATE);
+
+	val = DDR_INFO_ADDR << 21 | 1;
+	writel(val, EFUSE_BASE + EFUSE_CTRL);
+
+	while(!(writel(val, EFUSE_BASE + EFUSE_STATE) & 1));
+	data = readl(EFUSE_BASE + EFUSE_DATA);
+	val = data & 0xFFFF;
+
+	if(val == 0x1111)
+		type = DDR2;
+	else if(val == 0x2222)
+		type = DDR3;
+	else
+		type = DDR3;
+
+	get_ddr_params(type);
+#endif
+
+	return type;
+
 }
 
 /* DDR sdram init */
 void sdram_init(void)
 {
-	int type = DDR2;
+
 	unsigned int mode;
 	unsigned int bypass = 0;
 	unsigned int rate;
 
 	dwc_debug("sdram init start\n");
+
+	current_ddr_type = get_ddr_type();
+
 	clk_set_rate(DDR, CONFIG_SYS_MEM_FREQ);
 	reset_dll();
 	rate = clk_get_rate(DDR);
-	rate = CONFIG_SYS_MEM_FREQ;
+	if(rate != CONFIG_SYS_MEM_FREQ)
+		dwc_debug("sdram set ddr freq failed\n");
 
-        reset_controller();
+	reset_controller();
 
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
 	ddr_writel(0x0 ,DDRC_AUTOSR_EN);
 #endif
 
 	ddr_inno_phy_init();
+	ddrc_dfi_init();
 
+	ddrp_wl_training();
         /* DDR Controller init*/
-	ddr_controller_init();
+	ddrc_prev_init();
+	phy_calibration();
+	dwc_debug("DDR PHY init OK\n");
+	ddrc_post_init();
 
 	ddr_writel(ddr_readl(DDRC_STATUS) & ~DDRC_DSTATUS_MISS, DDRC_STATUS);
 
@@ -242,7 +337,7 @@ void sdram_init(void)
 	dump_ddrc_register();
 	dwc_debug("sdram init finished\n");
 #undef DDRTYPE
-        (void)rate;(void)bypass;(void)mode;(void)type;
+	(void)rate;(void)bypass;(void)mode;
 }
 
 phys_size_t initdram(int board_type)
@@ -251,6 +346,9 @@ phys_size_t initdram(int board_type)
 #define EMC_LOW_SDRAM_SPACE_SIZE 0x10000000 /* 256M */
 #endif /* EMC_LOW_SDRAM_SPACE_SIZE */
         unsigned int ram_size;
+
+	get_ddr_type();
+
         ram_size = (unsigned int)(DDR_CHIP_0_SIZE) + (unsigned int)(DDR_CHIP_1_SIZE);
         if (ram_size > EMC_LOW_SDRAM_SPACE_SIZE)
                 ram_size = EMC_LOW_SDRAM_SPACE_SIZE;

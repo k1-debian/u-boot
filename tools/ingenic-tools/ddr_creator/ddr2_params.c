@@ -7,6 +7,47 @@ static struct ddr_out_impedance odt_out_impedance[]={
 	{75000,4},
 	{50000,6},
 };
+
+#ifdef CONFIG_X1XXX_INNOPHY
+static void fill_mr_params_ddr2(struct ddr_params *p)
+{
+	unsigned int tmp = 0;
+	struct ddr2_params *params = &p->private_params.ddr2_params;
+
+	/* MRn registers */
+	if(p->bl == 4)
+		p->mr0.ddr2.BL = 2;
+	else if(p->bl == 8)
+		p->mr0.ddr2.BL = 3;
+	else{
+		out_error("DDR_BL(%d) error,only support 4 or 8.check %s,%d\n",p->bl,__FILE__,__LINE__);
+		assert(1);
+	}
+	if(p->cl >= 2 && p->cl <= 7) // debug default 6.
+		p->mr0.ddr2.CL = p->cl;
+	else{
+		out_error("DDR_CL(%d) error,it should be between 2 and 6. check %s,%d\n",p->cl,__FILE__,__LINE__);
+		assert(1);
+	}
+
+	tmp = ps2cycle_ceil(params->tWR, 1);
+	if (tmp > 8)
+		tmp = 8;
+	BETWEEN(tmp,2,9);  // debug, BETWEEN(tmp,2,6)
+	p->mr0.ddr2.WR = tmp - 1;
+
+#ifdef DDR2_CHIP_DRIVER_OUT_STRENGTH
+	p->mr1.ddr2.DIC = DDR2_CHIP_DRIVER_OUT_STRENGTH;
+#else
+	p->mr1.ddr2.DIC = 1; /* Impedance=RZQ/7 */
+#endif
+
+#ifdef CONFIG_DDR_CHIP_ODT
+	p->mr1.ddr2.RTT2 = CONFIG_DDR_CHIP_ODT; /* Effective resistance of ODT RZQ/4 */
+#endif
+}
+#endif
+
 static void fill_in_params_ddr2(struct ddr_params *ddr_params)
 {
 	struct ddr2_params *params = &ddr_params->private_params.ddr2_params;
@@ -24,7 +65,11 @@ static void fill_in_params_ddr2(struct ddr_params *ddr_params)
 	params->tCCD = DDR_tCCD;
 	params->tFAW = DDR_tFAW;
 	params->tRTP = DDR_tRTP;
+#ifdef CONFIG_X1XXX_INNOPHY
+	fill_mr_params_ddr2(ddr_params);
+#endif
 }
+
 static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	unsigned int tmp;
@@ -90,6 +135,8 @@ static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p
 	ASSERT_MASK(tmp,6);
 	ddrc->timing6.b.tFAW = tmp;
 }
+
+#ifndef CONFIG_X1XXX_INNOPHY
 static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	unsigned int tmp = 0;
@@ -114,14 +161,7 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	}
 
 	tmp = ps2cycle_ceil(params->tWR, 1);
-#ifdef CONFIG_X1XXX_INNOPHY
-	if (tmp > 8)
-		tmp = 8;
-	BETWEEN(tmp,2,9);  // debug, BETWEEN(tmp,2,6)
-	ddrp->mr0.ddr2.WR = tmp - 1;
-#else
 	BETWEEN(tmp,2,8);
-#endif
 
 #ifdef DDR2_CHIP_DRIVER_OUT_STRENGTH
 	ddrp->mr1.ddr2.DIC = DDR2_CHIP_DRIVER_OUT_STRENGTH;
@@ -148,11 +188,7 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	/* AL = 0,other's cann't support by controller. */
 	tmp = p->bl / 2 +
 		MAX(ps2cycle_ceil(params->tRTP,1),2) - 2;
-#ifdef CONFIG_X1XXX_INNOPHY
-	BETWEEN(tmp,2,7);
-#else
 	BETWEEN(tmp,2,6);
-#endif
 	ddrp->dtpr0.b.tRTP = tmp;
 	ddrp->dtpr0.b.tCCD = 0;
 
@@ -194,6 +230,10 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	ddrp->zqncr1 = (odt_impedance->index << 4) | impedance->index;
 
 }
+#else
+static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p) {}
+#endif
+
 static struct ddr_creator_ops ddr2_creator_ops = {
 	.type = DDR2,
 	.fill_in_params = fill_in_params_ddr2,

@@ -1,4 +1,6 @@
 #include "ddr_params_creator.h"
+
+#ifndef CONFIG_X1XXX_INNOPHY
 static struct ddr_out_impedance out_impedance[]={
 	{40000,11},
 	{34000,13},
@@ -8,6 +10,107 @@ static struct ddr_out_impedance odt_out_impedance[]={
 	{60000,5},
 	{40000,8},
 };
+#else
+static struct ddr_out_impedance out_impedance[]={
+	{40,11},
+	{34,13},
+};
+static struct ddr_out_impedance odt_out_impedance[]={
+	{120,1},
+	{60,5},
+	{40,8},
+};
+#endif
+
+#ifdef CONFIG_X1XXX_INNOPHY
+static void fill_mr_params_ddr3(struct ddr_params *p)
+{
+	int tmp;
+
+	/* MRn registers */
+	p->mr0.ddr3.BA = 0;
+	p->mr1.ddr3.BA = 1;
+	p->mr2.ddr3.BA = 2;
+	p->mr3.ddr3.BA = 3;
+
+	/* BL: 1 is on the fly,???? */
+	if(p->bl == 4)
+		p->mr0.ddr3.BL = 2;
+	else if(p->bl == 8)
+		p->mr0.ddr3.BL = 0;
+	else{
+		out_error("DDR_BL(%d) error,only support 4 or 8\n",p->bl);
+		assert(1);
+	}
+	p->mr0.ddr3.BL = (8 - p->bl) / 2;
+
+	BETWEEN(p->cl,5,11);
+	p->mr0.ddr3.CL_4_6 = p->cl - 4;
+
+#ifdef CONFIG_DDR_DLL_RST
+	p->mr0.ddr3.DR = 1; //dll reset
+#endif
+
+	tmp = ps2cycle_ceil(p->private_params.ddr3_params.tWR, 1);
+	switch(tmp)
+	{
+	case 5 ... 8:
+		p->mr0.ddr3.WR = tmp - 4;
+		break;
+	case 9 ... 12:
+		p->mr0.ddr3.WR = (tmp + 1) / 2;
+		break;
+	default:
+		out_error("tWR(%d) is error, valid value is between from 5 to 12.\n",
+		       p->private_params.ddr3_params.tWR);
+		assert(1);
+	}
+
+#ifdef CONFIG_DDR_DLL_OFF
+	p->mr0.ddr3.PD = 0;
+#else
+	p->mr0.ddr3.PD = 1;
+#endif
+
+	/* MR1 register. */
+#ifdef CONFIG_DDR_DLL_OFF
+	p->mr1.ddr3.DE = 1; /* DLL disable. */
+#else
+	p->mr1.ddr3.DE = 0; /* DLL enable. */
+#endif
+
+#ifdef CONFIG_DDR_DRIVER_OUT_STRENGTH
+	/*   00 - RZQ/6,01 - RZQ / 7 */
+	p->mr1.ddr3.DIC1 = CONFIG_DDR_DRIVER_OUT_STRENGTH;
+	BETWEEN(ddrp->mr1.ddr3.DIC1,0,1);
+#else
+	p->mr1.ddr3.DIC1 = 1; /* Impedance=RZQ/7 */
+#endif
+
+#ifdef CONFIG_DDR_CHIP_ODT_VAL
+	/**********************
+	 * 000 - ODT disable. *
+	 * 001 - RZQ/4.       *
+	 * 010 - RZQ/2.       *
+	 * 011 - RZQ/6.       *
+	 * 100 - RZQ/12.      *
+	 * 101 - RZQ/8.       *
+	 **********************/
+	p->mr1.ddr3.RTT2 = CONFIG_DDR_CHIP_ODT_VAL; /* Effective resistance of ODT RZQ/4 */
+	BETWEEN(p->mr1.ddr3.RTT2,0,5);
+#endif
+
+	tmp = -1;
+	tmp = ps2cycle_ceil(p->private_params.ddr3_params.WL,1);
+	if(tmp < 5 || tmp > 8)
+	{
+		out_error("ddr frequancy too fast. %d\n",tmp);
+		out_error(". %d\n",__ps_per_tck);
+		assert(1);
+	}
+	p->mr2.ddr3.CWL = tmp - 5;
+}
+#endif
 
 static void fill_in_params_ddr3(struct ddr_params *ddr_params)
 {
@@ -28,7 +131,11 @@ static void fill_in_params_ddr3(struct ddr_params *ddr_params)
 	params->tFAW = DDR_tFAW;
 	ddr_params->cl = DDR_CL;
 
+#ifdef CONFIG_X1XXX_INNOPHY
+	fill_mr_params_ddr3(ddr_params);
+#endif
 }
+
 static void ddrc_params_creator_ddr3(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	int tmp;
@@ -60,7 +167,11 @@ static void ddrc_params_creator_ddr3(struct ddrc_reg *ddrc, struct ddr_params *p
 	ddrc->timing5.b.tRTW = tmp;
 
 	ddrc->timing5.b.tWDLAT = ddrc->timing1.b.tWL - 1;
+#ifdef CONFIG_X1XXX_INNOPHY
+	ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 3;
+#else
 	ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 2;
+#endif
 
 	tmp = MAX(ps2cycle_ceil(params->tXS,4),
 		ps2cycle_ceil(params->tXSDLL,4));
@@ -81,6 +192,7 @@ static void ddrc_params_creator_ddr3(struct ddrc_reg *ddrc, struct ddr_params *p
 	ddrc->timing6.b.tFAW = tmp;
 }
 
+#ifndef CONFIG_X1XXX_INNOPHY
 static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp = 0;
@@ -259,6 +371,22 @@ static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p
 	ddrp->odt_impedance[1] = CONFIG_DDR_PHY_ODT_IMPEDANCE;
 	ddrp->zqncr1 = (odt_impedance->index << 4) | impedance->index;
 }
+#else
+static void ddrp_params_creator_ddr3(struct ddrp_reg *ddrp, struct ddr_params *p)
+{
+	struct ddr3_params *params = &p->private_params.ddr3_params;
+	int tmp;
+
+	tmp =ps2cycle_ceil(params->WL,1);
+	ASSERT_MASK(tmp,4);
+	ddrp->cwl = tmp;
+
+	tmp =ps2cycle_ceil(params->RL,1);
+	ASSERT_MASK(tmp,8);
+	ddrp->cl = tmp;
+}
+#endif
+
 static struct ddr_creator_ops ddr3_creator_ops = {
 	.type = DDR3,
 	.fill_in_params = fill_in_params_ddr3,

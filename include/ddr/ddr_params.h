@@ -128,7 +128,6 @@ union private_params {
 	struct ddr2_params  ddr2_params;
 };
 
-#ifdef CONFIG_DDR_INNOPHY
 union ddr_mr0 {
 	/** raw register data */
 	uint32_t d32;
@@ -147,6 +146,19 @@ union ddr_mr0 {
 		unsigned RSVD_BA:1;
 		unsigned reserved19_31:13;
 	} ddr3; /* MR0 */
+	struct {
+		unsigned BL:3;
+		unsigned BT:1;
+		unsigned CL:3;
+		unsigned TM:1;
+		unsigned DR:1;
+		unsigned WR:3;
+		unsigned PD:1;
+		unsigned RSVD13_15:3;
+		unsigned BA:2;
+		unsigned RSVD_BA:1;
+		unsigned reserved19_31:13;
+	} ddr2; /* MR */
 };
 
 union ddr_mr1 {
@@ -171,6 +183,21 @@ union ddr_mr1 {
 		unsigned RSVD_BA:1;
 		unsigned reserved19_31:13;
 	} ddr3; /* MR1 */
+	struct {
+		unsigned DE:1;
+		unsigned DIC:1;
+		unsigned RTT2:1;
+		unsigned AL3_5:3;
+		unsigned RTT6:1;
+		unsigned OCD:3;
+		unsigned DQS:1;
+		unsigned RDQS:1;
+		unsigned QOFF:1;
+		unsigned RSVD13_15:3;
+		unsigned BA:2;
+		unsigned RSVD_BA:1;
+		unsigned reserved19_31:13;
+	} ddr2; /* EMR */
 	struct {
 		unsigned BL:3;
 		unsigned BT:1;
@@ -198,6 +225,9 @@ union ddr_mr2 {
 		unsigned reserved19_31:13;
 	} ddr3; /* MR2 */
 	struct {
+		unsigned unsupported:31;
+	} ddr2; /* EMR2 */
+	struct {
 		unsigned RL_WL:4;
 		unsigned RSVD4_7:4;
 		unsigned MA:8;
@@ -217,6 +247,9 @@ union ddr_mr3 {
 		unsigned RSVD_BA:1;
 		unsigned reserved19_31:13;
 	} ddr3; /* MR3 */
+	struct {
+		unsigned unsupported:31;
+	} ddr2; /* EMR3 */
 	struct {
 		unsigned DS:4;
 		unsigned RSVD4_7:4;
@@ -247,7 +280,6 @@ union ddr_mr63 {
 	} lpddr2; /* MR_IO_CALIBRATION */
 };
 
-#endif
 
 struct ddr_params {
 	uint32_t type;

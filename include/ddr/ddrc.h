@@ -162,7 +162,9 @@ typedef union ddrc_clkstp_cfg{
 struct ddrc_reg {
 	ddrc_cfg_t cfg;
 	uint32_t ctrl;
+	uint32_t ddlp;
 	uint32_t refcnt;
+	uint32_t dlmr;
 	uint32_t mmap[2];
 	uint32_t remap[5];
 	ddrc_timing1_t timing1;

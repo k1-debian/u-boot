@@ -306,6 +306,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->mmap[1] = mem_base1 << DDRC_MMAP_BASE_BIT | mem_mask1;
 }
 
+#ifndef CONFIG_X1XXX_INNOPHY
 static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp = 0;
@@ -375,6 +376,10 @@ static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_pa
 	ddrp->dtpr2.b.tDLLK = 512;
 	/* PGCR'Register is differ in lpddr ddr2 lpddr2 ddr3 */
 }
+#else
+static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p){}
+#endif
+
 void init_ddr_params_common(struct ddr_params *ddr_params,int type)
 {
 	ddr_params->type = type;
@@ -400,7 +405,7 @@ void init_ddr_params_common(struct ddr_params *ddr_params,int type)
 
 
 /* #define CONFIG_DDR_CHIP_IMPEDANCE */
-
+#ifndef CONFIG_X1XXX_INNOPHY
 static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int i;
@@ -436,12 +441,37 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 	for(i = 0;i<sizeof(rzq);i++)
 		    ddrp->rzq_table[i] = rzq[i];
 }
+#else
+static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
+{
+	switch (p->type) {
+#define _CASE(D, P)				\
+		case D:				\
+			ddrp->memcfg.b.memsel = P;\
+			break
+		_CASE(LPDDR2, 3);
+		_CASE(DDR2, 1);
+		_CASE(DDR3, 0);
+#undef _CASE
+	default:
+		break;
+	}
+
+	if(p->bl == 4)
+		ddrp->memcfg.b.brusel = 0;
+	else if(p->bl == 8)
+		ddrp->memcfg.b.brusel = 1;
+}
+#endif
+
 static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 {
 	int i;
 	/* DDRC registers print */
 	printf("#define DDRC_CFG_VALUE			0x%08x\n", ddrc->cfg.d32);
 	printf("#define DDRC_CTRL_VALUE			0x%08x\n", ddrc->ctrl);
+	printf("#define DDRC_DLMR_VALUE			0x%08x\n", ddrc->dlmr);
+	printf("#define DDRC_DDLP_VALUE			0x%08x\n", ddrc->ddlp);
 	printf("#define DDRC_MMAP0_VALUE		0x%08x\n", ddrc->mmap[0]);
 	printf("#define DDRC_MMAP1_VALUE		0x%08x\n", ddrc->mmap[1]);
 	printf("#define DDRC_REFCNT_VALUE		0x%08x\n", ddrc->refcnt);
@@ -453,6 +483,7 @@ static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 	printf("#define DDRC_TIMING6_VALUE		0x%08x\n", ddrc->timing6.d32);
 	printf("#define DDRC_AUTOSR_EN_VALUE		0x%08x\n", ddrc->autosr_en);
 
+#ifndef CONFIG_X1XXX_INNOPHY
 	/* DDRP registers print */
 	printf("#define DDRP_DCR_VALUE			0x%08x\n", ddrp->dcr);
 	printf("#define	DDRP_MR0_VALUE			0x%08x\n", ddrp->mr0.d32);
@@ -478,7 +509,24 @@ static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 		printf(",0x%02x",ddrp->rzq_table[i]);
 	}
 	printf("}\n");
+#else
+	printf("#define DDRP_MEMCFG_VALUE		0x%08x\n", ddrp->memcfg.d32);
+	printf("#define DDRP_CL_VALUE			0x%08x\n", ddrp->cl);
+	printf("#define DDRP_CWL_VALUE			0x%08x\n", ddrp->cwl);
+#endif
 }
+
+#ifdef CONFIG_X1XXX_INNOPHY
+static void ddr_mr_print(struct ddr_params *p)
+{
+	printf("#define	DDR_MR0_VALUE			0x%08x\n", p->mr0.d32);
+	printf("#define	DDR_MR1_VALUE			0x%08x\n", p->mr1.d32);
+	printf("#define	DDR_MR2_VALUE			0x%08x\n", p->mr2.d32);
+	printf("#define	DDR_MR3_VALUE			0x%08x\n", p->mr3.d32);
+	printf("#define	DDR_MR10_VALUE			0x%08x\n", p->mr10.d32);
+	printf("#define	DDR_MR63_VALUE			0x%08x\n", p->mr63.d32);
+}
+#endif
 
 static void sdram_size_print(struct ddr_params *p)
 {
@@ -616,6 +664,9 @@ int main(int argc, char *argv[])
 	ddrp_config_creator(&ddrp,&ddr_params);
 	file_head_print();
 	params_print(&ddrc, &ddrp);
+#ifdef CONFIG_X1XXX_INNOPHY
+	ddr_mr_print(&ddr_params);
+#endif
 	sdram_size_print(&ddr_params);
 	mem_remap_print(&ddr_params);
 	file_end_print();

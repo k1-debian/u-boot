@@ -7,7 +7,11 @@
 #ifdef CONFIG_CPU_XBURST
 #include <asm/ddr_dwc.h>
 #include <ddr/ddrc.h>
+#ifdef CONFIG_X1XXX_INNOPHY
+#include <ddr/ddrp_inno.h>
+#else
 #include <ddr/ddrp_dwc.h>
+#endif
 #endif
 
 
