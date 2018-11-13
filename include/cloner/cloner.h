@@ -115,6 +115,7 @@ enum spisfc_sub_type {
 	SFC_NAND_MAC_WRITE,
 	SFC_NAND_SN_READ,
 	SFC_NAND_MAC_READ,
+	SPI_NAND,
 };
 
 enum data_type {
@@ -165,6 +166,7 @@ struct policy_param{
 	int use_mmc;
 	uint32_t use_sfc_nor;
 	uint32_t use_sfc_nand;
+	uint32_t use_spi_nand;
 	uint32_t offsets[32];
 };
 struct debug_param{

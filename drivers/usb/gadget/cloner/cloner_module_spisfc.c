@@ -1,10 +1,19 @@
 #include <cloner/cloner.h>
 #include "burn_printf.h"
-#include "cloner_sfcnor.c"
-#include "cloner_spinand.c"
 
+static char *readbuf = NULL;
 extern struct ParameterInfo	*global_args;
 struct spi_param *spi_args;
+
+#ifdef CONFIG_MTD_SFCNOR
+#include "cloner_sfcnor.c"
+#endif
+#ifdef CONFIG_MTD_SPINAND
+#include "cloner_spinand.c"
+#endif
+#ifdef CONFIG_MTD_SFCNAND
+#include "cloner_sfcnand.c"
+#endif
 
 int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
 {
@@ -78,7 +87,12 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 			get_burner_nandinfo(spi_args->flash_info);
 	}
 #endif
-
+#ifdef CONFIG_MTD_SPINAND
+	if(policy_args->use_spi_nand){
+		get_burner_nandinfo(spi_args->flash_info, &nand_param_from_burner);
+		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);
+	}
+#endif
 	return ret;
 }
 
@@ -92,7 +106,8 @@ int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 			ret = sfc_program(cloner);
 			break;
 #endif
-#ifdef CONFIG_MTD_SFCNAND
+#if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
+		case SPI_NAND:
 		case SFC_NAND:
 			ret = spinand_program(cloner);
 			break;

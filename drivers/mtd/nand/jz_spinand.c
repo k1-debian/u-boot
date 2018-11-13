@@ -751,7 +751,8 @@ static struct jz_spi_support_from_burner *spi_nandflash_probe(u8 *idcode,struct 
 {
 	int i;
 	struct jz_spi_support_from_burner *params=param_array->addr;
-	printf("sfcnand param num=%d\n",param_array->para_num);
+	printf("flash id=%04x\n",(idcode[0]<<8)|idcode[1]);
+//	printf("sfcnand param num=%d\n",param_array->para_num);
 	for (i = 0; i < param_array->para_num; i++) {
 		if(params->id_manufactory == ((idcode[0]<<8) | idcode[1]))
 			break;
@@ -947,7 +948,7 @@ static int mtd_spinand_partition_analysis(unsigned int blk_sz,int partcount,stru
 
 	/*MTD part*/
 	sprintf(mtdparts_env, "mtdparts=nand:");
-	printf("partcount=%d\n",partcount);
+//	printf("partcount=%d\n",partcount);
 	for (part = 0; part < ptcount; part++) {
 		if (jz_mtd_spinand_partition[part].size == -1) {
 			sprintf(mtdparts_env,"%s-(%s)", mtdparts_env,
@@ -980,7 +981,7 @@ struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 		}
 	}
 	if(i >= ptcount){
-		printf("startaddr %s can't find the pt_index or you partition size  is not align with 128K\n",startaddr);
+		printf("startaddr %x can't find the pt_index or you partition size  is not align with 128K\n",startaddr);
 		*pt_index = -1;
 		return NULL;
 	}
@@ -989,7 +990,7 @@ struct jz_spinand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 void get_info_to_spl(databuf){
 
 }
-int mtd_spinand_probe_burner(/*MTDPartitionInfo *pinfo,*/int *erase_mode,struct  nand_param_from_burner *param)
+int mtd_spinand_probe_burner(int *erase_mode,struct  nand_param_from_burner *param)
 {
 	int ret;
 	struct mtd_info *mtd;
@@ -1000,7 +1001,7 @@ int mtd_spinand_probe_burner(/*MTDPartitionInfo *pinfo,*/int *erase_mode,struct 
 	ret = jz_spi_nand_init(param);
 	/*0: none 1, force-erase*/
 	if (*erase_mode == 1)
-		ret = run_command("nand scrub.chip -y", 0);
+		ret = run_command("nand erase.chip -y", 0);
 
 	chip = mtd->priv;
 	chip->scan_bbt(mtd);

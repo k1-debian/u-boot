@@ -155,6 +155,16 @@ static struct jz_spi_support jz_spi_nand_support_table[] = {
 		.column_cmdaddr_bits = 24,
 	},
 	{
+		.id_manufactory = 0xb1,
+		.id_device = 0x48,
+		.name = "GD5F1GQ4UCY1G",
+		.page_size = 2 * 1024,
+		.oobsize = 128,
+		.block_size = 128 * 1024,
+		.size = 128 * 1024 * 1024,
+		.column_cmdaddr_bits = 24,
+	},
+	{
 		.id_manufactory = 0xb2,
 		.id_device = 0x48,
 		.name = "GD5F2GQ4UCY1G",

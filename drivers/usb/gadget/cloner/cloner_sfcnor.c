@@ -3,7 +3,6 @@
 
 extern struct debug_param *debug_args;
 extern struct nor_partition *get_partition_index(u32 offset,u32 length,int *pt_index);
-static char *readbuf = NULL;
 
 extern struct burner_params params;
 extern struct mini_spi_nor_info mini_params;
