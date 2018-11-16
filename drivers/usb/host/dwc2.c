@@ -287,6 +287,7 @@ static void dwc_otg_core_host_init(struct udevice *dev,
 
 	/* Clear Host Set HNP Enable in the OTG Control Register */
 	clrbits_le32(&regs->gotgctl, DWC2_GOTGCTL_HSTSETHNPEN);
+	setbits_le32(&regs->gotgctl, (1<<3)|(1<<2)); /* disable: VBUS Valid Override Enable (VbvalidOvEn) */
 
 	/* Make sure the FIFOs are flushed. */
 	dwc_otg_flush_tx_fifo(regs, 0x10);	/* All Tx FIFOs */
