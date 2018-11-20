@@ -2,6 +2,7 @@
 #include <asm/io.h>
 #include <asm/arch/cpm.h>
 #include <asm/reboot.h>
+#include <asm/spl.h>
 
 #include "secall.h"
 #include "pdma.h"
@@ -199,6 +200,7 @@ int secure_scboot(void *input, void *output)
 {
 	unsigned int ret = 0;
 	unsigned int len;
+	u32 boot_device;
 	unsigned int *pdma_ins = (unsigned int *)pdma_wait;
 	volatile unsigned int *pdma_bank0_off = (unsigned int *)TCSM_BANK0;
 	int issig = 0;
@@ -223,24 +225,42 @@ int secure_scboot(void *input, void *output)
 	}
 	else if(issig == 1) {
 		printf("Security boot...\n");
+		boot_device = spl_boot_device();
+
+		switch(boot_device) {
 #ifndef CONFIG_SPL_BUILD
-		ret = scboot_boot_cmp_hash(input, output);
-		if(ret) {
-			printf("ERROR: please check your image !!\n");
-			hang();
-		}
+		case BOOT_DEVICE_SFC_NOR:
+			ret = scboot_boot_cmp_hash(input, output);
+			if(ret) {
+				printf("ERROR: please check your image !!\n");
+				hang();
+			}
+			break;
 #else
-		ret = setup_sckeys(input, &len);
-		if(ret) {
-			printf("ERROR: please check header information!!\n");
-			hang();
-		}
-		ret = start_scboot(input, output, len);
-		if(ret) {
-			printf("ERROR: please check your image !!\n");
-			hang();
-		}
+		case BOOT_DEVICE_SFC_NOR:
 #endif
+		case BOOT_DEVICE_RAM:
+		case BOOT_DEVICE_NAND:
+		case BOOT_DEVICE_MMC1:
+		case BOOT_DEVICE_SPI:
+		case BOOT_DEVICE_NOR:
+		case BOOT_DEVICE_SFC_NAND:
+		case BOOT_DEVICE_SPI_NAND:
+			ret = setup_sckeys(input, &len);
+			if(ret) {
+				printf("ERROR: please check header information!!\n");
+				hang();
+			}
+			ret = start_scboot(input, output, len);
+			if(ret) {
+				printf("ERROR: please check your image !!\n");
+				hang();
+			}
+			break;
+		default:
+			debug("SPL: Un-supported Boot Device\n");
+			hang();
+		}
 		memset(TCSM_SC_KEY_ADDR, 0, SC_KEY_SIZE);
 		memset(MCU_TCSM_SPLSHA1ENCBUF, 0, RSASHA_SIZE);
 		memset(MCU_TCSM_NKU, 0, MCU_TCSM_SPLSHA1ENCBUF_SIZE);
