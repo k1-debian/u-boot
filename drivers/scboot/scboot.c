@@ -295,6 +295,11 @@ int secure_boot_rsa_nku(unsigned int src_addr)
 
 		do_aes_dma((int *)kupaaddr,
 			(int *)(MCU_TCSM_DDR(&nkupaddr[NKU_KUKEY_WORD_OFF])), kulen, key, 0);
+	} else {
+		for(iLoop = 0; iLoop < nlen / 4; iLoop++)
+			nkupaddr[NKU_NKEY_WORD_OFF + iLoop] = read_buf[PARAM_N_WORD_OFF + iLoop];
+		for(iLoop = 0; iLoop < kulen / 4; iLoop++)
+			nkupaddr[NKU_KUKEY_WORD_OFF + iLoop] = read_buf[PARAM_KU_WORD_OFF +iLoop];
 	}
 
 	flush_cache_all();
