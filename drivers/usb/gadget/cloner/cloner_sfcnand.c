@@ -108,8 +108,13 @@ int spinand_program(struct cloner *cloner)
 		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
 			ret = nand_write(nand, startaddr, &length, databuf);
-			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
-					startaddr, length, ret ? "ERROR" : "OK");
+			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : ", startaddr, length);
+			if (ret || (length == 0)) {
+				BURNNER_PRI("ERROR\n");
+				return -EIO;
+			} else {
+				BURNNER_PRI("OK\n");
+			}
 		} else {
 			BURNNER_PRI("ERROR : out of partition !!!\n");
 		}
