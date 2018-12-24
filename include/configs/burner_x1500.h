@@ -92,6 +92,7 @@
 #define CONFIG_MMC			1
 #define CONFIG_JZ_MMC 1
 #define CONFIG_JZ_MMC_MSC0 1
+#define CONFIG_JZ_MMC_MSC1 1
 
 /* PMU */
 #define CONFIG_REGULATOR
