@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define DOSILICON_DEVICES_NUM         1
+#define DOSILICON_DEVICES_NUM         2
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -17,6 +17,25 @@
 
 static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 	[0] = {
+	/*DS35X1GAXXX*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 70,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+	[1] = {
 	/*DS35Q2GAXXX*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
@@ -28,7 +47,7 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.tRD = TRD,
+		.tRD = 90,
 		.tPP = TPP,
 		.tBE = TBE,
 
@@ -38,7 +57,8 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 };
 
 static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[0]),
+	DEVICE_ID_STRUCT(0x71, "DS35X1GAXXX", &dosilicon_param[0]),
+	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[1]),
 };
 
 static void dosilicon_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -94,6 +114,7 @@ retry:
 		goto retry;
 
 	switch(device_id) {
+		case 0x71:
 		case 0x72:
 			switch((ecc_status >> 0x4) & 0x3) {
 			    case 0x0:
@@ -124,6 +145,8 @@ static void dosilicon_single_read(struct sfc_transfer *transfer, struct flash_op
 	int plane_flag = 0;
 
 	switch(device_id) {
+	    case 0x71:
+			break;
 	    case 0x72:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
@@ -158,6 +181,8 @@ static void dosilicon_quad_read(struct sfc_transfer *transfer, struct flash_oper
 	int plane_flag = 0;
 
 	switch(device_id) {
+	    case 0x71:
+			break;
 	    case 0x72:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
@@ -192,6 +217,8 @@ static void dosilicon_single_load(struct sfc_transfer *transfer, struct flash_op
 	int plane_flag = 0;
 
 	switch(device_id) {
+	    case 0x71:
+			break;
 		case 0x72:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
@@ -225,6 +252,8 @@ static void dosilicon_quad_load(struct sfc_transfer *transfer, struct flash_oper
 	int plane_flag = 0;
 
 	switch(device_id) {
+		case 0x71:
+			break;
 		case 0x72:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
