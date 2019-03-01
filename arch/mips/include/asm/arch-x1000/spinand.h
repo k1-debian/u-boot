@@ -13,11 +13,6 @@ struct jz_sfcnand_partition {
 	uint32_t manager_mode;     /* manager_mode mtd or ubi */
 };
 
-struct jz_sfcnand_partition_param {
-	int32_t num_partition;
-	struct jz_sfcnand_partition *partition;
-};
-
 struct jz_sfcnand_burner_param {
 	uint32_t magic_num;
 	int32_t partition_num;
@@ -51,6 +46,12 @@ struct jz_sfcnand_base_param {
 
 	uint8_t ecc_max;
 	uint8_t need_quad;
+};
+
+struct jz_sfcnand_partition_param {
+	uint8_t num_partition;
+/*	struct mtd_partition *partition;*/
+	struct jz_sfcnand_partition *partition;
 };
 
 struct device_id_struct {
