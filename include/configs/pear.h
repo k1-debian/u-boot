@@ -153,7 +153,7 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=32M@0x0 loglevel=7 "
+#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 loglevel=7 "
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
 		#if defined(CONFIG_SPL_SFC_NOR)
@@ -201,32 +201,31 @@
     #else
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
     #endif
-      #ifdef CONFIG_OTA_VERSION20
-             #define CONFIG_PAR_NV_NAME        "NV_RW"
-             #undef CONFIG_SPL_BOOTARGS
-	#ifdef  CONFIG_SPL_SFC_NOR
-             #define CONFIG_PAT_USERFS_NAME   "userfs"
-             #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
-             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+    #ifdef CONFIG_KUNPENG_OTA_VERSION20
+		#define CONFIG_PAT_KERNEL_NAME        "kernel"
+		#define CONFIG_PAT_RECOVERY_NAME  "recovery"
+		#define CONFIG_PAT_NV_NAME        "nv"
+		#undef CONFIG_SPL_BOOTARGS
+		#ifdef CONFIG_SPL_SFC_NOR
+			#define CONFIG_PAT_USERFS_NAME   "userfs"
+			#define CONFIG_PAT_UPDATEFS_NAME "updatefs"
+            		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+		#else
+        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro"
+        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc"
+        	#endif
 	#else
-		#define CONFIG_NVRW_ADDR	0X100000
-		#define CONFIG_NVRW_SIZE	0X60000
-		#define CONFIG_RECOVERY_ADDR	0X3200000
-		#define CONFIG_SYSTEM_ADDR	0X1400000
-		#define CONFIG_KERNEL_ADDR	0xc00000
-		#define	CONFIG_RAMDISK_ADDR	0x3c00000
-		#define CONFIG_RAMDISK_SIZE	0x500000
-		#define	CONFIG_RAMDISK_LOAD_ADDR	0x80a00000
-		#define CONFIG_SPL_BOOTARGS     BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=5 root=ubi0:system rootfstype=ubifs rw"
-		#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rd_start=0x80a00000 rd_size=0x500000"
-		/*#define CONFIG_SPL_OTA_BOOTARGS         BOOTARGS_COMMON "ip=off ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
-	#endif
-      #else
-             #define CONFIG_SOFT_BURNER
-             #define CONFIG_AUDIO_CAL_DIV
-             #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
-             #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
-     #endif /*CONFIG_OTA_VERSION20*/
+		#ifdef CONFIG_BOOT_VMLINUX
+             #undef CONFIG_SPL_BOOTARGS
+             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
+		#endif /* CONFIG_BOOT_VMLINUX */
+
+        #define CONFIG_SOFT_BURNER
+        #define CONFIG_AUDIO_CAL_DIV
+        #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
+        #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
+    #endif /*CONFIG_KUNPENG_OTA_VERSION20*/
+
      #ifdef CONFIG_BOOT_VMLINUX
              #undef CONFIG_SPL_BOOTARGS
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"

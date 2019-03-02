@@ -8,7 +8,12 @@
 #include <asm/arch/spinand.h>
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
+#ifdef CONFIG_OTA_VERSION20
 #include "spl_ota.h"
+#endif
+#ifdef CONFIG_KUNPENG_OTA_VERSION20
+#include "spl_ota_kunpeng.h"
+#endif
 
 #define SPINAND_PARAM_SIZE	1024
 
@@ -339,6 +344,32 @@ void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned int nv_
 }
 #endif
 
+struct jz_sfcnand_partition_param *get_partitions(void)
+{
+	struct jz_sfcnand_burner_param *burn_param;
+	static struct jz_sfcnand_partition_param partitions;
+
+	/*read param*/
+	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
+	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
+	partitions.num_partition = burn_param->partition_num;
+	partitions.partition = &burn_param->partition;
+
+	return &partitions;
+}
+
+unsigned int get_part_offset_by_name(struct jz_sfcnand_partition_param *partitions, char *name)
+{
+	int i = 0;
+
+	for(i = 0; i < partitions->num_partition; i++) {
+		if (!strncmp(partitions->partition[i].name, name, sizeof(name))) {
+			return partitions->partition[i].offset;
+		}
+	}
+	return -1;
+}
+
 void spl_load_kernel(long offset)
 {
 	struct image_header *header;
@@ -355,7 +386,7 @@ static void sfc_init(void)
 	spinand_init();
 }
 
-#ifndef CONFIG_OTA_VERSION20
+#if (!defined (CONFIG_OTA_VERSION20)) && (!defined (CONFIG_KUNPENG_OTA_VERSION20))
 void spl_sfc_nand_load(void)
 {
 	struct image_header *header;
@@ -406,9 +437,19 @@ static struct ota_ops ota_ops = {
 };
 #endif
 
+#ifdef CONFIG_KUNPENG_OTA_VERSION20
+static struct ota_ops ota_ops = {
+	.flash_init = sfc_init,
+	.flash_read = sfc_nand_load,
+	.flash_get_partitions = get_partitions,
+	.flash_get_part_offset_by_name = get_part_offset_by_name,
+	.flash_load_kernel = spl_load_kernel,
+};
+#endif
+
 char* spl_sfc_nand_load_image(void)
 {
-#ifdef CONFIG_OTA_VERSION20
+#if defined (CONFIG_OTA_VERSION20) || defined (CONFIG_KUNPENG_OTA_VERSION20)
 	register_ota_ops(&ota_ops);
 	return spl_ota_load_image();
 #else

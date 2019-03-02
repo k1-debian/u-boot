@@ -33,6 +33,7 @@ COBJS-$(CONFIG_SPL_SFC_NAND) += spl_sfc_nand.o
 COBJS-$(CONFIG_SPL_SPI_NAND) += spl_spi_nand.o
 ifdef CONFIG_SPL_SFC_NAND
 COBJS-$(CONFIG_OTA_VERSION20) += spl_ota.o
+COBJS-$(CONFIG_KUNPENG_OTA_VERSION20) += spl_ota_kunpeng.o
 endif
 
 ifndef CONFIG_SPL_LIBCOMMON_SUPPORT
