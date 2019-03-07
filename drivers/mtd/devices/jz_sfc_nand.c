@@ -266,7 +266,7 @@ static int jz_sfcnand_write_oob(struct mtd_info *mtd, loff_t addr, struct mtd_oo
 	debug("write oob_addr %x, datalen %d ooboff %d, ooblen %d\n", oob_addr, ops->len, ops->ooboffs, ops->ooblen);
 
 	if(ops->datbuf && ops->len) {
-		if((ret = jz_sfc_nand_write(flash, ops->datbuf, oob_addr / mtd->writesize, 0, ops->len))) {
+		if((ret = jz_sfc_nand_write(flash, ops->datbuf, oob_addr / mtd->writesize, oob_addr % mtd->writesize, ops->len))) {
 			printf( "spi nand write oob data area error %s %s %d \n",__FILE__,__func__,__LINE__);
 			goto write_oob_exit;
 		}
@@ -328,7 +328,7 @@ static int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd
 	int32_t ret = 0, ret_eccvalue = 0;
 
 	if(ops->datbuf && ops->len) {
-		ret = jz_sfc_nand_read(flash, pageaddr, 0, ops->datbuf, ops->len);
+		ret = jz_sfc_nand_read(flash, pageaddr, addr % mtd->writesize, ops->datbuf, ops->len);
 		if(ret < 0) {
 			printf("spi nand read error %s %s %d ,ret = %d\n", __FILE__, __func__,  __LINE__, ret);
 			if(ret == -EIO) {
