@@ -46,6 +46,14 @@ int board_early_init_f(void)
 	return 0;
 }
 
+char *spl_board_process_bootargs(char *arg)
+{
+	char *new_args = NULL;
+	new_args = 0x80000000;
+	memcpy(new_args, arg, strlen(arg));
+	return new_args;
+}
+
 #ifdef CONFIG_USB_GADGET
 int jz_udc_probe(void);
 void board_usb_init(void)
