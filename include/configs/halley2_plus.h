@@ -61,12 +61,21 @@
 #define CONFIG_DDR_HOST_CC
 #define CONFIG_DDR_FORCE_SELECT_CS1
 
+#ifdef CONFIG_HALLEY2_PLUS_V10
 #define CONFIG_DDR_TYPE_LPDDR2
-#define CONFIG_LPDDR2_EDB4432BBBJ
+#define CONFIG_LPDDR2_EDB1332BD
+#define CONFIG_DDR_DW32         1   /* 1-32bit-width, 0-16bit-width */
+#endif
+
+#ifdef CONFIG_HALLEY2_PLUS_V11
+#define CONFIG_DDR_TYPE_DDR3
+#define CONFIG_DDR3_FM38D16SAB-8KFD
+#define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
+#define CONFIG_DDR_DW32         0   /* 1-32bit-width, 0-16bit-width */
+#endif
 
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32         1   /* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDR_PHY_IMPEDANCE 60000
 
 /* #define CONFIG_DDR_DLL_OFF */
@@ -85,7 +94,11 @@
  * console=ttyS1: kernel boot time (7s)
  * console=null:  kernel boot time (4s), for product board
  */
+#ifdef CONFIG_HALLEY2_PLUS_V10
 #define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=255M@0x0 mem=256M@0x30000000 loglevel=7 "
+#elif defined(CONFIG_HALLEY2_PLUS_V11)
+#define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=128M@0x0 loglevel=7 "
+#endif
 /*#define BOOTARGS_COMMON "console=null, mem=255M@0x0 mem=256M@0x30000000"*/
 #ifdef CONFIG_SPL_MMC_SUPPORT
 /* #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.205:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.8.3:/home/nfsroot/bliu/buildroot rw" */
@@ -113,7 +126,11 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
+#ifdef CONFIG_HALLEY2_PLUS_V10
 #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc root=/dev/mmcblk0p7 rw rootwait lpj=5984256"
+#elif defined(CONFIG_HALLEY2_PLUS_V11)
+#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ro ubi.mtd=3 rootfstype=ubifs"
+#endif
 #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
 #define CONFIG_LOAD_VMLINUX_ADDR    0x80010000
 #endif	/* CONFIG_SPL_OS_BOOT */
@@ -298,6 +315,10 @@
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_ENV_SIZE			(32 << 10)
 #define CONFIG_ENV_OFFSET		(CONFIG_SYS_MONITOR_LEN + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
+#else
+#define CONFIG_ENV_IS_NOWHERE
+#define CONFIG_ENV_SIZE         (32 << 10)
+#define CONFIG_ENV_OFFSET       (CONFIG_SYS_NAND_BLOCK_SIZE * 5)
 #endif /* endif CONFIG_ENV_IS_IN_MMC */
 
 #ifdef CONFIG_JZ_NAND_MGR
@@ -380,6 +401,12 @@
 #define CONFIG_SYS_OS_BASE		0
 #define CONFIG_SYS_SPL_ARGS_ADDR	0
 #define CONFIG_SYS_FDT_BASE		0
+#endif
+
+#ifdef CONFIG_SPL_SPI_SUPPORT
+#define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPI_SPL_CHECK
+#define CONFIG_SYS_SPI_BOOT_FREQ    1000000
 #endif
 
 /**

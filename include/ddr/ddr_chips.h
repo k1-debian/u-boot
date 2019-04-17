@@ -121,4 +121,7 @@
 #include "./chips/LPDDR2_EDB1332BD.h"
 #endif
 
+#ifdef CONFIG_DDR3_FM38D16SAB-8KFD
+#include "./chips/DDR3_FM38D16SAB-8KFD.h"
+#endif
 #endif /* __DDR_CHIPS_H__ */
