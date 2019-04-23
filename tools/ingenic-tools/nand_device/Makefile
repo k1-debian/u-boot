@@ -8,5 +8,4 @@ sfc_nand_params: $(SRCS)
 	./deal_nand.sh
 	$(HOSTCC) $(CFLAGS) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
-	mv $@ ../
 

@@ -91,7 +91,18 @@ COBJS	:= $(sort $(COBJS-y))
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
-all:	$(LIB)
+ADDED_SUBDIRS = jz_epd/epd_panel/ET017QG1
+ADDED_SUBDIRS += jz4775_epd/epd_panel/ED060XD1
+ADDED_SUBDIRS += jz_lcd/lcd_panel
+ADDED_SUBDIRS += jz_lcd/jz_mipi_dsi
+
+ADDED_SUBDIRS := $(addprefix $(obj), $(ADDED_SUBDIRS))
+
+all:	$(ADDED_SUBDIRS) $(LIB)
+
+$(ADDED_SUBDIRS):
+	mkdir -p $@
+
 
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))

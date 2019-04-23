@@ -23,7 +23,16 @@
 include $(TOPDIR)/config.mk
 
 ifndef CONFIG_SPL_BUILD
-HOSTCPPFLAGS = -I$(TOPDIR)/include -DUSE_HOSTCC
+HOSTCPPFLAGS =	-include $(SRCTREE)/include/libfdt_env.h \
+		-idirafter $(SRCTREE)/include \
+		-idirafter $(OBJTREE)/include2 \
+		-idirafter $(OBJTREE)/include \
+	        -I $(SRCTREE)/lib/libfdt \
+		-I $(SRCTREE)/tools \
+		-DCONFIG_SYS_TEXT_BASE=$(CONFIG_SYS_TEXT_BASE) \
+		-DUSE_HOSTCC \
+		-D__KERNEL_STRICT_NAMES
+#HOSTCPPFLAGS = -I$(OBJTREE)include2 -I$(OBJTREE)/include -I$(SRCTREE)/include -DUSE_HOSTCC
 
 DDR-$(CONFIG_DDR_PARAMS_CREATOR)	+= ddr_params_creator ddr_reg_values.h
 
@@ -95,15 +104,15 @@ $(obj)ddr_params_creator_lpddr3: $(DDR-TYPE-y) $(DDR-TYPE-LPDDR3-y)
 	$(HOSTSTRIP) $@
 
 $(obj)ddr_reg_values_lpddr3.h:	$(obj)ddr_params_creator_lpddr3
-	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_lpddr3  $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_lpddr3  $(OBJTREE)/include/generated/$(notdir $@)
 $(obj)ddr_reg_values_lpddr2.h:	$(obj)ddr_params_creator_lpddr2
-	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_lpddr2  $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_lpddr2  $(OBJTREE)/include/generated/$(notdir $@)
 $(obj)ddr_reg_values_lpddr.h:	$(obj)ddr_params_creator_lpddr
-	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_lpddr  $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_lpddr  $(OBJTREE)/include/generated/$(notdir $@)
 $(obj)ddr_reg_values_ddr2.h:	$(obj)ddr_params_creator_ddr2
-	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_ddr2  $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_ddr2  $(OBJTREE)/include/generated/$(notdir $@)
 $(obj)ddr_reg_values_ddr3.h:	$(obj)ddr_params_creator_ddr3
-	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_ddr3  $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator_ddr3  $(OBJTREE)/include/generated/$(notdir $@)
 
 DDR-H-$(CONFIG_DDR_TYPE_DDR3)		= generated/ddr_reg_values_ddr3.h
 DDR-H-$(CONFIG_DDR_TYPE_DDR2)		+= generated/ddr_reg_values_ddr2.h
@@ -115,7 +124,7 @@ $(obj)mult_ddr_params_header:$(DDR_CREATOR_DIR)/mult_ddr_params_header.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 
 $(obj)ddr_reg_values.h: $(obj)mult_ddr_params_header
-	$(OBJTREE)/tools/ingenic-tools/mult_ddr_params_header  $(OBJTREE)/include/generated/$@ $(DDR-H-y)
+	$(OBJTREE)/tools/ingenic-tools/mult_ddr_params_header  $(OBJTREE)/include/generated/$(notdir $@) $(DDR-H-y)
 else
 
 DDR-TYPE-y = $(DDR_CREATOR_DIR)/ddr_params_creator.o
@@ -133,6 +142,7 @@ endef
 ALL_INCLUDE_PRIVATE := $(SRCTREE)/include/configs/$(BOARD).h $(DDR_CREATOR_DIR)/ddr_params_creator.h
 all:	$(obj).depend $(TOOLS)
 
+
 $(obj)ddr_params_creator: $(DDR-TYPE-y)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
@@ -140,18 +150,19 @@ $(obj)ddr_params_creator: $(DDR-TYPE-y)
 $(foreach f,$(DDR-TYPE-y), \
 	$(eval $(call PRIVATE_BUILD,$(f),$(f:.o=.c),$(ALL_INCLUDE_PRIVATE))))
 
-$(obj)ddr_reg_values.h:	$(obj)ddr_params_creator
-	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator > $(OBJTREE)/include/generated/$@
+$(obj)ddr_reg_values.h:        $(obj)ddr_params_creator
+	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator > $(OBJTREE)/include/generated/$(notdir $@)
+
 endif
 
 $(obj)audio_div_values.h: $(obj)audio_params_creator.py
-	$(OBJTREE)/tools/ingenic-tools/audio_params_creator.py $(CONFIG_AUDIO_APLL) $(CONFIG_AUDIO_MPLL) > $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/audio_params_creator.py $(CONFIG_AUDIO_APLL) $(CONFIG_AUDIO_MPLL) > $(OBJTREE)/include/generated/$(notdir $@)
 
 $(obj)sfc_timing_val.h: $(obj)sfc_timing_params
-	        $(OBJTREE)/tools/ingenic-tools/sfc_timing_params > $(OBJTREE)/include/generated/$@
+	        $(OBJTREE)/tools/ingenic-tools/sfc_timing_params > $(OBJTREE)/include/generated/$(notdir $@)
 
 $(obj)sfc_nand_params.h: $(obj)sfc_nand_params
-	$(OBJTREE)/tools/ingenic-tools/sfc_nand_params > $(OBJTREE)/include/generated/$@
+	$(OBJTREE)/tools/ingenic-tools/sfc_nand_params > $(OBJTREE)/include/generated/$(notdir $@)
 
 $(obj)mbr_creator:	mbr_creator.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
@@ -202,6 +213,7 @@ $(obj)sfc_timing_params: sfc_timing_params.c
 
 $(obj)sfc_nand_params: nand_device/
 	make -C $<
+	cp -f nand_device/sfc_nand_params $@
 
 clean:
 	rm -f $(TOOLS) $(obj).depend  \
@@ -231,7 +243,7 @@ endif
 #########################################################################
 
 ifndef CONFIG_SPL_BUILD
-include $(obj)logo.mk
+include $(SRCTREE)/tools/ingenic-tools/logo.mk
 endif
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
