@@ -46,18 +46,12 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/dosilicon_nand.o
 endif
 
 
-ADDED_SUBDIRS = nand_device
-
-ADDED_SUBDIRS := $(addprefix $(obj), $(ADDED_SUBDIRS))
-
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
-all:	$(ADDED_SUBDIRS) $(LIB)
+all:	$(LIB)
 
-$(ADDED_SUBDIRS):
-	mkdir -p $@
 
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
