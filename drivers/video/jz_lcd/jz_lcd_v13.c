@@ -905,6 +905,59 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
 			}
 		}
 	}
+
+#ifdef CONFIG_LCD_COLOR_BAR
+	/*for register mode test,
+	 * you can write test code according to the lcd panel
+	 **/
+	{
+		int iii, jjj;
+		struct fb_videomode *mode;
+		mode = info->modes;
+
+		printf("%s() [%d, %d], colorbar test...\n", __func__, mode->xres, mode->yres);
+
+		slcd_send_mcu_command(info,0x2c); /* data start command */
+
+		for (jjj=0; jjj<mode->yres; jjj++) {
+			for (iii=0; iii<mode->xres; iii++) {
+#if 1
+				/* 8 bit data io, 16bpp */
+				switch(((iii/16)&0x3)) {
+				case 0: /* red */
+					slcd_send_mcu_data(info,0xf8);
+					slcd_send_mcu_data(info,0x00);
+					break;
+				case 1: /* green */
+					slcd_send_mcu_data(info,0x07);
+					slcd_send_mcu_data(info,0xe0);
+					break;
+				case 2: /* blue */
+					slcd_send_mcu_data(info,0x00);
+					slcd_send_mcu_data(info,0x1f);
+					break;
+				case 3:
+				default: /* white */
+					slcd_send_mcu_data(info,0xff);
+					slcd_send_mcu_data(info,0xff);
+					break;
+				}
+#else
+				/* 8 bit data io, 16bpp */
+				//slcd_send_mcu_data(info,0xf8); slcd_send_mcu_data(info,0x00); /* red */
+				//slcd_send_mcu_data(info,0x07); slcd_send_mcu_data(info,0xe0); /* green */
+				slcd_send_mcu_data(info,0x00); slcd_send_mcu_data(info,0x1f); /* blue */
+				//slcd_send_mcu_data(info,0xff); slcd_send_mcu_data(info,0xff); /* white */
+				//slcd_send_mcu_data(info,0x00); slcd_send_mcu_data(info,0x00); /* black */
+#endif
+			}
+		}
+
+		while(1);
+	}
+
+#endif
+
 	if(info->bpp / info->smart_config.bus_width != 1 ) {
 		int tmp = reg_read(SLCDC_CFG_NEW);
 		tmp &= ~(SMART_LCD_NEW_DTIMES_MASK); //mask the 8~9bit
@@ -912,12 +965,6 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
 		reg_write(SLCDC_CFG_NEW, tmp);
 		printf("the slcd slcd_cfg_new is %08x\n", tmp);
 	}
-
-#ifdef CONFIG_FB_JZ_DEBUG
-	/*for register mode test,
-	 * you can write test code according to the lcd panel
-	 **/
-#endif
 
 	/* SLCD DMA mode select 0 */
 	if (!is_enabled) {
