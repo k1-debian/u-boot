@@ -74,6 +74,12 @@
 #define CONFIG_DDR_DW32         0   /* 1-32bit-width, 0-16bit-width */
 #endif
 
+#ifdef CONFIG_HALLEY2_PLUS_V12
+#define CONFIG_DDR_TYPE_LPDDR2
+#define CONFIG_LPDDR2_EDB1332BD
+#define CONFIG_DDR_DW32         1   /* 1-32bit-width, 0-16bit-width */
+#endif
+
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_PHY_IMPEDANCE 60000
@@ -97,6 +103,8 @@
 #ifdef CONFIG_HALLEY2_PLUS_V10
 #define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=255M@0x0 mem=256M@0x30000000 loglevel=7 "
 #elif defined(CONFIG_HALLEY2_PLUS_V11)
+#define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=128M@0x0 loglevel=7 "
+#elif defined(CONFIG_HALLEY2_PLUS_V12)
 #define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=128M@0x0 loglevel=7 "
 #endif
 /*#define BOOTARGS_COMMON "console=null, mem=255M@0x0 mem=256M@0x30000000"*/
@@ -129,6 +137,8 @@
 #ifdef CONFIG_HALLEY2_PLUS_V10
 #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc root=/dev/mmcblk0p7 rw rootwait lpj=5984256"
 #elif defined(CONFIG_HALLEY2_PLUS_V11)
+#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ro ubi.mtd=3 rootfstype=ubifs"
+#elif defined(CONFIG_HALLEY2_PLUS_V12)
 #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ro ubi.mtd=3 rootfstype=ubifs"
 #endif
 #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
