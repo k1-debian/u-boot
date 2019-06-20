@@ -40,15 +40,16 @@ void board_set_lcd_power_on(void)
 
 	regulator_set_voltage(lcd_regulator,3300000, 3300000);
 	regulator_enable(lcd_regulator);
+	mdelay(5);		/* delay 5ms for power stable */
 }
 #endif
 
 struct smart_lcd_data_table truly_tft240240_data_table[] = {
     /* LCD init code */
     {SMART_CONFIG_CMD, 0x01},  //soft reset, 120 ms = 120 000 us
-    {SMART_CONFIG_UDELAY, 120000},
+    {SMART_CONFIG_UDELAY, 12000},
     {SMART_CONFIG_CMD, 0x11},
-    {SMART_CONFIG_UDELAY, 50000},	  /* sleep out 50 ms  */
+    {SMART_CONFIG_UDELAY, 5000},	  /* sleep out 50 ms  */
 
     {SMART_CONFIG_CMD, 0x36},
 #ifdef	CONFIG_TRULY_240X240_ROTATE_180
