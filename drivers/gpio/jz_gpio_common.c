@@ -44,6 +44,8 @@
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
 #include "jz_gpio/x1630_gpio.c"
+#elif defined (CONFIG_X1520)
+#include "jz_gpio/x1520_gpio.c"
 #elif defined (CONFIG_X1830)
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)

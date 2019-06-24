@@ -117,6 +117,10 @@
 #include "./chips/DDR2_M14D5121632A.h"
 #endif
 
+#ifdef CONFIG_DDR2_M14D2561616A
+#include "./chips/DDR2_M14D2561616A.h"
+#endif
+
 #ifdef CONFIG_LPDDR2_EDB1332BD
 #include "./chips/LPDDR2_EDB1332BD.h"
 #endif
