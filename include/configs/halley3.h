@@ -163,7 +163,7 @@
  * Boot arguments & command definitions.
  */
 #ifdef CONFIG_VIDEO_MEM_SUPPORT
-  #define BOOTARGS_COMMON "console=ttyS1," CONFIG_BAUDRATE_STR "n8 mem=96M@0x0 rmem=32M@0x6000000"
+  #define BOOTARGS_COMMON "console=ttyS1," CONFIG_BAUDRATE_STR "n8 mem=95M@0x0 rmem=33M@0x5f00000"
 #else
   #define BOOTARGS_COMMON "console=ttyS1," CONFIG_BAUDRATE_STR "n8 mem=128M@0x0"
 #endif
