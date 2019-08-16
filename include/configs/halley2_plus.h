@@ -63,7 +63,8 @@
 
 #ifdef CONFIG_HALLEY2_PLUS_V10
 #define CONFIG_DDR_TYPE_LPDDR2
-#define CONFIG_LPDDR2_EDB1332BD
+/*#define CONFIG_LPDDR2_EDB1332BD*/
+#define CONFIG_LPDDR2_EDB4432BBBJ
 #define CONFIG_DDR_DW32         1   /* 1-32bit-width, 0-16bit-width */
 #endif
 
