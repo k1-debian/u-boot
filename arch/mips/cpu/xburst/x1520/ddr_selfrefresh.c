@@ -19,6 +19,9 @@ struct sleep_save_register
 	unsigned int opcr;
 	unsigned int spcr0;
 	unsigned int gate;
+	unsigned int ddr_ctrl;
+	unsigned int ddr_autosr;
+	unsigned int ddr_dlp;
 	/* unsigned int sleep_voice_enable; */
 	unsigned int ddr_training_space[20];
 };
@@ -100,12 +103,12 @@ void set_gpio_irq_clear(void)
 
 #define TEST_SIZE (4*1024*1024)
 static struct sleep_save_register s_reg;
-static unsigned int ddr_training_space[20];
 
 void ddr_selfresh_test()
 {
 	unsigned int val;
 	unsigned int run = 1;
+	unsigned int bypassmode;
 	int ret;
 	unsigned int opcr, lcr;
 	test_data = 0x80000000 + 0x100;
@@ -126,41 +129,113 @@ void ddr_selfresh_test()
 	lcr |= 0x1;
 	*(volatile unsigned int *)(0xb0000004) = lcr;
 	*(volatile unsigned int *)(0xb0000024) = opcr;
+
+	ddr_writel(0, DDRP_DTAR);
+	s_reg.ddr_dlp = ddr_readl(DDRC_DLP);
+	s_reg.ddr_ctrl = ddr_readl(DDRC_CTRL);
+	s_reg.ddr_autosr = ddr_readl(DDRC_AUTOSR_EN);
+	ddr_writel(0,DDRC_AUTOSR_EN); // exit auto sel-refresh
+
+	bypassmode = ddr_readl(DDRP_PIR) & DDRP_PIR_DLLBYP;
+	if(!bypassmode)
+	{
+		ddr_writel(0xf003 , DDRC_DLP);
+		/* val = ddr_readl(DDRP_DSGCR); */
+		/* val |= (1 << 4); */
+		/* ddr_writel(val,DDRP_DSGCR); */
+	}
 //	print_self();
 //	flush_dcache_all();
 //	flush_icache_all();
 //	flush_scache_all();
 //	cache_prefetch(test_pre, 256);
 
-	ddr_writel(0, DDRP_DTAR);
 	__sync();
 	__fast_iob();
 test_pre:
 	while(run--){
 		val = ddr_readl(DDRC_CTRL);
-		val |= 1 << 5;
-		ddr_writel(val, DDRC_CTRL);
-		TCSM_DELAY(10000);
+		val &= ~(0x1f << 11);
+		val |= (1 << 17) | (1 << 5);
+		ddr_writel(val, DDRC_CTRL); //enter selrefresh.
 		while(!(ddr_readl(DDRC_STATUS) & (1 << 2))); // wait finish.
-		mdelay(100);
 		asm volatile (
 			"nop \n\t"
 			"wait \n\t"
 			"nop \n\t"
 			);
+		bypassmode = ddr_readl(DDRP_PIR) & DDRP_PIR_DLLBYP;
+		if(!bypassmode) {
+			/**
+			 * reset dll of ddr.
+			 * WARNING: 2015-01-08
+			 * 	DDR CLK GATE(CPM_DRCG 0xB00000D0), BIT6 must set to 1 (or 0x40).
+			 * 	If clear BIT6, chip memory will not stable, gpu hang occur.
+			 */
+			/* { */
+			/* 	val = ddr_readl(DDRP_DSGCR); */
+			/* 	val &= ~(1 << 4); */
+			/* 	ddr_writel(val,DDRP_DSGCR); */
+			/* } */
+#define CPM_DRCG (0xB00000D0)
+
+			*(volatile unsigned int *)CPM_DRCG |= (1<<1);
+			TCSM_DELAY(0x1ff);
+			*(volatile unsigned int *)CPM_DRCG &= ~(1<<1);
+			TCSM_DELAY(0x1ff);
+			/*
+			 * for disabled ddr enter power down.
+			 */
+			*(volatile unsigned int *)0xb301102c &= ~(1 << 4);
+			TCSM_DELAY(0xf);
+
+			/*
+			 * reset dll of ddr too.
+			 */
+			*(volatile unsigned int *)CPM_DRCG |= (1<<1);
+			TCSM_DELAY(0x1ff);
+			*(volatile unsigned int *)CPM_DRCG &= ~(1<<1);
+			TCSM_DELAY(0x1ff);
+
+			val = DDRP_PIR_INIT | DDRP_PIR_ITMSRST  | DDRP_PIR_DLLSRST | DDRP_PIR_DLLLOCK;// | DDRP_PIR_ZCAL  ;
+			ddr_writel(val, DDRP_PIR);
+			val = DDRP_PGSR_IDONE | DDRP_PGSR_DLDONE | DDRP_PGSR_DIDONE;// | DDRP_PGSR_ZCDONE;
+			while ((ddr_readl(DDRP_PGSR) & val) != val) {
+				if(ddr_readl(DDRP_PGSR) & (DDRP_PGSR_DTERR | DDRP_PGSR_DTIERR)) {
+					break;
+				}
+			}
+		}
+
 		val = ddr_readl(DDRC_CTRL);
-		val &= ~(1 << 5);
-		ddr_writel(val, DDRC_CTRL);
-		TCSM_DELAY(10000);
+		val &= ~((1 << 5) | (1 << 17));
+		ddr_writel(val,DDRC_CTRL); //exit selrefresh.
 		while(ddr_readl(DDRC_STATUS) & (1 << 2)); // wait finish.
-		TCSM_DELAY(1200);
-		ddr_writel(DDRP_PIR_INIT | DDRP_PIR_QSTRN, DDRP_PIR);
-		val = DDRP_PGSR_IDONE | DDRP_PGSR_DTDONE;
+
+		if(!bypassmode){
+			val = DDRP_PIR_INIT | DDRP_PIR_QSTRN;
+		}else
+			val = DDRP_PIR_INIT | DDRP_PIR_QSTRN | DDRP_PIR_DLLBYP;
+		ddr_writel(val, DDRP_PIR);
+		val = (DDRP_PGSR_IDONE | DDRP_PGSR_DLDONE | DDRP_PGSR_DIDONE | DDRP_PGSR_DTDONE);
 		while ((ddr_readl(DDRP_PGSR) & val) != val) {
 			if(ddr_readl(DDRP_PGSR) & (DDRP_PGSR_DTERR | DDRP_PGSR_DTIERR)) {
 				break;
 			}
 		}
+		if(!bypassmode)
+		{
+			*(volatile unsigned int *)0xb301102c |= (1 << 4);
+			TCSM_DELAY(0xf);
+		}
+		if(!s_reg.ddr_dlp && !bypassmode)
+		{
+			ddr_writel(0x0 , DDRC_DLP);
+		}
+		if(s_reg.ddr_autosr) {
+			ddr_writel(1,DDRC_AUTOSR_EN);   // enter auto sel-refresh
+		}
+		ddr_writel(s_reg.ddr_ctrl, DDRC_CTRL);
 		*(volatile unsigned int *)(0xb0000004) = s_reg.lcr;
 		*(volatile unsigned int *)(0xb0000024) = s_reg.opcr;
 		*(volatile unsigned int*)(0Xb0010200 + 0x58) = 0xffffffff;
