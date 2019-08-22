@@ -215,9 +215,7 @@ COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
 COBJS-$(CONFIG_CMD_SPL) += cmd_spl.o
 COBJS-$(CONFIG_CMD_ZIP) += cmd_zip.o
 COBJS-$(CONFIG_CMD_ZFS) += cmd_zfs.o
-
-COBJS-y += cmd_hid.o
-
+COBJS-$(CONFIG_CMD_USBHID) += cmd_hid.o
 COBJS-$(CONFIG_DDR_PARAM_DEBUG) += cmd_ddr.o
 # others
 COBJS-$(CONFIG_BOOTSTAGE) += bootstage.o
