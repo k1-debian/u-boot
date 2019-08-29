@@ -571,7 +571,7 @@ int hidg_bind_config(struct usb_configuration *c,
 	hidg->func.setup   = hidg_setup;
 
 	/* this could me made configurable at some point */
-	hidg->qlen	   = 4;
+	hidg->qlen	   = 1;
 
 	status = usb_add_function(c, &hidg->func);
 	if (status)
