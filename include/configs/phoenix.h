@@ -130,7 +130,7 @@
 			/* #define	 CONFIG_BOOTARGS BOOTARGS_COMMON "ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 rootdelay=2 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/boliu/only_for_test/root_ok rw" */
 			/* #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 fpga/user/bliu/x1000/uImage ;bootm 0x80600000" */
 			#define	 CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
-			#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
+			#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;go 0x80800000"
 			/*#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80004000 ;go 0x80004008"*/
 /*			#define	 CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off root=/dev/ram0 rw rd_start=0x80800000 rd_size=0x500000"*/
 /*			#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80f00000 ; sfcnor read 0x360000 0x500000 0x80800000 ; bootm 0x80f00000"*/
