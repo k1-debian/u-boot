@@ -212,6 +212,9 @@
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
+	#ifdef CONFIG_BOOT_RTOS
+		#define CONFIG_LOAD_ADDR   0x80800000
+	#endif
 #endif	/* CONFIG_SPL_OS_BOOT */
 
 
