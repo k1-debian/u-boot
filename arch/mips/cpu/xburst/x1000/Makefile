@@ -61,11 +61,11 @@ HOSTCPPFLAGS =	-include $(SRCTREE)/include/libfdt_env.h \
 		-DUSE_HOSTCC \
 		-D__KERNEL_STRICT_NAMES
 
-.depend.pllsetting:$(OBJTREE)/include/generated/pll_reg_values.h
+$(obj).depend.pllsetting:$(OBJTREE)/include/generated/pll_reg_values.h
 ifndef CONFIG_BURNER
 $(SPLTREE)/$(dir)/../ddr_dwc.o:$(OBJTREE)/include/generated/ddr_reg_values.h
 endif
-$(obj)pllsetting.o:$(OBJTREE)/include/generated/pll_reg_values.h
+
 
 $(OBJTREE)/include/generated/pll_reg_values.h:$(OBJTREE)/$(dir)/pll_params_creator.exe
 	$< > $@
@@ -73,9 +73,8 @@ $(OBJTREE)/include/generated/pll_reg_values.h:$(OBJTREE)/$(dir)/pll_params_creat
 $(OBJTREE)/$(dir)/pll_params_creator.exe:$(SRCTREE)/$(dir)/pll_params_creator.c | $(SRCTREE)/include/configs/$(BOARD).h
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) $(HOSTCPPFLAGS) -o $@ $^
 
-.depend.clk:$(OBJTREE)/include/generated/clk_reg_values.h
+$(obj).depend.clk:$(OBJTREE)/include/generated/clk_reg_values.h
 
-$(obj)clk.o:$(OBJTREE)/include/generated/clk_reg_values.h
 
 $(OBJTREE)/include/generated/clk_reg_values.h:$(OBJTREE)/$(dir)/clk_params_creator.exe
 	$< > $@

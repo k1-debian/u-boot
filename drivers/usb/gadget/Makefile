@@ -78,7 +78,7 @@ $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
 
 $(SUBOBJS):
-	$(MAKE) -C $(dir $@)
+	$(MAKE) -C $(dir $(subst $(obj),,$@))
 
 #########################################################################
 
