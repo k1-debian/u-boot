@@ -59,7 +59,7 @@ int sfc_program(struct cloner *cloner)
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	u32 offset = cloner->cmd->write.partition + cloner->cmd->write.offset;
 	u32 length = cloner->cmd->write.length;
-	int blk_size = spi_args->spi_erase_block_siz;
+	int blk_size = spi_args->spi_erase_block_size;
 	void *addr = (void *)cloner->write_req->buf;
 	unsigned int ret;
 	int len = 0,err = 0;
@@ -117,8 +117,12 @@ int sfc_program(struct cloner *cloner)
 	if(debug_args->write_back_chk){
 		if(!readbuf){
 			readbuf = malloc(READBUF_SIZE);
-			memset(readbuf,0,READBUF_SIZE);
+			if (!readbuf) {
+				printf("malloc read buffer spaces error!\n");
+				return -1;
+			}
 		}
+		memset(readbuf,0,READBUF_SIZE);
 		ret = sfc_nor_read(offset,len,readbuf);
 		if(ret){
 			BURNNER_PRI(" write back check read  ops error,please check flash info !\n");

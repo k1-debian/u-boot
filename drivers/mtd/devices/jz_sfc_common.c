@@ -473,6 +473,13 @@ static inline void sfc_dev_conf_init(struct sfc *sfc) {
 		DEV_CONF_HOLDDL | DEV_CONF_WPDL | DEV_CONF_CEDL);
 }
 
+static void sfc_glb_wp_disable(struct sfc *sfc)
+{
+	uint32_t tmp = sfc_readl(sfc, SFC_GLB);
+	tmp &= ~GLB_WP_EN;
+	sfc_writel(sfc, SFC_GLB, tmp);
+}
+
 void sfc_ctl_init(struct sfc *sfc)
 {
 	sfc_writel(sfc, SFC_TRIG, TRIG_STOP);	    /*sfc stop*/
@@ -480,6 +487,8 @@ void sfc_ctl_init(struct sfc *sfc)
 
 	/*set dev config*/
 	sfc_dev_conf_init(sfc);
+
+	sfc_glb_wp_disable(sfc);
 
 	sfc_mask_all_intc(sfc);
 	sfc_clear_all_intc(sfc);

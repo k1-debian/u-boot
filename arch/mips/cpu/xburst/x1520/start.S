@@ -60,7 +60,13 @@ _start:
 #define SSI_BPP (CONFIG_SPI_NAND_BPP / 1024)
 	.word (0x00000000 | (SSI_PPB<<16) | (SSI_BPP<<24))
 #endif
-	.space 500, 0
+	.word 0x00000000
+#ifdef CONFIG_SPL_VERSION
+	.word (0x00000000 | CONFIG_SPL_VERSION)
+	.space (512-20),0
+#else
+	.space (512-16),0
+#endif
 	RESERVED_FOR_SC(0)
 #endif /* CONFIG_SPL_SFC_SUPPORT */
 

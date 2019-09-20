@@ -39,7 +39,7 @@ int spi_program(struct cloner *cloner)
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	u32 offset = cloner->cmd->write.partition + cloner->cmd->write.offset;
 	u32 length = cloner->cmd->write.length;
-	int blk_size = spi_args->spi_erase_block_siz;
+	int blk_size = spi_args->spi_erase_block_size;
 	void *addr = (void *)cloner->write_req->buf;
 	unsigned int ret;
 	int len = 0;

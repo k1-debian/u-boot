@@ -47,8 +47,13 @@ void sfc_nand_init(void)
 	struct nand_chip *chip;
 	struct mtd_info *mtd;
 	mtd = &nand_info[0];
+	int ret = 0;
 
-	jz_sfc_nand_init(0,NULL);
+	ret = jz_sfc_nand_init(0,NULL);
+	if(ret < 0) {
+		printf("sfc nand init failed!\n");
+		return;
+	}
 
 	chip =mtd->priv;
 	chip->scan_bbt(mtd);

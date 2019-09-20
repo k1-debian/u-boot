@@ -21,7 +21,7 @@
  */
 #define DDR_tRAS	DDR__ns(45)  /* tRAS: ACTIVE to PRECHARGE command period to the same bank. */
 #define DDR_tRTP	DDR__ns(8)   /* 7.5ns READ to PRECHARGE command period. */
-#define DDR_tRP		DDR__ps(13150)  /* tRP: PRECHARGE command period to the same bank */
+#define DDR_tRP		DDR__ps(13125)  /* tRP: PRECHARGE command period to the same bank */
 #define DDR_tRCD	DDR__ps(13125)  /* ACTIVE to READ or WRITE command period to the same bank. */
 //#define DDR_tRC		(DDR_tRAS + DDR_tRP)  /* ACTIVE to ACTIVE command period to the same bank.*/
 #define DDR_tRC		DDR__ps(58125)  /* ACTIVE to ACTIVE command period to the same bank.*/

@@ -162,6 +162,7 @@ const struct nand_flash_dev nand_flash_ids[] = {
 	{"AND 128MiB 3,3V 8-bit",	0x01, 2048, 128, 0x4000,
 	 NAND_IS_AND | NAND_4PAGE_ARRAY | BBT_AUTO_REFRESH},
 
+	{"NAND 128MiB 3,3V 8-bit",	0xF8, 2048, 64, 0, LP_OPTIONS16},
 	{NULL,}
 };
 
@@ -180,6 +181,7 @@ const struct nand_manufacturers nand_manuf_ids[] = {
 	{NAND_MFR_AMD, "AMD/Spansion"},
 	{NAND_MFR_MACRONIX, "Macronix"},
 	{NAND_MFR_EON, "Eon"},
+	{NAND_MFR_DOSILICON, "Dosilicon"},
 #ifdef CONFIG_JZ_SPI_NANDFLASH
 	{NAND_SPI_GIGA, "spi-nand-giga"},
 #endif

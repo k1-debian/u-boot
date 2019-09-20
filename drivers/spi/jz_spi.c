@@ -152,7 +152,7 @@ void spi_init(void )
 	ssi_rate = 72000000;
     clk_set_rate(SSI, ssi_rate);
 #else
-	if(ssi_rate !=0 )
+	if(ssi_rate != 0)
 		clk_set_rate(SSI, ssi_rate);
 	else{
 		printf("this will be an error that the ssi rate is 0\n");

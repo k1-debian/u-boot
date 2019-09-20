@@ -21,19 +21,21 @@
  * MA 02111-1307 USA
  */
 
- /*#define DEBUG */
+#define DEBUG
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
 #include <spl.h>
+#include <asm/mipsregs.h>
 
 #ifdef CONFIG_SPL_BUILD
 /* Pointer to as well as the global data structure for SPL */
 DECLARE_GLOBAL_DATA_PTR;
 gd_t gdata __attribute__ ((section(".data")));
 
+#ifndef CONFIG_BURNER
 struct global_info ginfo __attribute__ ((section(".data"))) = {
 	.extal		= CONFIG_SYS_EXTAL,
 	.cpufreq	= CONFIG_SYS_CPU_FREQ,
@@ -41,6 +43,7 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 	.uart_idx	= CONFIG_SYS_UART_INDEX,
 	.baud_rate	= CONFIG_BAUDRATE,
 };
+#endif
 
 extern void pll_init(void);
 extern void sdram_init(void);
@@ -52,23 +55,11 @@ void board_init_f(ulong dummy)
 	gd = &gdata;
 
 	/* Setup global info */
-
-#ifdef CONFIG_BURNER
-#ifdef CONFIG_CLONER_2XX
+#ifndef CONFIG_BURNER
+	gd->arch.gi = &ginfo;
+#else
 	burner_param_info();
 #endif
-	gd->arch.gi->extal = CONFIG_SYS_EXTAL;
-	gd->arch.gi->cpufreq = CONFIG_SYS_CPU_FREQ;
-	gd->arch.gi->ddrfreq = CONFIG_SYS_MEM_FREQ;
-	gd->arch.gi->uart_idx = CONFIG_SYS_UART_INDEX,
-	gd->arch.gi->baud_rate = CONFIG_BAUDRATE;
-	gd->arch.gi->ddr_div = ((gd->arch.gi->cpufreq % gd->arch.gi->ddrfreq) == 0)
-				? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq)
-				: (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq + 1);
-#else
-	gd->arch.gi = &ginfo;
-#endif
-
 	gpio_init();
 
 #ifndef CONFIG_FPGA
@@ -79,6 +70,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+	printf("ERROR EPC 0x%x\n", (unsigned int)read_c0_errorepc());
 
 #ifndef CONFIG_FPGA
 	debug("Timer init\n");
@@ -113,6 +105,9 @@ void board_init_f(ulong dummy)
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
+#else
+	debug("run firmware finished\n");
+	return ;
 #endif
 }
 

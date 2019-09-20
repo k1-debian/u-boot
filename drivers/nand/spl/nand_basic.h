@@ -36,7 +36,7 @@
 
 #endif //endif CONFIG_JZ4780
 
-#ifdef CONFIG_M200 || defined(CONFIG_X1800)
+#ifdef CONFIG_M200
 
 #define BUSWIDTH_FLAG_OFFSET    0               /* [0 : 63] */
 #define NANDTYPE_FLAG_OFFSET    (BUSWIDTH_FLAG_OFFSET + 64) /* [64 : 127] */

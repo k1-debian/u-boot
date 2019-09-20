@@ -1,3 +1,4 @@
+
 /*
  * Ingenic burner configuration
  *
@@ -28,7 +29,7 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
-#define CONFIG_X1630		/* X1630 SoC */
+#define CONFIG_X1830		/* X1830 SoC */
 #define CONFIG_XBURST_TRAPS
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
@@ -69,19 +70,45 @@
  **/
 
 #define CONFIG_DDR_INNOPHY
+#define CONFIG_MULT_DDR_PARAMS_CREATOR
+
+#ifndef CONFIG_MULT_DDR_PARAMS_CREATOR
+
 #define CONFIG_X1XXX_INNOPHY
-#define CONFIG_DDR_TYPE_DDR2
+#define CONFIG_DDR_TYPE_DDR3
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_DDR2_M14D5121632A
-#define DDR2_CHIP_DRIVER_OUT_STRENGTH 0
+#define CONFIG_DDR3_M15T1G1664A_2C
+#define CONFIG_DDR_CHIP_ODT_VAL 1
+#define CONFIG_DDR_PHY_IMPEDANCE        40000
+#define CONFIG_DDR_PHY_ODT_IMPEDANCE    50000
+
+#else
+
+#define CONFIG_DDR_HOST_CC
+#define CONFIG_DDR_TYPE_DDR2
+#define CONFIG_DDR_TYPE_DDR3
+#define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
+#define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
+#define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
+#define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
+#define CONFIG_X1XXX_INNOPHY
+#define CONFIG_DDR_CHIP_ODT_VAL 1
 #define CONFIG_DDR_PHY_IMPEDANCE 40000
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
 
+#define CONFIG_DDR3_DFLAGS 	"-DCONFIG_DDR3_M15T1G1664A_2C"
+#define CONFIG_DDR2_DFLAGS	"-DCONFIG_DDR2_M14D1G1664A"
+#define CONFIG_LPDDR2_DFLAGS	""
+#define CONFIG_LPDDR3_DFLAGS	""
+#define CONFIG_LPDDR_DFLAGS	""
+
+
+#endif
 /**
  * Environment
  **/
@@ -97,6 +124,7 @@
 /**
  * Drivers configuration.
  */
+
 /* I2C */
 #define CONFIG_INGENIC_SOFT_I2C
 
@@ -110,16 +138,7 @@
 #define CONFIG_SFC_NOR_RATE    		150000000
 #define CONFIG_SFC_NAND_RATE	    150000000
 #define CONFIG_SPL_VERSION_OFFSET	16
-#define CONFIG_SPIFLASH_PART_OFFSET	(0x6800)
-
-/*
- *  SPINAND MAC SN : the product of customer add partition of sequence code.
- */
-#define CONFIG_JZ_SPINAND_MAC
-#define CONFIG_MAC_SIZE	    (1 * 1024 * 1024)
-#define CONFIG_JZ_SPINAND_SN
-#define CONFIG_SN_SIZE	    (1 * 1024 * 1024)
-
+#define CONFIG_SPIFLASH_PART_OFFSET	(0x6400)
 
 /* MMC */
 #define CONFIG_GENERIC_MMC		1
@@ -223,9 +242,9 @@
 #define CONFIG_USB_SELF_POLLING
 #define CONFIG_USB_PRODUCT_ID           0xc309
 #define CONFIG_USB_VENDOR_ID            0xa108
-#define CONFIG_BURNER_CPU_INFO          "BOOTx1630"
+#define CONFIG_BURNER_CPU_INFO          "BOOTx1830"
 #define CONFIG_USB_GADGET_VBUS_DRAW     500
-#define CONFIG_BURNER_PRIDUCT_INFO      "X1630 USB Boot Device"
+#define CONFIG_BURNER_PRIDUCT_INFO      "X1830 USB Boot Device"
 
 /*RTC*/
 #define CONFIG_CMD_DATE

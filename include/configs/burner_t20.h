@@ -1,8 +1,9 @@
 /*
  * Ingenic burner configuration
  *
- * Copyright (c) 2017  Ingenic Semiconductor Co.,Ltd
+ * Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
@@ -28,7 +29,7 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
-#define CONFIG_X1630		/* X1630 SoC */
+#define CONFIG_X1520		/* X1520 SoC */
 #define CONFIG_XBURST_TRAPS
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
@@ -36,16 +37,12 @@
 /**
  * PLL
  **/
-#define CONFIG_SYS_APLL_FREQ            900000000       /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD            ((74 << 20) | (1 << 14) | (1 << 11) | (2<<5))
-#define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
+#define CONFIG_SYS_APLL_FREQ		0	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		0	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_VPLL_FREQ		1200000000	/*If VPLL not use mast be set 0*/
 
-#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		(500000000)
-#define CONFIG_SYS_CPCCR_SEL		((2 << 30)| (1 << 28) | (2 << 26) | (2 << 24)   \
-						| (11 << 16) | (5 << 12) | (5 << 8)     \
-						| (1 << 4) | (0 << 0))
+#define CONFIG_SYS_MEM_FREQ		0
+#define CONFIG_SYS_CPU_FREQ		0
 
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
@@ -64,23 +61,14 @@
 #define CONFIG_SYS_UART_INDEX		1
 #define CONFIG_BAUDRATE			115200
 
-/**
+/*
  * DDR
- **/
-
-#define CONFIG_DDR_INNOPHY
-#define CONFIG_X1XXX_INNOPHY
+ */
 #define CONFIG_DDR_TYPE_DDR2
-#define CONFIG_DDR_PARAMS_CREATOR
-#define CONFIG_DDR_HOST_CC
-#define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-#define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_DDR2_M14D5121632A
-#define DDR2_CHIP_DRIVER_OUT_STRENGTH 0
-#define CONFIG_DDR_PHY_IMPEDANCE 40000
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
+#define CONFIG_DDR_AUTO_SELF_REFRESH
+#define CONFIG_DWC_DEBUG
+
+
 
 /**
  * Environment
@@ -106,19 +94,12 @@
 #define CONFIG_MTD_SFCNOR
 #define CONFIG_MTD_SFCNAND
 #define CONFIG_JZ_SFC
+#define CONFIG_SFC_NAND_RATE        100000000
+#define CONFIG_SFC_NOR_RATE			150000000
+#define CONFIG_SPL_VERSION_OFFSET   16
+#define CONFIG_JZ_SFC_PA
 #define CONFIG_JZ_SFC_NOR
-#define CONFIG_SFC_NOR_RATE    		150000000
-#define CONFIG_SFC_NAND_RATE	    150000000
-#define CONFIG_SPL_VERSION_OFFSET	16
-#define CONFIG_SPIFLASH_PART_OFFSET	(0x6800)
-
-/*
- *  SPINAND MAC SN : the product of customer add partition of sequence code.
- */
-#define CONFIG_JZ_SPINAND_MAC
-#define CONFIG_MAC_SIZE	    (1 * 1024 * 1024)
-#define CONFIG_JZ_SPINAND_SN
-#define CONFIG_SN_SIZE	    (1 * 1024 * 1024)
+#define CONFIG_SFC_NOR
 
 
 /* MMC */
@@ -185,6 +166,7 @@
 #define CONFIG_SPL_TEXT_BASE		0x80001800
 #define CONFIG_SPL_MAX_SIZE		(26 * 1024)
 #define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPIFLASH_PART_OFFSET     (25 * 1024)
 
 /*
  *MTD
@@ -201,8 +183,8 @@
 #define CONFIG_SYS_LOAD_ADDR		0x88000000
 
 #define CONFIG_CMD_JFFS2
-#define CONFIG_JFFS2_NAND	1
-#define CONFIG_JFFS2_DEV	"nand0"
+#define CONFIG_JFFS2_NAND		1
+#define CONFIG_JFFS2_DEV		"nand0"
 #define CONFIG_JFFS2_PART_OFFSET	0x800000	/*jffs2 offset*/
 #define CONFIG_JFFS2_PART_SIZE		0x7800000	/* jffs2  part size*/
 
@@ -217,15 +199,14 @@
 #define CONFIG_BURNER
 #define CONFIG_USB_GADGET
 #define CONFIG_USB_JZ_BURNER_GADGET
-#define CONFIG_JZ_VERDOR_BURN_EXTPOL
 #define	CONFIG_JZ_VERDOR_BURN_FUNCTION
 #define CONFIG_USB_JZ_DWC2_UDC_V1_1
 #define CONFIG_USB_SELF_POLLING
-#define CONFIG_USB_PRODUCT_ID           0xc309
+#define CONFIG_USB_PRODUCT_ID           0xC309
 #define CONFIG_USB_VENDOR_ID            0xa108
-#define CONFIG_BURNER_CPU_INFO          "BOOTx1630"
+#define CONFIG_BURNER_CPU_INFO          "BOOTx1520"
 #define CONFIG_USB_GADGET_VBUS_DRAW     500
-#define CONFIG_BURNER_PRIDUCT_INFO      "X1630 USB Boot Device"
+#define CONFIG_BURNER_PRIDUCT_INFO      "X1520 USB Boot Device"
 
 /*RTC*/
 #define CONFIG_CMD_DATE

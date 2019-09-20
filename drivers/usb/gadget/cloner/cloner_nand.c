@@ -181,6 +181,7 @@ int nand_mtd_raw_program(struct cloner *cloner)
 	u32 startaddr = cloner->cmd->write.partition + (cloner->cmd->write.offset);
 	char command[128];
 	int ret = 0;
+	char * readbuf = NULL;
 
 	if (!spl_is_complete_or_no_spl(startaddr, length))
 		goto out;
@@ -216,6 +217,25 @@ int nand_mtd_raw_program(struct cloner *cloner)
 	}
 	cloner->full_size = 0;
 	BURNNER_PRI("...ok\n");
+
+	if (debug_args->write_back_chk) {
+		if (!readbuf) {
+			readbuf = malloc(READBUF_SIZE);
+			if (!readbuf) {
+				printf("malloc read buffer spaces error!\n");
+				return -1;
+			}
+		}
+		memset(readbuf,0,READBUF_SIZE);
+		memset(command, 0 , 128);
+		sprintf(command,"nand read.skip 0x%x 0x%x 0x%x",readbuf,startaddr, length);
+		run_command(command,0);
+		ret = buf_compare(databuf,readbuf,length,startaddr);
+		if (ret) {
+			return -1;
+		}
+
+	}
 	return 0;
 out:
 	BURNNER_PRI("...error\n");

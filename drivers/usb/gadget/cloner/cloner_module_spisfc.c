@@ -10,27 +10,12 @@ struct spi_param *spi_args;
 #endif
 #ifdef CONFIG_MTD_SPINAND
 #include "cloner_spinand.c"
+extern unsigned int ssi_rate;
 #endif
 #ifdef CONFIG_MTD_SFCNAND
 #include "cloner_sfcnand.c"
 #endif
 
-int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
-{
-	unsigned int i,val = 0;
-	unsigned int *buf1 = (unsigned int *)org_data;
-	unsigned int *buf2 = (unsigned int *)read_data;
-	for(i = 0; i < len / 4; i++)
-	{
-		if(buf1[i] != buf2[i])
-		{
-			printf("XXXXXXXXXX  compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x  len = %d\n",
-					i, buf1[i], i, buf2[i], offset + i * 4, len);
-			val = -1;
-		}
-	}
-	return val;
-}
 
 int clmd_spisfc_info(struct cloner *cloner)
 {
@@ -89,6 +74,7 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 	}
 #endif
 #ifdef CONFIG_MTD_SPINAND
+	ssi_rate = CONFIG_SPI_RATE;
 	if(policy_args->use_spi_nand){
 		get_burner_nandinfo(spi_args->flash_info, &nand_param_from_burner);
 		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);

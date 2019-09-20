@@ -1,7 +1,7 @@
 /*
- * Ingenic isvp setup code
+ * Ingenic burner setup code
  *
- * Copyright (c) 2017 Ingenic Semiconductor Co.,Ltd
+ * Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@
 #include <netdev.h>
 #include <asm/gpio.h>
 #include <asm/arch/cpm.h>
+#include <asm/arch/nand.h>
 #include <asm/arch/mmc.h>
 #include <asm/jz_uart.h>
 #include <asm/arch/clk.h>
@@ -36,23 +37,22 @@ struct global_info ginfo __attribute__ ((section(".data")));
 extern struct jz_uart *uart;
 #endif
 
+
 struct cgu_clk_src cgu_clk_src[] = {
-	{HELIX, MPLL},
+	{VPU, MPLL},
 	{MACPHY, MPLL},
 	{MSC, APLL},
 	{SSI, MPLL},
 	{CIM, VPLL},
 	{ISP, MPLL},
-	{I2S, VPLL}, //i2s使用VPLL
+	{I2S, APLL},
 	{SRC_EOF,SRC_EOF}
 };
 
-#ifdef CONFIG_SYS_NAND_SELF_INIT
 void board_nand_init(void)
 {
 	    return 0;
 }
-#endif
 
 int board_early_init_f(void)
 {
@@ -72,6 +72,11 @@ void board_usb_init(void)
 }
 #endif /* CONFIG_USB_GADGET */
 
+int misc_init_r(void)
+{
+	return 0;
+}
+
 #ifdef CONFIG_MMC
 int board_mmc_init(bd_t *bd)
 {
@@ -80,10 +85,19 @@ int board_mmc_init(bd_t *bd)
 }
 #endif
 
+#ifdef CONFIG_DRIVER_DM9000
+
+int board_eth_init(bd_t *bis)
+{
+	return 0;
+}
+
+#endif /* CONFIG_DRIVER_DM9000 */
+
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: burner_x1630 (Ingenic XBurst T30 SoC)\n");
+	puts("Board: burner_x1520 (Ingenic XBurst T20 SoC)\n");
 	return 0;
 }
 

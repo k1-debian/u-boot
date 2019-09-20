@@ -18,14 +18,22 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 		printf("Not found mmc parameters\n");
 		return -EINVAL;
 	}
-	int dev = 0;
-	struct mmc *mmc = find_mmc_device(dev);
+
 	uint32_t blk, blk_end, blk_cnt;
 	uint32_t erase_cnt = 0;
 	int timeout = 30000;
 	int i;
 	int ret;
+	int dev = 0;
 
+	if (policy_args->use_mmc0)
+		dev = 0;
+	else if (policy_args->use_mmc1)
+		dev = 1;
+	else if (policy_args->use_mmc2)
+		dev = 2;
+
+	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
 		printf("no mmc device at slot %x\n", dev);
 		return -ENODEV;
@@ -92,21 +100,17 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 
 int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
-#define MMC_BYTE_PER_BLOCK 512
 	int dev = sub_type;
-	struct mmc *mmc = find_mmc_device(dev);
 	u32 blk = (cloner->cmd->write.partition + cloner->cmd->write.offset)/MMC_BYTE_PER_BLOCK;
 	u32 cnt = (cloner->cmd->write.length + MMC_BYTE_PER_BLOCK - 1)/MMC_BYTE_PER_BLOCK;
 	void *addr = (void *)cloner->write_req->buf;
 	u32 n;
 
+	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
 		printf("no mmc device at slot %x\n", dev);
 		return -ENODEV;
 	}
-
-	//debug_cond(BURNNER_DEBUG,"\nMMC write: dev # %d, block # %d, count %d ... ",
-	BURNNER_PRI("MMC write: dev # %d, block # %d, count %d ... ", dev, blk, cnt);
 
 	mmc_init(mmc);
 
@@ -115,8 +119,9 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 		return -EPERM;
 	}
 
+	BURNNER_PRI("MMC write: dev # %d, block # %d, count %d ... ", dev, blk, cnt);
+
 	n = mmc->block_dev.block_write(dev, blk, cnt, addr);
-	//debug_cond(BURNNER_DEBUG,"%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 	BURNNER_PRI("%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 
 	if (n != cnt)

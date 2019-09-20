@@ -191,6 +191,8 @@ void board_init_f(ulong dummy)
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
+#else
+	printf("run firmware finished\n");
 #endif
 }
 

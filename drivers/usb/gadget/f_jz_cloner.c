@@ -49,6 +49,24 @@ static bool is_security = false;
 static bool is_bootfile = false;
 #endif
 
+int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
+{
+	unsigned int i,val = 0;
+	unsigned int *buf1 = (unsigned int *)org_data;
+	unsigned int *buf2 = (unsigned int *)read_data;
+	for(i = 0; i < len / 4; i++)
+	{
+		if(buf1[i] != buf2[i])
+		{
+			printf("XXXXXXXXXX  compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x  len = %d\n",
+					i, buf1[i], i, buf2[i], offset + i * 4, len);
+			val = -1;
+		}
+	}
+	return val;
+}
+
+
 
 /**
  * cloner module manage

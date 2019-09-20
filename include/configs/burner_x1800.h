@@ -31,42 +31,17 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1800		/* X1800 SoC */
 #define CONFIG_XBURST_TRAPS
-
-
-/*#define CONFIG_LITE_VERSION*/
-#ifdef CONFIG_LITE_VERSION
-#define CONFIG_SYS_APLL_FREQ		712704000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD		((59 << 20) | (2 << 14) | (1 << 11) | (1 << 8))
-#define CONFIG_SYS_APLL_FRAC		0x645a1c
-#else
-/**
- * 1409.024MHz
- */
-/*
-#define CONFIG_SYS_APLL_FREQ		1409024000	If APLL not use mast be set 0
-#define CONFIG_SYS_APLL_MNOD		((176 << 20) | (3 << 14) | (1 << 11) | (1 << 8))
-#define CONFIG_SYS_APLL_FRAC		0x20C49C
-*/
+#define CONFIG_SYS_HZ			1000 /* incrementer freq */
+#define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 
 /**
- * 1474.56MHz
- * 184 = 1472 / 8
- * 360 = 1472 / 4.096 + 1
- * 1474.56 = 360 * 4.096
- * 2.56 = 1474.56 - 1472
- * 5368709.12 = 2.56 * 3 * 1024 * 1024 * 16
- * 0x51EB85 == 5368709
- */
-#define CONFIG_SYS_APLL_FREQ        1474560000   /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD        ((184 << 20) | (3 << 14) | (1 << 11) | (1 << 8))
-#define CONFIG_SYS_APLL_FRAC        0x51EB85
-#endif
-#ifdef CONFIG_LOW_POWER_MODE
-#define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
-#else
-#define CONFIG_SYS_MPLL_FREQ		1000000000	/*If MPLL not use mast be set 0*/
+ * PLL
+ **/
+#define CONFIG_SYS_APLL_FREQ            900000000       /*If APLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_MNOD            ((74 << 20) | (1 << 14) | (1 << 11) | (2<<5))
+#define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
 
-#endif
 #define SEL_SCLKA		2
 #define SEL_CPU			1
 #define SEL_H0			2
@@ -98,23 +73,26 @@
 #define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
 #define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
 
-#define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
-#define CONFIG_SYS_HZ			1000 /* incrementer freq */
-
+/**
+ * CACHE
+ **/
 #define CONFIG_SYS_DCACHE_SIZE		32768
 #define CONFIG_SYS_ICACHE_SIZE		32768
 #define CONFIG_SYS_CACHELINE_SIZE	32
 
+/**
+ * DEBUG
+ **/
 #define CONFIG_SERIAL
 #define CONFIG_SYS_UART_INDEX		1
 #define CONFIG_BAUDRATE			115200
 
-/*#define CONFIG_DDR_TEST_CPU
-#define CONFIG_DDR_TEST*/
+/**
+ * DDR
+ **/
+
 
 #define CONFIG_DDR_AUTO_SELF_REFRESH
-/*#define CONFIG_SPL_DDR_SOFT_TRAINING*/
-
 
 #define CONFIG_DDR_TYPE_DDR2
 #define CONFIG_DDR_PARAMS_CREATOR
@@ -206,7 +184,7 @@
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
 #define CONFIG_SYS_SDRAM_BASE		0x80000000 /* cached (KSEG0) address */
-#define CONFIG_SYS_SDRAM_MAX_TOP	0x90000000 /* don't run into IO space */
+#define CONFIG_SYS_SDRAM_MAX_TOP	0x84000000 /* don't run into IO space */
 #define CONFIG_SYS_INIT_SP_OFFSET	0x400000
 #define CONFIG_SYS_LOAD_ADDR		0x88000000
 #define CONFIG_SYS_MEMTEST_START	0x80000000

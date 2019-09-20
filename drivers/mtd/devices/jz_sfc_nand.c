@@ -52,6 +52,61 @@ static struct nand_ecclayout gd5f_ecc_layout_128 = {
 	.oobavail = 0,
 };
 
+
+static int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val)
+{
+	struct sfc_transfer transfer;
+
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
+
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = 0x0f;
+
+	transfer.addr_len = 1;
+	transfer.addr = addr;
+
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.len = 1;
+	transfer.data = val;
+	transfer.direction = GLB_TRAN_DIR_READ;
+
+	transfer.ops_mode = CPU_OPS;
+
+	if(sfc_sync(flash->sfc, &transfer)) {
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+	return 0;
+}
+
+static int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8_t val)
+{
+	struct sfc_transfer transfer;
+
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
+
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = 0x1f;
+
+	transfer.addr_len = 1;
+	transfer.addr = addr;
+
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.len = 1;
+	transfer.data = &val;
+	transfer.direction = GLB_TRAN_DIR_WRITE;
+
+	transfer.ops_mode = CPU_OPS;
+
+	if(sfc_sync(flash->sfc, &transfer)) {
+		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+	return 0;
+}
+
 static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 {
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -517,6 +572,9 @@ static void get_partition_from_spinand(struct sfc_flash *flash)
 static int32_t sfc_nand_reset(void)
 {
 	struct sfc_transfer transfer;
+	int32_t ret = 0;
+	uint8_t val = 0;
+
 	memset(&transfer, 0, sizeof(transfer));
 
 	sfc_list_init(&transfer);
@@ -531,6 +589,14 @@ static int32_t sfc_nand_reset(void)
 		printf("%s %s %d: sfc sync failed!\n", __FILE__, __func__, __LINE__);
 		return -EIO;
 	}
+	udelay(500);
+	do {
+		if((ret = sfc_nand_get_feature(flash, 0xc0, &val))) {
+			printf(" %s %s %d: sfc_nand_get_feature failed, ret = %d\n",
+					__FILE__, __func__, __LINE__, ret);
+			return ret;
+		}
+	} while(val & SPINAND_IS_BUSY);
 	return 0;
 }
 
@@ -657,61 +723,6 @@ int jz_sfcnand_register(struct jz_sfcnand_device *flash) {
 	return 0;
 }
 
-/******************************************************************/
-static int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val)
-{
-	struct sfc_transfer transfer;
-
-	memset(&transfer, 0, sizeof(transfer));
-	sfc_list_init(&transfer);
-
-	transfer.sfc_mode = TM_STD_SPI;
-	transfer.cmd_info.cmd = 0x0f;
-
-	transfer.addr_len = 1;
-	transfer.addr = addr;
-
-	transfer.cmd_info.dataen = ENABLE;
-	transfer.len = 1;
-	transfer.data = val;
-	transfer.direction = GLB_TRAN_DIR_READ;
-
-	transfer.ops_mode = CPU_OPS;
-
-	if(sfc_sync(flash->sfc, &transfer)) {
-	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
-	return 0;
-}
-
-static int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8_t val)
-{
-	struct sfc_transfer transfer;
-
-	memset(&transfer, 0, sizeof(transfer));
-	sfc_list_init(&transfer);
-
-	transfer.sfc_mode = TM_STD_SPI;
-	transfer.cmd_info.cmd = 0x1f;
-
-	transfer.addr_len = 1;
-	transfer.addr = addr;
-
-	transfer.cmd_info.dataen = ENABLE;
-	transfer.len = 1;
-	transfer.data = &val;
-	transfer.direction = GLB_TRAN_DIR_WRITE;
-
-	transfer.ops_mode = CPU_OPS;
-
-	if(sfc_sync(flash->sfc, &transfer)) {
-		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
-	return 0;
-}
-
 static int32_t sfc_nand_clear_write_protect(struct sfc_flash *flash)
 {
 	return sfc_nand_set_feature(flash, 0xa0, 0);
@@ -807,11 +818,13 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 
 	if((ret = sfc_nand_reset())) {
 		printf("ERR : sfc reset error!\n");
+		ret = -EINVAL;
 		goto failed;
 	}
 
 	if((ret = jz_sfc_nand_try_id(flash, flash_info))) {
 		printf("ERR: sfc try id error!\n");
+		ret = -EINVAL;
 		goto failed;
 	}
 
@@ -819,6 +832,7 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 
 	if((ret = sfc_nand_special_init(flash))) {
 		printf("ERR :sfcnand special init failed!\n");
+		ret = -EINVAL;
 		goto failed;
 	}
 #if defined(CONFIG_JZ_SPINAND_SN) && defined(CONFIG_JZ_SPINAND_MAC)

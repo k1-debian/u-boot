@@ -156,14 +156,16 @@ struct ParameterInfo
 struct spi_param {
 	uint32_t download_params;
 	uint32_t sfc_quad_mode;
-	uint32_t spi_erase_block_siz;
+	uint32_t spi_erase_block_size;
 	uint32_t spi_erase;
 	char* flash_info[0];
 };
 struct policy_param{
 	int use_nand_mgr;
 	int use_nand_mtd;
-	int use_mmc;
+	int use_mmc0;
+	int use_mmc1;
+	int use_mmc2;
 	uint32_t use_sfc_nor;
 	uint32_t use_sfc_nand;
 	uint32_t use_spi_nand;

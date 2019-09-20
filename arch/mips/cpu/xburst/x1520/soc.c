@@ -28,6 +28,7 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
 #include <spl.h>
+#include <asm/mipsregs.h>
 
 #ifdef CONFIG_SPL_BUILD
 /* Pointer to as well as the global data structure for SPL */
@@ -64,16 +65,10 @@ void board_init_f(ulong dummy)
 	gd = &gdata;
 
 	/* Setup global info */
-#ifndef CONFIG_CMD_BURN
+#ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
 #else
-	gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
-#endif
-
-#ifdef CONFIG_BURNER
-	gd->arch.gi->ddr_div = ((gd->arch.gi->cpufreq % gd->arch.gi->ddrfreq) == 0)
-		               ? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq)
-		               : (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq + 1);
+	burner_param_info();
 #endif
 
 	gpio_init();
@@ -86,12 +81,12 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
-printf("%s:%d\n",__func__,__LINE__);
+
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 
 #ifndef CONFIG_FPGA
 	debug("Timer init\n");
 	timer_init();
-    printf("%s:%d\n",__func__,__LINE__);
 
 #ifdef CONFIG_SPL_REGULATOR_SUPPORT
 	debug("regulator set\n");
@@ -102,30 +97,28 @@ printf("%s:%d\n",__func__,__LINE__);
 
 	debug("PLL init\n");
 	pll_init();
-    printf("%s:%d\n",__func__,__LINE__);
 
 	debug("CLK init\n");
 	clk_init();
 #endif
-    printf("%s:%d\n",__func__,__LINE__);
+
 	debug("SDRAM init\n");
-    printf("%s:%d\n",__func__,__LINE__);
 	sdram_init();
 	debug("SDRAM init ok\n");
-    printf("%s:%d\n",__func__,__LINE__);
+
 	 /*MUST access 0xa3fffffc address */
 	*(volatile unsigned int *)0xa3fffffc = 0x12345678;
 
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
 #endif
-    printf("%s:%d\n",__func__,__LINE__);
-
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
+#else
+	printf("run firmware finished\n");
 #endif
 }
 

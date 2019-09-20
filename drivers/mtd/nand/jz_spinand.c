@@ -767,7 +767,6 @@ static struct jz_spi_support_from_burner *spi_nandflash_probe(u8 *idcode,struct 
 	printf("***********************chip information*************************\n");
 	printf("param num=%x\n",param_array->para_num);
 	printf("param id=%x\n",params->id_manufactory);
-	printf("param name=%s\n",params->name);
 
 	printf("param name=%s\n",params->name);
 	printf("param page_size=%d\n",params->page_size);

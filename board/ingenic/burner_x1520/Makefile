@@ -1,10 +1,8 @@
 #
-# Ingenic X1520 makefile
+# Ingenic burner makefile
 #
 # Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
 # Author: Zoro <ykli@ingenic.cn>
-# Based on: arch/mips/cpu/xburst/jz4780/Makefile
-#           Written by Paul Burton <paul.burton@imgtec.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -24,28 +22,15 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(SOC).o
+LIB	= $(obj)lib$(BOARD).o
 
-SOBJS-y	=
-COBJS-y	= soc.o
-ifndef CONFIG_FPGA
-COBJS-y += pll.o
-COBJS-y += clk.o
-endif
-COBJS-y += ddr_set_dll.o
-COBJS-y += ../ddr_dwc.o
-COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
-COBJS-$(CONFIG_SPL_DDR_SOFT_TRAINING) += ../ddr_dqs_training.o
-COBJS-$(CONFIG_BURNER) += ../param_manage.o
+COBJS	:= board.o
 
-SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
-OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
-START	:= $(addprefix $(obj),$(START))
+SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 
-all:	$(obj).depend $(LIB)
-
-$(LIB):	$(OBJS)
-	$(call cmd_link_o_target, $(OBJS) soctype.obj)
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
+	$(call cmd_link_o_target, $(OBJS))
 
 #########################################################################
 
