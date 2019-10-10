@@ -1,60 +1,66 @@
 
 #include <efuse.h>
 #ifdef CONFIG_CMD_EFUSE
-__attribute__((weak))
-int efuse_read_id(void *buf, int length, int id)
+
+static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_data)
 {
-	return 0;
+	int ret = 0;
+	u32 id = cloner->cmd->read.offset;
+	void *addr = (void *)cloner->read_req->buf;
+	u32 length = cloner->read_req->length;
+
+	ret = efuse_read_id(addr, length, id);
+	if (ret < 0)
+		printf("efuse read error\n");
+
+	return ret * 4;
 }
 
-int efuse_program(struct cloner *cloner)
+static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
 	static int enabled = 0;
 	u32 partition, length;
 	void *addr;
-	int r = 0;
-	int id = 0, flag = 0;
-	int i = 0;
+	int ret = 0;
+
 	if(!enabled) {
-		r = efuse_init(debug_args->efuse_gpio);
-		if(r < 0) {
+		ret = efuse_init(debug_args->efuse_gpio);
+		if(ret < 0) {
 			printf("efuse init error\n");
-			return r;
+			return ret;
 		}
 		enabled = 1;
 	}
 
-	switch(cloner->cmd_type) {
-	case VR_GET_CHIP_ID:
-		id = EFUSE_R_CHIP_ID;
-		flag = 1;
-		break;
-	case VR_GET_USER_ID:
-		id = EFUSE_R_USER_ID;
-		flag = 1;
-		break;
+	partition = cloner->cmd->write.partition;
+	length = cloner->cmd->write.length;
+	addr = (void *)cloner->write_req->buf;
 
-	default:	/* write request */
-		partition = cloner->cmd->write.partition;
-		length = cloner->cmd->write.length;
-		addr = (void *)cloner->write_req->buf;
+	ret = efuse_write(addr, length, partition);
+	if (ret)
+		printf("efuse write error\n");
 
-		if (!!(r = efuse_write(addr, length, partition))) {
-			printf("efuse write error\n");
-			return r;
-		}
-		break;
-	}
-
-	if(flag) {
-		addr = (void *)cloner->ep0req->buf;
-		length = cloner->ep0req->length;
-		if ((r = efuse_read_id(addr, length, id)) < 0) {
-			printf("efuse read chip id error\n");
-			return r;
-		}
-	}
-
-	return r;
+	return ret;
 }
+
+int cloner_efuse_init(void)
+{
+	struct cloner_moudle *clmd = malloc(sizeof(struct cloner_moudle));
+	int ret;
+
+	if (!clmd)
+		return -ENOMEM;
+	clmd->medium = MAGIC_EFUSE;
+	clmd->ops = EFUSE;
+	clmd->write = clmd_efuse_write;
+	clmd->init = NULL;
+	clmd->info = NULL;
+	clmd->read = clmd_efuse_read;
+	clmd->check = NULL;
+	clmd->data = NULL;
+	printf("cloner efuse register\n");
+	return register_cloner_moudle(clmd);
+}
+CLONER_MOUDLE_INIT(cloner_efuse_init);
+
 #endif

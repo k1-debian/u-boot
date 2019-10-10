@@ -51,6 +51,47 @@ int32_t get_status(struct sfc_flash *flash, uint8_t command, uint32_t len)
 
 }
 
+int32_t set_status(struct sfc_flash *flash, uint8_t cmd, uint32_t len, uint8_t val)
+{
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+	struct spi_nor_cmd_info *wr_en = &spi_nor_info->wr_en;
+	struct sfc_transfer transfer[3];
+	int ret;
+
+	memset(transfer, 0, sizeof(transfer));
+	sfc_list_init(transfer);
+
+	/* write enable */
+	transfer[0].sfc_mode = wr_en->transfer_mode;
+	transfer[0].cmd_info.cmd = wr_en->cmd;
+
+	transfer[0].addr_len = wr_en->addr_nbyte;
+
+	transfer[0].cmd_info.dataen = DISABLE;
+	transfer[0].data_dummy_bits = wr_en->dummy_byte;
+
+	/* write ops */
+	transfer[1].sfc_mode = TM_STD_SPI;
+	transfer[1].cmd_info.cmd = cmd;
+
+	transfer[1].cmd_info.dataen = ENABLE;
+	transfer[1].len = len;
+	transfer[1].data = &val;
+	transfer[1].direction = GLB_TRAN_DIR_WRITE;
+
+	transfer[1].data_dummy_bits = 0;
+	transfer[1].ops_mode = CPU_OPS;
+	sfc_list_add_tail(&transfer[1], transfer);
+
+	ret = sfc_sync(flash->sfc, transfer);
+	if(ret) {
+		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		ret=-EIO;
+	}
+	return ret;
+}
+
 /* do nothing to set quad mode, use cmd directly */
 static int32_t set_quad_mode_cmd(struct sfc_flash *flash)
 {

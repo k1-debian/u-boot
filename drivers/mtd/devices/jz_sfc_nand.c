@@ -590,13 +590,13 @@ static int32_t sfc_nand_reset(void)
 		return -EIO;
 	}
 	udelay(500);
-	do {
-		if((ret = sfc_nand_get_feature(flash, 0xc0, &val))) {
-			printf(" %s %s %d: sfc_nand_get_feature failed, ret = %d\n",
-					__FILE__, __func__, __LINE__, ret);
-			return ret;
-		}
-	} while(val & SPINAND_IS_BUSY);
+	if((ret = sfc_nand_get_feature(flash, 0xc0, &val))) {
+		printf(" %s %s %d: sfc_nand_get_feature failed, ret = %d\n",
+				__FILE__, __func__, __LINE__, ret);
+		return ret;
+	}
+	if(val & SPINAND_IS_BUSY)
+		return -EBUSY;
 	return 0;
 }
 

@@ -559,12 +559,15 @@ int efuse_read_id(void *buf, int length, int id)
 	switch(id) {
 		case EFUSE_R_CHIP_ID:
 			offset = CHIP_ID_ADDR;
+			length = CHIP_ID_SIZE / 8;
 			break;
 		case EFUSE_R_USER_ID:
 			offset = CUT_ID_ADDR;
+			length = CUT_ID_SIZE / 8;
 			break;
 		case EFUSE_R_RN:
 			offset = RN_ADDR;
+			length = RN_SIZE / 8;
 			break;
 		default:
 			printf("Unkown id !\n");

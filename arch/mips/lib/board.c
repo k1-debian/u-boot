@@ -310,7 +310,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	bd->bi_flashoffset = 0;
 #endif
 
-#ifdef CONFIG_CMD_SFCNAND
+#if defined(CONFIG_CMD_SFCNAND) && !defined(CONFIG_BURNER)
 	sfc_nand_init();
 #endif
 #ifdef CONFIG_CMD_NAND

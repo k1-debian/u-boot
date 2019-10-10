@@ -56,6 +56,10 @@
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
 #include "jz_gpio/x1830_gpio.c"
+#elif defined (CONFIG_T31)
+#undef JZGPIO_GROUP_OFFSET
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/t31_gpio.c"
 #endif
 DECLARE_GLOBAL_DATA_PTR;
 

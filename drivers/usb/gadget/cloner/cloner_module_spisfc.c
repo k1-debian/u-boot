@@ -124,6 +124,17 @@ static int32_t clmd_spisfc_read(struct cloner *cloner, int sub_type, void *ops_d
 
 	switch(sub_type)
 	{
+#ifdef CONFIG_MTD_SFCNOR
+		case SFC_NOR:
+			ret = sfcnor_read(cloner);
+			break;
+#endif
+#if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
+		case SPI_NAND:
+		case SFC_NAND:
+			ret = spinand_read(cloner);
+			break;
+#endif
 #ifdef CONFIG_JZ_SPINAND_SN
 		case SFC_NAND_SN_READ:
 			ret = spinand_sn_read(cloner);

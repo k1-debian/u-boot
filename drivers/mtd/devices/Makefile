@@ -43,6 +43,7 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/xtx_mid0b_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/foresee_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/zetta_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/dosilicon_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/tc_nand.o
 endif
 
 

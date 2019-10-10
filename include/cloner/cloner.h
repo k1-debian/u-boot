@@ -33,8 +33,6 @@ struct spi spi;
 #define VR_FLUSH_CACHE		0x03
 #define VR_PROG_STAGE1		0x04
 #define VR_PROG_STAGE2		0x05
-#define VR_GET_CHIP_ID		0x06
-#define VR_GET_USER_ID		0x07
 #define VR_GET_ACK		0x10	/*firmware stage request*/
 #define VR_INIT			0x11
 #define VR_WRITE		0x12

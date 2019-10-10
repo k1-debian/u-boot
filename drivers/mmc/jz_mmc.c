@@ -301,7 +301,7 @@ static int jz_mmc_core_init(struct mmc *mmc)
 	/* reset */
 	jz_mmc_writel(MSC_STRPCL_RESET, priv, MSC_STRPCL);
 
-#if defined(CONFIG_M200) || defined(CONFIG_X1000) || defined(CONFIG_X1630) || defined(CONFIG_X1830) || defined(CONFIG_X1800)
+#if defined(CONFIG_M200) || defined(CONFIG_X1000) || defined(CONFIG_X1630) || defined(CONFIG_X1830) || defined(CONFIG_X1800) || defined(CONFIG_X1520) || defined(CONFIG_T31)
 	int tmp;
 	tmp = jz_mmc_readl(priv, MSC_STRPCL);
 	tmp &= ~MSC_STRPCL_RESET;

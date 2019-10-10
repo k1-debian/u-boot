@@ -1,7 +1,7 @@
 /*
- * X1520 clock common interface
+ * X1830 clock common interface
  *
- * Copyright (C) 2013 Ingenic Semiconductor Co.,Ltd
+ * Copyright (C) 2017 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
  * Based on: newxboot/modules/clk/jz4775_clk.c
  *
@@ -20,6 +20,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+/*#define DEBUG*/
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -31,10 +32,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #define DUMP_CGU_SELECT
 #ifdef DUMP_CGU_SELECT
 static char clk_name[][10] = {
-	[VPU] = {"vpu"},
+	[HELIX] = {"helix"},
 	[MACPHY] = {"macphy"},
-	/*[OTG] = {"otg"},*/
 	[I2S] = {"i2s"},
+        [SFC] = {"sfc"},
 	[SSI] = {"ssi"},
 	[CIM] = {"cim"},
 	[ISP] = {"isp"},
@@ -49,21 +50,20 @@ static char * cgu_name(int clk) {
 }
 #endif
 
-struct cgu cgu_clk_sel[CGU_CNT] = {
+struct cgu cgu_clk_sel[] = {
 	[DDR] = {1, CPM_DDRCDR, 30, CONFIG_DDR_SEL_PLL, {0, APLL, MPLL, -1}, 29, 28, 27},
-	[VPU] = {1, CPM_VPUCDR, 30, MPLL, {APLL, MPLL, VPLL, VPLL}, 29, 28, 27},
-	[MACPHY] = {1, CPM_MACCDR, 30, MPLL, {APLL, MPLL, VPLL, VPLL}, 29, 28, 27},
-	[LCD] = {1, CPM_LPCDR, 30, VPLL, {APLL, MPLL, VPLL, VPLL}, 28, 27, 26},
-	[MSC] = {1, CPM_MSC0CDR, 31, CONFIG_CPU_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
+	[MSC] = {1, CPM_MSC0CDR, 30, CONFIG_CPU_SEL_PLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27},
 	[MSC1] = {0, CPM_MSC1CDR, 0, 0, {-1, -1, -1, -1}, 29, 28, 27},
-	[I2S] = {1, CPM_I2SCDR, 30, APLL, {APLL, MPLL, VPLL, VPLL}, 29, 28, 27},
-#ifdef CONFIG_BURNER
-	[SSI] = {1, CPM_SSICDR, 31, CONFIG_DDR_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27}, /* TODO */
-#else
-	[SSI] = {1, CPM_SSICDR, 31, CONFIG_CPU_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
+	[SFC] = {1, CPM_SSICDR, 30, CONFIG_DDR_SEL_PLL, {APLL, MPLL, VPLL, EPLL}, 28, 27, 26},
+#ifndef CONFIG_BURNER
+	[HELIX] = {1, CPM_HELIXCDR, 30, MPLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27},
+	[MACPHY] = {1, CPM_MACCDR, 30, MPLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27},
+	[LCD] = {1, CPM_LPCDR, 30, VPLL, {APLL, MPLL, VPLL, EPLL}, 28, 27, 26},
+        [SSI] = {1, CPM_SSICDR, 30, CONFIG_CPU_SEL_PLL, {APLL, MPLL, VPLL, EPLL}, 28, 27, 26},
+        [I2S] = {1, CPM_I2SCDR, 30, VPLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27}, //需要再配置; i2s 使用VPLL
+	[CIM] = {1, CPM_CIMCDR, 30, VPLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27},
+	[ISP] = {1, CPM_ISPCDR, 30, MPLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27},
 #endif
-	[CIM] = {1, CPM_CIMCDR, 30, VPLL, {APLL, MPLL, VPLL, VPLL}, 29, 28, 27},
-	[ISP] = {1, CPM_ISPCDR, 30, MPLL, {APLL, MPLL, VPLL, VPLL}, 29, 28, 27},
 };
 
 void clk_prepare(void)
@@ -76,12 +76,8 @@ void clk_prepare(void)
 	for (id = 0; id < CGU_CNT; id++) {
 		cgu = &(cgu_clk_sel[id]);
 		reg = CPM_BASE + cgu->off;
-
-#ifdef CONFIG_BURNER
-		if (id == SSI)
-			continue;
-#endif
 		regval = readl(reg);
+
 		/*set div max*/
 		regval |= 0xff | (1 << cgu->ce);
 		while (readl(reg) & (1 << cgu->busy));
@@ -104,6 +100,7 @@ void clk_prepare(void)
 	}
 }
 
+/***************外设时钟源选择30 31位******************/
 void cgu_clks_set(struct cgu *cgu_clks, int nr_cgu_clks)
 {
 	int i, j, id;
@@ -117,18 +114,20 @@ void cgu_clks_set(struct cgu *cgu_clks, int nr_cgu_clks)
 	}
 
 	for(i = 0; i < nr_cgu_clks; i++) {
+		if (!cgu_clks[i].en)
+			continue;
 		for (j = 0; j < 4; j++) {
-			if (cgu_clks[i].sel_src == cgu_clks[i].sel[j] &&
-					cgu_clks[i].en == 1) {
+			if (cgu_clks[i].sel_src == cgu_clks[i].sel[j]) {
 				reg = CPM_BASE + cgu_clks[i].off;
 				xcdr = readl(reg);
 				xcdr &= ~(3 << 30);
+
 				xcdr |= j << cgu_clks[i].sel_bit;
-				if (i == SSI)//fix ssi to extal
-					xcdr &= ~(1 << 30);
+				if (i == SSI)
+					xcdr &= ~(1 << 29);
 				writel(xcdr, reg);
 #ifdef DUMP_CGU_SELECT
-				printf("%s: 0x%X: value=0x%X\n", cgu_name(i), reg, readl(reg));
+				printf("%s: 0x%X: value=0x%X j = %d\n", cgu_name(i), reg, readl(reg), j);
 #endif
 				break;
 			}
@@ -140,26 +139,22 @@ void cgu_clks_set(struct cgu *cgu_clks, int nr_cgu_clks)
 static unsigned int pll_get_rate(int pll)
 {
 	unsigned int cpxpcr = 0;
-	unsigned int m, n, od0, od1;
+	unsigned int m, n, od1,od0;
+	unsigned int fbdiv,refdiv,fdivq1=1,fdivq0=1;
+	unsigned int rate;
 
 	switch (pll) {
 	case APLL:
-#ifdef CONFIG_SYS_APLL_FRAC
-		return CONFIG_SYS_APLL_FREQ;
-#endif
 		cpxpcr = cpm_inl(CPM_CPAPCR);
 		break;
 	case MPLL:
-#ifdef CONFIG_SYS_MPLL_FRAC
-		return CONFIG_SYS_MPLL_FREQ;
-#endif
 		cpxpcr = cpm_inl(CPM_CPMPCR);
 		break;
 	case VPLL:
-#ifdef CONFIG_SYS_VPLL_FRAC
-		return CONFIG_SYS_VPLL_FREQ;
-#endif
 		cpxpcr = cpm_inl(CPM_CPVPCR);
+		break;
+	case EPLL:
+		cpxpcr = cpm_inl(CPM_CPEPCR);
 		break;
 	default:
 		return 0;
@@ -167,13 +162,20 @@ static unsigned int pll_get_rate(int pll)
 
 	m = (cpxpcr >> 20) & 0xfff;
 	n = (cpxpcr >> 14) & 0x3f;
-	od1 = (cpxpcr >> 11) & 0x7;
-	od0 = (cpxpcr >> 8) & 0x7;
+	od1 = (cpxpcr >> 11) & 0x07;
+	od0 = (cpxpcr >> 8) & 0x07;
+
+	fbdiv = m ;
+	refdiv = n ;
+    fdivq1 =  od1;
+    fdivq0 =  od0;
+
 #ifdef CONFIG_BURNER
-	return (unsigned int)((unsigned long)gd->arch.gi->extal * m / n / od0 / od1);
+	rate = (unsigned int)(((unsigned long long)gd->arch.gi->extal * fbdiv) / refdiv / fdivq0 / fdivq1);
 #else
-	return (unsigned int)((unsigned long)(CONFIG_SYS_EXTAL / 4000) * m / n / od0 / od1 * 4000);
+	rate = (unsigned int)(((unsigned long long)CONFIG_SYS_EXTAL * fbdiv)/ refdiv / fdivq0 / fdivq1);
 #endif
+	return rate;
 }
 
 static unsigned int get_ddr_rate(void)
@@ -204,20 +206,24 @@ static unsigned int get_cclk_rate(void)
 
 static unsigned int get_mac_rate(unsigned int xcdr)
 {
-	unsigned int maccdr  = cpm_inl(CPM_MACCDR);
+	(void)xcdr;
+	unsigned int rate = 0;
+	unsigned int maccdr  = cpm_inl( CPM_MACCDR );
 
-	switch (maccdr >> 31) {
+	switch ( maccdr >> 30 ) {
 	case 0:
-		pll_get_rate(APLL) / ((maccdr & 0xff) + 1);
+		rate = pll_get_rate(APLL) / ((maccdr & 0xff) + 1);
 		break;
 	case 1:
-		pll_get_rate(MPLL) / ((maccdr & 0xff) + 1);
+		rate = pll_get_rate(MPLL) / ((maccdr & 0xff) + 1);
+		break;
+	case 2:
+		rate = pll_get_rate(VPLL) / ((maccdr & 0xff) + 1);
 		break;
 	default:
 		break;
 	}
-
-	return 0;
+	return rate;
 }
 
 static unsigned int get_msc_rate(unsigned int xcdr)
@@ -226,7 +232,7 @@ static unsigned int get_msc_rate(unsigned int xcdr)
 	unsigned int mscxcdr  = cpm_inl(xcdr);
 	unsigned int ret = 1;
 
-	switch (msc0cdr >> 31) {
+	switch (msc0cdr >> 30) {
 	case 0:
 		ret = pll_get_rate(APLL) / (((mscxcdr & 0xff) + 1) * 2);
 		break;
@@ -248,17 +254,17 @@ unsigned int cpm_get_h2clk(void)
 	h2clk_div = (cpccr >> 12) & 0xf;
 
 	switch ((cpccr >> 24) & 3) {
-		case 1:
-			return pll_get_rate(APLL) / (h2clk_div + 1);
-		case 2:
-			return pll_get_rate(MPLL) / (h2clk_div + 1);
+	case 1:
+		return pll_get_rate(APLL) / (h2clk_div + 1);
+	case 2:
+		return pll_get_rate(MPLL) / (h2clk_div + 1);
 	}
-
+	return 0;
 }
 
 unsigned int clk_get_rate(int clk)
 {
-	switch (clk) {
+	switch (clk){
 	case DDR:
 		return get_ddr_rate();
 	case CPU:
@@ -277,40 +283,54 @@ unsigned int clk_get_rate(int clk)
 		return pll_get_rate(MPLL);
 	case VPLL:
 		return pll_get_rate(VPLL);
-
-
+	case EPLL:
+		return pll_get_rate(EPLL);
 	}
 
 	return 0;
 }
 
+/*
+ *  设置外设的分频值 以及 使能位
+ *
+ ***/
 void clk_set_rate(int clk, unsigned long rate)
 {
-	unsigned int cdr, src_id;
+	unsigned int cdr;
 	unsigned int pll_rate;
 	struct cgu *cgu = NULL;
-	unsigned regval = 0, reg = 0;
+	unsigned regval = 0;
 
-	if(clk >= CGU_CNT) {
+	if (clk >= CGU_CNT)	{
 		printf("set clk id error\n");
 		return;
 	}
 
 	cgu = &(cgu_clk_sel[clk]);
 	regval = cpm_inl(cgu->off);
-	pll_rate = pll_get_rate(cgu->sel_src);
 
-	if(!pll_rate) {
-		printf("clk id %d: get pll error\n", clk);
+	pll_rate = pll_get_rate(cgu->sel_src);
+	if (!pll_rate) {
+		printf("clk id %d(%d): get pll error\n", clk, cgu->sel_src);
 		return;
 	}
 
-	if(clk == MSC0 || clk == MSC1)
-		cdr = (((pll_rate + rate - 1)/rate)/2 - 1)& 0xff;
+	if (pll_rate % rate >= (rate / 2))
+		pll_rate += rate - (pll_rate % rate);
 	else
-		cdr = ((pll_rate + rate - 1)/rate - 1 ) & 0xff;
-	debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr);
-	if(clk == DDR)
+		pll_rate -= ( pll_rate % rate );
+
+	/****************低7位 分频值**************/
+	if (clk == MSC0 || clk == MSC1 )
+		cdr = ((pll_rate/rate)/2 - 1) & 0xff;
+	else
+		cdr = (pll_rate/rate - 1 ) & 0xff;
+#ifdef DUMP_CGU_SELECT
+	printf("pll_rate = %d, rate = %d, cdr = %d\n",(int)pll_rate,(int)rate, (int)cdr);
+#endif
+
+	/****************改变低30位****************/
+	if (clk == DDR)
 		regval &= ~(0xf | 0x3f << 24);
 	else
 		regval &= ~(3 << cgu->stop | 0xff);
@@ -319,14 +339,17 @@ void clk_set_rate(int clk, unsigned long rate)
 	while (cpm_inl(cgu->off) & (1 << cgu->busy))
 		;
 #ifdef DUMP_CGU_SELECT
-	printf("%s(0x%x) :0x%x\n",clk_name[clk] ,reg,  cpm_inl(cgu->off));
+	printf("%s(0x%x) :0x%x\n",clk_name[clk] ,cgu->off,  cpm_inl(cgu->off));
+	if (clk == DDR)
+		printf("cppsr 0x%x:0x%x\n", CPM_CPCSR, cpm_inl(CPM_CPCSR));
 #endif
 	return;
 }
 
 void clk_init(void)
 {
-	unsigned int reg_clkgr = cpm_inl(CPM_CLKGR);
+	/*********打开外设时钟门控开关**********************/
+	unsigned int reg_clkgr = cpm_inl(CPM_CLKGR0);
 	unsigned int reg_clkgr1 = cpm_inl(CPM_CLKGR1);
 	unsigned int gate = 0
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -335,13 +358,13 @@ void clk_init(void)
 #ifdef CONFIG_JZ_MMC_MSC1
 		| CPM_CLKGR_MSC1
 #endif
-#ifdef CONFIG_SFC_NOR
+#ifdef CONFIG_JZ_SFC
 		| CPM_CLKGR_SFC
 #endif
 		;
 
 	reg_clkgr &= ~gate;
-	cpm_outl(reg_clkgr,CPM_CLKGR);
+	cpm_outl(reg_clkgr,CPM_CLKGR0);
 
 	gate = 0
 #ifdef CONFIG_NET_GMAC
@@ -351,13 +374,14 @@ void clk_init(void)
 
 	reg_clkgr1 &= ~gate;
 	cpm_outl(reg_clkgr1,CPM_CLKGR1);
-
+	/*************设置外设的时钟源 31:30 ***************/
 	cgu_clks_set(cgu_clk_sel, ARRAY_SIZE(cgu_clk_sel));
 }
 
+/*************开启串口时钟门控**********************/
 void enable_uart_clk(void)
 {
-	unsigned int clkgr = cpm_inl(CPM_CLKGR);
+	unsigned int clkgr = cpm_inl(CPM_CLKGR0);
 
 	switch (gd->arch.gi->uart_idx) {
 #define _CASE(U, N) case U: clkgr &= ~N; break
@@ -366,14 +390,13 @@ void enable_uart_clk(void)
 	default:
 		break;
 	}
-	cpm_outl(clkgr, CPM_CLKGR);
+	cpm_outl(clkgr, CPM_CLKGR0);
 }
 
-void otg_phy_init(enum otg_mode_t mode, unsigned extclk) {
+void otg_phy_init(enum otg_mode_t mode, unsigned extclk)
+{
 #ifndef CONFIG_SPL_BUILD
-	int ext_sel = 0;
 	int tmp_reg = 0;
-	int timeout = 0x7fffff;
 
 	tmp_reg = cpm_inl(CPM_USBPCR1);
 	tmp_reg &= ~(USBPCR1_REFCLKSEL_MSK | USBPCR1_REFCLKDIV_MSK);
@@ -389,41 +412,11 @@ void otg_phy_init(enum otg_mode_t mode, unsigned extclk) {
 		tmp_reg |= USBPCR1_REFCLKDIV_48M;
 		break;
 	default:
-		ext_sel = 1;
 	case 24:
 		tmp_reg |= USBPCR1_REFCLKDIV_24M;
 		break;
 	}
 	cpm_outl(tmp_reg,CPM_USBPCR1);
-
-#if 0 /* no usb cdr in t5 */
-	/*set usb cdr clk*/
-	tmp_reg = cpm_inl(CPM_USBCDR);
-	tmp_reg &= ~USBCDR_UCS_PLL;
-	cpm_outl(tmp_reg, CPM_USBCDR);
-	if (ext_sel) {
-		unsigned int pll_rate = pll_get_rate(APLL);	//FIXME: default apll
-		unsigned int cdr = pll_rate/24000000;
-		cdr = cdr ? cdr - 1 : cdr;
-		tmp_reg |= (cdr & USBCDR_USBCDR_MSK) | USBCDR_CE_USB;
-		tmp_reg &= ~USBCDR_USB_STOP;
-		cpm_outl(tmp_reg, CPM_USBCDR);
-		while ((cpm_inl(CPM_USBCDR) & USBCDR_USB_BUSY) || timeout--);
-		tmp_reg = cpm_inl(CPM_USBCDR);
-		tmp_reg &= ~USBCDR_UPCS_MPLL;
-		tmp_reg |= USBCDR_UCS_PLL;
-		cpm_outl(tmp_reg, CPM_USBCDR);
-	} else {
-		tmp_reg |= USBCDR_USB_STOP;
-		cpm_outl(tmp_reg, CPM_USBCDR);
-		while ((cpm_inl(CPM_USBCDR) & USBCDR_USB_BUSY) || timeout--);
-	}
-	tmp_reg = cpm_inl(CPM_USBCDR);
-	tmp_reg &= ~USBCDR_USB_DIS;
-	cpm_outl(tmp_reg, CPM_USBCDR);
-	if (!timeout)
-		printf("USBCDR wait busy bit failed\n");
-#endif /* #if 0 */
 
 	tmp_reg = cpm_inl(CPM_USBPCR);
 	switch (mode) {
@@ -451,8 +444,8 @@ void otg_phy_init(enum otg_mode_t mode, unsigned extclk) {
 	cpm_outl(tmp_reg, CPM_USBPCR);
 	udelay(300);
 
-	tmp_reg = cpm_inl(CPM_CLKGR);
+	tmp_reg = cpm_inl(CPM_CLKGR0);
 	tmp_reg &= ~CPM_CLKGR_OTG;
-	cpm_outl(tmp_reg, CPM_CLKGR);
+	cpm_outl(tmp_reg, CPM_CLKGR0);
 #endif
 }

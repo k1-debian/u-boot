@@ -264,13 +264,13 @@ void handle_read(struct cloner *cloner)
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->read.ops) {
 #ifdef CONFIG_JZ_SCBOOT
-	case OPS_GET_ENCK:                             //4. send enckey to pc burner
-		cloner->ack = cpu_get_enckey(cloner->read_req->buf);
-		break;
+		case OPS_GET_ENCK:                             //4. send enckey to pc burner
+			cloner->ack = cpu_get_enckey(cloner->read_req->buf);
+			break;
 #endif
-	default:
-		cloner->ack = clmg_read(cloner);
-		break;
+		default:
+			cloner->ack = clmg_read(cloner);
+			break;
 	}
 
 	if (debug_args->transfer_data_chk)
@@ -326,11 +326,6 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 		case OPS(I2C,RAW):
 			cloner->ack = i2c_program(cloner);
 			break;
-#ifdef CONFIG_CMD_EFUSE
-		case OPS(EFUSE,RAW):
-			cloner->ack = efuse_program(cloner);
-			break;
-#endif
 		case OPS(MEMORY,RAW):
 			{
 				unsigned char *dest_addr = (void *)(cloner->cmd->write.partition + cloner->cmd->write.offset);
@@ -426,7 +421,7 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			handle_read(cloner);
 			break;
 		case VR_GET_CRC:
-			if (!cloner->ack)
+			if (cloner->ack >= 0)
 				usb_ep_queue(cloner->ep_in, cloner->read_req, 0);
 			break;
 		case VR_SYNC_TIME:
@@ -435,8 +430,6 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 		case VR_CHECK:
 			cloner->ack = handle_check(cloner);
 			break;
-		case VR_GET_CHIP_ID:
-		case VR_GET_USER_ID:
 		case VR_GET_ACK:
 		case VR_GET_CPU_INFO:
 		case VR_SET_DATA_ADDR:
@@ -517,13 +510,6 @@ int f_cloner_setup_handle(struct usb_function *f,
 		case VR_WRITE:
 			cloner->ack = -EBUSY;
 			break;
-#ifdef CONFIG_CMD_EFUSE
-		case VR_GET_CHIP_ID:
-		case VR_GET_USER_ID:
-			cloner->ep0req->length = ctlreq->wLength;
-			cloner->ack = efuse_program(cloner);
-			break;
-#endif
 		case VR_SET_DATA_ADDR:
 		case VR_SET_DATA_LEN:
 			cloner->full_size = ctlreq->wIndex | ctlreq->wValue << 16;

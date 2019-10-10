@@ -1,7 +1,7 @@
 #
-# Ingenic X1520 makefile
+# Ingenic X1830 makefile
 #
-# Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
+# Copyright (c) 2017  Ingenic Semiconductor Co.,Ltd
 # Author: Zoro <ykli@ingenic.cn>
 # Based on: arch/mips/cpu/xburst/jz4780/Makefile
 #           Written by Paul Burton <paul.burton@imgtec.com>
@@ -28,16 +28,18 @@ LIB	= $(obj)lib$(SOC).o
 
 SOBJS-y	=
 COBJS-y	= soc.o
-ifdef CONFIG_BURNER
-COBJS-y += burner_pll.o
-else
+COBJS-$(CONFIG_BURNER) += burner_pll.o
+ifndef CONFIG_BURNER
 COBJS-y += pll.o
 endif
 COBJS-y += clk.o
 COBJS-y += ddr_set_dll.o
-COBJS-y += ../ddr_dwc.o
+COBJS-y += ./ddr_innophy.o
+
+COBJS-$(CONFIG_MULT_DDR_PARAMS_CREATOR) += ddr_get_params.o
+
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
-COBJS-$(CONFIG_SPL_DDR_SOFT_TRAINING) += ../ddr_dqs_training.o
+COBJS-$(CONFIG_DDR_AUTO_REFRESH_TEST) += ../ddr_test_auto_refresh.o
 COBJS-$(CONFIG_BURNER) += ../param_manage.o
 
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
@@ -47,7 +49,7 @@ START	:= $(addprefix $(obj),$(START))
 all:	$(obj).depend $(LIB)
 
 $(LIB):	$(OBJS)
-	$(call cmd_link_o_target, $(OBJS) soctype.obj)
+	$(call cmd_link_o_target, $(OBJS))
 
 #########################################################################
 

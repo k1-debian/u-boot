@@ -73,6 +73,21 @@ static int spi_nand_skip_bad(unsigned int addr)
 	return offset;
 }
 
+int spinand_read(struct cloner *cloner)
+{
+	int ret = 0;
+	u32 addr = cloner->cmd->read.offset;
+	u32 len = cloner->cmd->read.length;
+	void *buf = (void *)cloner->read_req->buf;
+	nand_info_t *nand;
+	nand = &nand_info[0];
+
+	ret = nand_read(nand, addr, &len, buf);
+	if(ret < 0)
+		printf("%s error\n",__func__);
+
+	return ret;
+}
 
 int spinand_program(struct cloner *cloner)
 {

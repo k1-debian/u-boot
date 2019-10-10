@@ -51,6 +51,20 @@ static void add_sfc_nor_params_to_flash(unsigned char *buf)
 		*(volatile unsigned int *)(buf + 512) = 0x1111;
 }
 
+int sfcnor_read(struct cloner *cloner)
+{
+	int ret = 0;
+	u32 addr = cloner->cmd->read.offset;
+	u32 len = cloner->read_req->length;
+	void *buf = (void *)cloner->read_req->buf;
+
+	ret = sfc_nor_read(addr, len, buf);
+	if(ret < 0)
+		printf("%s error\n",__func__);
+
+	return ret;
+}
+
 int sfc_program(struct cloner *cloner)
 {
 	unsigned int bus = CONFIG_SF_DEFAULT_BUS;

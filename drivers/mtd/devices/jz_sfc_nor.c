@@ -805,7 +805,20 @@ int norflash_get_params_from_burner(unsigned char *addr)
 
 	memcpy(nor_info->nor_flash_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
 	memcpy(nor_info->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));
+
+#if 0
+	set_status(flash, SPINOR_OP_WRSR, 1, 0);
+	set_status(flash, SPINOR_OP_WRSR_1, 1, 0);
+	set_status(flash, SPINOR_OP_WRSR_2, 1, 0);
+	printf("SR0=%02x\n", get_status(flash, SPINOR_OP_RDSR, 1));
+	printf("SR1=%02x\n", get_status(flash, SPINOR_OP_RDSR_1, 1));
+	printf("SR2=%02x\n", get_status(flash, SPINOR_OP_RDSR_2, 1));
+#endif
 	sfc_nor_do_special_func();
+
+	printf("SR0=%02x\n", get_status(flash, SPINOR_OP_RDSR, 1));
+	printf("SR1=%02x\n", get_status(flash, SPINOR_OP_RDSR_1, 1));
+	printf("SR2=%02x\n", get_status(flash, SPINOR_OP_RDSR_2, 1));
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	printf("partition num=%d\n", nor_info->norflash_partitions->num_partition_info);
