@@ -38,7 +38,7 @@ static int get_signature(const int signature)
 {
 	unsigned int flag = cpm_get_scrpad();
 
-	printf("RECOVERY_SIGNATURE: %x\n", flag);
+	//printf("RECOVERY_SIGNATURE: %x\n", flag);
 	if ((flag & 0xffff) == signature) {
 		/*
 		 * Clear the signature,
