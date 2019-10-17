@@ -5,14 +5,16 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          7
+#define GD_DEVICES_NUM          9
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
 #define	TSHSL_W		20
 
 #define TRD		80
-#define TRD_4G		120
+#define TRD_4G	120
+#define TRD_UE	25
+#define TPP_UE	600
 #define TPP		700
 #define TBE		5
 
@@ -154,6 +156,48 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 	    .need_quad = 1,
 	},
 
+	[7] = {
+		/*GD5F2GQ5UE*/
+	    .pagesize = 2 * 1024,
+	    .blocksize = 2 * 1024 * 64,
+	    .oobsize = 128,
+	    .flashsize = 2 * 1024 * 64 * 2048,
+
+	    .tSETUP  = TSETUP,
+	    .tHOLD   = THOLD,
+	    .tSHSL_R = TSHSL_R,
+	    .tSHSL_W = TSHSL_W,
+
+	    .tRD = TRD_UE,
+	    .tPP = TPP_UE,
+	    .tBE = TBE,
+
+	    .ecc_max = 0x4,
+
+	    .need_quad = 1,
+	},
+
+	[8] = {
+		/*GD5F4GQ6UE*/
+	    .pagesize = 2 * 1024,
+	    .blocksize = 2 * 1024 * 64,
+	    .oobsize = 128,
+	    .flashsize = 2 * 1024 * 64 * 4096,
+
+	    .tSETUP  = TSETUP,
+	    .tHOLD   = THOLD,
+	    .tSHSL_R = TSHSL_R,
+	    .tSHSL_W = TSHSL_W,
+
+	    .tRD = TRD_UE,
+	    .tPP = TPP_UE,
+	    .tBE = TBE,
+
+	    .ecc_max = 0x4,
+
+	    .need_quad = 1,
+	},
+
 };
 
 static struct device_id_struct device_id[GD_DEVICES_NUM] = {
@@ -164,6 +208,8 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4]),
 	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5]),
 	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
+	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[7]),
+	DEVICE_ID_STRUCT(0x55, "GD5F4GQ6UE",&gd_param[8]),
 };
 
 static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -178,6 +224,7 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
 		    addr_len = 3;
 		    break;
 	    case 0xD1 ... 0xD4:
+	    case 0x52 ... 0x55:
 		    addr_len = 2;
 		    break;
 	    default:
@@ -215,6 +262,7 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 		    addr_len = 3;
 		    break;
 	    case 0xD1 ... 0xD4:
+	    case 0x52 ... 0x55:
 		    addr_len = 2;
 		    break;
 	    default:
@@ -323,6 +371,7 @@ retry:
 			}
 			break;
 		case 0xD1 ... 0xD4:
+	    case 0x52 ... 0x55:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x3:
 					ret = 0x8;
