@@ -179,7 +179,7 @@ static void dwc_otg_core_reset(struct dwc2_core_regs *regs)
 	 * NOTE: This long sleep is _very_ important, otherwise the core will
 	 *       not stay in host mode after a connector ID change!
 	 */
-	mdelay(100);
+	mdelay(CONFIG_DWC2_OTG_CORE_RESET_WAITTIME);
 }
 
 #if defined(CONFIG_DM_USB) && defined(CONFIG_DM_REGULATOR)
