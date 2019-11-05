@@ -273,7 +273,7 @@ void clk_init(void)
 #ifdef CONFIG_JZ_SPI1
 		| CPM_CLKGR_SSI1
 #endif
-#ifdef CONFIG_NET_GMAC
+#ifdef CONFIG_NET_X2000
 		| CPM_CLKGR_MAC
 #endif
 		;

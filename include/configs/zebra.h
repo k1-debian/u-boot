@@ -1,6 +1,4 @@
-/*
- * Ingenic Seal configuration on SOC X2000.
- *
+ /*
  * Copyright (c) 2016 Ingenic Semiconductor Co.,Ltd
  * Author: cxtan <chenxi.tan@ingenic.cn>
  *
@@ -19,9 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __SEAL__
-#define	__SEAL__
-
+#ifndef __ZEBRA__
+#define	__ZEBRA__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -29,17 +26,9 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST2
 #define CONFIG_SYS_LITTLE_ENDIAN
-#define CONFIG_X2000		/* X2000 SoC */
+#define CONFIG_X2000_V12	/* x2000_v12 SoC */
 
 
-#if defined(CONFIG_FPGA)
-#define CONFIG_SYS_APLL_FREQ		24000000	/*If APLL not use mast be set 0*/
-/* #define CONFIG_SYS_MPLL_FREQ		-1		/\*If MPLL not use mast be set 0*\/ */
-#define CONFIG_CPU_SEL_PLL		APLL
-#define CONFIG_DDR_SEL_PLL		APLL
-#define CONFIG_SYS_CPU_FREQ		24000000
-#define CONFIG_SYS_MEM_FREQ		24000000
-#else
 #define CONFIG_SYS_APLL_FREQ		600000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
@@ -47,12 +36,12 @@
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		600000000
 #define CONFIG_SYS_MEM_FREQ		300000000
-#endif
 
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
 		{LCD, MPLL},			\
-		{MSC, MPLL},			\
+		{MSC0, MPLL},			\
+		{MSC2, MPLL},			\
 		{SFC, MPLL},			\
 		{CIM, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
@@ -60,6 +49,7 @@
 
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
+
 
 
 /**
@@ -93,19 +83,31 @@
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
 /* #define CONFIG_DDR_TYPE_DDR3 */
+/* #define CONFIG_DDR_TYPE_LPDDR3 */
 #define CONFIG_DDR_TYPE_LPDDR2
-
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 /*#define CONFIG_DDR3_TSD34096M1333C9_E*/
-/* #define CONFIG_DDR3_TSD34096M1333C9_E_FPGA */
-#define CONFIG_LPDDR2_EDBA232B2PB_1DF
-/* #define CONFIG_FMT4D32UAB_25LC_LPDDR2 */
+
+#ifdef CONFIG_DDR_TYPE_LPDDR2
+	#define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA
+	/* #define CONFIG_LPDDR2_AD210032F_AB_FPGA */
+#endif
+
+#ifdef CONFIG_DDR_TYPE_DDR3
+	#define CONFIG_DDR3_TSD34096M1333C9_E_FPGA
+#endif
+
+#ifdef CONFIG_DDR_TYPE_LPDDR3
+	#define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA
+	/* #define CONFIG_LPDDR3_AD310032C_AB_FPGA */
+#endif
+
 #define CONFIG_DDR_PHY_IMPEDANCE 40
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE 120
-/* #define CONFIG_FPGA_TEST */
-/* #define CONFIG_DDR_AUTO_REFRESH_TEST */
+#define CONFIG_FPGA_TEST
+/*#define CONFIG_DDR_AUTO_REFRESH_TEST*/
 
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
@@ -229,7 +231,7 @@
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
 
-#define CONFIG_JZ_MMC_MSC0_PF   //set gpio
+#define CONFIG_JZ_MMC_MSC0_PD   //set gpio
 /*#define CONFIG_MMC_TRACE		// only for DEBUG*/
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
@@ -250,17 +252,34 @@
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
 
+#ifdef CONFIG_JZ_MMC_MSC2
+#define CONFIG_GENERIC_MMC
+#define CONFIG_MMC
+#define CONFIG_SDHCI
+#define CONFIG_MMC_SPL_PARAMS
+#define CONFIG_JZ_SDHCI
+/*#define CONFIG_MMC_SDMA*/
+
+/* MSC Command configuration */
+#define CONFIG_CMD_MMC
+
+#define CONFIG_JZ_MMC_MSC2_PE   //set gpio
+/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
+/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
+#endif
+
 /* SFC */
 
 #define CONFIG_SFC_RATE			48000000
+#define CONFIG_SFC_V20
 
 #ifdef CONFIG_SPL_SFC_NOR
 #define CONFIG_JZ_SFC
+#define CONFIG_MTD_SFCNOR
 #define CONFIG_CMD_SFC_NOR
-#define CONFIG_SFC_NOR_RATE    150000000
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SFC_QUAD
+/*#define CONFIG_SFC_QUAD*/
 #define CONFIG_SPIFLASH_PART_OFFSET     0x3c00
 #define CONFIG_SPI_NORFLASH_PART_OFFSET     0x3c74
 #define CONFIG_NOR_MAJOR_VERSION_NUMBER     1
@@ -275,7 +294,6 @@
 #define CONFIG_SPI_NAND_BPP                     (2048 +64)              /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
 #define CONFIG_MTD_SFCNAND
-#define CONFIG_SFC_NAND_RATE    100000000
 #define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND
@@ -289,9 +307,7 @@
 
 /* end of sfc */
 
-
-
-/* Ethernet: gmac and 9161 */
+/* Ethernet: gmac*/
 
 /* DEBUG ETHERNET */
 #define CONFIG_SERVERIP		192.168.4.13
@@ -301,20 +317,52 @@
 #define CONFIG_ETHADDR          00:11:22:33:44:55
 
 
-#define GMAC_PHY_MII    1
-#define GMAC_PHY_RMII   2
-#define GMAC_PHY_GMII   3
-#define GMAC_PHY_RGMII  4
-#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_MII
+#define GMAC_PHY_MII    0
+#define GMAC_PHY_RMII   4
+#define GMAC_PHY_GMII   0
+#define GMAC_PHY_RGMII  1
+#define CONFIG_SYS_RX_ETH_BUFFER 64
 
+#define CONFIG_NET_X2000_V12
+#ifdef CONFIG_NET_X2000_V12
+
+#define CONFIG_MAC_AXI_BUS
+
+/* Select GMAC Controller */
+#define CONFIG_GMAC0
+/*#define CONFIG_GMAC1*/
+
+/* Select GMAC Interface mode */
+#define CONFIG_RMII
+/*#define CONFIG_RGMII*/
+
+#ifdef CONFIG_RGMII
+#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RGMII
+#else
+#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RMII
+#endif
+
+#ifdef CONFIG_GMAC1
+#define CONFIG_GAMAC_MODE_CTRL_ADDR 0xb00000e8
+#define JZ_GMAC_BASE GMAC1_BASE
+#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_B
+#define CONFIG_GMAC_CRLT_PORT_PINS (0xffff << 8)
+#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_3
+#define CONFIG_GMAC_PHY_RESET	GPIO_PB(1)
+#endif
+#ifdef CONFIG_GMAC0
+#define CONFIG_GAMAC_MODE_CTRL_ADDR 0xb00000e4
+#define JZ_GMAC_BASE GMAC0_BASE
 #define CONFIG_GMAC_CRLT_PORT GPIO_PORT_C
-#define CONFIG_GMAC_CRLT_PORT_PINS (0x3ff << 0)
-#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_0
-#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_OUTPUT1
+#define CONFIG_GMAC_CRLT_PORT_PINS (0x7fff << 1)
+#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_1
+#define CONFIG_GMAC_PHY_RESET	GPIO_PB(0)
+#endif
 
-#define CONFIG_NET_X2000
+#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_OUTPUT1
 #define CONFIG_GMAC_PHY_RESET_ENLEVEL	0
-#define CONFIG_GMAC_PHY_RESET	GPIO_PF(26)
+#endif /* CONFIG_NET_X2000_V12 */
+/* end of gmac */
 
 /* GPIO */
 #define CONFIG_JZ_GPIO
@@ -340,6 +388,14 @@
 #define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
 #define CONFIG_CMD_SOURCE	/* "source" command support	*/
 #define CONFIG_CMD_GETTIME
+#define CONFIG_CMD_GPIO
+#define CONFIG_CMD_EXT2
+#define CONFIG_CMD_EXT4
+#define CONFIG_CMD_FAT
+#define CONFIG_EFI_PARTITION
+
+
+#define CONFIG_CMD_DDR_TEST	/* DDR Test Command */
 
 /**
  * Serial download configuration
@@ -489,4 +545,4 @@
 #define CONFIG_GPIO_RECOVERY           GPIO_PB(11)
 #define CONFIG_GPIO_RECOVERY_ENLEVEL   0
 
-#endif/*END OF __SEAL__*/
+#endif/*END OF __ZEBRA__*/

@@ -256,7 +256,7 @@ typedef struct DmaDescStruct
   u32   timestamphigh;  /* Higher 32 bits of the 64 bit timestamp value                                  */
   u32   data1;          /* This holds virtual address of buffer1, not used by DMA  			*/
   u32   data2;          /* This holds virtual address of buffer2, not used by DMA  			*/
-} DmaDesc;
+}__packed __aligned(8) DmaDesc;
 #else
 typedef struct DmaDescStruct
 {
@@ -1188,6 +1188,7 @@ enum DmaDescriptorStatus    /* status word of DMA descriptor */
   DescTxFirst           = 0x10000000,   /* (FS)Tx - First segment of the frame                 28                       */
   DescTxDisableCrc      = 0x08000000,   /* (DC)Tx - Add CRC disabled (first segment only)      27                       */
   DescTxDisablePadd   	= 0x04000000,   /* (DP)disable padding, added by - reyaz               26                       */
+  DescTxEnableTimestamp = 0x02000000,   /* (TTSE) Transmit Timestamp Enable               25                       */
 
   DescTxCisMask     	= 0x00c00000,   /* Tx checksum offloading control mask		       23:22			*/
   DescTxCisBypass   	= 0x00000000,   /* Checksum bypass								*/

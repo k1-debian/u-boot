@@ -124,9 +124,16 @@ static struct jzmac_reg mac[] =
 	{ 0x0044, "           MAC Addr0 Low" },
 	{ 0x0048, "          MAC Addr1 High" },
 	{ 0x004c, "           MAC Addr1 Low" },
+	{ 0x00d8, "           RGMII control status" },
 	{ 0x0100, "           MMC Ctrl Reg " },
 	{ 0x010c, "        MMC Intr Msk(rx)" },
 	{ 0x0110, "        MMC Intr Msk(tx)" },
+	{ 0x0700, "       Timestamp control" },
+	{ 0x0704, "    Sub-Second Increment" },
+	{ 0x0708, "                 Seconds" },
+	{ 0x070c, "             Nanoseconds" },
+	{ 0x0710, "          Update seconds" },
+	{ 0x0714, "      Update Nanoseconds" },
 	{ 0x0200, "    MMC Intr Msk(rx ipc)" },
 	{ 0x0738, "          AVMAC Ctrl Reg" },
 	{ 0, 0 }
@@ -187,17 +194,17 @@ __attribute__((__unused__)) static void jzmac_dump_all_regs(const char *func, in
 
 
 /* read cpm's mac phy control register */
-static u32 read_cpm_mphyc(void)
+static u32 read_cpm_mphyc(unsigned int addr)
 {
 	u32 data = 0;
-	data = *(volatile unsigned int *)(0xB00000E0);
+	data = *(volatile unsigned int *)(addr);
 	return data;
 }
 
 /* write cpm's mac phy control register */
-static void write_cpm_mphyc(u32 data)
+static void write_cpm_mphyc(u32 addr, u32 data)
 {
-	*(volatile unsigned int *)(0xB00000E0) = data;
+	*(volatile unsigned int *)(addr) = data;
 }
 
 static void jzmac_init(void) {
@@ -253,11 +260,16 @@ static void jzmac_init(void) {
 }
 static void jz47xx_mac_configure(void)
 {
-	/* pbl32 incr with rxthreshold 128 and Desc is 8 Words */
+#ifdef CONFIG_MAC_AXI_BUS
+	synopGMAC_dma_bus_mode_init(gmacdev,
+				    DmaBurstLength32 | DmaDescriptorSkip1 |
+				    DmaDescriptor8Words);
+#else
 	synopGMAC_dma_bus_mode_init(gmacdev,
 				    DmaBurstLength32 | DmaDescriptorSkip2 |
 				    DmaDescriptor8Words | DmaFixedBurstEnable |
 					0x02000000);
+#endif
 	synopGMAC_dma_control_init(gmacdev,
 				   DmaStoreAndForward | DmaTxSecondFrame |
 				   DmaRxThreshCtrl128);
@@ -407,20 +419,30 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 	tx_desc = (DmaDesc *)((unsigned long)_tx_desc | 0xa0000000);
 	rx_desc = (DmaDesc *)((unsigned long)_rx_desc | 0xa0000000);
 	flush_cache_all();
-#if (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RMII)
+
 	u32 cpm_mphyc = 0;
-	cpm_mphyc = read_cpm_mphyc();
+#if defined(CONFIG_NET_X2000_V12)
+	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
+	cpm_mphyc &= ~0x7;
+	cpm_mphyc |= CONFIG_NET_GMAC_PHY_MODE;
+	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
+#elif defined(CONFIG_NET_JZ4775)
+
+#define CONFIG_GAMAC_MODE_CTRL_ADDR (0xB00000E0)
+#if (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RMII)
+	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
 	cpm_mphyc &= ~0x7;
 	cpm_mphyc |= 0x4;
-	write_cpm_mphyc(cpm_mphyc);
+	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
 #elif (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RGMII)
-	u32 cpm_mphyc = 0;
-	cpm_mphyc = read_cpm_mphyc();
+	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
 	cpm_mphyc |= 0x1<<31;
 	cpm_mphyc &= ~0x7;
 	cpm_mphyc |= 0x1;
-	write_cpm_mphyc(cpm_mphyc);
+	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
 #endif //CONFIG_NET_GMAC_PHY_MODE
+
+#endif
 
 	/* reset GMAC, prepare to search phy */
 	if (synopGMAC_reset(gmacdev) < 0) {
@@ -442,7 +464,6 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 
 
 	gmacdev->PhyBase = 0;
-	synopGMAC_check_phy_init(gmacdev);
 
 	phy_id = synopGMAC_search_phy(gmacdev);
 	if (phy_id >= 0) {
@@ -451,6 +472,8 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 	} else {
 		printf("====>PHY not found!\n");
 	}
+
+	synopGMAC_check_phy_init(gmacdev);
 
 	jz47xx_mac_configure();
 	/* setup tx_desc */
@@ -514,7 +537,7 @@ static void jz_halt(struct eth_device *dev)
 }
 
 #ifdef CONFIG_NET_JZ4775
-static int jz_gmac_phy_reset(void)
+static void jz_gmac_phy_reset(void)
 {
 #ifndef CONFIG_FPGA
        /*  reset DM9161 */
@@ -547,18 +570,18 @@ static int jz_gmac_phy_reset(void)
 }
 #endif
 
-#ifdef CONFIG_NET_X2000
-static int jz_gmac_phy_reset(void)
+#if defined(CONFIG_NET_X2000) || defined(CONFIG_NET_X2000_V12)
+static void jz_gmac_phy_reset(void)
 {
 #ifndef CONFIG_FPGA
 	clk_set_rate(MACPHY, 50000000);
 #endif
-
 	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_SET_FUNC,\
 		      CONFIG_GMAC_CRLT_PORT_PINS);
-	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+
+	gpio_direction_output(CONFIG_GMAC_PHY_RESET, CONFIG_GMAC_PHY_RESET_ENLEVEL);
 	mdelay(10);
-	gpio_direction_output(CONFIG_GPIO_DM9161_RESET, !CONFIG_GPIO_DM9161_RESET_ENLEVEL);
+	gpio_direction_output(CONFIG_GMAC_PHY_RESET, !CONFIG_GMAC_PHY_RESET_ENLEVEL);
 	mdelay(10);
 
 	/* initialize mac gpio func*/
@@ -571,15 +594,11 @@ static int jz_gmac_phy_reset(void)
 int jz_net_initialize(bd_t *bis)
 {
 	struct eth_device *dev;
-/*
-	gmacdev = (synopGMACdevice *)malloc(sizeof(synopGMACdevice));
-	if(gmacdev == NULL) {
-		printf("synopGMACdevice malloc fail\n");
-		return -1;
-	}
-*/
 	gmacdev = &_gmacdev;
+
+#if defined(CONFIG_NET_JZ4775) || defined(CONFIG_NET_X2000)
 #define JZ_GMAC_BASE 0xb34b0000
+#endif
 	gmacdev->DmaBase =  JZ_GMAC_BASE + DMABASE;
 	gmacdev->MacBase =  JZ_GMAC_BASE + MACBASE;
 

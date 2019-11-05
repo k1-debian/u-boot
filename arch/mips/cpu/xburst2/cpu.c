@@ -43,9 +43,15 @@ void __attribute__((weak)) _machine_restart(void)
 
 	writel(TSCR_WDTSC, TCU_BASE + TCU_TSCR);
 
+#ifdef CONFIG_X2000
 	writel(0, WDT_BASE + WDT_TCNT);
+#endif
 	writel(time, WDT_BASE + WDT_TDR);
-	writel(TCSR_PRESCALE | TCSR_RTC_EN, WDT_BASE + WDT_TCSR);
+	writel(TCSR_PRESCALE | TCSR_RTC_EN
+#ifdef CONFIG_X2000_V12
+			| TCSR_CLRZ
+#endif
+			, WDT_BASE + WDT_TCSR);
 	writel(0,WDT_BASE + WDT_TCER);
 
 	printf("reset in %dms", RESET_DELAY_MS);

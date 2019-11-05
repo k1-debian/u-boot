@@ -42,6 +42,8 @@
 #include "jz_gpio/x1000_gpio.c"
 #elif defined (CONFIG_X2000)
 #include "jz_gpio/x2000_gpio.c"
+#elif defined (CONFIG_X2000_V12)
+#include "jz_gpio/x2000_v12_gpio.c"
 #elif defined (CONFIG_X1520)
 #include "jz_gpio/x1520_gpio.c"
 #elif defined (CONFIG_X1800)
