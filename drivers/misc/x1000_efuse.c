@@ -130,6 +130,7 @@ static void boost_vddq(int gpio)
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
 	} while (val);
+	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 }
 
 static void reduce_vddq(int gpio)
@@ -141,6 +142,7 @@ static void reduce_vddq(int gpio)
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
 	} while (!val);
+	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
 }
 
 static int efuse_read_data(void *buf, uint32_t start_addr, int length)
