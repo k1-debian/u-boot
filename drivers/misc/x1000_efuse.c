@@ -261,27 +261,36 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 	 * set write Programming address and data length
 	 */
 	val = 0;
-	val = addr  << 21 | data_length << 16 | 1 << 15;
+	val = addr  << 21 | data_length << 16;
 	efuse_writel(val, EFUSE_CTRL);
-	/* Connect VDDQ pin from 2.5V */
-	boost_vddq(efuse_gpio);
+
 	/*
 	 * Programming EFUSE enable
 	 */
-	val = efuse_readl(EFUSE_CTRL);
+	//val = efuse_readl(EFUSE_CTRL);
 	val |= 1 << 15;
 	efuse_writel(val, EFUSE_CTRL);
+
+	/* Connect VDDQ pin from 2.5V */
+	boost_vddq(efuse_gpio);
+
+	/* clear write done status */
+	efuse_writel(0, EFUSE_STATE);
+
 	/* enable write */
-	val = efuse_readl(EFUSE_CTRL);
+	//val = efuse_readl(EFUSE_CTRL);
 	val |= 2;
 	efuse_writel(val, EFUSE_CTRL);
+
 	/* wait write done status */
 	while(!(efuse_readl(EFUSE_STATE) & 0x2) &&  --timeout);
 
 	/* Disconnect VDDQ pin from 2.5V. */
 	reduce_vddq(efuse_gpio);
-
+	/* clear PG_EN */
 	efuse_writel(0, EFUSE_CTRL);
+	/* clear write done status */
+	efuse_writel(0, EFUSE_STATE);
 	if(!timeout) {
 		error("write efuse failed");
 		ret = -EFAULT;
