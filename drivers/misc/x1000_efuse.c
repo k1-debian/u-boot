@@ -41,8 +41,8 @@ static int efuse_gpio = -1;
 #define RN_END		(0x21F)
 #define RN_SIZE		(128)
 #define CUT_ID_ADDR	(0x220)
-#define CUT_ID_END	(0x23D)
-#define CUT_ID_SIZE	(240)
+#define CUT_ID_END	(0x22F)
+#define CUT_ID_SIZE	(128)	/* X1000 CUT_ID(USER_ID) is 128 bit */
 #define PTR_ADDR	(0x23E)
 #define PTR_END	        (0x23F)
 #define PTR_SIZE	(16)
