@@ -63,7 +63,7 @@
 					| (((DIV_H2 - 1) & 0xf) << 12)		\
 					| (((DIV_H0 - 1) & 0xf) << 8)		\
 					| (((DIV_L2 - 1) & 0xf) << 4)		\
-					| (((DIV_CPU - 1) & 0xf) << 0))
+					| (((DIV_CPU - 1) & 0xf) << 0)))
 
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
