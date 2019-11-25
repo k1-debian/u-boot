@@ -45,8 +45,12 @@ union ddrc_refcnt {
 		unsigned clk_div:3;
 		unsigned reserved4_15:12;
 		unsigned con:8;
+#ifndef CONFIG_X2000_V12
 		unsigned rfc:6;
 		unsigned reserved30_31:2;
+#else
+		unsigned reserved24_31:8;
+#endif
 	} refcnt; /* DREFCNT */
 };
 union ddrc_refcnt drefcnt;
@@ -62,7 +66,9 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 
 	tmp = ps2cycle_floor(p->private_params.ddr_base_params.tREFI);
 	/* TODO: x2000 need??*/
+#ifndef CONFIG_X2000_V12
 	tmp -= 16; // controller is add 16 cycles.
+#endif
 	if(tmp < 0){
 		out_error("tREFI[%d] is too small. check %s %d\n",
 				  p->private_params.ddr_base_params.tREFI,
@@ -82,7 +88,11 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tRFC,2) / 2;
 	if(tmp < 0)
 		tmp = 0;
+#ifdef CONFIG_X2000_V12
+	ASSERT_MASK(tmp, 8);
+#else
 	ASSERT_MASK(tmp, 6);
+#endif
 	*rfc = tmp;
 }
 static void get_dynamic_refcnt(struct ddr_params *p)
@@ -102,9 +112,10 @@ static void get_dynamic_refcnt(struct ddr_params *p)
 
 		drefcnt.refcnt.clk_div = clk_div;
 		drefcnt.refcnt.con = con;
+#ifndef CONFIG_X2000_V12
 		drefcnt.refcnt.rfc = rfc;
-		/* printf("#define DDRC_REFCNT_VALUE_%d		0x%08x\n", div, drefcnt.d32);
- */
+#endif
+/*		printf("#define DDRC_REFCNT_VALUE_%d		0x%08x\n", div, drefcnt.d32); */
 		printf("\t\tcase %d: return 0x%x; \n", div, drefcnt.d32);
 		div++;
 	} while(rate > 100000000);
@@ -194,6 +205,9 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 {
 	int tmp;
 	int div;
+#ifdef CONFIG_X2000_V12
+	unsigned int rfc;
+#endif
 	/* tWTR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	/* tRTP is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	/* tCCD is differ in lpddr & lpddr2 & ddr2 & ddr3*/
@@ -226,14 +240,22 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	 */
 	DDRC_TIMING_SET(4,ddr_base_params,tRAS,6);
 	DDRC_TIMING_SET(4,ddr_base_params,tRRD,6);
+#ifdef CONFIG_X2000_V12
+	DDRC_TIMING_SET(4,ddr_base_params,tRC,7);
+#else
 	DDRC_TIMING_SET(4,ddr_base_params,tRC,6);
+#endif
 
 
 	/**
 	 * timing5
 	 */
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tCKE,1);
+#ifdef CONFIG_X2000_V12
+	ASSERT_MASK(tmp,4);
+#else
 	ASSERT_MASK(tmp,3);
+#endif
 	ddrc->timing5.b.tCKE = tmp;
 	/* tCKSRE is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 
@@ -250,14 +272,27 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	/* tFAW is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	/* tXSR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	{
+#ifdef CONFIG_X2000_V12
+		unsigned int con, clk_div;
+#else
 		unsigned int rfc, con, clk_div;
+#endif
 		get_refcnt_value(p, &rfc, &con, &clk_div);
+#ifdef CONFIG_X2000_V12
+		ddrc->refcnt = (con << DDRC_REFCNT_CON_BIT)
+			| (clk_div << DDRC_REFCNT_CLK_DIV_BIT)
+			| DDRC_REFCNT_REF_EN
+			| DDRC_REFCNT_PREREF_EN
+			| DDRC_REFCNT_PREREF_CNT_DEFAULT;
+#else
 		ddrc->refcnt = (con << DDRC_REFCNT_CON_BIT)
 			| (clk_div << DDRC_REFCNT_CLK_DIV_BIT)
 			| DDRC_REFCNT_REF_EN
 			| DDRC_REFCNT_PREREF_EN
 			| DDRC_REFCNT_PREREF_CNT_DEFAULT
 			| rfc << DDRC_REFCNT_TRFC_BIT;
+
+#endif
 	}
 
 	/* tmp = ps2cycle_floor(p->private_params.ddr_base_params.tREFI);//???????????????????? */
@@ -288,7 +323,11 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	/* ddrc->refcnt |= tmp << DDRC_REFCNT_TRFC_BIT; */
 
 
+#ifdef CONFIG_X2000_V12
+	ddrc->autosr_cnt = (rfc << 24) | CONFIG_DDR_AUTO_SELF_REFRESH_CNT;
+#else
 	ddrc->autosr_cnt = CONFIG_DDR_AUTO_SELF_REFRESH_CNT;
+#endif
 
 	ddrc->autosr_en = 0;
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
@@ -334,6 +373,8 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 		_CASE(LPDDR, 3);	/* LPDDR:0b011 */
 		_CASE(LPDDR2, 5);	/* LPDDR2:0b101 */
 		_CASE(DDR2, 4);	    /* DDR2:0b100 */
+		_CASE(LPDDR3, 5);	/* LPDDR3:0b111 Please contact IC department for more information */
+/*		_CASE(LPDDR3, 7);	/* LPDDR3:0b111 */
 #undef _CASE
 	default:
 		out_error("don't support the ddr type.!");
@@ -468,6 +509,9 @@ void init_ddr_params_common(struct ddr_params *ddr_params,int type)
 	ddr_params->cs1 = CONFIG_DDR_CS1;
 	ddr_params->dw32 = CONFIG_DDR_DW32;
 	ddr_params->bl = DDR_BL;
+#ifdef DDR_CL
+	ddr_params->cl = DDR_CL;
+#endif
 	ddr_params->col = DDR_COL;
 	ddr_params->row = DDR_ROW;
 
@@ -528,6 +572,7 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 			ddrp->memcfg.b.memsel = P;\
 			break
 		_CASE(LPDDR2, 3);
+		_CASE(LPDDR3, 2);
 		_CASE(DDR2, 1);
 		_CASE(DDR3, 0);
 #undef _CASE
@@ -633,6 +678,7 @@ static void ddr_mr_print(struct ddr_params *p)
 	printf("#define	DDR_MR2_VALUE			0x%08x\n", p->mr2.d32);
 	printf("#define	DDR_MR3_VALUE			0x%08x\n", p->mr3.d32);
 	printf("#define	DDR_MR10_VALUE			0x%08x\n", p->mr10.d32);
+	printf("#define	DDR_MR11_VALUE			0x%08x\n", p->mr11.d32);
 	printf("#define	DDR_MR63_VALUE			0x%08x\n", p->mr63.d32);
 }
 static void sdram_size_print(struct ddr_params *p)

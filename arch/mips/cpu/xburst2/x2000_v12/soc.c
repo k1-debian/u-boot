@@ -88,11 +88,14 @@ void board_init_f(ulong dummy)
 	writel(0, WDT_BASE + WDT_TCER);
 
 	/* Init uart first */
+#ifndef CONFIG_X2000_FPGA
 	enable_uart_clk();
+#endif
 
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+#ifndef CONFIG_X2000_FPGA
 	debug("Timer init\n");
 	timer_init();
 
@@ -104,6 +107,7 @@ void board_init_f(ulong dummy)
 
 	debug("CLK init\n");
 	clk_init();
+#endif
 
 	debug("SDRAM init\n");
 	sdram_init();

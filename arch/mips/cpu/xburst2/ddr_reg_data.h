@@ -27,6 +27,7 @@ struct ddr_registers
 	uint32_t ddr_mr2;
 	uint32_t ddr_mr3;
 	uint32_t ddr_mr10;
+	uint32_t ddr_mr11;
 	uint32_t ddr_mr63;
 	uint32_t ddr_chip0_size;
 	uint32_t ddr_chip1_size;
@@ -59,6 +60,7 @@ extern struct ddr_registers *g_ddr_param;
 #define DDR_MR2_VALUE                   g_ddr_param->ddr_mr2
 #define DDR_MR3_VALUE                   g_ddr_param->ddr_mr3
 #define DDR_MR10_VALUE                  g_ddr_param->ddr_mr10
+#define DDR_MR11_VALUE                  g_ddr_param->ddr_mr11
 #define DDR_MR63_VALUE                  g_ddr_param->ddr_mr63
 #define DDR_CHIP_0_SIZE                 g_ddr_param->ddr_chip0_size
 #define DDR_CHIP_1_SIZE                 g_ddr_param->ddr_chip1_size

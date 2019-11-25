@@ -82,8 +82,13 @@ typedef union ddrc_timing4 {
 		unsigned reserved6_7:2;
 		unsigned tRAS:6;
 		unsigned reserved14_15:2;
+#ifdef CONFIG_X2000_V12
+		unsigned tRC:7;
+		unsigned reserved23:1;
+#else
 		unsigned tRC:6;
 		unsigned reserved22_23:2;
+#endif
 		unsigned tFAW:8;
 	} b;
 } ddrc_timing4_t;
@@ -93,8 +98,12 @@ typedef union ddrc_timing5 {
 	uint32_t d32;
 	/** register bits */
 	struct {
+#ifdef CONFIG_X2000_V12
+		unsigned tCKE:4;
+#else
 		unsigned tCKE:3;
 		unsigned reserved3:1;
+#endif
 		unsigned tXP:4;
 		unsigned reserved8_11:4;
 		unsigned tCKSRE:4;

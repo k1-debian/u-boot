@@ -128,4 +128,8 @@
 #ifdef CONFIG_DDR3_FM38D16SAB-8KFD
 #include "./chips/DDR3_FM38D16SAB-8KFD.h"
 #endif
+
+#ifdef CONFIG_LPDDR3_MT52L256M32D1PF_FPGA
+#include "./chips/LPDDR3_MT52L256M32D1PF_FPGA.h"
+#endif
 #endif /* __DDR_CHIPS_H__ */

@@ -216,6 +216,7 @@ unsigned int clk_get_rate(int clk)
 
 void clk_set_rate(int clk_id, unsigned long rate)
 {
+#ifndef CONFIG_X2000_FPGA
 	unsigned int cdr;
 	unsigned int pll_rate;
 	struct clk_cgu_setting *cgu = NULL;
@@ -259,6 +260,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 		;
 #ifdef DUMP_CGU_SELECT
 	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  readl(reg));
+#endif
 #endif
 	return;
 }

@@ -92,6 +92,7 @@ struct lpddr3_params {
 	uint32_t tRTP;
 	uint32_t tCCD;
 	uint32_t tFAW;
+	uint32_t tMRD;
 };
 
 struct lpddr2_params {
@@ -206,6 +207,13 @@ union ddr_mr1 {
 		unsigned MA:8;
 		unsigned reserved16_31:16;
 	} lpddr2; /* MR1 */
+	struct {
+		unsigned BL:3;
+		unsigned RSVD3_4:2;
+		unsigned nWR:3;
+		unsigned MA:8; //should 10 bit
+		unsigned reserved16_31:16;
+	} lpddr3; /* MR1 */
 };
 
 union ddr_mr2 {
@@ -233,6 +241,15 @@ union ddr_mr2 {
 		unsigned MA:8;
 		unsigned reserved16_31:16;
 	} lpddr2; /* MR2 */
+	struct {
+		unsigned RL_WL:4;
+		unsigned WRE:1;
+		unsigned RSVD5:1;
+		unsigned WL_S:1;
+		unsigned WR_L:1;
+		unsigned MA:8;
+		unsigned reserved16_31:16;
+	} lpddr3; /* MR2 */
 };
 
 union ddr_mr3 {
@@ -256,6 +273,12 @@ union ddr_mr3 {
 		unsigned MA:8;
 		unsigned reserved16_31:16;
 	} lpddr2; /* MR3 */
+	struct {
+		unsigned DS:4;
+		unsigned RSVD4_7:4;
+		unsigned MA:8;
+		unsigned reserved16_31:16;
+	} lpddr3; /* MR2 */
 };
 
 union ddr_mr10 {
@@ -267,6 +290,24 @@ union ddr_mr10 {
 		unsigned MA:8;
 		unsigned reserved16_31:16;
 	} lpddr2; /* MR_RST */
+	struct {
+		unsigned CAL_CODE:8;
+		unsigned MA:8;
+		unsigned reserved16_31:16;
+	} lpddr3; /* MR_RST */
+};
+
+union ddr_mr11 {
+	/** raw register data */
+	uint32_t d32;
+	/** register bits */
+	struct {
+		unsigned ODT:2;
+		unsigned PD:1;
+		unsigned RSVD3_7:5;
+		unsigned MA:8;
+		unsigned reserved16_31:16;
+	} lpddr3; /* MR_ODT */
 };
 
 union ddr_mr63 {
@@ -278,6 +319,11 @@ union ddr_mr63 {
 		unsigned MA:8;
 		unsigned reserved16_31:16;
 	} lpddr2; /* MR_IO_CALIBRATION */
+	struct {
+		unsigned RST:8;
+		unsigned MA:8;
+		unsigned reserved16_31:16;
+	} lpddr3; /* MR_IO_CALIBRATION */
 };
 
 
@@ -303,6 +349,7 @@ struct ddr_params {
 	union ddr_mr2 mr2;
 	union ddr_mr3 mr3;
 	union ddr_mr10 mr10;
+	union ddr_mr11 mr11;
 	union ddr_mr63 mr63;
 #endif
 };

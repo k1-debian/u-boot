@@ -44,6 +44,9 @@
 #define	UART4_BASE	0xb0034000
 #define	WDT_BASE	0xb0002000
 
+/* AHB2 BUS Devices Base */
+#define OTG_BASE	0xb3500000
+
 #define G_OST_BASE	0xb2000000
 
 #define DDRC_APB_BASE   0xb3012000

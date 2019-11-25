@@ -69,7 +69,7 @@ TOOLS	= $(DDR-y) $(MBR-y) $(GPT-y) $(SPI-y) $(MMC-y) $(SPL-y) $(LOGO-y) $(CHARGE
 TOOLS	:= $(addprefix $(obj),$(TOOLS))
 
 DDR_CREATOR_DIR := ddr_creator
-ifdef CONFIG_X2000
+ifeq ($(if $(CONFIG_X2000)$(CONFIG_X2000_V12),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x2000
 endif
 
