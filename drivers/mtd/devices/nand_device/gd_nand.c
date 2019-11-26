@@ -5,18 +5,20 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          9
+#define GD_DEVICES_NUM          10
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
 #define	TSHSL_W		20
 
+#define TRD_4G	        120
+
 #define TRD		80
-#define TRD_4G	120
-#define TRD_UE	25
-#define TPP_UE	600
 #define TPP		700
 #define TBE		5
+
+#define TRD_Q5	        25
+#define TPP_Q5	        600
 
 static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 
@@ -40,7 +42,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-		 /*GD5F2GQ4UB*/
+		/*GD5F2GQ4UB*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -137,65 +139,86 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 
 	[6] = {
 		/*GD5F1GQ4RF9IG*/
-	    .pagesize = 2 * 1024,
-	    .blocksize = 2 * 1024 * 64,
-	    .oobsize = 64,
-	    .flashsize = 2 * 1024 * 64 * 1024,
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
 
-	    .tSETUP  = TSETUP,
-	    .tHOLD   = THOLD,
-	    .tSHSL_R = TSHSL_R,
-	    .tSHSL_W = TSHSL_W,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
 
-	    .tRD = TRD,
-	    .tPP = TPP,
-	    .tBE = TBE,
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
 
-	    .ecc_max = 0x8,
+		.ecc_max = 0x8,
 
-	    .need_quad = 1,
+		.need_quad = 1,
 	},
 
 	[7] = {
 		/*GD5F2GQ5UE*/
-	    .pagesize = 2 * 1024,
-	    .blocksize = 2 * 1024 * 64,
-	    .oobsize = 128,
-	    .flashsize = 2 * 1024 * 64 * 2048,
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
 
-	    .tSETUP  = TSETUP,
-	    .tHOLD   = THOLD,
-	    .tSHSL_R = TSHSL_R,
-	    .tSHSL_W = TSHSL_W,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
 
-	    .tRD = TRD_UE,
-	    .tPP = TPP_UE,
-	    .tBE = TBE,
+		.tRD = TRD_Q5,
+		.tPP = TPP_Q5,
+		.tBE = TBE,
 
-	    .ecc_max = 0x4,
+		.ecc_max = 0x4,
 
-	    .need_quad = 1,
+		.need_quad = 1,
 	},
 
 	[8] = {
 		/*GD5F4GQ6UE*/
-	    .pagesize = 2 * 1024,
-	    .blocksize = 2 * 1024 * 64,
-	    .oobsize = 128,
-	    .flashsize = 2 * 1024 * 64 * 4096,
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 4096,
 
-	    .tSETUP  = TSETUP,
-	    .tHOLD   = THOLD,
-	    .tSHSL_R = TSHSL_R,
-	    .tSHSL_W = TSHSL_W,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
 
-	    .tRD = TRD_UE,
-	    .tPP = TPP_UE,
-	    .tBE = TBE,
+		.tRD = TRD_Q5,
+		.tPP = TPP_Q5,
+		.tBE = TBE,
 
-	    .ecc_max = 0x4,
+		.ecc_max = 0x4,
 
-	    .need_quad = 1,
+		.need_quad = 1,
+	},
+
+	[9] = {
+		/*GD5F2GQ5UF*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD_Q5,
+		.tPP = TPP_Q5,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+
+		.need_quad = 1,
 	},
 
 };
@@ -210,6 +233,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
 	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[7]),
 	DEVICE_ID_STRUCT(0x55, "GD5F4GQ6UE",&gd_param[8]),
+	DEVICE_ID_STRUCT(0x61, "GD5F2GQ5UF",&gd_param[9]),
 };
 
 static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -219,18 +243,19 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
 	uint8_t device_id = nand_info->id_device;
 	uint8_t addr_len = 0;
 	switch(device_id) {
-	    case 0xB1 ... 0xB4:
-	    case 0xA1:
-		    addr_len = 3;
-		    break;
-	    case 0xD1 ... 0xD4:
-	    case 0x52 ... 0x55:
-		    addr_len = 2;
-		    break;
-	    default:
-		    printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    addr_len = 2;
-		    break;
+		case 0xB1 ... 0xB4:
+		case 0xA1:
+		case 0x61:
+			addr_len = 3;
+			break;
+		case 0xD1 ... 0xD4:
+		case 0x52 ... 0x55:
+			addr_len = 2;
+			break;
+		default:
+			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			addr_len = 2;
+			break;
 	}
 
 	transfer->cmd_info.cmd = SPINAND_CMD_FRCH;
@@ -257,17 +282,18 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 	uint8_t device_id = nand_info->id_device;
 	uint8_t addr_len = 0;
 	switch(device_id) {
-	    case 0xB1 ... 0xB4:
-	    case 0xA1:
-		    addr_len = 3;
-		    break;
-	    case 0xD1 ... 0xD4:
-	    case 0x52 ... 0x55:
-		    addr_len = 2;
-		    break;
-	    default:
-		    printf("device_id err, please check your device id: device_id = 0x%02x\n", device_id);
-		    addr_len = 2;
+		case 0xB1 ... 0xB4:
+		case 0xA1:
+		case 0x61:
+			addr_len = 3;
+			break;
+		case 0xD1 ... 0xD4:
+		case 0x52 ... 0x55:
+			addr_len = 2;
+			break;
+		default:
+			printf("device_id err, please check your device id: device_id = 0x%02x\n", device_id);
+			addr_len = 2;
 		    break;
 	}
 	transfer->cmd_info.cmd = SPINAND_CMD_RDCH_X4;
@@ -371,7 +397,6 @@ retry:
 			}
 			break;
 		case 0xD1 ... 0xD4:
-	    case 0x52 ... 0x55:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x3:
 					ret = 0x8;
@@ -383,7 +408,29 @@ retry:
 					if((ret = gd_get_f0_register_value(flash)) < 0)
 						return ret;
 					if(((ret >> 4) & 0x3) == 0x3)
-						ret = 0x7;
+						return 0x7;
+				default:
+					ret = 0;
+					break;
+			}
+			break;
+		case 0x52 ... 0x55:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					ret = 0;
+					break;
+				case 0x01:
+					ret = 0x4;
+					break;
+				default:
+					ret = -EBADMSG;
+			}
+			break;
+		case 0x61:
+			switch((ecc_status >> 4) & 0x7) {
+				case 0x7:
+					ret = -EBADMSG;
+					break;
 				default:
 					ret = 0;
 					break;
