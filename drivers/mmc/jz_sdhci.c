@@ -60,6 +60,9 @@ static void jz_set_mmc_clk(struct sdhci_host *host, unsigned int clock)
   #ifdef CONFIG_JZ_MMC_MSC1
 	#define CPM_MSC	MSC1
   #endif
+  #ifdef CONFIG_JZ_MMC_MSC2
+	#define CPM_MSC	MSC2
+  #endif
 	/* set clk */
 	clk_set_rate(CPM_MSC, clock);
 	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d\n", __func__,
@@ -105,6 +108,9 @@ void jz_mmc_init(void)
 #endif
 #if defined(CONFIG_JZ_MMC_MSC1) && (!defined(CONFIG_SPL_BUILD) || defined(CONFIG_JZ_MMC_SPLMSC))
 	jz_sdhci_init(MSC1_BASE, 1);
+#endif
+#if defined(CONFIG_JZ_MMC_MSC2) && (!defined(CONFIG_SPL_BUILD) || defined(CONFIG_JZ_MMC_SPLMSC))
+	jz_sdhci_init(MSC2_BASE, 2);
 #endif
 }
 

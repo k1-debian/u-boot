@@ -106,12 +106,16 @@ static void msc_clk_switch(int high_frq)
 #ifdef CONFIG_FPGA
 #define CPM_MSC0_CLK_R			  (0xB0000068)
 #define CPM_MSC1_CLK_R			  (0xB00000a4)
+#define CPM_MSC2_CLK_R			  (0xB00000a8)
 #define MSC_CLK_H_FREQ			  (0x1 << 20)
   #ifdef CONFIG_JZ_MMC_MSC0
 	#define CPM_MSC_CLK_R   CPM_MSC0_CLK_R
   #endif
   #ifdef CONFIG_JZ_MMC_MSC1
 	#define CPM_MSC_CLK_R   CPM_MSC1_CLK_R
+  #endif
+  #ifdef CONFIG_JZ_MMC_MSC2
+	#define CPM_MSC_CLK_R   CPM_MSC2_CLK_R
   #endif
 	/* set clk */
 	val = readl(CPM_MSC_CLK_R);
@@ -121,13 +125,16 @@ static void msc_clk_switch(int high_frq)
 		val &= ~MSC_CLK_H_FREQ;
 	writel(val, CPM_MSC_CLK_R);
 #else //CONFIG_FPGA
-  #define MSC_INIT_CLK		200000
-  #define MSC_WORKING_CLK	24000000
+#define MSC_INIT_CLK    200000
+#define MSC_WORKING_CLK 24000000
   #ifdef CONFIG_JZ_MMC_MSC0
-	#define CPM_MSC	MSC0
+	#define CPM_MSC MSC0
   #endif
   #ifdef CONFIG_JZ_MMC_MSC1
-	#define CPM_MSC	MSC1
+	#define CPM_MSC MSC1
+  #endif
+  #ifdef CONFIG_JZ_MMC_MSC2
+	#define CPM_MSC MSC2
   #endif
 	/* TODO: set clk */
 	msc_writew(MSC_CLK_CTRL_R, MSC_SD_CLK_EN_BIT | MSC_INTERNAL_CLK_EN_BIT);
@@ -140,7 +147,7 @@ static void msc_clk_switch(int high_frq)
 
 	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d\n", __func__,
 			CPM_MSC, MSC_WORKING_CLK, clk_get_rate(CPM_MSC));
-#endif //CONFIG_FPGA
+#endif
 
 }
 
@@ -550,7 +557,6 @@ static int jzmmc_init(void)
 	u8 *resp;
 	u32 ret = 0;
 
-
 	mmc_init_host();
 
 	msc_clk_switch(0);
@@ -631,6 +637,9 @@ void spl_mmc_load_image(void)
 #endif
 #ifdef CONFIG_JZ_MMC_MSC1
 	io_base = MSC1_BASE;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC2
+	io_base = MSC2_BASE;
 #endif
 
 	jzmmc_init();
