@@ -294,7 +294,7 @@
 #define CONFIG_SYS_CBSIZE 1024 /* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 
-#define CONFIG_SYS_MONITOR_LEN		((256 * 1024) - CONFIG_SPL_PAD_TO)
+#define CONFIG_SYS_MONITOR_LEN		((512 * 1024) - CONFIG_SPL_PAD_TO)
 #define CONFIG_SYS_MALLOC_LEN		(32 * 1024 * 1024)
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
@@ -375,6 +375,37 @@
   #define CONFIG_UBOOT_OFFSET           CONFIG_SPL_PAD_TO
   #define CONFIG_SPL_VERSION            1
 #endif	/*CONFIG_SPL_NOR_SUPPORT*/
+
+#define CONFIG_LCD
+
+#ifdef CONFIG_LCD
+#define LCD_BPP             4 /* 4: 16BPP, 5: 24BPP. */
+#define CONFIG_GPIO_LCD_PWM     GPIO_PC(14)
+
+#define CONFIG_LCD_LOGO
+
+#define CONFIG_SYS_PWM_PERIOD       10000 /* Pwm period in ns */
+#define CONFIG_SYS_PWM_CHN      3  /* Pwm channel ok*/
+#define CONFIG_SYS_PWM_FULL     256
+#define CONFIG_SYS_BACKLIGHT_LEVEL  80 /* Backlight brightness is (80 / 256) */
+#define CONFIG_JZ_LCD_V14
+#define SOC_X1830
+#define CONFIG_JZ_PWM
+#define CONFIG_SYS_CONSOLE_INFO_QUIET
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+
+/*#define CONFIG_LCD_GPIO_FUNC1_SLCD*/
+#define CONFIG_VIDEO_LCD_Y88249
+
+#ifdef CONFIG_VIDEO_LCD_Y88249
+#define CONFIG_GPIO_LCD_RD 0
+#define CONFIG_GPIO_LCD_RST GPIO_PC(11)
+#define CONFIG_GPIO_LCD_CS 0
+#define CONFIG_GPIO_LCD_BL GPIO_PC(12)
+#define CONFIG_GPIO_LCD_FLAG 0
+#endif
+
+#endif /* CONFIG_LCD */
 
 /**
  * MBR & GPT configuration

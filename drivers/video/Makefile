@@ -74,6 +74,7 @@ COBJS-$(CONFIG_VIDEO_ED060XD1) += jz4775_epd/epd_panel/ED060XD1/lcd-ED060XD1.o  
 COBJS-$(CONFIG_VIDEO_KFM701A_21_1A) += jz_lcd/lcd_panel/kfm701a_21_1a.o
 COBJS-$(CONFIG_VIDEO_BYD_9177AA) += jz_lcd/lcd_panel/byd_9177aa.o
 COBJS-$(CONFIG_VIDEO_TRULY_TFT240240_2_E) += jz_lcd/lcd_panel/truly_tft240240_2_e.o
+COBJS-$(CONFIG_VIDEO_LCD_Y88249) += jz_lcd/lcd_panel/lcd_y88249.o
 COBJS-$(CONFIG_VIDEO_NHD_160128UGC3) += jz_lcd/lcd_panel/nhd_160128ugc.o
 COBJS-$(CONFIG_VIDEO_BOE_TFT320320) += jz_lcd/lcd_panel/boe_tft320320.o
 COBJS-$(CONFIG_VIDEO_EDO_E1392AM1) += jz_lcd/lcd_panel/edo_e1392am1.o
@@ -84,6 +85,7 @@ COBJS-$(CONFIG_VIDEO_JZ4775) += jz_lcd/backlight_pwm.o jz_lcd/jz4775_lcd.o
 COBJS-$(CONFIG_VIDEO_JZ4780) += jz_lcd/backlight_pwm.o jz_lcd/jz4780_lcd.o
 COBJS-$(CONFIG_JZ_LCD_V12) += jz_lcd/backlight_pwm.o jz_lcd/jz_lcd_v12.o
 COBJS-$(CONFIG_JZ_LCD_V13) += jz_lcd/backlight_pwm.o jz_lcd/jz_lcd_v13.o
+COBJS-$(CONFIG_JZ_LCD_V14) += jz_lcd/backlight_pwm.o jz_lcd/jz_lcd_v14.o
 COBJS-$(CONFIG_JZ47xx_EPD) += jz4775_epd/jz4775_epd.o
 COBJS-$(CONFIG_JZ_EPD) += jz_epd/jz_epd_v12.o
 

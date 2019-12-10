@@ -359,6 +359,9 @@ void clk_init(void)
 #ifdef CONFIG_JZ_SFC
 		| CPM_CLKGR_SFC
 #endif
+#ifdef CONFIG_LCD
+		| CPM_CLKGR_LCD
+#endif
 		;
 
 	reg_clkgr &= ~gate;
@@ -368,6 +371,7 @@ void clk_init(void)
 #ifdef CONFIG_NET_GMAC
 		| CPM_CLKGR1_GMAC
 #endif
+		| CPM_CLKGR1_AHB1
 		;
 
 	reg_clkgr1 &= ~gate;

@@ -28,6 +28,7 @@ LIB	= $(obj)lib$(BOARD).o
 
 COBJS-y	:= board.o
 COBJS-$(CONFIG_USB_DWC2) += usb_init.o
+COBJS-$(CONFIG_VIDEO_LCD_Y88249) += lcd_y88249.o
 
 SRCS	:= $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS-y))

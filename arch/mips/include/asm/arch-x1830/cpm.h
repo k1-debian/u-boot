@@ -116,6 +116,7 @@
 #define CPM_CLKGR_TCU		(1 << 30)
 #define CPM_CLKGR_RTC		(1 << 29)
 #define CPM_CLKGR_DES		(1 << 28)
+#define CPM_CLKGR_LCD		(1 << 24)
 #define CPM_CLKGR_ISP		(1 << 23)
 #define CPM_CLKGR_PDMA		(1 << 21)
 #define CPM_CLKGR_SFC		(1 << 20)

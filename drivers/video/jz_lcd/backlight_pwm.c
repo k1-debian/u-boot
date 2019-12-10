@@ -61,8 +61,10 @@ void lcd_set_backlight_level(int num)
 		++prescaler;
 	}
 	_half =_period * _val / (CONFIG_SYS_PWM_FULL);
-#ifdef SOC_X1000
+#if defined SOC_X1000 || defined SOC_X1830
+{
 	gpio_set_func(GPIO_PORT_C, GPIO_FUNC_0,1 << (CONFIG_GPIO_LCD_PWM % 32));
+}
 #else
 	gpio_set_func(GPIO_PORT_E, GPIO_FUNC_0,1 << (CONFIG_GPIO_LCD_PWM % 32));
 #endif
