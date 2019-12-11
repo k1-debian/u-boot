@@ -384,6 +384,11 @@
 
 #define CONFIG_LCD_LOGO
 
+/*#define CONFIG_CMD_LOGO_RLE*/
+/*#define CONFIG_RLE_LCD_LOGO*/
+/*#define CONFIG_LOGO_EXTEND*/
+/*#define CONFIG_LCD_INFO_BELOW_LOGO*/
+
 #define CONFIG_SYS_PWM_PERIOD       10000 /* Pwm period in ns */
 #define CONFIG_SYS_PWM_CHN      3  /* Pwm channel ok*/
 #define CONFIG_SYS_PWM_FULL     256

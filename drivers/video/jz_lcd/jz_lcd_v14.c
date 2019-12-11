@@ -509,7 +509,6 @@ static int jzfb_desc_init(struct jzfb_config_info *info, int frm_num)
 	return 0;
 }
 
-#if 0
 #if defined(CONFIG_LCD_LOGO)
 static void fbmem_set(void *_ptr, unsigned short val, unsigned count)
 {
@@ -881,7 +880,6 @@ void fb_fill(void *logo_addr, void *fb_addr, int count)
 	}
 
 }
-#endif
 
 static void jzfb_cmp_start()
 {
@@ -1367,14 +1365,8 @@ void lcd_ctrl_init(void *lcd_base)
 
 	panel_power_on();
 
-	//jzfb_set_fix_par(&lcd_config_info);
-
 
 	jzfb_set_par(&lcd_config_info);
-
-	printf("-----lcd_base: %x\n", lcd_base);
-	//memset(lcd_base, 0x00, 320*240);
-
 }
 
 void lcd_show_board_info(void)
