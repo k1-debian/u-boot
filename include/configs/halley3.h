@@ -379,7 +379,7 @@
 #define CONFIG_LCD
 
 #ifdef CONFIG_LCD
-#define LCD_BPP             4 /* 4: 16BPP, 5: 24BPP. */
+#define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
 #define CONFIG_GPIO_LCD_PWM     GPIO_PC(14)
 
 #define CONFIG_LCD_LOGO
