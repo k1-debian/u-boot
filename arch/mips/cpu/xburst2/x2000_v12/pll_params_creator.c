@@ -106,19 +106,19 @@ static unsigned int gen_pll_regester_nfro(unsigned int extern_clk,
 				p->plln = nr-1;
 				p->pllm = nf-1;
 				p->pllod = no_i;
-				if(fref >= 5 && fref <= 10) {
+				if(fref >= 7 && fref <= 11) {
 					p->pllrg = 1;
-				} else if(fref > 10 && fref <= 16) {
+				} else if(fref > 11 && fref <= 18) {
 					p->pllrg = 2;
-				} else if(fref > 16 && fref <= 26) {
+				} else if(fref > 18 && fref <= 30) {
 					p->pllrg = 3;
-				} else if(fref > 26 && fref <= 42) {
+				} else if(fref > 30 && fref <= 50) {
 					p->pllrg = 4;
-				} else if(fref > 42 && fref <= 68) {
+				} else if(fref > 50 && fref <= 80) {
 					p->pllrg = 5;
-				} else if(fref > 68 && fref <= 110) {
+				} else if(fref > 80 && fref <= 130) {
 					p->pllrg = 6;
-				} else if(fref > 110 && fref <= 200)
+				} else if(fref > 130 && fref <= 200)
 					p->pllrg = 7;
 
 				return 1;
