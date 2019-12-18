@@ -9,11 +9,15 @@ struct spi_param *spi_args;
 #include "cloner_sfcnor.c"
 #endif
 #ifdef CONFIG_MTD_SPINAND
-#include "cloner_spinand.c"
 extern unsigned int ssi_rate;
+#include "cloner_spinand.c"
 #endif
 #ifdef CONFIG_MTD_SFCNAND
 #include "cloner_sfcnand.c"
+#endif
+#ifdef CONFIG_JZ_SPI
+extern unsigned int ssi_rate;
+#include "cloner_spinor.c"
 #endif
 
 
@@ -80,6 +84,14 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);
 	}
 #endif
+#ifdef CONFIG_JZ_SPI
+	ssi_rate = CONFIG_SPI_RATE;
+	if(policy_args->use_spi_nor){
+		if (spi_args->spi_erase == SPI_ERASE_PART) {
+			spi_erase(cloner);
+		}
+	}
+#endif
 	return ret;
 }
 
@@ -88,6 +100,11 @@ int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 	int ret = 0;
 	switch(sub_type)
 	{
+#ifdef CONFIG_JZ_SPI
+		case SPI_NOR:
+			ret = spi_program(cloner);
+			break;
+#endif
 #ifdef CONFIG_MTD_SFCNOR
 		case SFC_NOR:
 			ret = sfc_program(cloner);
@@ -124,6 +141,11 @@ static int32_t clmd_spisfc_read(struct cloner *cloner, int sub_type, void *ops_d
 
 	switch(sub_type)
 	{
+#ifdef CONFIG_JZ_SPI
+		case SPI_NOR:
+			ret = spinor_read(cloner);
+			break;
+#endif
 #ifdef CONFIG_MTD_SFCNOR
 		case SFC_NOR:
 			ret = sfcnor_read(cloner);

@@ -76,6 +76,7 @@
 
 /* SPI */
 #define CONFIG_CMD_SPI
+#define CONFIG_SPI_RATE                 72000000
 /*#define CONFIG_INGENIC_SOFT_SPI*/
 #ifdef CONFIG_CMD_SPI
 #define CONFIG_SSI_BASE SSI0_BASE

@@ -60,12 +60,7 @@
 
 #define CONFIG_ENV_IS_NOWHERE
 #define CONFIG_ENV_SIZE 512
-/**
- * Boot arguments definitions.
- */
-/*#define BOOTARGS_COMMON "console=ttyS3,115200 mem=256M@0x0 mem=256M@0x30000000"*/
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=32M@0x0 loglevel=7 "
-#define	CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+
 
 #define CONFIG_BOOTDELAY 0
 #define CONFIG_BOOTCOMMAND "burn"
@@ -130,6 +125,7 @@
 #define CONFIG_CMD_SOURCE	/* "source" command support	*/
 #define CONFIG_CMD_BURN		/*ingenic usb burner support*/
 #define CONFIG_CMD_EFUSE	/*efuse*/
+#define CONFIG_CMD_DATE
 
 #ifdef CONFIG_CMD_EFUSE
 #define	CONFIG_X1000_EFUSE
@@ -249,7 +245,7 @@
 #define CONFIG_JZ_SCBOOT
 #define CONFIG_USB_JZ_BURNER_GADGET
 #define CONFIG_JZ_VERDOR_BURN_EXTPOL
-#define CONFIG_JZ_VERDOR_BURN_EP_TEST
+/*#define CONFIG_JZ_VERDOR_BURN_EP_TEST*/
 #define	CONFIG_JZ_VERDOR_BURN_FUNCTION
 #define CONFIG_USB_JZ_DWC2_UDC_V1_1
 #define CONFIG_USB_SELF_POLLING
@@ -260,6 +256,5 @@
 #define CONFIG_BURNER_PRIDUCT_INFO	"X1000 USB Boot Device"
 #endif	/* !CONFIG_CMD_BURN */
 
-#define CONFIG_CMD_DATE
 #define CONFIG_RTC_JZ47XX
 #endif /* __CONFIG_BURNER_H__ */
