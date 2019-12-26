@@ -7,6 +7,7 @@
 
 #include "secure.h"
 
+#ifndef CONFIG_X2000_FPGA
 static void pdma_wait(void)
 {
 	__asm__ volatile (
@@ -33,22 +34,38 @@ static void load_pdma_firmware(void)
 	for(i=0; i < 6; i++)
 		dst_ptr[i] = pdma_ins[i];
 }
+#else
+extern int load_serom_firmware(struct pdma_message *pdma_msg);
+extern void load_pdma_firmware();
+#endif
 
 int init_seboot(void)
 {
 	//reset mcu
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
+#ifdef CONFIG_X2000_FPGA
+	volatile struct pdma_message *pdma_msg;
+	pdma_msg = (volatile struct pdma_message *)GET_PDMA_MESSAGE();
+#endif
+
+#ifndef CONFIG_X2000_FPGA
 	volatile unsigned int * clkgate = (volatile unsigned int *)0xb0000020;
 	*clkgate = 0;
-
+#endif
 	reset_mcu();
-//	printf("reset_mcu %x\n", REG32(PDMA_BASE + DMCS_OFF));
-//	printf("MCU_TCSM_RETVAL 0x%08x\n", REG32(MCU_TCSM_RETVAL));
+	printf("reset_mcu %x\n", REG32(PDMA_BASE + DMCS_OFF));
+	printf("MCU_TCSM_RETVAL 0x%08x\n", REG32(MCU_TCSM_RETVAL));
 	load_pdma_firmware();
 	boot_up_mcu();
 	udelay(50 * 1000);
+#ifndef CONFIG_X2000_FPGA
 	otp_init();
+#endif
+
+#ifdef CONFIG_X2000_FPGA
+	load_serom_firmware(pdma_msg);
+#endif
 
 //	printf("xxmcu control status: %x\n", REG32(PDMA_BASE + DMCS_OFF));
 

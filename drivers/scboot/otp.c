@@ -9,7 +9,8 @@
 #include "test_nku.h"
 #include <cloner/cloner.h>
 
-unsigned int rsakey[128];
+unsigned int rsakey[256];
+
 unsigned int rsakeylen;
 
 static void set_rsakey(unsigned int *idata, unsigned int length)
@@ -35,14 +36,6 @@ static void gpio_output_value(int gpio, int value)
 }
 
 
-static int efuse_update_state(void)
-{
-	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
-	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
-	*reg_ctrl = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0x1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RDEN;
-	while(!(*reg_stat & EFUSE_REG_STAT_RDDONE));
-	printf("xxxxxxx state updated: %x\n", *reg_stat);
-}
 
 static int efuse_config(void)
 {
@@ -133,13 +126,51 @@ static int efuse_config(void)
 //	printf("xxxxxxx ahb2 = %d\n",ahb2);
 
 }
-
-void otp_init(void)
+#ifdef CONFIG_X2000_V12
+static int efuse_update_state(void)
 {
+	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
+	printf("xxxxxxx data updated: %x\n", *(unsigned int *)EFUSE_REG_DAT1);
+	printf("xxxxxxx state updated: %x\n", REG32(EFUSE_REG_STAT));
+}
+
+int cpu_wtotp(int opera)
+{
+	unsigned int ret = 0;
+	volatile struct sc_args *args;
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
+	gpio_output_value(debug_args->efuse_gpio, 0);
+
+	args->arg[0] = opera;
+	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
+
 	gpio_output_value(debug_args->efuse_gpio, 1);
-	efuse_config();
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+
+	printf("**************************MCU_TCSM_RETVAL = 0x%08x\n", MCU_TCSM_RETVAL);
+	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+		printf("secall SC_FUNC_WTOTP fail 0x%08x\n", *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+		return -1;
+
+	}
+
 	efuse_update_state();
-	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
+	
+	return 0;
+}
+#else
+static int efuse_update_state(void)
+{
+	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
+	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
+	*reg_ctrl = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0x1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RDEN;
+	while(!(*reg_stat & EFUSE_REG_STAT_RDDONE));
+	printf("xxxxxxx state updated: %x\n", *reg_stat);
 }
 
 int cpu_wtotp(int opera)
@@ -170,7 +201,87 @@ int cpu_wtotp(int opera)
 
 	return 0;
 }
+#endif
 
+void otp_init(void)
+{
+	gpio_output_value(debug_args->efuse_gpio, 1);
+	efuse_config();
+	efuse_update_state();
+	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
+}
+
+#ifdef CONFIG_X2000_V12
+int otp_r()
+{
+	gpio_output_value(debug_args->efuse_gpio, 0);
+	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR | 0x01 << EFUSE_REGOFF_CRTL_LENG);
+
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
+
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
+
+	printf("REG32(EFUSE_REG_DAT1) = %x\n",REG32(EFUSE_REG_DAT1));
+	return 0;
+}
+
+static int otp_w(unsigned int offset)
+{
+	if (offset >= 16) {
+		fprintf(stderr, "offset too big!\n");
+		return -1;
+	}
+	unsigned int ret;
+#define PRT_REDUNDANCY  0x00010001
+	REG32(EFUSE_REG_DAT1) = PRT_REDUNDANCY << offset;
+	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
+	gpio_output_value(debug_args->efuse_gpio, 0);
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
+
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
+
+	gpio_output_value(debug_args->efuse_gpio, 1);
+
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+
+	otp_r();
+
+	return 0;
+}
+
+int cpu_burn_rckey(void)
+{
+	unsigned int ret;
+	volatile struct sc_args *args;
+
+	if(EFUSTATE_CK_PRT)
+		return 0;
+
+
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
+	gpio_output_value(debug_args->efuse_gpio, 0);
+
+	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
+
+	ret = *(volatile unsigned int *)(MCU_TCSM_RETVAL);
+
+	if (ret != SC_ERR_SUCC) {
+		printf("#################### SC_FUNC_BURNRKCK fail 0x%08x\n", ret);
+		return -ESEC;
+	}
+
+	gpio_output_value(debug_args->efuse_gpio, 1);
+	REG32(EFUSE_REG_CTRL) = 0;
+
+	ret = otp_w(EFUSE_PTCOFF_CKP);
+
+	return ret;
+}
+#else
 int cpu_burn_rckey(void)
 {
 	unsigned int ret;
@@ -201,26 +312,42 @@ int cpu_burn_rckey(void)
 
 	return 0;
 }
+#endif
 
 int cpu_load_nku(unsigned int *idata, unsigned int length)
 {
 	unsigned int ret;
 	unsigned int iLoop;
+	unsigned int rsa_key_word = 0;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
 
-//	printf("xxxxxxxxxxx func : %s\n",__func__);
+	printf("xxxxxxxxxxx func : %s\n",__func__);
 
-	set_rsakey(idata+2,length-8);
+	set_rsakey(idata + 2, length - 8);
 
 	nku[0] = rsakeylen * 8;
 	nku[1] = rsakeylen * 8;
+	rsa_key_word = rsakeylen / 4;
 
-	for (iLoop = 0; iLoop < 32; iLoop++)
+	printf("%s %s %d %d %d rsakeylen = %d\n", __FILE__, __func__, __LINE__, nku[0], nku[1], rsakeylen);
+
+
+	for (iLoop = 0; iLoop < rsa_key_word; iLoop++)
 		nku[iLoop + 2] = rsakey[iLoop];
-	for (iLoop = 0; iLoop < 32; iLoop++)
-		nku[iLoop + 2 + 32] = rsakey[iLoop + rsakeylen / 4];
+	for (iLoop = 0; iLoop < rsa_key_word; iLoop++)
+		nku[iLoop + 2 + rsa_key_word] = rsakey[iLoop + rsakeylen / 4];
+
+	for (iLoop = 2; iLoop < rsakeylen / 2 + 2; iLoop++) {
+
+		if (iLoop % 6 == 0)
+			printf("\n");
+		if (iLoop != 0 && iLoop == 66)
+			printf("\n");
+
+		printf("%x ", nku[iLoop]);
+	}
 
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
@@ -235,18 +362,31 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 
 int cpu_burn_nku(void *idata,unsigned int length)
 {
-	if(EFUSTATE_NKU_PRT)
+	unsigned int ret = 0;
+
+	if (EFUSTATE_NKU_PRT)
 		return 0;
 
-	if(cpu_load_nku(idata, length) < 0)
+	if (cpu_load_nku(idata, length) < 0)
 		return -ESEC;
 
-	if(cpu_wtotp(WT_OTP_NKU) < 0)
+	if (cpu_wtotp(WT_OTP_NKU) < 0)
 		return -ESEC;
 
-	return 0;
+#ifdef CONFIG_X2000_V12
+	ret = otp_w(EFUSE_PTCOFF_NKU);
+#endif
+
+	return ret;
+
 }
 
+#ifdef CONFIG_X2000_V12
+int cpu_get_enckey(unsigned int *odata)
+{
+	return 0;
+}
+#else
 int cpu_get_enckey(unsigned int *odata)
 {
 	unsigned int ret;
@@ -283,6 +423,7 @@ int cpu_get_enckey(unsigned int *odata)
 
 	return 0;
 }
+#endif
 
 int cpu_burn_ukey(void *idata)
 {
@@ -296,25 +437,58 @@ int cpu_burn_ukey(void *idata)
 
 	printf("xxxxxxxxxxx func : %s\n",__func__);
 
+#ifdef CONFIG_X2000_V12
+	if(EFUSTATE_UK_PRT && EFUSTATE_UK1_PRT)
+		return 0;
+	printf("xxxxxxxxxxx func : %s %d %d\n",__func__, EFUSTATE_UK_PRT, EFUSTATE_UK1_PRT);
+#else
 	if(EFUSTATE_UK_PRT)
 		return 0;
+#endif
 
 //	do_rsa(rsaukey, rsakeylen, encukey, rsakey, rsakeylen);
 //	for(iLoop = 0; iLoop < 4; iLoop++)
 //		printf("encukey[%d]: %x\n", iLoop, encukey[iLoop]);
 
 //#define BURN_UKEY_DEBUG
-#ifdef BURN_UKEY_DEBUG
+#if defined(BURN_UKEY_DEBUG) && !defined(CONFIG_X2000_V12)
 	aes(encukey, ukey, 16, AES_BY_CKEY, 1);
 	for(iLoop = 0; iLoop < 4; iLoop++)
 		printf("ukey[%d]: %x\n", iLoop, ukey[iLoop]);
 	args->arg[0] = 0;
 #else
-	for(iLoop = 0; iLoop < 4; iLoop++)
-		ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
-	args->arg[0] = 0;
+
+#ifdef CONFIG_X2000_V12
+#define UKEY_LEN_WORD    8
+#else
+#define UKEY_LEN_WORD    4
 #endif
+
+#ifdef CONFIG_X2000_V12
+#define UKEY_F_OFFSET    0x02
+#define UKEY1_F_OFFSET   0x03
+
+	for (iLoop = 0; iLoop < UKEY_LEN_WORD * 2; iLoop++)
+		ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
+
+	for(iLoop = 0; iLoop < UKEY_LEN_WORD * 2; iLoop++) {
+		if (iLoop % UKEY_LEN_WORD == 0)
+			printf("\n");
+
+		printf("%x ", ukey[iLoop]);
+	}
+
+	args->arg[0] = (0x01 << UKEY_F_OFFSET) | (0x01 << UKEY1_F_OFFSET);
 	args->arg[1] = MCU_TCSM_PADDR(ukey);
+	args->arg[2] = MCU_TCSM_PADDR(&ukey[UKEY_LEN_WORD]);
+#else
+	for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++)
+		ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
+
+	args->arg[0] = 0;
+	args->arg[1] = MCU_TCSM_PADDR(ukey);
+#endif
+#endif
 	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
@@ -322,12 +496,60 @@ int cpu_burn_ukey(void *idata)
 		return -ESEC;
 	}
 
+
+#ifdef CONFIG_X2000_V12
+	if (EFUSTATE_UK_PRT == 0) {
+		if (cpu_wtotp(WT_OTP_UK) < 0) {
+			return -ESEC;
+		}
+
+		otp_w(EFUSE_PTCOFF_UKP);
+	}
+
+	if (EFUSTATE_UK1_PRT == 0) {
+		if (cpu_wtotp(WT_OTP_UK1) < 0) {
+			printf("%s %d\n", __func__, __LINE__);
+			return -ESEC;
+		}
+
+		otp_w(EFUSE_PTCOFF_UKP1);
+	}
+	printf("xxxxxxxxxxx func : %s %d %d\n",__func__, EFUSTATE_UK_PRT, EFUSTATE_UK1_PRT);
+	printf("%s %d\n", __func__, __LINE__);
+#else
 	if(cpu_wtotp(WT_OTP_UK) < 0)
 		return -ESEC;
-
+#endif
 	return 0;
 }
 
+#ifdef CONFIG_X2000_V12
+int cpu_burn_secboot_enable(void)
+{
+	printf("xxxx otp efuse state:%x\n", REG32(EFUSE_REG_STAT));
+
+	/* set write data :security boot enable, security boot enable protected, disable JTAG*/
+	REG32(EFUSE_REG_DAT1) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB)
+							 | (1 << EFUSE_PTCOFF_DJG));
+
+	/*efuse config*/
+	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
+
+	gpio_output_value(debug_args->efuse_gpio, 0);
+
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
+
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
+
+	gpio_output_value(debug_args->efuse_gpio, 1);
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+
+	efuse_update_state();
+
+	return 0;
+}
+#else
 int cpu_burn_secboot_enable(void)
 {
 	/*efuse config*/
@@ -367,3 +589,5 @@ int cpu_burn_secboot_enable(void)
 
 	return 0;
 }
+
+#endif

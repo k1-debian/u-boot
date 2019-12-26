@@ -40,6 +40,12 @@
 	.globl _start
 	.text
 _start:
+#if defined(CONFIG_X2000_V12) && defined(CONFIG_CMD_BURN)
+        li      $2, 3                   // cacheable for kseg0 access
+        mtc0    $2, $16                 // CP0_CONFIG
+        nop
+#endif
+
 #ifdef _DEBUG
 
 	la      v0, 0xb0030000
@@ -74,7 +80,7 @@ loop1:
 #endif
 	/* Set up temporary stack */
 	li	sp, CONFIG_SYS_SDRAM_BASE + CONFIG_SYS_INIT_SP_OFFSET
-#if _DEBUG
+#ifdef _DEBUG
 	la      v0, 0xb0030000
 	li	t0, '2'
 	sw 	t0, 0(v0)

@@ -1,37 +1,10 @@
 #ifndef __OTP_H__
 #define __OTP_H__
 
-#define SC_OTP_SEL_RKEY 0x1
-#define SC_OTP_SEL_CKEY 0x2
-#define SC_OTP_SEL_UKEY 0x4
-#define SC_OTP_SEL_NKU 0x8
-#define SC_OTP_RW  (0x1 << 5) //0:R  1:W
-#define SC_OTP_RD  0
-
-#define SC_OTP_RKEY   EFUSE_OTP_BASE
-#define SC_OTP_CKEY   (EFUSE_OTP_RKEY + 16)
-#define SC_OTP_UKEY   (SC_OTP_CKEY + 16)
-#define SC_OTP_NKU    (SC_OTP_UKEY + 16)
-
-#define EFUSE_SECURE_RKEY_ADDR 0xb3540240
-#define EFUSE_SECURE_CKEY_ADDR 0xb3540250
-#define EFUSE_SECURE_UKEY_ADDR 0xb3540260
-#define EFUSE_SECURE_MD5_ADDR 0xb3540270
-#define EFUSE_ADDR_PROT  0x3E
-
-#define EFUSE_REGOFF_CRTL_ADDR 21
-#define EFUSE_REGOFF_CRTL_LENG 16
-#define EFUSE_REG_CTRL_PGEN (0x1 << 15)
-#define EFUSE_REG_CTRL_WTEN (0x1 << 1)
-#define EFUSE_REG_CTRL_RDEN (0x1)
+/*register addr*/
 #define EFUSE_REG_CTRL 0xb3540000
-
 #define EFUSE_REG_CFG  0xb3540004
-
-#define EFUSE_REG_STAT_RDDONE 0x1
-#define EFUSE_REG_STAT_WTDONE (0x1 << 1)
 #define EFUSE_REG_STAT 0xb3540008
-
 #define EFUSE_REG_DAT1 0xb354000C
 #define EFUSE_REG_DAT2 0xb3540010
 #define EFUSE_REG_DAT3 0xb3540014
@@ -41,6 +14,64 @@
 #define EFUSE_REG_DAT7 0xb3540024
 #define EFUSE_REG_DAT8 0xb3540028
 
+#define EFUSE_REGOFF_CRTL_ADDR 21
+#define EFUSE_REGOFF_CRTL_LENG 16
+
+#define EFUSE_REG_CTRL_PGEN (0x1 << 15)
+#define EFUSE_REG_CTRL_WTEN (0x1 << 1)
+#define EFUSE_REG_CTRL_RDEN (0x1)
+
+#ifdef CONFIG_X2000_V12
+#define WT_OTP_UK   0x1
+#define WT_OTP_UK1  0x2
+#define WT_OTP_NKU  0x4
+#define EFUSE_ADDR_PROT  0x1C
+#define EFUSE_REG_CTRL_PS  (0x1 << 9)
+#define EFUSE_REG_CTRL_PD  (0x1 << 8)
+#define EFUSE_REG_CTRL_RWL (0x1 << 11)
+#define EFUSTATE_NKU_PRT_SFT (0x1 << 23)
+#define EFUSTATE_UK1_PRT_SFT (0x1 << 22)
+#define EFUSTATE_UK_PRT_SFT  (0x1 << 21)
+#define EFUSTATE_CK_PRT_SFT  (0x1 << 20)
+
+#define EFUSTATE_CK_PRT  (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_CK_PRT_SFT)
+#define EFUSTATE_UK_PRT  (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_UK_PRT_SFT)
+#define EFUSTATE_UK1_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_UK1_PRT_SFT)
+#define EFUSTATE_NKU_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_NKU_PRT_SFT)
+#define EFUSE_PTCOFF_NKU   15 //nku protect
+#define EFUSE_PTCOFF_UKP1  14 //user key1 protect
+#define EFUSE_PTCOFF_UKP   13 //user key protect
+#define EFUSE_PTCOFF_CKP   12 //chip key protect
+#define EFUSE_PTCOFF_HIDE  11 //HIDEBLK protect
+#define EFUSE_PTCOFF_SOC   10 //SOCINFO protect
+#define EFUSE_PTCOFF_TR2    9 //TRIM2 protect
+#define EFUSE_PTCOFF_TR1    8 //TRIM1 protect
+#define EFUSE_PTCOFF_TR0    7 //TRIM0 protect
+#define EFUSE_PTCOFF_UID2    6 //CUSTID2 protect
+#define EFUSE_PTCOFF_UID1    5 //CUSTID1 protect
+#define EFUSE_PTCOFF_UID    4 //CUSTID0 protect
+#define EFUSE_PTCOFF_CID    3 //CHIPID protect
+#define EFUSE_PTCOFF_SCB    2 //secure boot protect
+#define EFUSE_PTCOFF_DJG    1 //DISJTAG protect
+#define EFUSE_PTCOFF_SEC    0 //SECBOOT_EN protect
+#define SC_OTP_SEL_CKEY 0x1
+#define SC_OTP_SEL_UKEY 0x2
+#define SC_OTP_SEL_UKEY1 0x4
+#define SC_OTP_SEL_NKU 0x8
+
+#else
+#define WT_OTP_UK 0x1
+#define WT_OTP_NKU 0x2
+#define EFUSE_ADDR_PROT    0x3E
+#define EFUSTATE_UK_PRT_SFT     (0x1 << 23)
+#define EFUSTATE_MD5_PRT_SFT    (0x1 << 22)
+#define EFUSTATE_NKU_PRT_SFT    (0x1 << 22)
+#define EFUSTATE_SECBOOT_EN_SFT (0x1 << 8)
+
+#define EFUSTATE_UK_PRT  (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_UK_PRT_SFT)
+#define EFUSTATE_MD5_PRT (EFUSE_REG32(EFUSE_REG_STAT) & )
+#define EFUSTATE_NKU_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_NKU_PRT_SFT)
+#define EFUSTATE_SECBOOT_EN (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_SECBOOT_EN_SFT)
 #define EFUSE_PTCOFF_UKP   15 //user key protect
 #define EFUSE_PTCOFF_MD5   14 //md5 sig protect
 #define EFUSE_PTCOFF_ADE   13 //
@@ -57,24 +88,29 @@
 #define EFUSE_PTCOFF_DJG    2 //DISJTAG protect
 #define EFUSE_PTCOFF_CDC    1 //
 #define EFUSE_PTCOFF_SEC    0 //
+#define SC_OTP_SEL_RKEY 0x1
+#define SC_OTP_SEL_CKEY 0x2
+#define SC_OTP_SEL_UKEY 0x4
+#define SC_OTP_SEL_NKU 0x8
+#endif
+
+#define EFUSE_REG_STAT_RDDONE (0x1 << 0)
+#define EFUSE_REG_STAT_WTDONE (0x1 << 1)
 
 #define EFUSE_REG32(a) *(volatile unsigned int *)(a)
 
+#define SC_OTP_RW  (0x1 << 5) //0:R  1:W
+#define SC_OTP_RD  0
 
-#define WT_OTP_UK 0x1
-#define WT_OTP_NKU 0x2
+#define SC_OTP_RKEY   EFUSE_OTP_BASE
+#define SC_OTP_CKEY   (EFUSE_OTP_RKEY + 16)
+#define SC_OTP_UKEY   (SC_OTP_CKEY + 16)
+#define SC_OTP_NKU    (SC_OTP_UKEY + 16)
 
-#define EFUSTATE_UK_PRT_SFT (0x1 << 23)
-
-#define EFUSTATE_MD5_PRT_SFT (0x1 << 22)
-#define EFUSTATE_NKU_PRT_SFT (0x1 << 22)
-#define EFUSTATE_SECBOOT_EN_SFT (0x1 << 8)
-
-#define EFUSTATE_UK_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_UK_PRT_SFT)
-
-#define EFUSTATE_MD5_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_MD5_PRT_SFT)
-#define EFUSTATE_NKU_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_NKU_PRT_SFT)
-#define EFUSTATE_SECBOOT_EN (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_SECBOOT_EN_SFT)
+#define EFUSE_SECURE_RKEY_ADDR 0xb3540240
+#define EFUSE_SECURE_CKEY_ADDR 0xb3540250
+#define EFUSE_SECURE_UKEY_ADDR 0xb3540260
+#define EFUSE_SECURE_MD5_ADDR 0xb3540270
 
 int cpu_burn_rckey(void);
 int cpu_burn_nku(void *idata,unsigned int length);

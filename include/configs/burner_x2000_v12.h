@@ -27,7 +27,7 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST2
 #define CONFIG_SYS_LITTLE_ENDIAN
-/*#define CONFIG_X2000_FPGA*/  	        /* If defined x2000 FPGA, It will be used for FPGA burning*/
+/*#define CONFIG_X2000_FPGA*/        /* If defined x2000 FPGA, It will be used for FPGA burning*/
 #define CONFIG_X2000_V12	/* x2000 SoC */
 
 
@@ -265,7 +265,7 @@
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_BURNER
 #define CONFIG_USB_GADGET
-/*#define CONFIG_JZ_SCBOOT*/
+#define CONFIG_JZ_SCBOOT
 #define CONFIG_USB_JZ_BURNER_GADGET
 #define CONFIG_JZ_VERDOR_BURN_EXTPOL
 /*#define CONFIG_JZ_VERDOR_BURN_EP_TEST*/
