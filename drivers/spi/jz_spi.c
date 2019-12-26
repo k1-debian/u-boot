@@ -150,7 +150,7 @@ void spi_init(void )
 
 #ifndef CONFIG_BURNER
 	ssi_rate = 72000000;
-    clk_set_rate(SSI, ssi_rate);
+	clk_set_rate(SSI, ssi_rate);
 #else
 	if(ssi_rate != 0)
 		clk_set_rate(SSI, ssi_rate);

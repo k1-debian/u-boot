@@ -1,7 +1,6 @@
 #ifdef CONFIG_JZ_SPI
-extern unsigned int ssi_rate;
-
 struct spi_param *spi_args;
+static struct spi_flash *flash = NULL;
 
 int spi_erase()
 {
@@ -9,16 +8,11 @@ int spi_erase()
 	unsigned int cs = CONFIG_SF_DEFAULT_CS;
 	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
 	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
-	struct spi_flash *flash;
-	spi.rate  = spi_args->rate ;
-	ssi_rate  = spi.rate;
 
-#ifdef CONFIG_JZ_SPI
 	spi_init();
-#endif
 
 	if(flash == NULL){
-		flash = spi_flash_probe(bus, cs, spi.rate, mode);
+		flash = spi_flash_probe(bus, cs, ssi_rate, mode);
 		if (!flash) {
 			printf("Failed to initialize SPI flash at %u:%u\n", bus, cs);
 			return 1;
@@ -29,6 +23,33 @@ int spi_erase()
 	return 0;
 }
 
+int spinor_read(struct cloner *cloner)
+{
+	int ret = 0;
+	u32 addr = cloner->cmd->read.offset;
+	u32 len = cloner->read_req->length;
+	void *buf = (void *)cloner->read_req->buf;
+	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
+	unsigned int cs = CONFIG_SF_DEFAULT_CS;
+	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
+	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
+
+	spi_init();
+
+	if(flash == NULL){
+		flash = spi_flash_probe(bus, cs, ssi_rate, mode);
+		if (!flash) {
+			printf("Failed to initialize SPI flash at %u:%u\n", bus, cs);
+			return 1;
+		}
+	}
+
+	ret = spi_flash_read(flash, addr, len, buf);
+	if(ret < 0)
+		printf("%s error\n",__func__);
+
+	return ret;
+}
 
 
 int spi_program(struct cloner *cloner)
@@ -43,23 +64,18 @@ int spi_program(struct cloner *cloner)
 	void *addr = (void *)cloner->write_req->buf;
 	unsigned int ret;
 	int len = 0;
-	struct spi_flash *flash;
-	spi.rate  = spi_args->rate ;
-	ssi_rate = spi.rate;
 
-#ifdef CONFIG_JZ_SPI
 	spi_init();
-#endif
 
 #ifdef CONFIG_INGENIC_SOFT_SPI
 	spi_init_jz(&spi);
 #endif
 
 	if(flash == NULL){
-		flash = spi_flash_probe(bus, cs, spi.rate, mode);
+		flash = spi_flash_probe(bus, cs, ssi_rate, mode);
 		if (!flash) {
 			printf("Failed to initialize SPI flash at %u:%u\n", bus, cs);
-			return -1;
+			return 1;
 		}
 	}
 
@@ -97,19 +113,6 @@ int spi_program(struct cloner *cloner)
 			return -EIO;
 		}
 	}
-
-#if debug
-	int buf_debug[8*1024*1024];
-	if (spi_flash_read(flash, 1024, /*len*/2048, buf_debug)) {
-		printf("read failed\n");
-		return -1;
-	}
-	int i = 0;
-	for(i=0;i<4096;i++){
-		printf("the debug[%d] = %x\n",i,buf_debug[i]);
-	}
-
-#endif
 
 	return 0;
 }

@@ -17,7 +17,7 @@
 #define TPP		700
 #define TBE		5
 
-#define TRD_Q5	        25
+#define TRD_Q5	        50
 #define TPP_Q5	        600
 
 static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {

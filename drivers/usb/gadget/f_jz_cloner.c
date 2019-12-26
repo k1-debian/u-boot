@@ -418,6 +418,9 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			}
 			break;
 		case VR_READ:
+			realloc_buf(cloner, cmd->read.length);
+			cloner->read_req->length = cmd->read.length;
+			memset(cloner->read_req->buf,0,cloner->read_req->length);
 			handle_read(cloner);
 			break;
 		case VR_GET_CRC:
