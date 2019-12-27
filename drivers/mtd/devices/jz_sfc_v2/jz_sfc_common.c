@@ -1,0 +1,751 @@
+/*
+ * SFC controller for SPI protocol, use FIFO and DMA;
+ *
+ * Copyright (c) 2015 Ingenic
+ * Author: <xiaoyang.fu@ingenic.com>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+*/
+
+#include <asm/arch/clk.h>
+#include <asm/gpio.h>
+#include <linux/mtd/mtd.h>
+#include <linux/mtd/partitions.h>
+
+#include <asm/arch/base.h>
+#include <asm/io.h>
+#include <linux/list.h>
+#include <linux/types.h>
+#include <linux/err.h>
+#include <common.h>
+
+#include <asm/arch/sfc.h>
+
+
+//#define	SFC_NOR_DEBUG
+
+
+static void sfc_writel(struct sfc *sfc, unsigned short offset, u32 value)
+{
+	writel(value, SFC_BASE + offset);
+}
+
+static unsigned int sfc_readl(struct sfc *sfc, unsigned short offset)
+{
+	return readl(SFC_BASE + offset);
+}
+
+#ifdef SFC_NOR_DEBUG
+#ifndef CONFIG_SFC_V20
+void dump_sfc_reg(struct sfc *sfc)
+{
+	int i = 0;
+	printf("SFC_GLB			:%08x\n", sfc_readl(sfc, SFC_GLB ));
+	printf("SFC_DEV_CONF	:%08x\n", sfc_readl(sfc, SFC_DEV_CONF ));
+	printf("SFC_DEV_STA_EXP	:%08x\n", sfc_readl(sfc, SFC_DEV_STA_EXP));
+	printf("SFC_DEV_STA_RT	:%08x\n", sfc_readl(sfc, SFC_DEV_STA_RT ));
+	printf("SFC_DEV_STA_MSK	:%08x\n", sfc_readl(sfc, SFC_DEV_STA_MSK ));
+	printf("SFC_TRAN_LEN		:%08x\n", sfc_readl(sfc, SFC_TRAN_LEN ));
+
+	for(i = 0; i < 6; i++)
+		printf("SFC_TRAN_CONF(%d)	:%08x\n", i,sfc_readl(sfc, SFC_TRAN_CONF(i)));
+
+	for(i = 0; i < 6; i++)
+		printf("SFC_DEV_ADDR(%d)	:%08x\n", i,sfc_readl(sfc, SFC_DEV_ADDR(i)));
+
+	printf("SFC_MEM_ADDR :%08x\n", sfc_readl(sfc, SFC_MEM_ADDR ));
+	printf("SFC_TRIG	 :%08x\n", sfc_readl(sfc, SFC_TRIG));
+	printf("SFC_SR		 :%08x\n", sfc_readl(sfc, SFC_SR));
+	printf("SFC_SCR		 :%08x\n", sfc_readl(sfc, SFC_SCR));
+	printf("SFC_INTC	 :%08x\n", sfc_readl(sfc, SFC_INTC));
+	printf("SFC_FSM		 :%08x\n", sfc_readl(sfc, SFC_FSM ));
+	printf("SFC_CGE		 :%08x\n", sfc_readl(sfc, SFC_CGE ));
+//	printf("SFC_RM_DR 	 :%08x\n", sfc_readl(spi, SFC_RM_DR));
+}
+#else
+void dump_sfc_reg(struct sfc *sfc)
+{
+	printk("SFC_GLB0 = %08x\n",sfc_readl(sfc,0x0000));
+	printk("SFC_DEV_CONF = %08x\n",sfc_readl(sfc,0x0004));
+	printk("SFC_DEV_STA_EXP = %08x\n",sfc_readl(sfc,0x0008));
+	printk("SFC_DEV_STA_RT	 = %08x\n",sfc_readl(sfc,0x000c));
+	printk("SFC_DEV_STA_MASK = %08x\n",sfc_readl(sfc,0x0010));
+	printk("SFC_TRAN_CONF0 = %08x\n",sfc_readl(sfc,0x0014));
+	printk("SFC_TRAN_LEN = %08x\n",sfc_readl(sfc,0x002c));
+	printk("SFC_DEV_ADDR0 = %08x\n",sfc_readl(sfc,0x0030));
+	printk("SFC_DEV_ADDR_PLUS0 = %08x\n",sfc_readl(sfc,0x0048));
+	printk("SFC_MEM_ADDR = %08x\n",sfc_readl(sfc,0x0060));
+	printk("SFC_TRIG = %08x\n",sfc_readl(sfc,0x0064));
+	printk("SFC_SR = %08x\n",sfc_readl(sfc,0x0068));
+	printk("SFC_SCR = %08x\n",sfc_readl(sfc,0x006c));
+	printk("SFC_INTC = %08x\n",sfc_readl(sfc,0x0070));
+	printk("SFC_FSM = %08x\n",sfc_readl(sfc,0x0074));
+	printk("SFC_CGE = %08x\n",sfc_readl(sfc,0x0078));
+	printk("SFC_CMD_IDX = %08x\n",sfc_readl(sfc,0x007c));
+	printk("SFC_COL_ADDR = %08x\n", sfc_readl(sfc, 0x80));
+	printk("SFC_ROW_ADDR = %08x\n", sfc_readl(sfc, 0x84));
+	printk("SFC_STA_ADDR0 = %08x\n", sfc_readl(sfc, 0x88));
+	printk("SFC_DES_ADDR = %08x\n", sfc_readl(sfc, 0x90));
+	printk("SFC_GLB1 = %08x\n", sfc_readl(sfc, 0x94));
+	printk("SFC_DEV1_STA_RT = %08x\n", sfc_readl(sfc, 0x98));
+	printk("SFC_TRAN_CONF1 = %08x\n", sfc_readl(sfc, 0x9c));
+	printk("SFC_CDT = %08x\n", sfc_readl(sfc, 0x800));
+
+}
+#endif
+
+void dump_cdt(struct sfc *sfc)
+{
+	struct sfc_cdt *cdt;
+	int i;
+
+	if(sfc->cdt_addr == NULL){
+		printf("%s error: sfc res not init !\n", __func__);
+		return;
+	}
+
+	cdt = sfc->cdt_addr;
+
+	for(i = 0; i < 32; i++){
+		printf("\nnum------->%d\n", i);
+		printf("link:%02x, ENDIAN:%02x, WORD_UINT:%02x, TRAN_MODE:%02x, ADDR_KIND:%02x\n",
+				(cdt[i].link >> 31) & 0x1, (cdt[i].link >> 18) & 0x1,
+				(cdt[i].link >> 16) & 0x3, (cdt[i].link >> 4) & 0xf,
+				(cdt[i].link >> 0) & 0x3
+				);
+		printf("CLK_MODE:%02x, ADDR_WIDTH:%02x, POLL_EN:%02x, CMD_EN:%02x,PHASE_FORMAT:%02x, DMY_BITS:%02x, DATA_EN:%02x, TRAN_CMD:%04x\n",
+				(cdt[i].xfer >> 29) & 0x7, (cdt[i].xfer >> 26) & 0x7,
+				(cdt[i].xfer >> 25) & 0x1, (cdt[i].xfer >> 24) & 0x1,
+				(cdt[i].xfer >> 23) & 0x1, (cdt[i].xfer >> 17) & 0x3f,
+				(cdt[i].xfer >> 16) & 0x1, (cdt[i].xfer >> 0) & 0xffff
+				);
+		printf("DEV_STA_EXP:%08x\n", cdt[i].staExp);
+		printf("DEV_STA_MSK:%08x\n", cdt[i].staMsk);
+	}
+}
+
+static void dump_data(unsigned char *buf,size_t len)
+{
+	int i;
+	for(i = 0;i<len;i++){
+		if(!(i % 16)){
+			printk("\n");
+			printk("%08x:",i);
+		}
+		printk("%02x ",buf[i]);
+	}
+}
+#endif
+
+void sfc_init(struct sfc *sfc)
+{
+	int n;
+	for(n = 0; n < N_MAX; n++) {
+#ifdef CONFIG_SFC_V20
+		sfc_writel(sfc, SFC_TRAN_CONF0(n), 0);
+		sfc_writel(sfc, SFC_TRAN_CONF1(n), 0);
+#else
+		sfc_writel(sfc, SFC_TRAN_CONF(n), 0);
+#endif
+		sfc_writel(sfc, SFC_DEV_ADDR(n), 0);
+		sfc_writel(sfc, SFC_DEV_ADDR_PLUS(n), 0);
+	}
+
+	sfc_writel(sfc, SFC_DEV_CONF, 0);
+	sfc_writel(sfc, SFC_DEV_STA_EXP, 0);
+	sfc_writel(sfc, SFC_DEV_STA_MSK, 0);
+	sfc_writel(sfc, SFC_TRAN_LEN, 0);
+	sfc_writel(sfc, SFC_MEM_ADDR, 0);
+	sfc_writel(sfc, SFC_TRIG, 0);
+	sfc_writel(sfc, SFC_SCR, 0);
+	sfc_writel(sfc, SFC_INTC, 0);
+	sfc_writel(sfc, SFC_CGE, 0);
+	sfc_writel(sfc, SFC_RM_DR, 0);
+}
+
+void sfc_stop(struct sfc*sfc)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_TRIG);
+	tmp |= TRIG_STOP;
+	sfc_writel(sfc, SFC_TRIG, tmp);
+}
+
+void sfc_start(struct sfc *sfc)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_TRIG);
+	tmp |= TRIG_START;
+	sfc_writel(sfc, SFC_TRIG, tmp);
+}
+
+void sfc_flush_fifo(struct sfc *sfc)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_TRIG);
+	tmp |= TRIG_FLUSH;
+	sfc_writel(sfc, SFC_TRIG, tmp);
+}
+
+void sfc_ce_invalid_value(struct sfc *sfc, int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp &= ~DEV_CONF_CEDL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	} else {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp |= DEV_CONF_CEDL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	}
+}
+
+void sfc_hold_invalid_value(struct sfc *sfc, int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp &= ~DEV_CONF_HOLDDL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	} else {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp |= DEV_CONF_HOLDDL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	}
+}
+
+void sfc_wp_invalid_value(struct sfc *sfc, int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp &= ~DEV_CONF_WPDL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	} else {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp |= DEV_CONF_WPDL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	}
+}
+
+void sfc_clear_end_intc(struct sfc *sfc)
+{
+	int tmp = 0;
+	tmp = CLR_END;
+	sfc_writel(sfc, SFC_SCR, tmp);
+}
+
+void sfc_clear_treq_intc(struct sfc *sfc)
+{
+	int tmp = 0;
+	tmp = CLR_TREQ;
+	sfc_writel(sfc, SFC_SCR, tmp);
+}
+
+void sfc_clear_rreq_intc(struct sfc *sfc)
+{
+	int tmp = 0;
+	tmp = CLR_RREQ;
+	sfc_writel(sfc, SFC_SCR, tmp);
+}
+
+void sfc_clear_over_intc(struct sfc *sfc)
+{
+	int tmp = 0;
+	tmp = CLR_OVER;
+	sfc_writel(sfc, SFC_SCR, tmp);
+}
+
+void sfc_clear_under_intc(struct sfc *sfc)
+{
+	int tmp = 0;
+	tmp = CLR_UNDER;
+	sfc_writel(sfc, SFC_SCR, tmp);
+}
+
+void sfc_clear_all_intc(struct sfc *sfc)
+{
+	sfc_writel(sfc, SFC_SCR, 0x1f);
+}
+
+void sfc_mask_all_intc(struct sfc *sfc)
+{
+	sfc_writel(sfc, SFC_INTC, 0x1f);
+}
+
+void sfc_clock_phase(struct sfc *sfc, int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp &= ~DEV_CONF_CPHA;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	} else {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp |= DEV_CONF_CPHA;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	}
+}
+
+void sfc_clock_polarity(struct sfc *sfc, int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp &= ~DEV_CONF_CPOL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	} else {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_DEV_CONF);
+		tmp |= DEV_CONF_CPOL;
+		sfc_writel(sfc, SFC_DEV_CONF, tmp);
+	}
+}
+
+void sfc_threshold(struct sfc *sfc, int value)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_GLB);
+	tmp &= ~GLB_THRESHOLD_MSK;
+	tmp |= value << GLB_THRESHOLD_OFFSET;
+	sfc_writel(sfc, SFC_GLB, tmp);
+}
+
+
+void sfc_smp_delay(struct sfc *sfc, int value)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_DEV_CONF);
+	tmp &= ~DEV_CONF_SMP_DELAY_MSK;
+	tmp |= value << DEV_CONF_SMP_DELAY_OFFSET;
+	sfc_writel(sfc, SFC_DEV_CONF, tmp);
+}
+
+void sfc_hold_delay(struct sfc *sfc, int value)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_DEV_CONF);
+	tmp &= ~DEV_CONF_THOLD_MSK;
+	tmp |= value << DEV_CONF_THOLD_OFFSET;
+	sfc_writel(sfc, SFC_DEV_CONF, tmp);
+}
+
+void sfc_setup_delay(struct sfc *sfc, int value)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_DEV_CONF);
+	tmp &= ~DEV_CONF_TSETUP_MSK;
+	tmp |= value << DEV_CONF_TSETUP_OFFSET;
+	sfc_writel(sfc, SFC_DEV_CONF, tmp);
+}
+
+void sfc_interval_delay(struct sfc *sfc, int value)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_DEV_CONF);
+	tmp &= ~DEV_CONF_TSH_MSK;
+	tmp |= value << DEV_CONF_TSH_OFFSET;
+	sfc_writel(sfc, SFC_DEV_CONF, tmp);
+}
+
+
+
+int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup, unsigned int t_shslrd, unsigned int t_shslwr)
+{
+	unsigned int c_hold;
+	unsigned int c_setup;
+	unsigned int t_in, c_in, val;
+	unsigned long cycle;
+	unsigned long long ns;
+	unsigned int rate;
+
+	rate = sfc->src_clk / 1000000;
+	cycle = 1000 / rate;
+
+	c_hold = t_hold / cycle;
+	if(c_hold > 0)
+		val = c_hold - 1;
+	sfc_hold_delay(sfc, val);
+
+	c_setup = t_setup / cycle;
+	if(c_setup > 0)
+		val = c_setup - 1;
+	sfc_setup_delay(sfc, val);
+
+	t_in = max(t_shslrd, t_shslwr);
+	c_in = t_in / cycle;
+	if(c_in > 0)
+		val = c_in - 1;
+	sfc_interval_delay(sfc, val);
+
+	return 0;
+}
+
+void sfc_set_length(struct sfc *sfc, int value)
+{
+	sfc_writel(sfc, SFC_TRAN_LEN, value);
+}
+
+void sfc_transfer_mode(struct sfc *sfc, int value)
+{
+	if(value == 0) {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_GLB);
+		tmp &= ~GLB_OP_MODE;
+		sfc_writel(sfc, SFC_GLB, tmp);
+	} else {
+		unsigned int tmp;
+		tmp = sfc_readl(sfc, SFC_GLB);
+		tmp |= GLB_OP_MODE;
+		sfc_writel(sfc, SFC_GLB, tmp);
+	}
+}
+
+void sfc_read_data(struct sfc *sfc, unsigned int *value)
+{
+	*value = sfc_readl(sfc, SFC_RM_DR);
+}
+
+void sfc_write_data(struct sfc *sfc, const unsigned int value)
+{
+	sfc_writel(sfc, SFC_RM_DR, value);
+}
+
+unsigned int sfc_fifo_num(struct sfc *sfc)
+{
+	unsigned int tmp;
+	tmp = sfc_readl(sfc, SFC_SR);
+	tmp &= (0x7f << 16);
+	tmp = tmp >> 16;
+	return tmp;
+}
+
+static unsigned int cpu_read_rxfifo(struct sfc *sfc)
+{
+	int i;
+	unsigned long align_len = 0;
+	unsigned int fifo_num = 0;
+	unsigned int data[1] = {0};
+	unsigned int last_word = 0;
+	struct sfc_cdt_xfer *xfer;
+
+	xfer = sfc->xfer;
+	align_len = ALIGN(xfer->config.datalen, 4);
+
+	if(((align_len - xfer->config.cur_len) / 4) > THRESHOLD) {
+		fifo_num = THRESHOLD;
+		last_word = 0;
+	} else {
+		/* last aligned THRESHOLD data */
+		if(xfer->config.datalen % 4) {
+			fifo_num = (align_len - xfer->config.cur_len) / 4 - 1;
+			last_word = 1;
+		} else {
+			fifo_num = (align_len - xfer->config.cur_len) / 4;
+			last_word = 0;
+		}
+	}
+
+	for(i = 0; i < fifo_num; i++) {
+		sfc_read_data(sfc, (unsigned int *)xfer->config.buf);
+		xfer->config.buf += 4;
+		xfer->config.cur_len += 4;
+	}
+
+	/* last word */
+	if(last_word == 1) {
+		sfc_read_data(sfc, data);
+		memcpy((void *)xfer->config.buf, data, xfer->config.datalen % 4);
+
+		xfer->config.buf += xfer->config.datalen % 4;
+		xfer->config.cur_len += 4;
+	}
+	return 0;
+}
+
+static unsigned int cpu_write_txfifo(struct sfc *sfc)
+{
+	int i;
+	unsigned long align_len = 0;
+	unsigned int fifo_num = 0;
+	struct sfc_cdt_xfer *xfer;
+
+	xfer = sfc->xfer;
+	align_len = ALIGN(xfer->config.datalen, 4);
+
+	if (((align_len - xfer->config.cur_len) / 4) > THRESHOLD){
+		fifo_num = THRESHOLD;
+	} else {
+		fifo_num = (align_len - xfer->config.cur_len) / 4;
+	}
+
+	for(i = 0; i < fifo_num; i++) {
+		sfc_write_data(sfc, *(unsigned int *)xfer->config.buf);
+		xfer->config.buf += 4;
+		xfer->config.cur_len += 4;
+	}
+
+	return 0;
+}
+
+unsigned int sfc_get_sta_rt(struct sfc *sfc)
+{
+	return sfc_readl(sfc,SFC_DEV_STA_RT);
+}
+unsigned int sfc_get_fsm(struct sfc *sfc)
+{
+	return sfc_readl(sfc,SFC_FSM);
+}
+
+void sfc_data_en(struct sfc *sfc, int channel, unsigned int value)
+{
+	if(value == 1) {
+		unsigned int tmp;
+#ifdef CONFIG_SFC_V20
+		tmp = sfc_readl(sfc, SFC_TRAN_CONF0(channel));
+		tmp |= TRAN_CONF0_DATEEN;
+		sfc_writel(sfc, SFC_TRAN_CONF0(channel), tmp);
+#else
+		tmp = sfc_readl(sfc, SFC_TRAN_CONF(channel));
+		tmp |= TRAN_CONF_DATEEN;
+		sfc_writel(sfc, SFC_TRAN_CONF(channel), tmp);
+#endif
+	} else {
+		unsigned int tmp;
+#ifdef CONFIG_SFC_V20
+		tmp = sfc_readl(sfc, SFC_TRAN_CONF0(channel));
+		tmp &= ~TRAN_CONF0_DATEEN;
+		sfc_writel(sfc, SFC_TRAN_CONF0(channel), tmp);
+#else
+		tmp = sfc_readl(sfc, SFC_TRAN_CONF(channel));
+		tmp &= ~TRAN_CONF_DATEEN;
+		sfc_writel(sfc, SFC_TRAN_CONF(channel), tmp);
+#endif
+	}
+}
+
+void sfc_dev_sta_exp(struct sfc *sfc, unsigned int value)
+{
+	sfc_writel(sfc, SFC_DEV_STA_EXP, value);
+}
+
+void sfc_dev_sta_msk(struct sfc *sfc, unsigned int value)
+{
+	sfc_writel(sfc, SFC_DEV_STA_MSK, value);
+}
+
+void sfc_enable_all_intc(struct sfc *sfc)
+{
+	sfc_writel(sfc, SFC_INTC, 0);
+}
+
+void sfc_set_mem_addr(struct sfc *sfc,unsigned int addr)
+{
+	sfc_writel(sfc, SFC_MEM_ADDR, addr);
+}
+
+static int sfc_sr_handle(struct sfc *sfc)
+{
+	uint32_t reg_sr = 0;
+	uint32_t tmp = 0;
+	int ret = 0;
+
+	while (1) {
+		reg_sr = sfc_readl(sfc, SFC_SR);
+
+		if (reg_sr & CLR_RREQ) {
+			sfc_writel(sfc, SFC_SCR, CLR_RREQ);
+			cpu_read_rxfifo(sfc);
+		}
+
+		if (reg_sr & CLR_TREQ) {
+			sfc_writel(sfc, SFC_SCR, CLR_TREQ);
+			cpu_write_txfifo(sfc);
+		}
+
+		if(reg_sr & CLR_END){
+			tmp = CLR_END;
+			break;
+		}
+
+		if(reg_sr & CLR_UNDER){
+			tmp = CLR_UNDER;
+			printf("underun");
+			ret = -1;
+			break;
+		}
+
+		if(reg_sr & CLR_OVER){
+			tmp = CLR_OVER;
+			printf("overrun");
+			ret = -1;
+			break;
+		}
+	}
+	if (tmp)
+		sfc_writel(sfc, SFC_SCR, tmp);
+
+	return ret;
+}
+
+static int sfc_start_transfer(struct sfc *sfc)
+{
+	int ret;
+	sfc_clear_all_intc(sfc);
+	sfc_mask_all_intc(sfc);
+	sfc_start(sfc);
+
+	ret = sfc_sr_handle(sfc);
+
+	return ret;
+}
+
+static void sfc_use_cdt_mode(struct sfc *sfc)
+{
+	uint32_t tmp = sfc_readl(sfc, SFC_GLB);
+	tmp |= GLB_CDT_EN;
+	sfc_writel(sfc, SFC_GLB, tmp);
+}
+
+void write_cdt(struct sfc *sfc, struct sfc_cdt *cdt, uint16_t start_index, uint16_t end_index)
+{
+	uint32_t cdt_num, cdt_size;
+
+	cdt_num = end_index - start_index + 1;
+	cdt_size = sizeof(struct sfc_cdt);
+
+	memcpy((void *)sfc->cdt_addr + (start_index * cdt_size), (void *)cdt + (start_index * cdt_size), cdt_num * cdt_size);
+	printf("create CDT index: %d ~ %d,  index number:%d.\n", start_index, end_index, cdt_num);
+}
+
+static void sfc_set_index(struct sfc *sfc, unsigned short index)
+{
+
+	uint32_t tmp = sfc_readl(sfc, SFC_CMD_IDX);
+	tmp &= ~CMD_IDX_MSK;
+	tmp |= index;
+	sfc_writel(sfc, SFC_CMD_IDX, tmp);
+}
+
+static void sfc_set_dataen(struct sfc *sfc, uint8_t dataen)
+{
+
+	uint32_t tmp = sfc_readl(sfc, SFC_CMD_IDX);
+	tmp &= ~CDT_DATAEN_MSK;
+	tmp |= (dataen << CDT_DATAEN_OFF);
+	sfc_writel(sfc, SFC_CMD_IDX, tmp);
+}
+
+static void sfc_set_datadir(struct sfc *sfc, uint8_t datadir)
+{
+
+	uint32_t tmp = sfc_readl(sfc, SFC_CMD_IDX);
+	tmp &= ~CDT_DIR_MSK;
+	tmp |= (datadir << CDT_DIR_OFF);
+	sfc_writel(sfc, SFC_CMD_IDX, tmp);
+}
+
+static void sfc_set_addr(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+{
+	sfc_writel(sfc, SFC_COL_ADDR, xfer->columnaddr);
+	sfc_writel(sfc, SFC_ROW_ADDR, xfer->rowaddr);
+	sfc_writel(sfc, SFC_STA_ADDR0, xfer->staaddr0);
+	sfc_writel(sfc, SFC_STA_ADDR1, xfer->staaddr1);
+}
+
+static void sfc_set_data_config(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+{
+	sfc_set_dataen(sfc, xfer->dataen);
+
+	if(xfer->dataen){
+		sfc_set_datadir(sfc, xfer->config.data_dir);
+		sfc_transfer_mode(sfc, xfer->config.ops_mode);
+		sfc_set_length(sfc, xfer->config.datalen);
+
+		if((xfer->config.ops_mode == DMA_OPS)){
+			flush_cache_all();
+			sfc_set_mem_addr(sfc, virt_to_phys(xfer->config.buf));
+		}else{
+			sfc_set_mem_addr(sfc, 0);
+			sfc->xfer = xfer;
+		}
+	}
+}
+
+int sfc_sync_cdt(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+{
+	/* 1. set index */
+	sfc_set_index(sfc, xfer->cmd_index);
+
+	/* 2. set addr */
+	sfc_set_addr(sfc, xfer);
+
+	/* 3. config data config */
+	sfc_set_data_config(sfc, xfer);
+
+	return sfc_start_transfer(sfc);
+}
+
+static int sfc_ctl_init(struct sfc *sfc)
+{
+	sfc_init(sfc);
+	sfc_stop(sfc);
+
+	/*set hold high*/
+	sfc_hold_invalid_value(sfc, 1);
+	/*set wp high*/
+	sfc_wp_invalid_value(sfc, 1);
+
+	sfc_clear_all_intc(sfc);
+	sfc_mask_all_intc(sfc);
+
+	sfc_threshold(sfc, sfc->threshold);
+	/*config the sfc pin init state*/
+	sfc_clock_phase(sfc, 0);
+	sfc_clock_polarity(sfc, 0);
+	sfc_ce_invalid_value(sfc, 1);
+
+	/* use CDT mode*/
+	sfc_use_cdt_mode(sfc);
+	printf("Enter 'CDT' mode.\n");
+
+	sfc_transfer_mode(sfc, SLAVE_MODE);
+	if(sfc->src_clk >= 100000000){
+#ifdef CONFIG_SFC_V20
+		sfc_smp_delay(sfc,DEV_CONF_SMP_DELAY_180);
+#else
+		sfc_smp_delay(sfc,DEV_CONF_HALF_CYCLE_DELAY);
+#endif
+	}
+	return 0;
+}
+struct sfc *sfc_res_init(void)
+{
+	struct sfc *sfc = NULL;
+	sfc = malloc(sizeof(struct sfc));
+	if (!sfc) {
+		printf("ERROR: %s %d kzalloc() error !\n",__func__,__LINE__);
+		return ERR_PTR(-ENOMEM);
+	}
+	memset(sfc, 0, sizeof(struct sfc));
+
+	/* sfc CDT init*/
+	sfc->cdt_addr = SFC_BASE + SFC_CDT;
+
+	sfc->src_clk = CONFIG_SFC_RATE;
+	clk_set_rate(SFC, sfc->src_clk);
+
+	sfc->threshold = THRESHOLD;
+
+	sfc_ctl_init(sfc);
+
+	return sfc;
+
+}

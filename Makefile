@@ -307,7 +307,13 @@ LIBS-y += drivers/power/libpower.o \
 	drivers/power/pmic/libpmic.o \
 	drivers/power/battery/libbattery.o
 LIBS-y += drivers/regulator/libregulator.o
-LIBS-$(CONFIG_JZ_SFC) += drivers/mtd/devices/libsfc.o
+
+ifndef CONFIG_SFC_V20
+LIBS-$(CONFIG_JZ_SFC) += drivers/mtd/devices/jz_sfc/libsfc.o
+else
+LIBS-$(CONFIG_JZ_SFC) += drivers/mtd/devices/jz_sfc_v2/libsfc.o
+endif
+
 LIBS-y += drivers/spi/libspi.o
 LIBS-y += drivers/dfu/libdfu.o
 ifeq ($(CPU),mpc83xx)

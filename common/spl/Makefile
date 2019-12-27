@@ -28,8 +28,13 @@ COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzsdhci.o
 else
 COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzmmc.o
 endif
+ifndef CONFIG_SFC_V20
 COBJS-$(CONFIG_SPL_SFC_NOR) += spl_sfc_nor.o
 COBJS-$(CONFIG_SPL_SFC_NAND) += spl_sfc_nand.o
+else
+COBJS-$(CONFIG_SPL_SFC_NOR) += spl_sfc_nor_v2.o
+COBJS-$(CONFIG_SPL_SFC_NAND) += spl_sfc_nand_v2.o
+endif
 COBJS-$(CONFIG_SPL_SPI_NAND) += spl_spi_nand.o
 ifdef CONFIG_SPL_SFC_NAND
 COBJS-$(CONFIG_OTA_VERSION20) += spl_ota.o

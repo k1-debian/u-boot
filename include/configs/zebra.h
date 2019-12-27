@@ -272,13 +272,14 @@
 
 #define CONFIG_SFC_RATE			48000000
 #define CONFIG_SFC_V20
+#define CONFIG_JZ_SFC_PE_16BIT  /* gpio PE16 ~ PE21 */
 
 #ifdef CONFIG_SPL_SFC_NOR
 #define CONFIG_JZ_SFC
-#define CONFIG_MTD_SFCNOR
 #define CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SPI_SPL_CHECK
+#define CONFIG_SFC_NOR_RATE	150000000
 /*#define CONFIG_SFC_QUAD*/
 #define CONFIG_SPIFLASH_PART_OFFSET     0x3c00
 #define CONFIG_SPI_NORFLASH_PART_OFFSET     0x3c74
@@ -289,11 +290,11 @@
 #endif
 
 #ifdef  CONFIG_SPL_SFC_NAND
+#define CONFIG_SFC_NAND_RATE    100000000
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SPIFLASH_PART_OFFSET     0x3c00
 #define CONFIG_SPI_NAND_BPP                     (2048 +64)              /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
-#define CONFIG_MTD_SFCNAND
 #define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND

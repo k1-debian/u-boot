@@ -24,3 +24,4 @@
 /ingenic-tools/gpt_creator
 /ingenic-tools/spi_checksum
 /ingenic-tools/spl_params_fixer
+/ingenic-tools/nand_device/sfc_nand_params
