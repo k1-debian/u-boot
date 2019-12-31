@@ -24,7 +24,7 @@
 #include <asm/arch/sfc.h>
 
 
-//#define	SFC_NOR_DEBUG
+//#define	SFC_REG_DEBUG
 
 
 static void sfc_writel(struct sfc *sfc, unsigned short offset, u32 value)
@@ -37,64 +37,45 @@ static unsigned int sfc_readl(struct sfc *sfc, unsigned short offset)
 	return readl(SFC_BASE + offset);
 }
 
-#ifdef SFC_NOR_DEBUG
-#ifndef CONFIG_SFC_V20
+#ifdef SFC_REG_DEBUG
 void dump_sfc_reg(struct sfc *sfc)
 {
 	int i = 0;
-	printf("SFC_GLB			:%08x\n", sfc_readl(sfc, SFC_GLB ));
-	printf("SFC_DEV_CONF	:%08x\n", sfc_readl(sfc, SFC_DEV_CONF ));
-	printf("SFC_DEV_STA_EXP	:%08x\n", sfc_readl(sfc, SFC_DEV_STA_EXP));
-	printf("SFC_DEV_STA_RT	:%08x\n", sfc_readl(sfc, SFC_DEV_STA_RT ));
-	printf("SFC_DEV_STA_MSK	:%08x\n", sfc_readl(sfc, SFC_DEV_STA_MSK ));
-	printf("SFC_TRAN_LEN		:%08x\n", sfc_readl(sfc, SFC_TRAN_LEN ));
 
-	for(i = 0; i < 6; i++)
-		printf("SFC_TRAN_CONF(%d)	:%08x\n", i,sfc_readl(sfc, SFC_TRAN_CONF(i)));
-
-	for(i = 0; i < 6; i++)
-		printf("SFC_DEV_ADDR(%d)	:%08x\n", i,sfc_readl(sfc, SFC_DEV_ADDR(i)));
-
-	printf("SFC_MEM_ADDR :%08x\n", sfc_readl(sfc, SFC_MEM_ADDR ));
-	printf("SFC_TRIG	 :%08x\n", sfc_readl(sfc, SFC_TRIG));
-	printf("SFC_SR		 :%08x\n", sfc_readl(sfc, SFC_SR));
-	printf("SFC_SCR		 :%08x\n", sfc_readl(sfc, SFC_SCR));
-	printf("SFC_INTC	 :%08x\n", sfc_readl(sfc, SFC_INTC));
-	printf("SFC_FSM		 :%08x\n", sfc_readl(sfc, SFC_FSM ));
-	printf("SFC_CGE		 :%08x\n", sfc_readl(sfc, SFC_CGE ));
-//	printf("SFC_RM_DR 	 :%08x\n", sfc_readl(spi, SFC_RM_DR));
+	printf("SFC_GLB0	 = %08x\n", sfc_readl(sfc, SFC_GLB));
+	printf("SFC_DEV_CONF	 = %08x\n", sfc_readl(sfc, SFC_DEV_CONF));
+	printf("SFC_DEV_STA_EXP	 = %08x\n", sfc_readl(sfc, SFC_DEV_STA_EXP));
+	printf("SFC_DEV_STA_RT	 = %08x\n", sfc_readl(sfc, SFC_DEV_STA_RT));
+	printf("SFC_DEV_STA_MASK = %08x\n", sfc_readl(sfc, SFC_DEV_STA_MSK));
+	for(i = 0; i < 6; i++){
+		printf("SFC_TRAN_CONF0(%d) = %08x\n", i, sfc_readl(sfc, SFC_TRAN_CONF0(i)));
+	}
+	printf("SFC_TRAN_LEN	 = %08x\n", sfc_readl(sfc, SFC_TRAN_LEN));
+	for(i = 0; i < 6; i++){
+		printf("SFC_DEV_ADDR%d		= %08x\n", i, sfc_readl(sfc, SFC_DEV_ADDR(i)));
+		printf("SFC_DEV_ADDR_PLUS%d	= %08x\n", sfc_readl(sfc, SFC_DEV_ADDR_PLUS(i)));
+	}
+	printf("SFC_MEM_ADDR	= %08x\n", sfc_readl(sfc, SFC_MEM_ADDR));
+	printf("SFC_TRIG	= %08x\n", sfc_readl(sfc, SFC_TRIG));
+	printf("SFC_SR		= %08x\n", sfc_readl(sfc, SFC_SR));
+	printf("SFC_SCR		= %08x\n", sfc_readl(sfc, SFC_SCR));
+	printf("SFC_INTC	= %08x\n", sfc_readl(sfc, SFC_INTC));
+	printf("SFC_FSM		= %08x\n", sfc_readl(sfc, SFC_FSM));
+	printf("SFC_CGE		= %08x\n", sfc_readl(sfc, SFC_CGE));
+	printf("SFC_CMD_IDX	= %08x\n", sfc_readl(sfc, SFC_CMD_IDX));
+	printf("SFC_COL_ADDR	= %08x\n", sfc_readl(sfc, SFC_COL_ADDR));
+	printf("SFC_ROW_ADDR	= %08x\n", sfc_readl(sfc, SFC_ROW_ADDR));
+	printf("SFC_STA_ADDR0	= %08x\n", sfc_readl(sfc, SFC_STA_ADDR0));
+	printf("SFC_STA_ADDR1	= %08x\n", sfc_readl(sfc, SFC_STA_ADDR1));
+	printf("SFC_DES_ADDR	= %08x\n", sfc_readl(sfc, SFC_DES_ADDR));
+	printf("SFC_GLB1	= %08x\n", sfc_readl(sfc, SFC_GLB1));
+	printf("SFC_DEV1_STA_RT = %08x\n", sfc_readl(sfc, SFC_DEV1_STA_RT));
+	for(i = 0; i < 6; i++) {
+		printf("SFC_TRAN_CONF1(%d)	= %08x\n", i, sfc_readl(sfc, SFC_TRAN_CONF1(i)));
+	}
+	//printf("SFC_CDT	= %08x\n", sfc_readl(sfc, SFC_CDT));
+	//printf("SFC_DR	= %08x\n", sfc_readl(sfc, SFC_RM_DR));
 }
-#else
-void dump_sfc_reg(struct sfc *sfc)
-{
-	printk("SFC_GLB0 = %08x\n",sfc_readl(sfc,0x0000));
-	printk("SFC_DEV_CONF = %08x\n",sfc_readl(sfc,0x0004));
-	printk("SFC_DEV_STA_EXP = %08x\n",sfc_readl(sfc,0x0008));
-	printk("SFC_DEV_STA_RT	 = %08x\n",sfc_readl(sfc,0x000c));
-	printk("SFC_DEV_STA_MASK = %08x\n",sfc_readl(sfc,0x0010));
-	printk("SFC_TRAN_CONF0 = %08x\n",sfc_readl(sfc,0x0014));
-	printk("SFC_TRAN_LEN = %08x\n",sfc_readl(sfc,0x002c));
-	printk("SFC_DEV_ADDR0 = %08x\n",sfc_readl(sfc,0x0030));
-	printk("SFC_DEV_ADDR_PLUS0 = %08x\n",sfc_readl(sfc,0x0048));
-	printk("SFC_MEM_ADDR = %08x\n",sfc_readl(sfc,0x0060));
-	printk("SFC_TRIG = %08x\n",sfc_readl(sfc,0x0064));
-	printk("SFC_SR = %08x\n",sfc_readl(sfc,0x0068));
-	printk("SFC_SCR = %08x\n",sfc_readl(sfc,0x006c));
-	printk("SFC_INTC = %08x\n",sfc_readl(sfc,0x0070));
-	printk("SFC_FSM = %08x\n",sfc_readl(sfc,0x0074));
-	printk("SFC_CGE = %08x\n",sfc_readl(sfc,0x0078));
-	printk("SFC_CMD_IDX = %08x\n",sfc_readl(sfc,0x007c));
-	printk("SFC_COL_ADDR = %08x\n", sfc_readl(sfc, 0x80));
-	printk("SFC_ROW_ADDR = %08x\n", sfc_readl(sfc, 0x84));
-	printk("SFC_STA_ADDR0 = %08x\n", sfc_readl(sfc, 0x88));
-	printk("SFC_DES_ADDR = %08x\n", sfc_readl(sfc, 0x90));
-	printk("SFC_GLB1 = %08x\n", sfc_readl(sfc, 0x94));
-	printk("SFC_DEV1_STA_RT = %08x\n", sfc_readl(sfc, 0x98));
-	printk("SFC_TRAN_CONF1 = %08x\n", sfc_readl(sfc, 0x9c));
-	printk("SFC_CDT = %08x\n", sfc_readl(sfc, 0x800));
-
-}
-#endif
 
 void dump_cdt(struct sfc *sfc)
 {
@@ -131,10 +112,10 @@ static void dump_data(unsigned char *buf,size_t len)
 	int i;
 	for(i = 0;i<len;i++){
 		if(!(i % 16)){
-			printk("\n");
-			printk("%08x:",i);
+			printf("\n");
+			printf("%08x:",i);
 		}
-		printk("%02x ",buf[i]);
+		printf("%02x ",buf[i]);
 	}
 }
 #endif
@@ -143,12 +124,8 @@ void sfc_init(struct sfc *sfc)
 {
 	int n;
 	for(n = 0; n < N_MAX; n++) {
-#ifdef CONFIG_SFC_V20
 		sfc_writel(sfc, SFC_TRAN_CONF0(n), 0);
 		sfc_writel(sfc, SFC_TRAN_CONF1(n), 0);
-#else
-		sfc_writel(sfc, SFC_TRAN_CONF(n), 0);
-#endif
 		sfc_writel(sfc, SFC_DEV_ADDR(n), 0);
 		sfc_writel(sfc, SFC_DEV_ADDR_PLUS(n), 0);
 	}
@@ -318,7 +295,6 @@ void sfc_threshold(struct sfc *sfc, int value)
 	sfc_writel(sfc, SFC_GLB, tmp);
 }
 
-
 void sfc_smp_delay(struct sfc *sfc, int value)
 {
 	unsigned int tmp;
@@ -354,8 +330,6 @@ void sfc_interval_delay(struct sfc *sfc, int value)
 	tmp |= value << DEV_CONF_TSH_OFFSET;
 	sfc_writel(sfc, SFC_DEV_CONF, tmp);
 }
-
-
 
 int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup, unsigned int t_shslrd, unsigned int t_shslwr)
 {
@@ -499,6 +473,7 @@ unsigned int sfc_get_sta_rt(struct sfc *sfc)
 {
 	return sfc_readl(sfc,SFC_DEV_STA_RT);
 }
+
 unsigned int sfc_get_fsm(struct sfc *sfc)
 {
 	return sfc_readl(sfc,SFC_FSM);
@@ -508,26 +483,14 @@ void sfc_data_en(struct sfc *sfc, int channel, unsigned int value)
 {
 	if(value == 1) {
 		unsigned int tmp;
-#ifdef CONFIG_SFC_V20
 		tmp = sfc_readl(sfc, SFC_TRAN_CONF0(channel));
 		tmp |= TRAN_CONF0_DATEEN;
 		sfc_writel(sfc, SFC_TRAN_CONF0(channel), tmp);
-#else
-		tmp = sfc_readl(sfc, SFC_TRAN_CONF(channel));
-		tmp |= TRAN_CONF_DATEEN;
-		sfc_writel(sfc, SFC_TRAN_CONF(channel), tmp);
-#endif
 	} else {
 		unsigned int tmp;
-#ifdef CONFIG_SFC_V20
 		tmp = sfc_readl(sfc, SFC_TRAN_CONF0(channel));
 		tmp &= ~TRAN_CONF0_DATEEN;
 		sfc_writel(sfc, SFC_TRAN_CONF0(channel), tmp);
-#else
-		tmp = sfc_readl(sfc, SFC_TRAN_CONF(channel));
-		tmp &= ~TRAN_CONF_DATEEN;
-		sfc_writel(sfc, SFC_TRAN_CONF(channel), tmp);
-#endif
 	}
 }
 
@@ -718,14 +681,12 @@ static int sfc_ctl_init(struct sfc *sfc)
 
 	sfc_transfer_mode(sfc, SLAVE_MODE);
 	if(sfc->src_clk >= 100000000){
-#ifdef CONFIG_SFC_V20
+		/* set sample delay */
 		sfc_smp_delay(sfc,DEV_CONF_SMP_DELAY_180);
-#else
-		sfc_smp_delay(sfc,DEV_CONF_HALF_CYCLE_DELAY);
-#endif
 	}
 	return 0;
 }
+
 struct sfc *sfc_res_init(void)
 {
 	struct sfc *sfc = NULL;
