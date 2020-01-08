@@ -5,6 +5,10 @@
 #include <linux/types.h>
 #include <linker_lists.h>
 
+#define MTD_MODE                0x0     //use mtd mode, erase partition when write
+#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
+#define UBI_MANAGER             0x1
+
 /*
  * u-boot private
  */

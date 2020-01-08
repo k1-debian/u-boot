@@ -413,10 +413,10 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		to += wlen;
 		buf += wlen;
 	}
-	if(nand_info->id_manufactory == W25M02GV_MID &&
-	    nand_info->id_device == W25M02GV_DID)
-		//active_die(flash, 0);  //winbond current not support
 
+//	if(nand_info->id_manufactory == W25M02GV_MID &&
+//	    nand_info->id_device == W25M02GV_DID)
+		//active_die(flash, 0);  //winbond current not support
 	return ret;
 }
 
