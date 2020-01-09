@@ -23,6 +23,7 @@
 
 #define DEBUG
 /* #define DEBUG_READ_WRITE */
+#define CONFIG_DDRP_SOFTWARE_TRAINING	1
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
@@ -281,6 +282,26 @@ static void ddrp_calibration(int al8_1x,int ah8_1x,int al8_2x,int ah8_2x)
 	ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
 }
 
+static void ddrp_auto_calibration(void)
+{
+	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	unsigned int timeout = 0xffffff;
+	unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA;
+
+	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
+	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
+	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
+
+	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x3) == wait_cal_done) && --timeout);
+
+	if(!timeout) {
+		printf("ddrp_auto_calibration failed!\n");
+	}
+	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
+
+	printf("ddrp_auto_calibration success!\n");
+}
+
 //#define DDR_CHOOSE_PARAMS	0
 #ifdef DDR_CHOOSE_PARAMS
 static int atoi(char *pstr)
@@ -353,7 +374,7 @@ struct ddrp_calib {
 		uint8_t u8;
 		struct{
 			uint8_t dllsel:3;
-			uint8_t ophsel:2;
+			uint8_t ophsel:1;
 			uint8_t cyclesel:3;
 		}b;
 	}bypass;
@@ -653,8 +674,12 @@ void sdram_init(void)
 	ddrc_prev_init();
 
 	ddrc_post_init();
-	ddrp_software_calibration();
 
+#ifdef CONFIG_DDRP_SOFTWARE_TRAINING
+	ddrp_software_calibration();
+#else
+	ddrp_auto_calibration();
+#endif
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);
 
