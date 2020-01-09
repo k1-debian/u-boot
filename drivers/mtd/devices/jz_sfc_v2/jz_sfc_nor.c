@@ -51,7 +51,7 @@ unsigned int sfc_nor_read_id(void)
 	memset(&xfer, 0, sizeof(xfer));
 
 	/* set Index */
-	xfer.cmd_index = SPINOR_OP_RDID;
+	xfer.cmd_index = NOR_READ_ID;
 
 	/* set addr */
 	xfer.rowaddr = 0;
@@ -70,9 +70,15 @@ unsigned int sfc_nor_read_id(void)
 	}
 
 	chip_id = ((buf[0] & 0xff) << 16) | ((buf[1] & 0xff) << 8) | (buf[2] & 0xff);
-
 	return chip_id;
 }
+
+unsigned int get_norflash_id(void)
+{
+	unsigned int id = sfc_nor_read_id();
+	return id;
+}
+
 
 static unsigned int sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned int len)
 {
@@ -274,7 +280,7 @@ int sfc_nor_page_write(unsigned int to, unsigned int len, unsigned char *buf)
 #ifdef CONFIG_BURNER
 
 static struct legacy_params g_legacy_params;
-static struct legacy_params *params_compatibility()
+struct legacy_params *params_compatibility()
 {
 	int val, mask, bit_shift;
 	struct legacy_params *p = &g_legacy_params;
@@ -514,7 +520,7 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 
 	/* 2.nor read id */
 	cdt[NOR_READ_ID].link = CMD_LINK(0, DEFAULT_ADDRMODE, TM_STD_SPI);
-	cdt[NOR_READ_ID].xfer = CMD_XFER(0, DISABLE, 0, DISABLE, SPINOR_OP_RDID);
+	cdt[NOR_READ_ID].xfer = CMD_XFER(0, DISABLE, 0, ENABLE, SPINOR_OP_RDID);
 	cdt[NOR_READ_ID].staExp = 0;
 	cdt[NOR_READ_ID].staMsk = 0;
 
@@ -554,7 +560,9 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 		/* second create cdt table */
 		write_cdt(flash->sfc, cdt, NOR_READ_STANDARD, NOR_CHIP_ERASE_FINISH);
 	}
-	//dump_cdt(flash->sfc);
+#ifdef SFC_REG_DEBUG
+	dump_cdt(flash->sfc);
+#endif
 }
 
 int sfc_nor_flash_init(void)
@@ -625,7 +633,7 @@ int jz_sfc_chip_erase(void)
 
 #ifdef CONFIG_BURNER
 
-unsigned int get_partition_index(u32 offset,u32 length, int *pt_offset, int *pt_size)
+struct nor_partition *get_partition_index(u32 offset,u32 length, int *pt_offset, int *pt_size)
 {
 	int i;
 	struct spi_nor_info *spi_nor_info;
@@ -653,7 +661,7 @@ unsigned int get_partition_index(u32 offset,u32 length, int *pt_offset, int *pt_
 		printf("partition size not align with write transfer size \n");
 		return -1;
 	}
-	return i;
+	return &flash->norflash_partitions->nor_partition[i];
 }
 
 int check_offset(u32 offset,u32 length)
@@ -839,7 +847,6 @@ int norflash_get_params_from_burner(unsigned char *addr)
 	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
 	burn_mode = spiflash_info->b_quad;
 
-
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();
 	dump_mini_cloner_params();
@@ -860,6 +867,10 @@ int norflash_get_params_from_burner(unsigned char *addr)
 
 	memcpy(flash->g_nor_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
 	memcpy(flash->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));
+
+	/* Update to private CDT table */
+	create_cdt_table(flash, UPDATE_CDT);
+
 	sfc_nor_do_special_func();
 
 #ifdef SFC_NOR_CLONER_DEBUG
@@ -872,7 +883,5 @@ int norflash_get_params_from_burner(unsigned char *addr)
 #endif
 	return 0;
 }
-
-
 
 #endif
