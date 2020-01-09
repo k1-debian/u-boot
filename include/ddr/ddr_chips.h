@@ -132,4 +132,9 @@
 #ifdef CONFIG_LPDDR3_MT52L256M32D1PF_FPGA
 #include "./chips/LPDDR3_MT52L256M32D1PF_FPGA.h"
 #endif
+
+#ifdef CONFIG_LPDDR3_W63AH6NKB-BI
+#include "./chips/LPDDR3_W63AH6NKB-BI.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */

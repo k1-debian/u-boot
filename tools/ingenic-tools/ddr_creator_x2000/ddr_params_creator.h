@@ -44,11 +44,11 @@
 
 #define ASSERT_MASK(T,BIT_NUM) do{					\
 		if(T < 0) {						\
-			out_error("timing too small and check %s %d!\n",__FILE__,__LINE__); \
+			out_error("(%d)timing too small and check %s %d!\n",T,__FILE__,__LINE__); \
 			assert(1);					\
 		}							\
 		if(T > (1 << (BIT_NUM + 1)) - 1){			\
-			out_error("timing too big and check %s %d!\n",__FILE__,__LINE__); \
+			out_error("(%d)timing too big and check %s %d!\n",T,__FILE__,__LINE__); \
 			assert(1);					\
 		}							\
 	}while(0)
