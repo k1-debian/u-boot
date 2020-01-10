@@ -244,7 +244,7 @@ void sfc_init(void)
 	unsigned int tmp;
 	int i;
 
-	clk_set_rate(SFC, CONFIG_SFC_RATE);
+	clk_set_rate(SFC, CONFIG_SFC_NAND_RATE);
 
 	tmp = sfc_readl(SFC_GLB);
 	tmp &= ~(GLB_THRESHOLD_MSK);

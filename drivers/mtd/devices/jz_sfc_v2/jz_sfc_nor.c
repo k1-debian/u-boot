@@ -574,7 +574,7 @@ int sfc_nor_flash_init(void)
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
 
-	flash->sfc = sfc_res_init();
+	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_RATE);
 
 	/* try creating default CDT table */
 	create_cdt_table(flash, DEFAULT_CDT);

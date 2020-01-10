@@ -492,7 +492,7 @@ void sfc_init(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
 
-	clk_set_rate(SFC, CONFIG_SFC_RATE);
+	clk_set_rate(SFC, CONFIG_SFC_NOR_RATE);
 	sfc->threshold = THRESHOLD;
 	flash->sfc = sfc;
 

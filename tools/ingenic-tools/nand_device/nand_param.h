@@ -5,6 +5,7 @@ int dosilicon_nand_register_func(void);
 int foresee_nand_register_func(void);
 int gd_nand_register_func(void);
 int mxic_nand_register_func(void);
+int tc_nand_register_func(void);
 int winbond_nand_register_func(void);
 int xtx_mid0b_nand_register_func(void);
 int xtx_nand_register_func(void);
@@ -24,6 +25,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)mxic_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)tc_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)winbond_nand_register_func,

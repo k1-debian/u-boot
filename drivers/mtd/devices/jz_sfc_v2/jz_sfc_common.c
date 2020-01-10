@@ -687,7 +687,7 @@ static int sfc_ctl_init(struct sfc *sfc)
 	return 0;
 }
 
-struct sfc *sfc_res_init(void)
+struct sfc *sfc_res_init(uint32_t sfc_rate)
 {
 	struct sfc *sfc = NULL;
 	sfc = malloc(sizeof(struct sfc));
@@ -700,7 +700,7 @@ struct sfc *sfc_res_init(void)
 	/* sfc CDT init*/
 	sfc->cdt_addr = SFC_BASE + SFC_CDT;
 
-	sfc->src_clk = CONFIG_SFC_RATE;
+	sfc->src_clk = sfc_rate;
 	clk_set_rate(SFC, sfc->src_clk);
 
 	sfc->threshold = THRESHOLD;

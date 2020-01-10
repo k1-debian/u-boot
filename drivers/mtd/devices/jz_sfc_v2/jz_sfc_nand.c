@@ -832,7 +832,7 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 			return -1;
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
-		flash->sfc = sfc_res_init();
+		flash->sfc = sfc_res_init(CONFIG_SFC_NAND_RATE);
 	}
 	mtd = &nand_info[0];
 	flash_info = calloc(sizeof(struct jz_sfcnand_flashinfo), sizeof(uint8_t));
