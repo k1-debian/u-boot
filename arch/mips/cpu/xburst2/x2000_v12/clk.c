@@ -68,8 +68,6 @@ void clk_prepare(void)
 	unsigned regval = 0, reg = 0;
 	unsigned int size = ARRAY_SIZE(cgusetting);
 
-	if(!((i == MSC0) || (i == MSC1) || (i == MSC2)))
-		return;
 	for (i = 0; i < size; i++) {
 		reg = cgusetting[i].addr;
 		regval = readl(reg);
