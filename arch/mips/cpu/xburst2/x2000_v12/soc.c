@@ -100,7 +100,7 @@ void board_init_f(ulong dummy)
 	timer_init();
 
 	debug("CLK stop\n");
-	clk_prepare();
+	//clk_prepare();
 
 	debug("PLL init\n");
 	pll_init();
@@ -115,6 +115,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_DDR_AUTO_REFRESH_TEST
 	ddr_test_refresh(0xa0000000, 0xa1000000);
 #endif
+
 
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();

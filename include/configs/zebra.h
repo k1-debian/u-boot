@@ -29,13 +29,13 @@
 #define CONFIG_X2000_V12	/* x2000_v12 SoC */
 
 
-#define CONFIG_SYS_APLL_FREQ		600000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
-#define CONFIG_SYS_CPU_FREQ		600000000
-#define CONFIG_SYS_MEM_FREQ		300000000
+#define CONFIG_SYS_CPU_FREQ		1200000000
+#define CONFIG_SYS_MEM_FREQ		750000000
 
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
@@ -72,19 +72,21 @@
 
 #define CONFIG_SYS_UART_INDEX		2
 #define CONFIG_BAUDRATE			115200
+
 /*
 #define CONFIG_DDR_TEST_CPU
 #define CONFIG_DDR_TEST
 #define CONFIG_DDR_TEST_DATALINE
 #define CONFIG_DDR_TEST_ADDRLINE
 */
+
 #define CONFIG_DDR_INNOPHY
 #define CONFIG_DDR_DLL_OFF
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
 /* #define CONFIG_DDR_TYPE_DDR3 */
 #define CONFIG_DDR_TYPE_LPDDR3
-/* #define CONFIG_DDR_TYPE_LPDDR2 */
+/*#define CONFIG_DDR_TYPE_LPDDR2*/
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
@@ -131,7 +133,7 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS2,115200 mem=256M@0x0 mem=256M@0x30000000"
+#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0"
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)

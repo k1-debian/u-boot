@@ -47,8 +47,8 @@
 1110b: RL = 16 / WL = 8 (≤1066 MHz)
 */
 /* when DDR_RL = -1, DDR_WL = -1, Auto Calculate according to ddr freq. */
-#define DDR_RL  	DDR__tck(3)  /* LPDDR3 Read Latency : - 3 6 8 9 ..., tck */
-#define DDR_WL		DDR__tck(1)  /* LPDDR3 Write Latency : - 1 3 4 5 ..., tck */
+#define DDR_RL  	DDR__tck(12)  /* LPDDR3 Read Latency : - 3 6 8 9 ..., tck */
+#define DDR_WL		DDR__tck(6)  /* LPDDR3 Write Latency : - 1 3 4 5 ..., tck */
 #define DDR_tRAS 	DDR_SELECT_MAX__tCK_ps(3, 42 * 1000)/* ACTIVE to PRECHARGE command period to the same bank. */
 #define DDR_tRP 	DDR_SELECT_MAX__tCK_ps(3, 21 * 1000)/* tRP: PRECHARGE command period to the same bank */
 #define DDR_tRC 	(DDR_tRAS + DDR_tRP)/* ACTIVE to ACTIVE command period to the same bank. */
