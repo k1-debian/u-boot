@@ -60,8 +60,7 @@ static void gen_cgu_params(struct clk_cgu_setting *cgusetting)
 		regval = 0;
 		cgusetting[id].sel_val = 0;
 		for (i = 0; i < 4; i++) {
-			if (cgu->sel_src == cgu->sel[i] &&
-			    cgu_clk_sel->en == 1) {
+			if (cgu->sel_src == cgu->sel[i]) {
 				cgusetting[id].sel_val = i << cgu->sel_bit;
 			}
 		}

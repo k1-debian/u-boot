@@ -69,6 +69,8 @@ void clk_prepare(void)
 	unsigned int size = ARRAY_SIZE(cgusetting);
 
 	for (i = 0; i < size; i++) {
+		if((i == MSC0) || (i == MSC1) || (i == MSC2))
+			continue;
 		reg = cgusetting[i].addr;
 		regval = readl(reg);
 		if(cgusetting[i].busy) {
