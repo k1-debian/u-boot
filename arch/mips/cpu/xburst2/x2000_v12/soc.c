@@ -22,7 +22,7 @@
  * MA 02111-1307 USA
  */
 
-/*#define DEBUG */
+#define DEBUG
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -81,7 +81,6 @@ void board_init_f(ulong dummy)
 #endif
 
 	gpio_init();
-
 	/* OST clk gate set 0 */
 	cpm_outl(cpm_inl(CPM_CLKGR0) & (~CPM_CLKGR_OST), CPM_CLKGR0);
 	/* wtd disable */

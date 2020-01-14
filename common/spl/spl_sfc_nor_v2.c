@@ -15,6 +15,15 @@
 
 #define GS_RETRY_TIMES	100
 #define STATUS_MAX_LEN  4      //4 * byte = 32 bit
+//#define SFC_NOR_DEBUG
+
+#ifdef SFC_NOR_DEBUG
+#define sfc_debug (format,arg...)			\
+	printf(format,## arg)
+#else
+#define sfc_debug
+#endif
+
 
 struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);
 struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);
@@ -128,13 +137,13 @@ static void sfc_sr_handle(struct sfc *sfc)
 
 		if (reg_sr & CLR_UNDER) {
 			tmp = CLR_UNDER;
-			printf("UNDR!\n");
+			sfc_debug("UNDR!\n");
 			break;
 		}
 
 		if (reg_sr & CLR_OVER) {
 			tmp = CLR_OVER;
-			printf("OVER!\n");
+			sfc_debug("OVER!\n");
 			break;
 		}
 	}
@@ -167,7 +176,7 @@ static void write_cdt(struct sfc *sfc, struct sfc_cdt *cdt, uint16_t start_index
 	cdt_size = sizeof(struct sfc_cdt);
 
 	memcpy((void *)sfc->cdt_addr + (start_index * cdt_size), (void *)cdt + (start_index * cdt_size), cdt_num * cdt_size);
-	printf("create CDT index: %d ~ %d,  index number:%d.\n", start_index, end_index, cdt_num);
+	sfc_debug("create CDT index: %d ~ %d,  index number:%d.\n", start_index, end_index, cdt_num);
 }
 
 static void sfc_set_index(struct sfc *sfc, unsigned short index)
@@ -498,7 +507,7 @@ void sfc_init(void)
 
 	/* use CDT mode */
 	sfc_use_cdt(flash->sfc);
-	printf("Enter 'CDT' mode.\n");
+	sfc_debug("Enter 'CDT' mode.\n");
 
 	/* try creating default CDT table */
 	flash->sfc->cdt_addr = SFC_BASE + SFC_CDT;
@@ -513,7 +522,7 @@ void sfc_init(void)
 
 	/* get nor flash params */
 	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), (unsigned char *)&flash->g_nor_info, sizeof(struct mini_spi_nor_info));
-	printf("%s %x\n", flash->g_nor_info.name, flash->g_nor_info.id);
+	sfc_debug("%s %x\n", flash->g_nor_info.name, flash->g_nor_info.id);
 
 	/* update to private CDT table */
 	create_cdt_table(flash, UPDATE_CDT);
@@ -601,7 +610,7 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 	unsigned int nv_num = nv_size / blocksize;
 
 	if(nv_num > 6) {
-	//	printf("%s,bigger\n",__func__);
+	//	sfc_debug("%s,bigger\n",__func__);
 		while(1);
 	}
 

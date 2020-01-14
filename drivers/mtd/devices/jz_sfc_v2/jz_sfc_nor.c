@@ -17,6 +17,8 @@ struct mini_spi_nor_info mini_params;
 unsigned int burn_mode = 0;
 #endif
 
+//#define SFC_REG_DEBUG
+
 int sfc_nor_reset(void)
 {
 	struct sfc_cdt_xfer xfer;

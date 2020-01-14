@@ -60,7 +60,8 @@ static char * cgu_name(int clk) {
 }
 #endif
 
-struct clk_cgu_setting cgusetting[] = CGU_REG_VALUE;
+struct clk_cgu_setting cgusetting[19] = CGU_REG_VALUE;
+
 void clk_prepare(void)
 {
 	/*stop clk and set div max*/
