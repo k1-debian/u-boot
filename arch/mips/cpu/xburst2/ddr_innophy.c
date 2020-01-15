@@ -210,12 +210,12 @@ static void ddrp_pll_init(void)
 
 	val = ddr_readl(DDRP_INNOPHY_PLL_FBDIV);
 	val &= ~(0xff);
-	val |= 0x14;
+	val |= 0x8;
 	ddr_writel(val, DDRP_INNOPHY_PLL_FBDIV);
 
 	val = ddr_readl(DDRP_INNOPHY_PLL_PDIV);
 	val &= ~(0xff);
-	val |= 10;
+	val |= 4;
 	ddr_writel(val, DDRP_INNOPHY_PLL_PDIV);
 
 	ddr_writel(ddr_readl(DDRP_INNOPHY_PLL_CTRL) | DDRP_PLL_CTRL_PLLPDEN, DDRP_INNOPHY_PLL_CTRL);
