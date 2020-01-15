@@ -127,7 +127,9 @@ void ddr_inno_phy_init(void)
 	phy_writel(0x5, INNO_PLL_PDIV);
 	phy_writel(0x1a, INNO_PLL_CTRL);
 	phy_writel(0x18, INNO_PLL_CTRL);
+#ifndef CONFIG_FASTBOOT
 	printf("ddrp pll lock 0x%x\n", phy_readl(INNO_PLL_LOCK));
+#endif
 	while(!(readl(DDR_APB_PHY_INIT) & (1<<2))); //polling pll lock
 
 	/*
@@ -149,9 +151,11 @@ void ddr_inno_phy_init(void)
 	}
 	phy_writel(0x0, INNO_AL);
 
+#ifndef CONFIG_FASTBOOT
 	printf("CWL = 0x%x\n", phy_readl(INNO_CWL));
 	printf("CL = 0x%x\n", phy_readl(INNO_CL));
 	printf("AL = 0x%x\n", phy_readl(INNO_AL));
+#endif
 }
 
 void ddrc_dfi_init(void)
@@ -161,7 +165,9 @@ void ddrc_dfi_init(void)
 	writel(1, DDR_APB_PHY_INIT); //start high
 	writel(0, DDR_APB_PHY_INIT); //start low
 	while(!(readl(DDR_APB_PHY_INIT) & (1<<1))); //polling dfi init comp
+#ifndef CONFIG_FASTBOOT
 	printf("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
+#endif
 
 	ddr_writel(0, DDRC_CTRL);
 	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
@@ -190,20 +196,28 @@ void ddrc_dfi_init(void)
 		/*DDR2*/
 
 		ddr_writel(0x211,DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
 		printf("DDRC_LMR: %x\n",ddr_readl(DDRC_LMR));
+#endif
 		ddr_writel(0,DDRC_LMR);
 
 		ddr_writel(0x311,DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
 		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
+#endif
 		ddr_writel(0,DDRC_LMR);
 
 		ddr_writel(0x111,DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
 		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
+#endif
 		ddr_writel(0,DDRC_LMR);
 
 		reg = ((DDR_MR0_VALUE)<<12)|0x011;
 		ddr_writel(reg, DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
 		printf("DDRC_LMR, MR0: %x\n", reg);
+#endif
 		ddr_writel(0,DDRC_LMR);
 
 	}
@@ -238,14 +252,22 @@ void ddrp_wl_training(void)
 void phy_calibration(void)
 {
 	int m = phy_readl(INNO_TRAINING_CTRL);
+#ifndef CONFIG_FASTBOOT
 	printf("INNO_TRAINING_CTRL 1: %x\n", phy_readl(INNO_TRAINING_CTRL));
+#endif
 	m = 0xa1;
 	phy_writel(m,INNO_TRAINING_CTRL);
+#ifndef CONFIG_FASTBOOT
 	printf("INNO_TRAINING_CTRL 2: %x\n", phy_readl(INNO_TRAINING_CTRL));
+#endif
 	while (0x3 != phy_readl(INNO_CALIB_DONE));
+#ifndef CONFIG_FASTBOOT
 	printf("calib done: %x\n", phy_readl(INNO_CALIB_DONE));
+#endif
 	phy_writel(0xa0,INNO_TRAINING_CTRL);
+#ifndef CONFIG_FASTBOOT
 	printf("INNO_TRAINING_CTRL 3: %x\n", phy_readl(INNO_TRAINING_CTRL));
+#endif
 }
 
 int get_ddr_type(void)

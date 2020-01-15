@@ -73,9 +73,11 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+#ifndef CONFIG_FASTBOOT
 	printf("ERROR EPC 0x%x\n", (unsigned int)read_c0_errorepc());
 
 	debug("Timer init\n");
+#endif
 	timer_init();
 
 #ifdef CONFIG_SPL_REGULATOR_SUPPORT
@@ -84,7 +86,9 @@ void board_init_f(ulong dummy)
 #endif
 
 #ifndef CONFIG_BURNER
+#ifndef CONFIG_FASTBOOT
 	debug("CLK stop\n");
+#endif
 	clk_prepare();
 #endif
 	debug("PLL init\n");

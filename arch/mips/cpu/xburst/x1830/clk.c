@@ -29,7 +29,9 @@
 #include <asm/arch/clk.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+#ifndef CONFIG_FASTBOOT
 #define DUMP_CGU_SELECT
+#endif
 #ifdef DUMP_CGU_SELECT
 static char clk_name[][10] = {
 	[HELIX] = {"helix"},

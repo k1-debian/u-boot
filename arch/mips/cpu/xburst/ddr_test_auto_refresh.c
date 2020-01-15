@@ -27,8 +27,10 @@ void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr)
 			//mdelay(5);
 			count = 0;
 			num++;
+#ifndef CONFIG_FASTBOOT
 			if (num % 30 == 0)
 				printf("this program cs0 is alive, pd num is %d\n", num);
+#endif
 		}
 	}
 #endif
@@ -50,7 +52,9 @@ void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr)
 	//while(flag)
 	{
 		run++;
+#ifndef CONFIG_FASTBOOT
 		printf("now run is %d\n", run);
+#endif
 #ifdef DDR_CS0
 		count = 0;
 		num = 0;
@@ -63,8 +67,10 @@ void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr)
 				mdelay(5);
 				count = 0;
 				num++;
+#ifndef CONFIG_FASTBOOT
 				if (num % 30 == 0)
 					printf("this cs0 program is alive ps num is %d\n", num);
+#endif
 			}
 		}
 #endif

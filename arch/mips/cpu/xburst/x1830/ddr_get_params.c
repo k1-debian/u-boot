@@ -205,7 +205,9 @@ void get_ddr_params(int type)
 
 #else
 
+#ifndef CONFIG_FASTBOOT
 	printf("type ---- %d\n", type);
+#endif
 	switch(type) {
 		case DDR3:
 #ifdef CONFIG_DDR_TYPE_DDR3

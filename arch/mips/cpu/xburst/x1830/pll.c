@@ -100,6 +100,7 @@ static void fill_pll_cfg(void)
 	pll_cfg.l2div = (((CONFIG_SYS_CPCCR_SEL) >> 4) & 0xf) + 1;
 	pll_cfg.cdiv = (((CONFIG_SYS_CPCCR_SEL) >> 0) & 0xf) + 1;
 #endif
+#ifndef CONFIG_FASTBOOT
 	printf("pdiv = %d, h2div = %d, h0div = %d, cdiv = %d, l2div = %d, ddrdiv = %d\n",
 			pll_cfg.pdiv,
 			pll_cfg.h2div,
@@ -107,6 +108,7 @@ static void fill_pll_cfg(void)
 			pll_cfg.cdiv,
 			pll_cfg.l2div,
 			gd->arch.gi->ddr_div);
+#endif
 	return;
 }
 
@@ -192,8 +194,10 @@ static unsigned int get_pllreg_value(int freq)
 	cppcr.b.PLLN = plln;
 	cppcr.b.PLLOD = pllod;
 	cppcr.b.PLLRG = range;
+#ifndef CONFIG_FASTBOOT
 	printf("pllm = %d,plln = %d,pllod = %d,range = %d\n",pllm,plln,pllod,range);
 	printf("cppcr is %x\n",cppcr.d32);
+#endif
 	return cppcr.d32;
 }
 
@@ -282,7 +286,9 @@ int pll_init(void)
 		mpll = clk_get_rate(MPLL);
 		vpll = clk_get_rate(VPLL);
 		epll = clk_get_rate(EPLL);
+#ifndef CONFIG_FASTBOOT
 		printf("apll %d \nmpll %d \nvpll = %d\nepll = %d\n",(int)apll,(int)mpll,(int)vpll,(int)epll);
+#endif
 
 		switch ((cpccr >> 28) & 0x3) {
 		case 0x1:
@@ -334,10 +340,12 @@ int pll_init(void)
 			assert(((cpccr >> 26) & 0x3) == 0x2);
 			assert(((cpccr >> 24) & 0x3) == 0x2);
 		}
+#ifndef CONFIG_FASTBOOT
 		printf("ddr sel %s, cpu sel %s cpccr(%x)\n", CONFIG_DDR_SEL_PLL == APLL ? "apll" : "mpll",
 				CONFIG_CPU_SEL_PLL == APLL ? "apll" : "mpll", cpccr);
 		printf("cclk  %d\nl2clk %d\nh0clk %d\nh2clk %d\npclk  %d\n",
 				cclk,l2clk,h0clk,h2clk,pclk);
+#endif
 	}
 	return 0;
 }
