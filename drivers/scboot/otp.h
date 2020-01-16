@@ -96,6 +96,7 @@
 
 #define EFUSE_REG_STAT_RDDONE (0x1 << 0)
 #define EFUSE_REG_STAT_WTDONE (0x1 << 1)
+#define EFUSE_REG_STAT_SCBT_EN (0x1 << 8)
 
 #define EFUSE_REG32(a) *(volatile unsigned int *)(a)
 
