@@ -15,18 +15,54 @@
 
 #define GS_RETRY_TIMES	100
 #define STATUS_MAX_LEN  4      //4 * byte = 32 bit
-//#define SFC_NOR_DEBUG
 
+//#define SFC_NOR_DEBUG
 #ifdef SFC_NOR_DEBUG
-#define sfc_debug (format,arg...)			\
-	printf(format,## arg)
+#define sfc_debug(fmt, args...)			\
+	do {					\
+		printf(fmt, ##args);		\
+	} while(0)
 #else
-#define sfc_debug
+#define sfc_debug(fmt, args...)			\
+	do {					\
+	} while(0)
 #endif
 
 
 struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);
 struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);
+
+#ifdef SFC_NOR_DEBUG
+void dump_cdt(struct sfc *sfc)
+{
+	struct sfc_cdt *cdt;
+	int i;
+
+	if(sfc->cdt_addr == NULL){
+		sfc_debug("%s error: sfc res not init !\n", __func__);
+		return;
+	}
+
+	cdt = sfc->cdt_addr;
+
+	for(i = 0; i < 32; i++){
+		sfc_debug("\nnum------->%d\n", i);
+		sfc_debug("link:%x, ENDIAN:%x, WORD_UINT:%x, TRAN_MODE:%x, ADDR_KIND:%x\n",
+				(cdt[i].link >> 31) & 0x1, (cdt[i].link >> 18) & 0x1,
+				(cdt[i].link >> 16) & 0x3, (cdt[i].link >> 4) & 0xf,
+				(cdt[i].link >> 0) & 0x3
+				);
+		sfc_debug("CLK_MODE:%x, ADDR_WIDTH:%x, POLL_EN:%x, CMD_EN:%x,PHASE_FORMAT:%x, DMY_BITS:%x, DATA_EN:%x, TRAN_CMD:%x\n",
+				(cdt[i].xfer >> 29) & 0x7, (cdt[i].xfer >> 26) & 0x7,
+				(cdt[i].xfer >> 25) & 0x1, (cdt[i].xfer >> 24) & 0x1,
+				(cdt[i].xfer >> 23) & 0x1, (cdt[i].xfer >> 17) & 0x3f,
+				(cdt[i].xfer >> 16) & 0x1, (cdt[i].xfer >> 0) & 0xffff
+				);
+		sfc_debug("DEV_STA_EXP:%x\n", cdt[i].staExp);
+		sfc_debug("DEV_STA_MSK:%x\n", cdt[i].staMsk);
+	}
+}
+#endif
 
 static inline void sfc_writel(unsigned short offset, u32 value)
 {
@@ -495,6 +531,9 @@ static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 		params_to_cdt(nor_flash_info, cdt);
 		write_cdt(flash->sfc, &cdt, NOR_READ_STANDARD, NOR_EN_4BYTE);
 	}
+#ifdef SFC_NOR_DEBUG
+	dump_cdt(flash->sfc);
+#endif
 }
 
 void sfc_init(void)
@@ -693,6 +732,6 @@ void spl_sfc_nor_load_image(void)
 		spl_parse_image_header(header);
 		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned char *)CONFIG_SYS_TEXT_BASE);
 	}
-	return ;
+	return;
 
 }
