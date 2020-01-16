@@ -65,7 +65,11 @@
 
 #if defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SPL_SPI_NAND)
 
+#ifdef CONFIG_X2000_V12
+#define BUFFER_SIZE 256
+#else
 #define BUFFER_SIZE 4
+#endif
 #define CRC_POSITION	9		/* 9th bytes */
 #define SPL_LENGTH_POSITION	12	/* 11th */
 
@@ -161,10 +165,41 @@ int main(int argc, char *argv[])
 
 	/*set spl len*/
 	lseek( fd, SPL_LENGTH_POSITION, SEEK_SET);
+#ifdef CONFIG_X2000_V12
+	if ((t = write(fd, &count, 2)) != 2) {
+#else
 	if ((t = write(fd, &count, 4)) != 4) {
+#endif
 		printf("Check: Write %s Error\n",argv[1]);
 		return 1;
 	}
+
+#if defined(CONFIG_X2000_V12)
+	/* set env crc */
+	lseek(fd, 0x100, SEEK_SET);
+
+	memset(buffer, 0, BUFFER_SIZE);
+	read(fd, buffer, 256);
+
+	crc = crc7(0, buffer, 256);
+
+	lseek(fd, 0xe, SEEK_SET);
+
+	write(fd, &crc, 1);
+
+
+	/* set spl head crc */
+	lseek(fd, 0, SEEK_SET);
+
+	memset(buffer, 0, BUFFER_SIZE);
+	read(fd, buffer, 15);
+
+	crc = crc7(0, buffer, 15);
+
+	lseek(fd, 0xf, SEEK_SET);
+
+	write(fd, &crc, 1);
+#endif
 
 	close(fd);
 
