@@ -576,8 +576,10 @@ static void jz_gmac_phy_reset(void)
 #ifndef CONFIG_FPGA
 	clk_set_rate(MACPHY, 50000000);
 #endif
+#if 0
 	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_SET_FUNC,\
 		      CONFIG_GMAC_CRLT_PORT_PINS);
+#endif
 
 	gpio_direction_output(CONFIG_GMAC_PHY_RESET, CONFIG_GMAC_PHY_RESET_ENLEVEL);
 	mdelay(10);
