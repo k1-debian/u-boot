@@ -41,9 +41,24 @@ int board_early_init_f(void)
 int board_early_init_r(void)
 {
 
+#ifdef CONFIG_REGULATOR
+	regulator_init();
+#endif
 	return 0;
 
 }
+
+#ifdef CONFIG_REGULATOR
+int regulator_init(void)
+{
+	int ret;
+#ifdef CONFIG_PMU_RICOH6x
+	ret = ricoh61x_regulator_init();
+#endif
+	return ret;
+}
+#endif /* CONFIG_REGULATOR */
+
 
 int misc_init_r(void)
 {
