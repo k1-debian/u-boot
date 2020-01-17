@@ -137,4 +137,8 @@
 #include "./chips/LPDDR3_W63AH6NKB-BI.h"
 #endif
 
+#ifdef CONFIG_LPDDR3_W63CH2MBVABE
+#include "./chips/LPDDR3_W63CH2MBVABE.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */
