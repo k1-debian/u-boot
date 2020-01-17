@@ -30,8 +30,9 @@ int get_rsakeylen(void)
 
 static void gpio_output_value(int gpio, int value)
 {
+	mdelay(1);		/* delay 1ms for power down. prevent miss of WT_DONE. */
 	gpio_direction_output(gpio, value);
-	mdelay(2);		/* wait for EFUSE IO power for mdelay(10). */
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 }
 
 
