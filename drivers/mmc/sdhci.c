@@ -143,7 +143,7 @@ int sdhci_send_command(struct mmc *mmc, struct mmc_cmd *cmd,
 	unsigned int retry = 10000;
 
 	/* Wait max 10 ms */
-	timeout = 10;
+	timeout = 0xffffffff;
 
 	sdhci_writel(host, SDHCI_INT_ALL_MASK, SDHCI_INT_STATUS);
 	mask = SDHCI_CMD_INHIBIT | SDHCI_DATA_INHIBIT;

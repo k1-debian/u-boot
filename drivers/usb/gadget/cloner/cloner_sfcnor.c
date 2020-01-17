@@ -139,13 +139,11 @@ int sfc_program(struct cloner *cloner)
 		memset(readbuf,0,READBUF_SIZE);
 		ret = sfc_nor_read(offset,len,readbuf);
 		if(ret){
-			BURNNER_PRI(" write back check read  ops error,please check flash info !\n");
+			BURNNER_PRI("SF: write back check read  ops error,please check flash info !\n");
 			return -1;
 		}
 		ret = buf_compare(cloner->write_req->buf,readbuf,len,offset);
-		if(ret){
-			return -1;
-		}
+		BURNNER_PRI("SF: %zu bytes @ %#x check: %s\n", (size_t)len, (u32)offset, ret ? "ERROR" : "OK");
 	}
 	return ret;
 }

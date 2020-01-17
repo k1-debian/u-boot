@@ -17,6 +17,7 @@ struct mini_spi_nor_info mini_params;
 unsigned int burn_mode = 0;
 #endif
 
+//#define SFC_NOR_CLONER_DEBUG
 //#define SFC_REG_DEBUG
 
 int sfc_nor_reset(void)
@@ -198,7 +199,7 @@ static int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
 {
 	int tmp_len = 0, current_len = 0;
 
-	while(len) {
+	while((int)len > 0) {
 		tmp_len = sfc_do_read((unsigned int)from + current_len, &buf[current_len], len);
 		current_len += tmp_len;
 		len -= tmp_len;
@@ -335,33 +336,6 @@ struct legacy_params *params_compatibility()
 int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
 	int ret = 0;
-	int i;
-
-#ifdef CONFIG_BURNER
-	struct legacy_params *l_params;
-	int spl_version;
-	if (to == 0) {
-		/* spl_version is in 16byte of spl header,
-		 * spl_version = 0x01, spl is new code, NOR_VERSION is 2,
-		 * spl_version = 0x00, spl is old code, NOR_VERSION is 1.
-		 * */
-		spl_version = buf[CONFIG_SPL_VERSION_OFFSET];
-		switch (spl_version) {
-			case 0:
-				l_params = params_compatibility();
-				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, l_params, sizeof(struct legacy_params));
-				break;
-			case 1:
-				params.version = NOR_VERSION;
-				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &params, sizeof(struct burner_params));
-				memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
-				break;
-			default:
-				printf("spl uboot version error !\n");
-				break;
-		}
-	}
-#endif
 	ret = sfc_nor_page_write(to, len, buf);
 
 	return 0;
@@ -616,7 +590,7 @@ int jz_sfc_chip_erase(void)
 	printf("chip erasing...\n");
 
 	/* set Index */
-	xfer.cmd_index = NOR_CHIP_ERASE;
+	xfer.cmd_index = NOR_CHIP_ERASE_WRITE_ENABLE;
 
 	/* set addr */
 	xfer.columnaddr = 0;
@@ -823,8 +797,6 @@ static void dump_mini_cloner_params()
 	printf("mini_chip_size=%d\n",	spi_nor_info->chip_size);
 	printf("mini_page_size=%d\n",	spi_nor_info->page_size);
 	printf("mini_erase_size=%d\n",	spi_nor_info->erase_size);
-	printf("mini_quad_mode=%d\n",	spi_nor_info->spl_quad);
-
 }
 #endif
 
@@ -856,16 +828,6 @@ int norflash_get_params_from_burner(unsigned char *addr)
 	printf("uk_quad=%d\n", params.uk_quad);
 	printf("burner_quad_mode=%d\n",spiflash_info->b_quad);
 #endif
-
-	if (!memcmp(&params.spi_nor_info, 0, sizeof(struct spi_nor_info))) {
-		printf("unsupport nor flash, no params in burner\n");
-		return -1;
-	}
-	if (!memcmp(&mini_params, 0, sizeof(struct mini_spi_nor_info))) {
-		printf("unsupport nor flash, no mini params in burner\n");
-		return -1;
-	}
-
 
 	memcpy(flash->g_nor_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
 	memcpy(flash->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));

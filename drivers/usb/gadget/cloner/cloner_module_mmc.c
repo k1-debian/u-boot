@@ -4,7 +4,7 @@
 #include <mmc.h>
 #include <cloner/cloner.h>
 #include "burn_printf.h"
-
+#include "cloner_mmc.c"
 
 #define MMC_BYTE_PER_BLOCK 512
 

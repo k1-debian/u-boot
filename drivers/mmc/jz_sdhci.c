@@ -32,7 +32,7 @@ struct sdhci_host jz_sdhci_host[1];
 static char *JZ_NAME = "MSC";
 
 
-static void jz_set_mmc_clk(struct sdhci_host *host, unsigned int clock)
+static void jz_set_mmc_clk(int dev_index, unsigned int clock)
 {
 	unsigned int val;
 
@@ -54,19 +54,7 @@ static void jz_set_mmc_clk(struct sdhci_host *host, unsigned int clock)
 	}
 	printf("%s: clk: %d, CPM_MSC0_CLK_R: 0x%x\n", __func__, clock, readl(CPM_MSC0_CLK_R));
 #else
-  #ifdef CONFIG_JZ_MMC_MSC0
-	#define CPM_MSC	MSC0
-  #endif
-  #ifdef CONFIG_JZ_MMC_MSC1
-	#define CPM_MSC	MSC1
-  #endif
-  #ifdef CONFIG_JZ_MMC_MSC2
-	#define CPM_MSC	MSC2
-  #endif
-	/* set clk */
-	clk_set_rate(CPM_MSC, clock);
-	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d\n", __func__,
-			CPM_MSC, clock, clk_get_rate(CPM_MSC));
+	clk_set_mmc_rate(dev_index, clock);
 #endif
 }
 

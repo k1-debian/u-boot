@@ -65,6 +65,7 @@ struct clk_cgu_setting {
 
 unsigned int clk_get_rate(int clk);
 void clk_set_rate(int clk, unsigned long rate);
+void clk_set_mmc_rate(int dev_index, unsigned long rate);
 void clk_init(void);
 void enable_uart_clk(void);
 enum otg_mode_t {
