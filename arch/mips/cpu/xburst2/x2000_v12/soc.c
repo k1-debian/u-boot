@@ -86,6 +86,8 @@ void board_init_f(ulong dummy)
 	/* wtd disable */
 	writel(0, WDT_BASE + WDT_TCER);
 
+	cpm_outl(cpm_inl(CPM_MESTSEL) | 0x7, CPM_MESTSEL);
+
 	/* Init uart first */
 #ifndef CONFIG_X2000_FPGA
 	enable_uart_clk();
