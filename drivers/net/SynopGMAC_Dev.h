@@ -2098,6 +2098,7 @@ u32 synopGMAC_get_interrupt_type(synopGMACdevice *gmacdev);
 u32 synopGMAC_get_interrupt_mask(synopGMACdevice *gmacdev);
 void synopGMAC_enable_interrupt(synopGMACdevice *gmacdev, u32 interrupts);
 void synopGMAC_disable_interrupt_all(synopGMACdevice *gmacdev);
+void synopGMAC_RGSMII_int_disable(synopGMACdevice *gmacdev);
 void synopGMAC_disable_interrupt(synopGMACdevice *gmacdev, u32 interrupts);
 void synopGMAC_enable_dma_rx(synopGMACdevice * gmacdev);
 void synopGMAC_enable_dma_tx(synopGMACdevice * gmacdev);

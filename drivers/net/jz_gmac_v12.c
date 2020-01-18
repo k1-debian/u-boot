@@ -427,6 +427,7 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 	}
 	/* we do not process interrupts */
 	synopGMAC_disable_interrupt_all(gmacdev);
+	synopGMAC_RGSMII_int_disable(gmacdev);
 
 	// Set MAC address
 	synopGMAC_set_mac_addr(gmacdev,

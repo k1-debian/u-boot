@@ -1103,10 +1103,7 @@ s32 synopGMAC_search_phy (synopGMACdevice * gmacdev) {
 	for (phy_id = 0; phy_id < 32; phy_id++) {
 		status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase, phy_id, PHY_STATUS_REG, &data);
 		if ( (!status) && (data != 0xffff)) {
-			if((data & Mii_AutoNegCmplt) != 0){
-				printf("====>phy %d Autonegotiation Complete\n", phy_id);
-				break;
-			}
+			break;
 		}
 	}
 
@@ -2632,6 +2629,17 @@ void synopGMAC_disable_interrupt_all(synopGMACdevice *gmacdev)
 void synopGMAC_disable_interrupt(synopGMACdevice *gmacdev, u32 interrupts)
 {
 	synopGMACClearBits((u32 *)gmacdev->DmaBase, DmaInterrupt, interrupts);
+	return;
+}
+
+/**
+ * Set RGMII or SMII interrupt mask .
+ * @param[in] pointer to synopGMACdevice.
+ * \return returns void.
+ */
+void synopGMAC_RGSMII_int_disable(synopGMACdevice *gmacdev)
+{
+	synopGMACSetBits((u32 *)gmacdev->MacBase,GmacInterruptMask,GmacRgmiiIntMask);
 	return;
 }
 /**
