@@ -420,30 +420,6 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 	rx_desc = (DmaDesc *)((unsigned long)_rx_desc | 0xa0000000);
 	flush_cache_all();
 
-	u32 cpm_mphyc = 0;
-#if defined(CONFIG_NET_X2000_V12)
-	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
-	cpm_mphyc &= ~0x7;
-	cpm_mphyc |= CONFIG_NET_GMAC_PHY_MODE;
-	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
-#elif defined(CONFIG_NET_JZ4775)
-
-#define CONFIG_GAMAC_MODE_CTRL_ADDR (0xB00000E0)
-#if (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RMII)
-	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
-	cpm_mphyc &= ~0x7;
-	cpm_mphyc |= 0x4;
-	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
-#elif (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RGMII)
-	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
-	cpm_mphyc |= 0x1<<31;
-	cpm_mphyc &= ~0x7;
-	cpm_mphyc |= 0x1;
-	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
-#endif //CONFIG_NET_GMAC_PHY_MODE
-
-#endif
-
 	/* reset GMAC, prepare to search phy */
 	if (synopGMAC_reset(gmacdev) < 0) {
 		printf("func:%s, synopGMAC_reset failed\n", __func__);
@@ -474,6 +450,22 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 	}
 
 	synopGMAC_check_phy_init(gmacdev);
+
+#if defined(CONFIG_NET_X2000_V12) && defined(CONFIG_RGMII)
+	unsigned int clk_id;
+#ifdef CONFIG_GMAC0
+	clk_id = MACTX0;
+#else
+	clk_id = MACTX1;
+#endif
+	if(gmacdev->Speed == SPEED10) {
+		clk_set_rate(clk_id, 2500000);
+	} else if(gmacdev->Speed == SPEED100) {
+		clk_set_rate(clk_id, 25000000);
+	} else if(gmacdev->Speed == SPEED1000) {
+		clk_set_rate(clk_id, 125000000);
+	}
+#endif
 
 	jz47xx_mac_configure();
 	/* setup tx_desc */
@@ -576,10 +568,19 @@ static void jz_gmac_phy_reset(void)
 #ifndef CONFIG_FPGA
 	clk_set_rate(MACPHY, 50000000);
 #endif
-#if 0
+
+
+#ifdef CONFIG_GMAC0
+	*(volatile unsigned int *)0xb00102a4 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb00102b4 = CONFIG_GMAC_CRLT_PORT_PINS;
+#else
+	*(volatile unsigned int *)0xb00101a4 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb00101b4 = CONFIG_GMAC_CRLT_PORT_PINS;
+#endif
+
 	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_SET_FUNC,\
 		      CONFIG_GMAC_CRLT_PORT_PINS);
-#endif
+
 
 	gpio_direction_output(CONFIG_GMAC_PHY_RESET, CONFIG_GMAC_PHY_RESET_ENLEVEL);
 	mdelay(10);
@@ -603,6 +604,30 @@ int jz_net_initialize(bd_t *bis)
 #endif
 	gmacdev->DmaBase =  JZ_GMAC_BASE + DMABASE;
 	gmacdev->MacBase =  JZ_GMAC_BASE + MACBASE;
+
+	u32 cpm_mphyc = 0;
+#if defined(CONFIG_NET_X2000_V12)
+	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
+	cpm_mphyc &= ~0x7;
+	cpm_mphyc |= CONFIG_NET_GMAC_PHY_MODE;
+	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
+#elif defined(CONFIG_NET_JZ4775)
+
+#define CONFIG_GAMAC_MODE_CTRL_ADDR (0xB00000E0)
+#if (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RMII)
+	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
+	cpm_mphyc &= ~0x7;
+	cpm_mphyc |= 0x4;
+	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
+#elif (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RGMII)
+	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
+	cpm_mphyc |= 0x1<<31;
+	cpm_mphyc &= ~0x7;
+	cpm_mphyc |= 0x1;
+	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
+#endif //CONFIG_NET_GMAC_PHY_MODE
+
+#endif
 
 	jz_gmac_phy_reset();
 

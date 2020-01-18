@@ -1252,6 +1252,52 @@ static int check_phy_init_88e1111(synopGMACdevice *gmacdev)
 	}
 }
 
+static int check_phy_init_dp83867(synopGMACdevice *gmacdev)
+{
+	u16 data;
+	s32 status = -ESYNOPGMACNOERR;
+	int speed_bit;
+
+	printf("########### check_phy_init_dp83867 #############\n");
+
+	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_STATUS_REG, &data);
+	if(status)
+		return status;
+	if((data & 1) == 0){
+		TR("No Link\n");
+		gmacdev->LinkState = LINKDOWN;
+		return -ESYNOPGMACPHYERR;
+	}
+	else{
+		gmacdev->LinkState = LINKUP;
+		TR("Link UP\n");
+	}
+
+	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_SPECIFIC_STATUS_REG, &data);
+	if(status)
+		return status;
+
+	speed_bit = data & (0x3<<14);
+	switch(speed_bit) {
+		case 0x8000:
+			gmacdev->Speed = SPEED1000;
+			break;
+		case 0x4000:
+			gmacdev->Speed = SPEED100;
+			break;
+		case 0x0000:
+			gmacdev->Speed = SPEED10;
+			break;
+	}
+	if(data & (0x1<<13)) {
+		gmacdev->DuplexMode = FULLDUPLEX;
+	} else {
+		gmacdev->DuplexMode = HALFDUPLEX;
+	}
+
+	return status;
+}
+
 struct phy_list {
 	unsigned int oui_id;
 	int (*check_init)(synopGMACdevice *gmacdev);
@@ -1266,6 +1312,10 @@ struct phy_list phy_lists[] = {
 	[1] = {
 		.oui_id = 0x300007,
 		.check_init = check_phy_init_8720a,
+	},
+	[2] = {
+		.oui_id = 0x282000,
+		.check_init = check_phy_init_dp83867,
 	},
 };
 
