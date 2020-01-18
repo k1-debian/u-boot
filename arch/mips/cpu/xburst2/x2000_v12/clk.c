@@ -51,7 +51,7 @@ static char clk_name[][10] = {
 	[CIM] = {"cim"},
 	[PWM] = {"pwm"},
 	[ISP] = {"isp"},
-	[rsa] = {"rsa"},
+	[RSA] = {"rsa"},
 
 };
 
@@ -68,17 +68,32 @@ void clk_prepare(void)
 	int i;
 	unsigned regval = 0, reg = 0;
 	unsigned int size = ARRAY_SIZE(cgusetting);
+	unsigned int timeout = 0xfff;
+
+	/*设置时钟到最大分频，防止PLL升频后，各外设时钟过高，工作不正常.*/
 
 	for (i = 0; i < size; i++) {
+
+		/* MSC的时钟使能需要在MSC控制器中设置相关bit，此处跳过.*/
 		if((i == MSC0) || (i == MSC1) || (i == MSC2))
 			continue;
+
+		if((i == CIM)) {
+			cpm_outl(cpm_inl(CPM_OPCR) & ~(1 << 5), CPM_OPCR);
+		}
 		reg = cgusetting[i].addr;
 		regval = readl(reg);
 		if(cgusetting[i].busy) {
 			/*set div max*/
 			regval |= cgusetting[i].val;
 			writel(regval, reg);
-			while (readl(reg) & (1 << cgusetting[i].busy));
+
+			timeout = 0xfff;
+			while (readl(reg) & (1 << cgusetting[i].busy) && --timeout);
+			if(!timeout) {
+				printf("wait clk %d timeout\n", i);
+				continue;
+			}
 		} else {
 			regval &= ~(1 << cgusetting[i].ce);
 			writel(regval, reg);

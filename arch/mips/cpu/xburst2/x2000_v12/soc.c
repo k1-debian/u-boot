@@ -101,7 +101,7 @@ void board_init_f(ulong dummy)
 	timer_init();
 
 	debug("CLK stop\n");
-	//clk_prepare();
+	clk_prepare();
 
 	debug("PLL init\n");
 	pll_init();
