@@ -31,8 +31,12 @@ int get_rsakeylen(void)
 
 static void gpio_output_value(int gpio, int value)
 {
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	gpio_direction_output(gpio, value);
-	mdelay(10);		/* wait for EFUSE IO power for mdelay(10). */
+	if (value == 0)
+		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	else
+		udelay(10);		/* wait for EFUSE IO power for mdelay(1). */
 }
 
 
@@ -121,9 +125,9 @@ static int efuse_config(void)
 	//rd_adj = 100;
 	//rd_strobe = 100;
 	*reg_cfg = (rd_adj << 19) | (rd_strobe << 16) | (wr_adj<<12) | wr_strobe;
-//	printf("xxxxxxx reg_cfg = %x\n",*reg_cfg);
-//	printf("xxxxxxx mpll = %d\n",pll);
-//	printf("xxxxxxx ahb2 = %d\n",ahb2);
+	printf("xxxxxxx efuse reg_cfg = %x\n",*reg_cfg);
+	printf("xxxxxxx mpll = %d\n",pll);
+	printf("xxxxxxx ahb2 = %d\n",ahb2);
 
 }
 #ifdef CONFIG_X2000_V12
@@ -163,14 +167,20 @@ int cpu_wtotp(int opera)
 	
 	return 0;
 }
+
 #else
+
 static int efuse_update_state(void)
 {
 	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
 	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	*reg_ctrl = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0x1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RDEN;
 	while(!(*reg_stat & EFUSE_REG_STAT_RDDONE));
-	printf("xxxxxxx state updated: %x\n", *reg_stat);
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	printf("%s() updated EFUSE_STAT: %x\n", __func__, *reg_stat);
 }
 
 int cpu_wtotp(int opera)
@@ -180,9 +190,12 @@ int cpu_wtotp(int opera)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
+	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
 
 //	printf("xxxxxxxxxxx func : %s\n",__func__);
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
@@ -191,6 +204,8 @@ int cpu_wtotp(int opera)
 
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		printf("write otp err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
@@ -205,6 +220,8 @@ int cpu_wtotp(int opera)
 
 void otp_init(void)
 {
+	//printf("xxxxxxxxxxx func : %s() debug_args->efuse_gpio=%d\n",__func__, debug_args->efuse_gpio);
+
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	efuse_config();
 	efuse_update_state();
@@ -288,6 +305,7 @@ int cpu_burn_rckey(void)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
+	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
 
 //	printf("xxxxxxxxxxx func : %s\n",__func__);
 	return 0;
@@ -297,6 +315,8 @@ int cpu_burn_rckey(void)
 	if(cpu_get_rn() < 0)
 		return -ESEC;
 
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
@@ -304,6 +324,8 @@ int cpu_burn_rckey(void)
 
 	gpio_output_value(debug_args->efuse_gpio, 1);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		printf("burn rckey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
@@ -557,33 +579,50 @@ int cpu_burn_secboot_enable(void)
 	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
 	volatile unsigned int *reg_data1 = (volatile unsigned int *)EFUSE_REG_DAT1;
 
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+
+	*reg_data1 = (1 << EFUSE_PTCOFF_SEC); /* program security boot enable */
+	//*reg_ctrl = ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	*reg_ctrl = 0;
+	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address, length(0+1) */
+
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
-	*reg_data1 = (1 << EFUSE_PTCOFF_SEC); /* security boot enable, security boot enable protected */
-	*reg_ctrl &= ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
-	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address */
 	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
 
 	gpio_output_value(debug_args->efuse_gpio, 1);
-	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+	//*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+	*reg_ctrl = 0;
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
 
 	efuse_update_state();
 
+	if(!(*reg_stat & EFUSE_REG_STAT_SCBT_EN)) {
+		printf("%s() security boot enable write failed!, reg_stat=%x\n", __func__, *reg_stat);
+		return -1;
+	}
+
+	*reg_data1 = (1 << EFUSE_PTCOFF_SCB); /* program security boot enable protected */
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	*reg_ctrl = 0;
+	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address, length(0+1) */
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	gpio_output_value(debug_args->efuse_gpio, 0);
 
-	*reg_data1 = (1 << EFUSE_PTCOFF_SCB); /* security boot enable, security boot enable protected */
-	*reg_ctrl &= ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
-	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address */
 	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
 
 	gpio_output_value(debug_args->efuse_gpio, 1);
-	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+	//*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
+	*reg_ctrl = 0;
+	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
 
 	efuse_update_state();
 
