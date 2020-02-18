@@ -33,6 +33,7 @@
 #ifdef  CONFIG_X2000_V12
 #define SC_FUNC_BURNCK          0x18
 #define SC_FUNC_VERSION         0x27
+#define SC_FUNC_INIT            0x29
 #else
 #define SC_FUNC_BURNRKCK        0x18
 #endif

@@ -9,6 +9,10 @@
 #include "test_nku.h"
 #include <cloner/cloner.h>
 
+#include <regulator.h>
+#define PMU_EFUSE_1V8	"RICOH619_LDO2"
+static struct regulator *efuse_1v8 = NULL;
+
 unsigned int rsakey[256];
 
 unsigned int rsakeylen;
@@ -29,17 +33,16 @@ int get_rsakeylen(void)
 	return rsakeylen;
 }
 
-static void gpio_output_value(int gpio, int value)
+static void efuse_1v8_output(int enable)
 {
+	mdelay(1);		/* delay 1ms for power down. prevent miss of WT_DONE. */
+	if(enable) {
+		regulator_enable(efuse_1v8);
+	} else {
+		regulator_disable(efuse_1v8);
+	}
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	gpio_direction_output(gpio, value);
-	if (value == 0)
-		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	else
-		udelay(10);		/* wait for EFUSE IO power for mdelay(1). */
 }
-
-
 
 static int efuse_config(void)
 {
@@ -125,12 +128,12 @@ static int efuse_config(void)
 	//rd_adj = 100;
 	//rd_strobe = 100;
 	*reg_cfg = (rd_adj << 19) | (rd_strobe << 16) | (wr_adj<<12) | wr_strobe;
-	printf("xxxxxxx efuse reg_cfg = %x\n",*reg_cfg);
-	printf("xxxxxxx mpll = %d\n",pll);
-	printf("xxxxxxx ahb2 = %d\n",ahb2);
+//	printf("xxxxxxx reg_cfg = %x\n",*reg_cfg);
+//	printf("xxxxxxx mpll = %d\n",pll);
+//	printf("xxxxxxx ahb2 = %d\n",ahb2);
 
 }
-#ifdef CONFIG_X2000_V12
+
 static int efuse_update_state(void)
 {
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
@@ -148,12 +151,12 @@ int cpu_wtotp(int opera)
 
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	efuse_1v8_output(1);
 
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	efuse_1v8_output(0);
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
 	printf("**************************MCU_TCSM_RETVAL = 0x%08x\n", MCU_TCSM_RETVAL);
@@ -164,74 +167,30 @@ int cpu_wtotp(int opera)
 	}
 
 	efuse_update_state();
-	
-	return 0;
-}
-
-#else
-
-static int efuse_update_state(void)
-{
-	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
-	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	*reg_ctrl = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0x1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RDEN;
-	while(!(*reg_stat & EFUSE_REG_STAT_RDDONE));
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	printf("%s() updated EFUSE_STAT: %x\n", __func__, *reg_stat);
-}
-
-int cpu_wtotp(int opera)
-{
-	unsigned int ret;
-	unsigned int iLoop;
-	volatile struct sc_args *args;
-	args = (volatile struct sc_args *)GET_SC_ARGS();
-	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
-	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
-
-//	printf("xxxxxxxxxxx func : %s\n",__func__);
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
-
-	args->arg[0] = opera;
-	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
-
-	gpio_output_value(debug_args->efuse_gpio, 1);
-	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
-
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		printf("write otp err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
-		return -ESEC;
-	}
-
-	efuse_update_state();
 
 	return 0;
 }
-#endif
 
 void otp_init(void)
 {
-	//printf("xxxxxxxxxxx func : %s() debug_args->efuse_gpio=%d\n",__func__, debug_args->efuse_gpio);
+	volatile struct sc_args *args;
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+	secall(args, SC_FUNC_INIT, 0, 1);
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	efuse_1v8 = regulator_get(PMU_EFUSE_1V8);
+	if(efuse_1v8 == NULL){
+		printf("get efuse 1.8v regulator error!\n");
+		return;
+	}
+	regulator_set_voltage(efuse_1v8, 1800000, 1800000);
+
 	efuse_config();
 	efuse_update_state();
 	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
 }
 
-#ifdef CONFIG_X2000_V12
 int otp_r()
 {
-	gpio_output_value(debug_args->efuse_gpio, 0);
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR | 0x01 << EFUSE_REGOFF_CRTL_LENG);
 
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
@@ -254,12 +213,12 @@ static int otp_w(unsigned int offset)
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	efuse_1v8_output(1);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	efuse_1v8_output(0);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
@@ -280,61 +239,25 @@ int cpu_burn_rckey(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	efuse_1v8_output(1);
 
 	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
 
 	ret = *(volatile unsigned int *)(MCU_TCSM_RETVAL);
 
-	if (ret != SC_ERR_SUCC) {
+	if (ret != SC_ERR_SUCC && ret != SC_ERR_CK_EXISTENCE) {
 		printf("#################### SC_FUNC_BURNRKCK fail 0x%08x\n", ret);
+		efuse_1v8_output(0);
 		return -ESEC;
 	}
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	efuse_1v8_output(0);
 	REG32(EFUSE_REG_CTRL) = 0;
 
 	ret = otp_w(EFUSE_PTCOFF_CKP);
 
 	return ret;
 }
-#else
-int cpu_burn_rckey(void)
-{
-	unsigned int ret;
-	volatile struct sc_args *args;
-	args = (volatile struct sc_args *)GET_SC_ARGS();
-	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
-	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
-
-//	printf("xxxxxxxxxxx func : %s\n",__func__);
-	return 0;
-	if(EFUSTATE_NKU_PRT)
-		return 0;
-
-	if(cpu_get_rn() < 0)
-		return -ESEC;
-
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
-
-	secall(args, SC_FUNC_BURNRKCK, 0, 1);
-
-	gpio_output_value(debug_args->efuse_gpio, 1);
-	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
-
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		printf("burn rckey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
-		return -ESEC;
-	}
-
-	return 0;
-}
-#endif
 
 int cpu_load_nku(unsigned int *idata, unsigned int length)
 {
@@ -395,57 +318,16 @@ int cpu_burn_nku(void *idata,unsigned int length)
 	if (cpu_wtotp(WT_OTP_NKU) < 0)
 		return -ESEC;
 
-#ifdef CONFIG_X2000_V12
 	ret = otp_w(EFUSE_PTCOFF_NKU);
-#endif
 
 	return ret;
 
 }
 
-#ifdef CONFIG_X2000_V12
 int cpu_get_enckey(unsigned int *odata)
 {
 	return 0;
 }
-#else
-int cpu_get_enckey(unsigned int *odata)
-{
-	unsigned int ret;
-	unsigned int iLoop;
-	volatile struct sc_args *args;
-	args = (volatile struct sc_args *)GET_SC_ARGS();
-	volatile unsigned int *enckey = (volatile unsigned int *)(MCU_TCSM_RSAENCKEY);
-	volatile unsigned int *enckey_len = (volatile unsigned int *)(MCU_TCSM_RSAENCKEYLEN);
-	volatile unsigned int *nku = (volatile unsigned int *)(MCU_TCSM_NKU);
-
-	printf("xxxxxxxxxxx func : %s\n",__func__);
-
-	nku[0] = rsakeylen * 8;
-	nku[1] = rsakeylen * 8;
-
-	for (iLoop = 0; iLoop < 32; iLoop++)
-		nku[iLoop + 2] = rsakey[iLoop];
-	for (iLoop = 0; iLoop < 32; iLoop++)
-		nku[iLoop + 2 + 32] = rsakey[iLoop + rsakeylen / 4];
-
-	args->arg[0] = MCU_TCSM_PADDR(nku);
-	ret = secall(args, SC_FUNC_RSAENCK, 0, 1);
-
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		printf("get rsa enckey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
-		return -ESEC;
-	}
-
-	for(iLoop = 0; iLoop < *enckey_len; iLoop++)
-		odata[iLoop] = enckey[iLoop];
-
-	for(iLoop = 0; iLoop < *enckey_len; iLoop++)
-		printf("enckey[%d]: %x\n", iLoop, odata[iLoop]);
-
-	return 0;
-}
-#endif
 
 int cpu_burn_ukey(void *idata)
 {
@@ -459,34 +341,15 @@ int cpu_burn_ukey(void *idata)
 
 	printf("xxxxxxxxxxx func : %s\n",__func__);
 
-#ifdef CONFIG_X2000_V12
 	if(EFUSTATE_UK_PRT && EFUSTATE_UK1_PRT)
 		return 0;
 	printf("xxxxxxxxxxx func : %s %d %d\n",__func__, EFUSTATE_UK_PRT, EFUSTATE_UK1_PRT);
-#else
-	if(EFUSTATE_UK_PRT)
-		return 0;
-#endif
 
 //	do_rsa(rsaukey, rsakeylen, encukey, rsakey, rsakeylen);
 //	for(iLoop = 0; iLoop < 4; iLoop++)
 //		printf("encukey[%d]: %x\n", iLoop, encukey[iLoop]);
 
-//#define BURN_UKEY_DEBUG
-#if defined(BURN_UKEY_DEBUG) && !defined(CONFIG_X2000_V12)
-	aes(encukey, ukey, 16, AES_BY_CKEY, 1);
-	for(iLoop = 0; iLoop < 4; iLoop++)
-		printf("ukey[%d]: %x\n", iLoop, ukey[iLoop]);
-	args->arg[0] = 0;
-#else
-
-#ifdef CONFIG_X2000_V12
 #define UKEY_LEN_WORD    8
-#else
-#define UKEY_LEN_WORD    4
-#endif
-
-#ifdef CONFIG_X2000_V12
 #define UKEY_F_OFFSET    0x02
 #define UKEY1_F_OFFSET   0x03
 
@@ -503,14 +366,7 @@ int cpu_burn_ukey(void *idata)
 	args->arg[0] = (0x01 << UKEY_F_OFFSET) | (0x01 << UKEY1_F_OFFSET);
 	args->arg[1] = MCU_TCSM_PADDR(ukey);
 	args->arg[2] = MCU_TCSM_PADDR(&ukey[UKEY_LEN_WORD]);
-#else
-	for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++)
-		ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
 
-	args->arg[0] = 0;
-	args->arg[1] = MCU_TCSM_PADDR(ukey);
-#endif
-#endif
 	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
@@ -518,8 +374,6 @@ int cpu_burn_ukey(void *idata)
 		return -ESEC;
 	}
 
-
-#ifdef CONFIG_X2000_V12
 	if (EFUSTATE_UK_PRT == 0) {
 		if (cpu_wtotp(WT_OTP_UK) < 0) {
 			return -ESEC;
@@ -538,14 +392,10 @@ int cpu_burn_ukey(void *idata)
 	}
 	printf("xxxxxxxxxxx func : %s %d %d\n",__func__, EFUSTATE_UK_PRT, EFUSTATE_UK1_PRT);
 	printf("%s %d\n", __func__, __LINE__);
-#else
-	if(cpu_wtotp(WT_OTP_UK) < 0)
-		return -ESEC;
-#endif
+
 	return 0;
 }
 
-#ifdef CONFIG_X2000_V12
 int cpu_burn_secboot_enable(void)
 {
 	printf("xxxx otp efuse state:%x\n", REG32(EFUSE_REG_STAT));
@@ -558,75 +408,16 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
 
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	efuse_1v8_output(1);
 
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	efuse_1v8_output(0);
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
 	efuse_update_state();
 
 	return 0;
 }
-#else
-int cpu_burn_secboot_enable(void)
-{
-	/*efuse config*/
-	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
-	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
-	volatile unsigned int *reg_data1 = (volatile unsigned int *)EFUSE_REG_DAT1;
-
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-
-	*reg_data1 = (1 << EFUSE_PTCOFF_SEC); /* program security boot enable */
-	//*reg_ctrl = ~(0x7f << EFUSE_REGOFF_CRTL_ADDR | 0x1f << EFUSE_REGOFF_CRTL_LENG); /* clean address ,length*/
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	*reg_ctrl = 0;
-	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address, length(0+1) */
-
-	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
-
-	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
-
-	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
-
-	gpio_output_value(debug_args->efuse_gpio, 1);
-	//*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
-	*reg_ctrl = 0;
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
-
-	efuse_update_state();
-
-	if(!(*reg_stat & EFUSE_REG_STAT_SCBT_EN)) {
-		printf("%s() security boot enable write failed!, reg_stat=%x\n", __func__, *reg_stat);
-		return -1;
-	}
-
-	*reg_data1 = (1 << EFUSE_PTCOFF_SCB); /* program security boot enable protected */
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	*reg_ctrl = 0;
-	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address, length(0+1) */
-	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
-
-	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
-
-	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
-
-	gpio_output_value(debug_args->efuse_gpio, 1);
-	//*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
-	*reg_ctrl = 0;
-	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
-
-	efuse_update_state();
-
-	return 0;
-}
-
-#endif
