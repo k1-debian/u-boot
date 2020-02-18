@@ -571,12 +571,18 @@ static void jz_gmac_phy_reset(void)
 #endif
 
 
+#if defined(CONFIG_NET_X2000_V12) && defined(CONFIG_RGMII)
+	unsigned int clk_id;
 #ifdef CONFIG_GMAC0
 	*(volatile unsigned int *)0xb00102a4 = CONFIG_GMAC_CRLT_PORT_PINS;
 	*(volatile unsigned int *)0xb00102b4 = CONFIG_GMAC_CRLT_PORT_PINS;
+	clk_id = MACTX0;
 #else
 	*(volatile unsigned int *)0xb00101a4 = CONFIG_GMAC_CRLT_PORT_PINS;
 	*(volatile unsigned int *)0xb00101b4 = CONFIG_GMAC_CRLT_PORT_PINS;
+	clk_id = MACTX1;
+#endif
+	clk_set_rate(clk_id, 125000000);
 #endif
 
 	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_SET_FUNC,\
