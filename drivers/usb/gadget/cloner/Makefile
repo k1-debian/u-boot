@@ -23,6 +23,8 @@
 
 include $(TOPDIR)/config.mk
 
+ifdef CONFIG_BURNER
+
 LIB	:= $(obj)libcloner_module_mg.o
 
 COBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += extend_policy_manager.o
@@ -56,3 +58,4 @@ include $(SRCTREE)/rules.mk
 sinclude $(obj).depend
 
 #########################################################################
+endif

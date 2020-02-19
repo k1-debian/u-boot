@@ -39,13 +39,13 @@
 #define CONFIG_SYS_CPU_FREQ		24000000
 #define CONFIG_SYS_MEM_FREQ		24000000
 #else
-#define CONFIG_SYS_APLL_FREQ		600000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
-#define CONFIG_SYS_CPU_FREQ		600000000
-#define CONFIG_SYS_MEM_FREQ		300000000
+#define CONFIG_SYS_CPU_FREQ		1200000000
+#define CONFIG_SYS_MEM_FREQ		750000000
 /* #define CONFIG_SYS_MEM_FREQ		100000000 */
 #endif
 
@@ -158,7 +158,16 @@
 /**
  * Drivers configuration.
  */
-
+/*pmu slp pin*/
+#define CONFIG_REGULATOR
+#ifdef  CONFIG_REGULATOR
+#define CONFIG_JZ_PMU_SLP_OUTPUT1
+#define CONFIG_INGENIC_SOFT_I2C
+#define CONFIG_PMU_RICOH6x
+#define CONFIG_RICOH61X_I2C_SCL GPIO_PC(25)
+#define CONFIG_RICOH61X_I2C_SDA GPIO_PC(26)
+#define CONFIG_SOFT_I2C_READ_REPEATED_START
+#endif
 
 /* MMC */
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -365,7 +374,6 @@
  */
 #define CONFIG_ENV_IS_NOWHERE
 #define CONFIG_ENV_SIZE			(32 << 10)
-#define CONFIG_ENV_OFFSET		(CONFIG_SYS_NAND_BLOCK_SIZE * 5)
 
 
 /**

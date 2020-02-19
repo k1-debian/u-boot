@@ -230,54 +230,6 @@ unsigned int clk_get_rate(int clk)
 	return 0;
 }
 
-void clk_set_mmc_rate(int dev_index, unsigned long rate)
-{
-#ifndef CONFIG_X2000_FPGA
-	unsigned int cdr;
-	unsigned int pll_rate;
-	struct clk_cgu_setting *cgu = NULL;
-	unsigned regval = 0, reg = 0;
-	int clk_id = 0;
-
-	if(dev_index == 0)
-		clk_id = MSC0;
-	else if(dev_index == 1)
-		clk_id = MSC1;
-	else if(dev_index == 2)
-		clk_id = MSC2;
-	else
-		clk_id = 0xff;
-
-	if(clk_id >= CGU_CNT) {
-		/* printf("set clk id error\n"); */
-		return;
-	}
-
-	cgu = &cgusetting[clk_id];
-	reg = cgu->addr;
-	pll_rate = pll_get_rate(cgu->sel_src);
-
-	if(!pll_rate) {
-		debug("clk id %d: get pll error\n", clk_id);
-		return;
-	}
-
-	regval = readl(reg);
-	cdr = ((pll_rate + rate - 1)/rate - 1 ) & 0xff;
-	/* debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr); */
-
-	regval &= ~(3 << cgu->stop | 0xff);
-	regval |= ((1 << cgu->ce) | cdr);
-	writel(regval, reg);
-	while (readl(reg) & (1 << cgu->busy))
-		;
-#ifdef DUMP_CGU_SELECT
-	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  readl(reg));
-#endif
-#endif
-	return;
-}
-
 void clk_set_rate(int clk_id, unsigned long rate)
 {
 #ifndef CONFIG_X2000_FPGA
@@ -309,6 +261,8 @@ void clk_set_rate(int clk_id, unsigned long rate)
 			unsigned int tmp;
 			tmp = cpm_inl(CPM_MSC0CDR) | MSCCDR_EXCK_E;
 			cpm_outl(tmp, CPM_MSC0CDR);
+
+			regval = readl(reg);
 			regval = (regval & (~MSCCDR_MPCS_MASK)) | MSCCDR_MPCS_EXCLK;
 			pll_rate = CONFIG_SYS_EXTAL;
 		}

@@ -32,9 +32,10 @@ struct sdhci_host jz_sdhci_host[1];
 static char *JZ_NAME = "MSC";
 
 
-static void jz_set_mmc_clk(int dev_index, unsigned int clock)
+static void jz_set_mmc_clk(int index, unsigned int clock)
 {
 	unsigned int val;
+	int clk_id;
 
 #ifdef CONFIG_FPGA
   #ifdef CONFIG_JZ_MMC_MSC0
@@ -54,7 +55,13 @@ static void jz_set_mmc_clk(int dev_index, unsigned int clock)
 	}
 	printf("%s: clk: %d, CPM_MSC0_CLK_R: 0x%x\n", __func__, clock, readl(CPM_MSC0_CLK_R));
 #else
-	clk_set_mmc_rate(dev_index, clock);
+	if(index == 0)
+		clk_id = MSC0;
+	else if(index == 1)
+		clk_id = MSC1;
+	else if(index == 2)
+		clk_id = MSC2;
+	clk_set_rate(clk_id, clock);
 #endif
 }
 

@@ -7,9 +7,9 @@ COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += scboot.o md5.o flash.o
 COBJS-$(CONFIG_JZ_CKEYAES) += ckey_aes.o
 ifdef CONFIG_BURNER
 ifdef CONFIG_X2000_V12
-COBJS-$(CONFIG_JZ_SCBOOT) += secure.o otp.o cmd_burn_key.o
+COBJS-$(CONFIG_JZ_SCBOOT) += secure.o otp_x2000.o cmd_burn_key.o
 else
-COBJS-$(CONFIG_JZ_SCBOOT) += secure.o rsa.o otp.o get_rn.o cmd_sctest.o\
+COBJS-$(CONFIG_JZ_SCBOOT) += secure.o rsa.o otp_x1000.o get_rn.o cmd_sctest.o\
 				test_scboot.o test_nku.o test_otp.o
 endif
 endif
