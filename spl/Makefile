@@ -177,18 +177,15 @@ $(obj)$(BOARD)-spl.bin: $(obj)u-boot-spl.bin
 		$(obj)u-boot-spl.bin $(obj)$(BOARD)-spl.bin
 endif
 
-ifndef CONFIG_SPI_SPL_CHECK
-ifndef CONFIG_SPL_PARAMS_FIXER
 $(obj)u-boot-spl.bin:	$(obj)u-boot-spl
 	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
-else
-$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
-	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+ifdef CONFIG_MMC_SPL_PARAMS
+	$(OBJTREE)/tools/ingenic-tools/mmc_params $@
+endif
+ifdef CONFIG_SPL_PARAMS_FIXER
 	$(OBJTREE)/tools/ingenic-tools/spl_params_fixer $@ $@ 256 256 > /dev/null
 endif
-else
-$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
-	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+ifdef CONFIG_SPI_SPL_CHECK
 	$(OBJTREE)/tools/ingenic-tools/spi_checksum $@
 endif
 
