@@ -215,7 +215,7 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	*retlen = 0;
-	while(len) {
+	while((int)len > 0) {
 		pageaddr = (uint32_t)from / pagesize;
 		columnaddr = (uint32_t)from % pagesize;
 		rlen = min_t(uint32_t, len, pagesize - columnaddr);

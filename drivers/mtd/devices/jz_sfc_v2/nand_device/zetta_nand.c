@@ -39,11 +39,11 @@ static struct jz_sfcnand_base_param zetta_param[ZETTA_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-		/*ZD35Q1GA*/
+		/*ZD35Q2GA*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024,
+		.flashsize = 2 * 1024 * 64 * 2048,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,

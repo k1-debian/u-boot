@@ -59,7 +59,7 @@ static cdt_params_t *ato_get_cdt_params(struct sfc_flash *flash, uint8_t device_
 }
 
 
-static inline int deal_ecc_status(uint8_t device_id, uint8_t ecc_status)
+static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
 	switch(device_id) {

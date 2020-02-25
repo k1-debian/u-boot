@@ -627,7 +627,7 @@ int sfc_read_data(unsigned int from, unsigned int len, unsigned char *buf)
 {
 	int tmp_len = 0, current_len = 0;
 
-	while(len) {
+	while((int)len > 0) {
 		tmp_len = sfc_do_read((unsigned int)from + current_len, &buf[current_len], len);
 		current_len += tmp_len;
 		len -= tmp_len;
