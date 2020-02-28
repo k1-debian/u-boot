@@ -2,18 +2,23 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libscboot.o
 
-COBJS-$(CONFIG_JZ_SCBOOT) += aes.o test_common.o spi_checksum.o
-COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += scboot.o md5.o flash.o
-COBJS-$(CONFIG_JZ_CKEYAES) += ckey_aes.o
+ifdef CONFIG_JZ_SCBOOT
+COBJS-$(CONFIG_JZ_CKEYAES) += $(SOC)/ckey_aes.o spi_checksum.o
+COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += $(SOC)/scboot.o md5.o flash.o
+COBJS-y += aes.o rsa.o
 ifdef CONFIG_BURNER
+COBJS-y += secure.o
 ifdef CONFIG_X2000_V12
-COBJS-$(CONFIG_JZ_SCBOOT) += secure.o otp_x2000.o cmd_burn_key.o
+COBJS-y += $(SOC)/otp.o $(SOC)/cmd_burn_key.o
 else
-COBJS-$(CONFIG_JZ_SCBOOT) += secure.o rsa.o otp_x1000.o get_rn.o cmd_sctest.o\
-				test_scboot.o test_nku.o test_otp.o
+COBJS-y += $(SOC)/otp.o $(SOC)/get_rn.o $(SOC)/cmd_sctest.o \
+	$(SOC)/test_common.o $(SOC)/test_scboot.o $(SOC)/test_nku.o \
+	$(SOC)/test_otp.o
+endif
 endif
 endif
 
+$(shell mkdir -p $(SPLTREE)/drivers/scboot/$(SOC))
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

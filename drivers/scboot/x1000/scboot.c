@@ -4,10 +4,10 @@
 #include <asm/reboot.h>
 #include <asm/spl.h>
 
-#include "secall.h"
-#include "pdma.h"
+#include "../secall.h"
+#include "../pdma.h"
+#include "../aes.h"
 #include "otp.h"
-#include "aes.h"
 
 /*
  * security boot.
@@ -24,17 +24,10 @@
 #undef MCU_TCSM_RETVAL
 #undef MCU_TCSM_SECALL_MSG
 
-#ifdef CONFIG_X1000
 #define TCSM_CODE_ADDR			(TCSM_BANK(1) + 0)
 #define TCSM_SC_KEY_ADDR		(TCSM_BANK(1) + 2048)
 #define MCU_TCSM_RETVAL			(TCSM_BANK(0) + 2048 + 1084) /* cal from sc_interface. */
 #define MCU_TCSM_SECALL_MSG		(TCSM_BANK(0) + 2048 + 128) /* MCU_TCSM_SECALL_MSG */
-#else
-#define TCSM_CODE_ADDR			(TCSM_BANK(1) + 0)
-#define TCSM_SC_KEY_ADDR		(TCSM_BANK(1) + 2048)
-#define MCU_TCSM_RETVAL			(TCSM_BANK(0) + 2048 + 1076) /* cal from sc_interface. */
-#define MCU_TCSM_SECALL_MSG		(TCSM_BANK(0) + 2048 + 128) /* MCU_TCSM_SECALL_MSG */
-#endif
 
 #define SC_MAX_SIZE_PERTIME		(2048)
 #define SC_MAGIC_SIZE			(512)

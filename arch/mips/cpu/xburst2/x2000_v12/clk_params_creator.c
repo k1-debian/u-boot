@@ -59,14 +59,18 @@ static void gen_cgu_params(struct clk_cgu_setting *cgusetting)
 
 		regval = 0;
 		cgusetting[id].sel_val = 0;
-		for (i = 0; i < 4; i++) {
+		for (i = 0; i < 5; i++) {
 			if (cgu->sel_src == cgu->sel[i]) {
 				cgusetting[id].sel_val = i << cgu->sel_bit;
 			}
 		}
 		if(cgu->busy) {
-			/*set div max*/
-			regval |= (0xfe | (1 << cgu->ce) | (1 << cgu->stop));
+			if(id == RSA) {
+				regval |= (0x2 | (1 << cgu->ce));
+			} else {
+				/*set div max*/
+				regval |= (0xfe | (1 << cgu->ce) | (1 << cgu->stop));
+			}
 		} else {
 			/*clear ce*/
 			regval &= ~(1 << cgu->ce);

@@ -1,3 +1,4 @@
+#include <common.h>
 #include "jz_pdma.h"
 
 int cmp_data(unsigned long *src,unsigned long *dst,unsigned long len)

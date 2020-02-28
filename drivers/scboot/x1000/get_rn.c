@@ -1,8 +1,8 @@
 #include <common.h>
 #include <asm/errno.h>
 #include <asm/io.h>
-#include "secall.h"
-#include "pdma.h"
+#include "../secall.h"
+#include "../pdma.h"
 
 
 int cpu_get_rn(void)

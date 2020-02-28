@@ -40,7 +40,12 @@
 #include "cloner/cloner_efuse.c"
 #ifdef CONFIG_JZ_SCBOOT
 #include "../../scboot/secure.h"
-#include "../../scboot/otp.h"
+#ifdef CONFIG_X1000
+#include "../../scboot/x1000/otp.h"
+#endif
+#ifdef CONFIG_X2000_V12
+#include "../../scboot/x2000_v12/otp.h"
+#endif
 #include "../../scboot/aes.h"
 #include "../../scboot/spi_checksum.h"
 
@@ -464,7 +469,6 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			break;
 		case VR_SEC_BURN_SECBOOT_EN:	//6.burn secboot_enable
 			cloner->ack = cpu_burn_secboot_enable();
-			//cloner->ack = 0;
 			break;
 #endif
 	}

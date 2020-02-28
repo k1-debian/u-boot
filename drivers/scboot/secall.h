@@ -2,7 +2,11 @@
 #define _SECALL_H_
 
 #include "pdma.h"
-#include "sc.h"
+#if defined(CONFIG_X1000)
+#include "x1000/sc.h"
+#elif defined(CONFIG_X2000_V12)
+#include "x2000_v12/sc.h"
+#endif
 
 #define send_secall(func) ( REG32(PDMA_BASE + DMCS_OFF) = (REG32(PDMA_BASE + DMCS_OFF) & 0xff0000ff) | 0x8 | ((func)<<8) | 1<<24)
 

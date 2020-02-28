@@ -25,23 +25,14 @@
 
 
 
-#define TCSM_BANK0                 TCSM_BANK(0)     
+#define TCSM_BANK0                 TCSM_BANK(0)
 #define TCSM_BANK0_PART0	   (TCSM_BANK0)	           /* MCU BOOT UP:    2048*/
 #define TCSM_BANK0_PART1	   (TCSM_BANK0_PART0)      /* Reserved:	      0*/
 
-#ifndef CONFIG_X2000_V12
 #define	TCSM_BANK0_PART2	   (TCSM_BANK0_PART1 + 2048)  /* SC ARGS :	1792*/
 #define TCSM_BANK0_PART3	   (TCSM_BANK0_PART2 + 1792)  /* DBG:	256 */
 #define TCSM_BANK1_PART0	   (TCSM_BANK1)		/* spl_bin crypt. data */
 #define TCSM_BANK1_PART1	   (TCSM_BANK1 + 2048)	/* SC_KEY */
-#else
-#define TCSM_BANK6                 TCSM_BANK(6)
-#define TCSM_BANK6_PART0           (TCSM_BANK6)                /* SC ARGS :    1792*/
-#define TCSM_BANK6_PART1           (TCSM_BANK6_PART0 + 1792)   /* DBG:         256 */
-#define TCSM_BANK7                  TCSM_BANK(7)        /* For scboot : */
-#define TCSM_BANK7_PART0            (TCSM_BANK7)        /* spl_bin crypt. data */
-#define TCSM_BANK7_PART1            (TCSM_BANK7 + 2048) /* SC_KEY */
-#endif
 
 #define TCSM_BANK1       	   TCSM_BANK(1)		/* For scboot : */
 
@@ -73,22 +64,7 @@ struct pdma_message {
 #define MCU_TCSM_PDMA_MSG_LEN    128
 #define MCU_TCSM_SECALL_MSG_LEN  128
 /*#define MCU_TCSM_PDMA_MSG TCSM_BANK7*/
-#ifdef  CONFIG_X2000_V12
-#define MCU_TCSM_PDMA_MSG        TCSM_BANK6_PART0
-#define MCU_TCSM_NKULEN          (4 + 4 + 512)
-#define MCU_TCSM_KEYLEN          32
-#define MCU_TCSM_NKUSIG          (MCU_TCSM_NKU + MCU_TCSM_NKULEN)
-#define MCU_TCSM_RETRIR          (MCU_TCSM_RETVAL + 4)
-#define MCU_TCSM_ARG1            (MCU_TCSM_RETRIR + 16)
-#define MCU_TCSM_VERSION         (MCU_TCSM_ARG1 + MCU_TCSM_ARGLEN)
-#define MCU_TCSM_SPLSHA1ENC      (MCU_TCSM_VERSION + 16)
-/* ************ TCSM_BANK1 *****************/
-#define SC_KEY_ADDR              (TCSM_BANK7_PART1)
-#define SPL_CODE_ADDR            (TCSM_BANK7_PART0)
-#define SC_MAX_SIZE_PERTIME      (2048)
-/* these debug TCSM space must not be used with scboot func */
-#define MCU_TCSM_OUTDATA         (TCSM_BANK7 + 0)
-#else
+
 #define MCU_TCSM_PDMA_MSG        TCSM_BANK0_PART2
 #define MCU_TCSM_NKULEN          (4+4+256)
 #define MCU_TCSM_KEYLEN          16
@@ -101,7 +77,6 @@ struct pdma_message {
 #define SPL_CODE_ADDR	        (TCSM_BANK1_PART0)
 /* these debug TCSM space must not be used with scboot func */
 #define MCU_TCSM_OUTDATA        (TCSM_BANK1 + 0)
-#endif
 
 
 #define MCU_TCSM_SECALL_MSG      (MCU_TCSM_PDMA_MSG + MCU_TCSM_PDMA_MSG_LEN)

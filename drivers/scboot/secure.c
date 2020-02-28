@@ -47,7 +47,8 @@ int init_seboot(void)
 #ifdef CONFIG_X2000_FPGA
 	volatile struct pdma_message *pdma_msg;
 	pdma_msg = (volatile struct pdma_message *)GET_PDMA_MESSAGE();
-#else
+#endif
+#ifdef CONFIG_X2000_V12
 	volatile unsigned int * clkgate = (volatile unsigned int *)0xb0000020;
 	*clkgate = 0;
 #endif
@@ -64,7 +65,7 @@ int init_seboot(void)
 	otp_init();
 #endif
 
-//	printf("xxmcu control status: %x\n", REG32(PDMA_BASE + DMCS_OFF));
+//	printf("mcu control status: %x\n", REG32(PDMA_BASE + DMCS_OFF));
 
 	return 0;
 }

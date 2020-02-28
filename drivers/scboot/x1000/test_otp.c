@@ -4,8 +4,8 @@
 
 #include <asm/gpio.h>
 
-#include "secall.h"
-#include "pdma.h"
+#include "../secall.h"
+#include "../pdma.h"
 
 //#include "test1.h"
 #include "test_nku.h"

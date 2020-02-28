@@ -29,7 +29,7 @@
 #include "sc.h"
 #include "otp.h"
 #include "jz_pdma.h"
-#include "secall.h"
+#include "../secall.h"
 
 static void bitcpy(const unsigned int *s,unsigned int *d,
 			        const int ss,const int ds,int bsz)
@@ -107,6 +107,7 @@ static int read_ckey()
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
+	memset(output, 0, BANK_SIZE);
 
 //	gpio_output_value(AVDD_EFUSE_GPIO, 0);
 	args->arg[0] = SC_OTP_SEL_CKEY;
@@ -142,6 +143,7 @@ static int read_ukey(int ukey_flag, unsigned int *ukey)
 	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
 	unsigned int tmp[8];
 
+	memset(output, 0, BANK_SIZE);
 //	gpio_output_value(AVDD_EFUSE_GPIO, 0);
 	args->arg[0] = ukey_flag;
 	args->arg[1] = MCU_TCSM_PADDR(output);
@@ -185,6 +187,7 @@ static int read_nkusig()
 	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
 	*((volatile unsigned int *)(MCU_TCSM_OUTDATA)) = 1;
 	unsigned int tmp[8];
+	memset(output, 0, BANK_SIZE);
 
 //	gpio_output_value(AVDD_EFUSE_GPIO, 0);
 	args->arg[0] = SC_OTP_SEL_NKU;
@@ -218,30 +221,30 @@ static int read_nkusig()
 
 
 static unsigned int ukey[16] = {
-	   0x81e82f09, 0xa5286870, 0x2510b9b8, 0x5c6e1987,
-	   0x015c7167, 0x577643c8, 0x3a5754bf, 0xd4966ce8,
-	   0x81647150, 0x6b6312e5, 0x024503c5, 0x20815f6b,
-	   0x40eed4fc, 0x9e00efde, 0x2e3b7bdc, 0x509d22d1
+	   0xa9901e81,0xa34a4800,0xa3ba14b4,0x7b20d6df,
+	   0x68a135b8,0x851ea66b,0x492dfe47,0x3944a0dc,
+	   0x9d1633d1,0x5f3cc5ee,0xcc07ff5f,0x1926e2e1,
+	   0x1310a869,0x3a716c21,0xcf321748,0xe0656ef4,
 };
 
 
 static unsigned int nku[64 + 64 + 2] = {0x40, 0x40,
-	0x99fa5ca4, 0x9316fe89, 0xa4aa3733, 0x0d853017,
-	0xece38063, 0xf5e41225, 0x85b08a07, 0x88909b78,
-	0xd9e000af, 0xe221dcec, 0xad3fa84e, 0xe20118c8,
-	0xa69010ca, 0x4d8cca9f, 0x2dddd6cc, 0xbabbeb4d,
-	0x9a1eeef3, 0x97ea7e0f, 0x35940c4f, 0x491f29c9,
-	0x2e6166c0, 0xa79c7d21, 0xb760d306, 0x108e55a8,
-	0x394878c5, 0x051bc7e6, 0xc347d18e, 0xe5432d5d,
-	0xe84db60c, 0x439e7546, 0x264667be, 0x2941cceb,
-	0x6627963b, 0xb0713bda, 0xb68a67e8, 0x87265e54,
-	0xd54a6e64, 0xa3ea0b8e, 0xf90dc88d, 0x69981570,
-	0x59379b8e, 0x06d738fe, 0xd91a82a1, 0x54332043,
-	0xac6227d7, 0x206bea00, 0xddcc6a1f, 0x940bd914,
-	0x1abf3aa0, 0x377532ca, 0x3a68f0a7, 0xd6ccc2e4,
-	0xdf3e556d, 0x7c6186f7, 0x9b819e9a, 0xb8fc5dd7,
-	0x7618df55, 0x8f826563, 0x84bb2228, 0xc2551c1d,
-	0xcedc2d6f, 0x34fb3f09, 0xf9e7538c, 0x8d1799f7,
+	0xed19e044,0xe39195c2,0xf9865834,0xf71f5e4c,
+	0x254e42e3,0xe2152a64,0xcedf12f5,0x90368c26,
+	0x8e45a322,0x32dcb23f,0xdc93ba6c,0x1f413023,
+	0xc572c8d9,0xbf32d4da,0x8abfc305,0x34073d4c,
+	0x68cc7971,0xd2528711,0x502aba47,0xb746dcc2,
+	0xfd6ca9ef,0x502781ac,0x7865995a,0xa28061e3,
+	0x83a86f69,0xe97ad4c7,0x215acc4a,0x9b1f84c3,
+	0x0aacd5e5,0xebe243bb,0x07373439,0xc51bb560,
+	0x1ee0b212,0x7c6adceb,0x443915e6,0x954b43a8,
+	0xc81d2341,0x9e7139bf,0xa0883018,0xb9fe557f,
+	0x6b7e04e5,0x670e85fe,0x824215c7,0x41beb5bb,
+	0xaddd9ea1,0x0a8dbfe2,0x17a25cfe,0xdc0384c7,
+	0xee3ab9aa,0x629408b6,0xb0f4f830,0xaf8cd49b,
+	0x083329dc,0xe9b861ba,0x1bd6336f,0x66e0006f,
+	0x673c2d51,0x046a242a,0x817724a6,0x204c3daa,
+	0x705bef57,0x7c494b98,0x7a1cfc4c,0x71c0dcc3,
 
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -471,7 +474,7 @@ static int do_sct(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	}
 
 	if(strcmp(argv[1], "init") == 0) {
-		if(init_seboot_t() < 0) {
+		if(init_seboot() < 0) {
 			printf("init seboot fialed.\n");
 			return 0;
 		}

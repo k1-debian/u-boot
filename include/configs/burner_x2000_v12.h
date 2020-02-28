@@ -56,6 +56,7 @@
 		{MSC2, MPLL},			\
 		{SFC, MPLL},			\
 		{CIM, MPLL},			\
+		{RSA, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
 
@@ -173,10 +174,10 @@
 #ifdef CONFIG_JZ_MMC_MSC0
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
-#define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
 /*#define CONFIG_MMC_SDMA*/
+/*#define CONFIG_MMC_SPL_PARAMS*/
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
@@ -190,9 +191,9 @@
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
-#define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
 /*#define CONFIG_MMC_SDMA*/
+/*#define CONFIG_MMC_SPL_PARAMS*/
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
@@ -206,9 +207,9 @@
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
-#define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
 /*#define CONFIG_MMC_SDMA*/
+/*#define CONFIG_MMC_SPL_PARAMS*/
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
@@ -276,9 +277,10 @@
 /*burner*/
 #ifdef CONFIG_CMD_BURN
 #define CONFIG_USB_GADGET_DUALSPEED
+#define CONFIG_SOFT_BURNER
 #define CONFIG_BURNER
-#define CONFIG_USB_GADGET
 #define CONFIG_JZ_SCBOOT
+#define CONFIG_USB_GADGET
 #define CONFIG_USB_JZ_BURNER_GADGET
 #define CONFIG_JZ_VERDOR_BURN_EXTPOL
 /*#define CONFIG_JZ_VERDOR_BURN_EP_TEST*/

@@ -68,7 +68,7 @@ endif
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
-SUBOBJS :=  $(addprefix $(obj),$(SUBOBJS-y))
+SUBOBJS := $(addprefix $(obj),$(SUBOBJS-y))
 OBJS += $(SUBOBJS)
 
 all:	$(LIB)
