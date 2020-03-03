@@ -7,9 +7,9 @@
 #include "pdma.h"
 #include "aes.h"
 #ifdef CONFIG_X2000_V12
-#include "x2000_v12/otp.h"
+#include "jz_sec_v2/otp.h"
 #else
-#include "x1000/otp.h"
+#include "jz_sec_v1/otp.h"
 #endif
 
 /*

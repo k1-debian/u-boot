@@ -8,7 +8,7 @@
 #include "../pdma.h"
 #include "../aes.h"
 #include "otp.h"
-
+#include "test_common.c"
 /*
  * security boot.
  * 1. prepare a bin encrypted.

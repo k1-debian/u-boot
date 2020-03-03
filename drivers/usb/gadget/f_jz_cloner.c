@@ -38,17 +38,16 @@
 #include <cloner/cloner.h>
 #include "cloner/burn_printf.h"
 #include "cloner/cloner_efuse.c"
+
 #ifdef CONFIG_JZ_SCBOOT
 #include "../../scboot/secure.h"
-#ifdef CONFIG_X1000
-#include "../../scboot/x1000/otp.h"
-#endif
-#ifdef CONFIG_X2000_V12
-#include "../../scboot/x2000_v12/otp.h"
-#endif
 #include "../../scboot/aes.h"
 #include "../../scboot/spi_checksum.h"
-
+#ifdef CONFIG_X2000_V12
+#include "../../scboot/jz_sec_v2/otp.h"
+#else
+#include "../../scboot/jz_sec_v1/otp.h"
+#endif
 static bool is_security = false;
 static bool is_bootfile = false;
 #endif
@@ -210,12 +209,14 @@ int i2c_program(struct cloner *cloner)
 struct ParameterInfo	*global_args;
 struct policy_param	*policy_args;
 struct debug_param	*debug_args;
+struct ParameterInfo	*m = NULL;
 
-int cloner_init(struct cloner *cloner)
+void handle_args(struct usb_ep *ep,struct usb_request *req)
 {
-	int i = 0;
+	struct cloner *cloner = req->context;
 	struct ParameterInfo *p = global_args;
-	struct ParameterInfo	*m = NULL;
+	int i = 0;
+
 	while(1)
 	{
 		if(((int)p%4==0) && ((char*)p>=(char*)global_args)
@@ -250,7 +251,7 @@ int cloner_init(struct cloner *cloner)
 		}
 		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t) * 2);
 	}
-	return clmg_init(cloner, m);
+	cloner->ack = 0;
 }
 
 void *realloc_buf(struct cloner *cloner, size_t realloc_size)
@@ -289,11 +290,6 @@ void handle_read(struct cloner *cloner)
 
 void handle_read_complete(struct usb_ep *ep,struct usb_request *req)
 {
-}
-
-int handle_check(struct cloner *cloner)
-{
-	return clmg_check(cloner);
 }
 
 void handle_write(struct usb_ep *ep,struct usb_request *req)
@@ -416,9 +412,8 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 		case VR_INIT:
 			if(!cloner->inited) {
 				cloner->ack = -EBUSY;
-				cloner_init(cloner);
+				cloner->ack = clmg_init(cloner, m);
 				cloner->inited = 1;
-				cloner->ack = 0;
 			}
 			break;
 		case VR_READ:
@@ -435,7 +430,7 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			cloner->ack = rtc_set(&cloner->cmd->rtc);
 			break;
 		case VR_CHECK:
-			cloner->ack = handle_check(cloner);
+			cloner->ack = clmg_check(cloner);
 			break;
 		case VR_GET_ACK:
 		case VR_GET_CPU_INFO:
@@ -583,7 +578,7 @@ int f_cloner_bind(struct usb_configuration *c,
 
 	cloner->args = calloc(1,ARGS_LEN);
 	global_args = (struct ParameterInfo*)(cloner->args);
-	cloner->args_req->complete = handle_write;
+	cloner->args_req->complete = handle_args;
 	cloner->args_req->buf = cloner->args;
 	cloner->args_req->length = ARGS_LEN;
 	cloner->args_req->context = cloner;

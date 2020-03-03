@@ -414,6 +414,7 @@
 #define CONFIG_CMD_EXT4
 #define CONFIG_CMD_FAT
 #define CONFIG_EFI_PARTITION
+#define CONFIG_SOFT_BURNER
 
 
 #define CONFIG_CMD_DDR_TEST	/* DDR Test Command */

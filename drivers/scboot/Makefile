@@ -2,23 +2,29 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libscboot.o
 
+ifdef CONFIG_X2000_V12
+SCV = jz_sec_v2
+else
+SCV = jz_sec_v1
+endif
+
 ifdef CONFIG_JZ_SCBOOT
-COBJS-$(CONFIG_JZ_CKEYAES) += $(SOC)/ckey_aes.o spi_checksum.o
-COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += $(SOC)/scboot.o md5.o flash.o
+COBJS-$(CONFIG_JZ_CKEYAES) += $(SCV)/ckey_aes.o spi_checksum.o
+COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += $(SCV)/scboot.o md5.o flash.o
 COBJS-y += aes.o rsa.o
 ifdef CONFIG_BURNER
 COBJS-y += secure.o
 ifdef CONFIG_X2000_V12
-COBJS-y += $(SOC)/otp.o $(SOC)/cmd_burn_key.o
+COBJS-y += $(SCV)/otp.o $(SCV)/cmd_burn_key.o
 else
-COBJS-y += $(SOC)/otp.o $(SOC)/get_rn.o $(SOC)/cmd_sctest.o \
-	$(SOC)/test_common.o $(SOC)/test_scboot.o $(SOC)/test_nku.o \
-	$(SOC)/test_otp.o
+COBJS-y += $(SCV)/otp.o $(SCV)/get_rn.o $(SCV)/cmd_sctest.o \
+	$(SCV)/test_common.o $(SCV)/test_scboot.o $(SCV)/test_nku.o \
+	$(SCV)/test_otp.o
 endif
 endif
 endif
 
-$(shell mkdir -p $(SPLTREE)/drivers/scboot/$(SOC))
+$(shell mkdir -p $(SPLTREE)/drivers/scboot/$(SCV))
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

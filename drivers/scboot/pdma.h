@@ -2,10 +2,10 @@
 #define _PDMA_H_
 
 #include <common.h>
-#if defined(CONFIG_X1000)
-#include "x1000/jz_pdma.h"
-#elif defined(CONFIG_X2000_V12)
-#include "x2000_v12/jz_pdma.h"
+#ifdef CONFIG_X2000_V12
+#include "jz_sec_v2/jz_pdma.h"
+#else
+#include "jz_sec_v1/jz_pdma.h"
 #endif
 
 #define SE_PASS 0
