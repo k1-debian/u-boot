@@ -234,6 +234,7 @@ COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 COBJS-$(CONFIG_CMD_DFU) += cmd_dfu.o
 COBJS-$(CONFIG_CMD_GPT) += cmd_gpt.o
 COBJS-$(CONFIG_CMD_BURN) += cmd_burn.o
+COBJS-$(CONFIG_SOFT_BURNER) += cmd_softburn.o
 COBJS-$(CONFIG_CMD_EFUSE) += cmd_efuse.o
 COBJS-$(CONFIG_CMD_BATTERYDET) += cmd_batterydet.o
 endif

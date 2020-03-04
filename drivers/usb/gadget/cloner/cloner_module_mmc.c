@@ -66,7 +66,7 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 		BURNNER_PRI("mmc all erase ok, blocks %d\n", blk_cnt);
 		return 0;
 	} else if (mmc_args->mmc_erase != MMC_ERASE_PART) {
-		return -EINVAL;
+		return 0;
 	}
 
 	/*mmc part erase */

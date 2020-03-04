@@ -176,7 +176,7 @@
 #define CONFIG_MMC
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
+#define CONFIG_MMC_SDMA
 /*#define CONFIG_MMC_SPL_PARAMS*/
 
 /* MSC Command configuration */
@@ -208,7 +208,7 @@
 #define CONFIG_MMC
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
+#define CONFIG_MMC_SDMA
 /*#define CONFIG_MMC_SPL_PARAMS*/
 
 /* MSC Command configuration */
