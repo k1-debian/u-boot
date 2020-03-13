@@ -456,6 +456,5 @@ static inline int cloner_moudle_init(void)
 
 void *realloc_buf(struct cloner *cloner, size_t realloc_size);
 int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset);
-#define READBUF_SIZE	(512*1024)
 
 #endif

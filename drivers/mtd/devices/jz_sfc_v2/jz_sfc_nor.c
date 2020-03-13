@@ -628,6 +628,7 @@ struct nor_partition *get_partition_index(u32 offset,u32 length, int *pt_offset,
 				(flash->norflash_partitions->nor_partition[i].size == 0xffffffff)){ /*size == -1*/
 			*pt_offset = flash->norflash_partitions->nor_partition[i].offset;
 			*pt_size = spi_nor_info->chip_size - flash->norflash_partitions->nor_partition[i].offset;
+			flash->norflash_partitions->nor_partition[i].size = *pt_size;
 			break;
 		}
 	}

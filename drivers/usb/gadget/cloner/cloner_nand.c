@@ -220,13 +220,13 @@ int nand_mtd_raw_program(struct cloner *cloner)
 
 	if (debug_args->write_back_chk) {
 		if (!readbuf) {
-			readbuf = malloc(READBUF_SIZE);
+			readbuf = malloc(length);
 			if (!readbuf) {
 				printf("malloc read buffer spaces error!\n");
 				return -1;
 			}
 		}
-		memset(readbuf,0,READBUF_SIZE);
+		memset(readbuf,0,length);
 		memset(command, 0 , 128);
 		sprintf(command,"nand read.skip 0x%x 0x%x 0x%x",readbuf,startaddr, length);
 		run_command(command,0);

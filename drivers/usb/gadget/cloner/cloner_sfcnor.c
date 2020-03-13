@@ -130,13 +130,13 @@ int sfc_program(struct cloner *cloner)
 
 	if(debug_args->write_back_chk){
 		if(!readbuf){
-			readbuf = malloc(READBUF_SIZE);
+			readbuf = malloc(len);
 			if (!readbuf) {
 				printf("malloc read buffer spaces error!\n");
 				return -1;
 			}
 		}
-		memset(readbuf,0,READBUF_SIZE);
+		memset(readbuf,0,len);
 		ret = sfc_nor_read(offset,len,readbuf);
 		if(ret){
 			BURNNER_PRI("SF: write back check read  ops error,please check flash info !\n");
