@@ -203,9 +203,15 @@ $(obj)mmc_params:	mmc_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
+ifdef CONFIG_X2000_V12
+$(obj)spl_params_fixer:	spl_params_fixer_x2000_v12.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
+else
 $(obj)spl_params_fixer:	spl_params_fixer.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
+endif
 
 $(obj)sfc_timing_params: sfc_timing_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
