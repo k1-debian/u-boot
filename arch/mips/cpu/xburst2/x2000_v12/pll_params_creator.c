@@ -95,7 +95,7 @@ static unsigned int gen_pll_regester_nfro(unsigned int extern_clk,
 			for(no_i = 1; no_i < 7; no_i++) {
 				no = 1 << no_i;
 				fref = fin / nr;
-				if((fin%nr) || (fref < 5) || (fref > 200)) {
+				if((fin%nr) || (fref < 7) || (fref > 200)) {
 					continue;
 				}
 				fvco = fout * no;
@@ -118,8 +118,11 @@ static unsigned int gen_pll_regester_nfro(unsigned int extern_clk,
 					p->pllrg = 5;
 				} else if(fref > 80 && fref <= 130) {
 					p->pllrg = 6;
-				} else if(fref > 130 && fref <= 200)
+				} else if(fref > 130 && fref <= 200) {
 					p->pllrg = 7;
+				} else {
+					continue;
+				}
 
 				return 1;
 			}
