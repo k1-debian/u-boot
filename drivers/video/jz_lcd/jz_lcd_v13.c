@@ -1211,19 +1211,21 @@ static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 	vde = vds + mode->yres;
 	vt = vde + mode->lower_margin;
 
-	if(mode->refresh){
+	if (mode->refresh==0)
+		mode->refresh = 60;
+
+	if(mode->pixclock){
+		rate = PICOS2KHZ(mode->pixclock) * 1000;
+		mode->refresh = rate / vt / ht;
+	}else if(mode->refresh){
 		if (info->lcd_type == LCD_TYPE_8BIT_SERIAL) {
 			rate = mode->refresh * (vt + 2 * mode->xres) * ht;
 		} else {
 			rate = mode->refresh * vt * ht;
 		}
 		mode->pixclock = KHZ2PICOS(rate / 1000);
-
-	}else if(mode->pixclock){
-		rate = PICOS2KHZ(mode->pixclock) * 1000;
-		mode->refresh = rate / vt / ht;
 	}else{
-		printf("%s error:lcd important config info is absenced\n",__func__);
+		printf("%s error:lcd important config info is absenced, mode->pixclock=%d\n",__func__, mode->pixclock);
 	}
 
 }
@@ -1238,7 +1240,7 @@ void lcd_ctrl_init(void *lcd_base)
 	lcd_set_flush_dcache(1);
 
 	refresh_pixclock_auto_adapt(&lcd_config_info);
-	pixel_clock_rate = PICOS2KHZ(lcd_config_info.modes->pixclock);
+	pixel_clock_rate = PICOS2KHZ(lcd_config_info.modes->pixclock) *1000;
 
 	/* smart lcd WR freq = (lcd pixel clock)/2 */
 	if (lcd_config_info.lcd_type == LCD_TYPE_SLCD) {

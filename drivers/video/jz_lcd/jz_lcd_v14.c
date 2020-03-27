@@ -1247,18 +1247,21 @@ static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 	vde = vds + mode->yres;
 	vt = vde + mode->lower_margin;
 
-	if(mode->refresh){
+	if (mode->refresh==0)
+		mode->refresh = 60;
+
+	if(mode->pixclock){
+		rate = PICOS2KHZ(mode->pixclock) * 1000;
+		mode->refresh = rate / vt / ht;
+	}else if(mode->refresh){
 		if (info->lcd_type == LCD_TYPE_SLCD) {
 			rate = rate * 5 / 2;
 			rate *= slcd_pixel_refresh_times(info);
 		}
 		mode->pixclock = KHZ2PICOS(rate / 1000);
 		var->pixclock = mode->pixclock;
-	}else if(mode->pixclock){
-		rate = PICOS2KHZ(mode->pixclock) * 1000;
-		mode->refresh = rate / vt / ht;
 	}else{
-		printf("%s error:lcd important config info is absenced\n",__func__);
+		printf("%s error:lcd important config info is absenced, mode->pixclock=%d\n",__func__, mode->pixclock);
 	}
 
 }
