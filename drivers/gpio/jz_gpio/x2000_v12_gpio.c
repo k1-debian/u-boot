@@ -24,6 +24,7 @@ static struct jz_gpio_func_def uart_gpio_func[] = {
 	[0] = { .port = GPIO_PORT_D, .func = GPIO_FUNC_2, .pins = 0x3 << 23},
 	[1] = {},
 	[2] = {.port = GPIO_PORT_D, .func = GPIO_FUNC_0, .pins = 0x3 << 30},
+	[3] = {.port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = 0x3 << 25},
 };
 
 static struct jz_gpio_func_def gpio_func[] = {
