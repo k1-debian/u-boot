@@ -76,7 +76,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.plane_select = 0,
+		.plane_select = 1,
 		.ecc_max = 0,
 		.need_quad = 1,
 	},
