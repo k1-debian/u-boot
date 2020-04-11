@@ -9,10 +9,6 @@
 #define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
 #define UBI_MANAGER             0x1
 
-/*
- * u-boot private
- */
-#ifndef CONFIG_SPL_BUILD
 struct jz_sfcnand_partition {
 	char name[32];		/* identifier string */
 	uint32_t size;          /* partition size */
@@ -27,6 +23,10 @@ struct jz_sfcnand_burner_param {
 	struct jz_sfcnand_partition *partition;
 };
 
+/*
+ * u-boot private
+ */
+#ifndef CONFIG_SPL_BUILD
 struct jz_sfcnand_base_param {
 	uint32_t pagesize;
 	uint32_t blocksize;

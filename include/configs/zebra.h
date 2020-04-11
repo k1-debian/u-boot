@@ -209,7 +209,11 @@
 
 
 #ifdef CONFIG_SPL_OS_BOOT
-      #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #ifdef  CONFIG_SPL_SFC_NOR
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #else
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+    #endif
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
              #define CONFIG_PAR_NV_NUM        (3)
@@ -219,11 +223,23 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
      #endif /*CONFIG_OTA_VERSION20*/
 
+     #ifdef CONFIG_BOOT_VMLINUX
+             #undef CONFIG_SPL_BOOTARGS
+             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
+     #endif /* CONFIG_BOOT_VMLINUX */
+
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
-     #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+     #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+	#undef CONFIG_SPL_BOOTARGS
+	#define CONFIG_SPL_BOOTARGS	CONFIG_BOOTX_BOOTARGS
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
+     #ifdef CONFIG_BOOT_RTOS
+             #define CONFIG_LOAD_ADDR	0x80004000
+     #else
+             #define CONFIG_LOAD_ADDR	0x80001000
+     #endif
 #endif	/* CONFIG_SPL_OS_BOOT */
 
 

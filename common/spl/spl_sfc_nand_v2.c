@@ -4,7 +4,7 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/sfc.h>
 #include <asm/arch/spinand.h>
-
+#include "spl.h"
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
 
@@ -12,6 +12,7 @@
 //#define CONFIG_SPI_STANDARD
 #define CONFIG_NAND_BPP             (2048)
 #define CONFIG_NAND_PPB             (64)
+#define SPINAND_PARAM_SIZE			1024
 
 static struct spl_nand_param *curr_device;
 
@@ -333,6 +334,16 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 	return 0;
 }
 
+void spl_load_kernel(long offset)
+{
+	struct image_header *header;
+	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
+	sfc_nand_load(offset, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+	spl_parse_image_header(header);
+	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
+}
+
 void sfc_init(void)
 {
 	sfc_controler_init();
@@ -342,13 +353,43 @@ void sfc_init(void)
 void spl_sfc_nand_load(void)
 {
 	struct image_header *header;
-
+#ifdef CONFIG_SPL_OS_BOOT
+	struct jz_sfcnand_burner_param *burn_param;
+	struct jz_sfcnand_partition *partition;
+	unsigned int bootimg_addr = 0;
+	unsigned int bootimg_size = 0;
+	unsigned int i = 0;
+#endif
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_init();
+#ifdef CONFIG_SPL_OS_BOOT
+	/* read burn param */
+	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
+	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
+	partition = (struct jz_sfcnand_partition *)&burn_param->partition;
 
+	for(i = 0; i < burn_param->partition_num; i++) {
+		if (!strncmp(partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
+			bootimg_addr = partition[i].offset;
+			bootimg_size = partition[i].size;
+			break;
+		}
+	}
+
+#ifdef CONFIG_BOOT_RTOS
+	spl_image.entry_point = CONFIG_LOAD_ADDR;
+	sfc_nand_load(bootimg_addr, bootimg_size, (unsigned int*)CONFIG_LOAD_ADDR);
+#else /* CONFIG_BOOT_RTOS */
+
+	/* read image head */
+	spl_load_kernel(bootimg_addr);
+#endif /* CONFIG_SPL_OS_BOOT */
+
+#else
 	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (void *)CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
+#endif
 }
 
 char* spl_sfc_nand_load_image(void)
