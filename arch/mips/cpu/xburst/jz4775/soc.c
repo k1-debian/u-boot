@@ -80,6 +80,10 @@ void board_init_f(ulong dummy)
 		? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq)
 		: (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq + 1);
 
+#ifdef CONFIG_DEBUG_CPU_FREQ_TEST
+	gd->arch.gi->ddr_div = CONFIG_SYS_MEM_DIV;
+#endif
+
 	gpio_init();
 
 	/* Init uart first */

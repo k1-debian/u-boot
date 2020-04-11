@@ -37,8 +37,10 @@ DECLARE_GLOBAL_DATA_PTR;
  */
 #define SEL_SCLKA		1
 #define SEL_CPU			1
-#define SEL_H0			1
-#define SEL_H2			1
+
+#ifndef CONFIG_DEBUG_CPU_FREQ_TEST
+#define SEL_H0			1 /* 2: mpll, 1: apll */
+#define SEL_H2			1 /* 2: mpll, 1: apll */
 #if (CONFIG_SYS_APLL_FREQ > 1000000000)
 #define DIV_PCLK		10
 #define DIV_H2			5
@@ -47,8 +49,19 @@ DECLARE_GLOBAL_DATA_PTR;
 #define DIV_H2			4
 #endif
 #define DIV_H0          DIV_H2
+
+#else  /* CONFIG_DEBUG_CPU_FREQ_TEST */
+/* if cpu test, AHB0 AHB2 select mpll */
+#define SEL_H0			2 /* 2: mpll, 1: apll */
+#define SEL_H2			2 /* 2: mpll, 1: apll */
+#define DIV_PCLK		8
+#define DIV_H2			4
+#define DIV_H0			4
+#endif	/* CONFIG_DEBUG_CPU_FREQ_TEST */
+
 #define DIV_L2			2
 #define DIV_CPU			1
+
 #define CPCCR_CFG		(((SEL_SCLKA & 0x3) << 30)		\
 				 | ((SEL_CPU & 0x3) << 28)		\
 				 | ((SEL_H0 & 0x3) << 26)			\
@@ -90,8 +103,27 @@ unsigned int get_pllreg_value(int pll)
 			* (1 << cpapcr.b.PLLOD)
 			- 1;
 		ret = cpapcr.d32;
+		break;
 	case MPLL:
-		/* MPLL is not used */
+		/* MPLL for ddr */
+		cpapcr.d32 = 0;
+		pll_out = (CONFIG_SYS_MPLL_FREQ) / 1000000;
+		if (pll_out > 600) {
+			cpapcr.b.BS = 1;
+		} else if ((pll_out > 155) && (pll_out <= 300)) {
+			cpapcr.b.PLLOD = 1;
+		} else if (pll_out > 76) {
+			cpapcr.b.PLLOD = 2;
+		} else if (pll_out > 47) {
+			cpapcr.b.PLLOD = 3;
+		}
+		cpapcr.b.PLLN = 0;
+		cpapcr.b.PLLM = ((CONFIG_SYS_MPLL_FREQ) / gd->arch.gi->extal)
+			* (cpapcr.b.PLLN + 1)
+			* (1 << cpapcr.b.PLLOD)
+			- 1;
+		ret = cpapcr.d32;
+		break;
 	default:
 		break;
 	}
@@ -99,11 +131,13 @@ unsigned int get_pllreg_value(int pll)
 	return ret;
 }
 
-void pll_init(void)
+void apll_init(void)
 {
 	unsigned int cpccr = 0;
 
-	debug("pll init...");
+	debug("apll init...");
+	debug("CPM_CPCCR_CFG %x\n", CPCCR_CFG);
+
 #ifdef CONFIG_BURNER
 	cpccr = (0x95 << 24) | (7 << 20);
 	cpm_outl(cpccr,CPM_CPCCR);
@@ -121,11 +155,36 @@ void pll_init(void)
 	while(cpm_inl(CPM_CPCSR) & 0x7);
 
 	cpccr = (CPCCR_CFG & (0xff << 24)) | (cpm_inl(CPM_CPCCR) & ~(0xff << 24));
+	debug("CPM_CPCCR %x\n", cpccr);
 	cpm_outl(cpccr,CPM_CPCCR);
 	while(cpm_inl(CPM_CPCSR) & 0x7);
 
 	debug("ok\n");
 }
+
+void mpll_init(void)
+{
+	unsigned int cpccr = 0;
+
+	debug("mpll init...");
+	/* mpll is init here */
+	cpm_outl(get_pllreg_value(MPLL) | (0x1 << 7),CPM_CPMPCR);
+	while(!(cpm_inl(CPM_CPMPCR) & (0x1<<0)));
+	debug("CPM_CPMPCR %x\n", cpm_inl(CPM_CPMPCR));
+
+}
+
+void pll_init(void)
+{
+#if defined(CONFIG_SYS_MPLL_FREQ) && (CONFIG_SYS_MPLL_FREQ>0)
+  mpll_init();
+#endif
+
+  apll_init();
+
+}
+
+
 #else
 
 void pll_init(void) {}

@@ -35,7 +35,11 @@ struct cgu spl_cgu_clksel[] = {
 	/*
 	 * {offset, sel, sel_bit, en_bit, busy_bit, div}
 	 */
+#ifdef CONFIG_DEBUG_CPU_FREQ_TEST
+	[0] = {CPM_DDRCDR, 2, 30, 29, 28, 0}, // DDR MPLL
+#else
 	[0] = {CPM_DDRCDR, 1, 30, 29, 28, 0},
+#endif
 #ifdef CONFIG_JZ_MMC_MSC0
 	{CPM_MSC0CDR, 1, 30, 29, 28, CGU_MSC_DIV},
 #endif
