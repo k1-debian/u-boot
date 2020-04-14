@@ -24,8 +24,8 @@
 
 
 #define M(x) (x * 1000 * 1000)
-#define MAX_H0_CLK M(210)
-#define MAX_H2_CLK M(210)
+#define MAX_H0_CLK M(300)
+#define MAX_H2_CLK M(300)
 #define MAX_P_CLK  M(150)
 #define MAX_L2_CLK M(750)
 
