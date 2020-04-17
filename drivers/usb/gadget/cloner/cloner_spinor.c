@@ -107,7 +107,7 @@ int spi_program(struct cloner *cloner)
 		spi_flash_read(flash, offset,len, addr);
 
 		uint32_t tmp_crc = local_crc32(0xffffffff,addr,cloner->cmd->write.length);
-		debug_cond(BURNNER_DEBUG,"%d blocks check: %s\n",len,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
+		BURNNER_PRI("SF: %d bytes @ %#x check: %s\n",len,offset,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
 		if (cloner->cmd->write.crc != tmp_crc) {
 			printf("src_crc32 = %08x , dst_crc32 = %08x\n",cloner->cmd->write.crc,tmp_crc);
 			return -EIO;

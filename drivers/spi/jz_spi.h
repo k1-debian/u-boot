@@ -66,6 +66,7 @@ struct jz_spi_support {
 	unsigned int *page_list;
 	unsigned short column_cmdaddr_bits;/* read from cache ,the bits of cmd + addr */
 	struct spi_quad_mode quad_mode;
+	int die_num;
 };
 
 struct jz_spi_slave {
@@ -207,6 +208,7 @@ static struct jz_spi_support jz_spi_support_table[] = {
 			.sfc_mode = TRAN_SPI_QUAD,
 #endif
 		},
+		.die_num = 0,
 	},
 	{
 		.id_manufactory = 0x1840c8,
@@ -228,6 +230,7 @@ static struct jz_spi_support jz_spi_support_table[] = {
 			.sfc_mode = TRAN_SPI_QUAD,
 #endif
 		},
+		.die_num = 0,
 	},
 	{
 		.id_manufactory = 0x1860c8,
@@ -249,6 +252,7 @@ static struct jz_spi_support jz_spi_support_table[] = {
 			.sfc_mode = TRAN_SPI_QUAD,
 #endif
 		},
+		.die_num = 0,
 	},
 	{
 		.id_manufactory = 0x18609d,
@@ -270,6 +274,7 @@ static struct jz_spi_support jz_spi_support_table[] = {
 			.sfc_mode = TRAN_SPI_IO_QUAD,
 #endif
 		},
+		.die_num = 0,
 	},
 	{
 		.id_manufactory = 0x1840ef,
@@ -291,7 +296,9 @@ static struct jz_spi_support jz_spi_support_table[] = {
 			.sfc_mode = TRAN_SPI_IO_QUAD,
 #endif
 		},
+		.die_num = 0,
 	},
+#if 0
 	{
 		.id_manufactory = 0x1940c8,
 		.name = "GD25Q256C",
@@ -313,7 +320,31 @@ static struct jz_spi_support jz_spi_support_table[] = {
 #endif
 		},
 	},
+#else
+	{
+		.id_manufactory = 0x1940c8,
+		.name = "GD25S512MD",
+		.page_size = 256,
+		.sector_size = 4 * 1024,
+		.addr_size = 4,
+		.size = 2 * 32 * 1024 * 1024,
+		.quad_mode = {
+			.dummy_byte = 8,
+			.RDSR_CMD = CMD_RDSR_1,
+			.WRSR_CMD = CMD_WRSR_1,
+			.RDSR_DATE = 0x2,//the data is write the spi status register for QE bit
+			.RD_DATE_SIZE = 1,
+			.WRSR_DATE = 0x2,//this bit should be the flash QUAD mode enable
+			.WD_DATE_SIZE = 1,
+			.cmd_read = CMD_QUAD_READ,
+#ifdef CONFIG_JZ_SFC
+			.sfc_mode = TRAN_SPI_QUAD,
+#endif
+		},
+		.die_num = 2,
+	},
 
+#endif
 };
 
 #endif /* __JZ_SPI_H__ */

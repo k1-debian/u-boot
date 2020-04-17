@@ -141,4 +141,7 @@
 #include "./chips/LPDDR3_W63CH2MBVABE.h"
 #endif
 
+#ifdef CONFIG_DDR2_SCB18T2G160AF-25DI
+#include "./chips/DDR2_SCB18T2G160AF-25DI.h"
+#endif
 #endif /* __DDR_CHIPS_H__ */

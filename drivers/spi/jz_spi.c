@@ -271,6 +271,26 @@ void jz_cs_reversal(void )
 	return ;
 }
 
+void active_die(int die_id)
+{
+	unsigned char cmd[2], buf;
+
+	cmd[0] = 0xc2; // active die id
+	cmd[1] = die_id;
+	jz_cs_reversal();
+	spi_send_cmd(&cmd[0], 2);
+
+	cmd[0] = 0xf8; // read active die id
+	jz_cs_reversal();
+	spi_send_cmd(&cmd[0], 1);
+	spi_recv_cmd(&buf, 1);
+
+	while(buf != die_id) {
+		spi_recv_cmd(&buf, 1);
+	}
+//	printf("select active die id: %d\n",buf);
+}
+
 void jz_spi_norflash_address_mode(struct spi_flash *flash, int on)
 {
 	unsigned char cmd[3],buf;
@@ -374,6 +394,11 @@ int jz_read(struct spi_flash *flash, u32 offset, size_t len, void *data)
 	unsigned long addr_size;
 	int i;
 
+	if(gparams->die_num > 0 && offset >= gparams->size / gparams->die_num) {
+		active_die(1);
+		offset -= gparams->size / gparams->die_num;
+	}
+
 	addr_size = flash->addr_size;
 
 	jz_spi_norflash_address_mode(flash, 1);
@@ -395,6 +420,10 @@ int jz_read(struct spi_flash *flash, u32 offset, size_t len, void *data)
 	spi_recv_cmd(data, read_len);
 
 	jz_spi_norflash_address_mode(flash, 0);
+
+	if(gparams->die_num > 0)
+		active_die(0);
+
 	return 0;
 }
 
@@ -404,6 +433,11 @@ int jz_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
 	int chunk_len, actual, i;
 	unsigned long byte_addr, page_size, addr_size;
 	unsigned char *send_buf = (unsigned char *)buf;
+
+	if(gparams->die_num > 0 && offset >= gparams->size / gparams->die_num) {
+		active_die(1);
+		offset -= gparams->size / gparams->die_num;
+	}
 
 	page_size = flash->page_size;
 	addr_size = flash->addr_size;
@@ -446,6 +480,10 @@ int jz_write(struct spi_flash *flash, u32 offset, size_t len, const void *buf)
 		offset += chunk_len;
 	}
 	jz_spi_norflash_address_mode(flash, 0);
+
+	if(gparams->die_num > 0)
+		active_die(0);
+
 	return 0;
 }
 
@@ -637,6 +675,11 @@ int jz_erase(struct spi_flash *flash, u32 offset, size_t len)
 	unsigned char cmd[7], buf;
 	int i;
 
+	if(gparams->die_num > 0 && offset >= gparams->size / gparams->die_num) {
+		active_die(1);
+		offset -= gparams->size / gparams->die_num;
+	}
+
 	addr_size = flash->addr_size;
 
 	if((len >= 0x10000)&&((offset % 0x10000) == 0)){
@@ -704,6 +747,10 @@ int jz_erase(struct spi_flash *flash, u32 offset, size_t len)
 	}
 
 	jz_spi_norflash_address_mode(flash, 0);
+
+	if(gparams->die_num > 0)
+		active_die(0);
+
 	return 0;
 }
 
@@ -711,24 +758,34 @@ int jz_erase(struct spi_flash *flash, u32 offset, size_t len)
 int jz_erase_all(struct spi_flash *flash)
 {
 	unsigned char cmd[6], buf;
+	int count = 0;
 
-	cmd[0] = CMD_WREN;
-	cmd[1] = CMD_ERASE_CE;
-	cmd[2] = CMD_RDSR;
+	do {
+		if(count > 0)
+			active_die(count);
 
-	jz_cs_reversal();
-	spi_send_cmd(&cmd[0], 1);
+		cmd[0] = CMD_WREN;
+		cmd[1] = CMD_ERASE_CE;
+		cmd[2] = CMD_RDSR;
 
-	jz_cs_reversal();
-	spi_send_cmd(&cmd[1], 1);
+		jz_cs_reversal();
+		spi_send_cmd(&cmd[0], 1);
 
-	jz_cs_reversal();
-	spi_send_cmd(&cmd[2], 1);
-	spi_recv_cmd(&buf, 1);
-	printf("jz chip erase all\n");
-	while(buf & CMD_SR_WIP) {
+		jz_cs_reversal();
+		spi_send_cmd(&cmd[1], 1);
+
+		jz_cs_reversal();
+		spi_send_cmd(&cmd[2], 1);
 		spi_recv_cmd(&buf, 1);
-	}
+		printf("jz chip erase all\n");
+		while(buf & CMD_SR_WIP) {
+			spi_recv_cmd(&buf, 1);
+		}
+
+	} while(++count < gparams->die_num);
+
+	if(count > 0)
+		active_die(0);
 
 	return 0;
 }
@@ -988,6 +1045,8 @@ struct spi_flash *spi_flash_probe_ingenic(struct spi_slave *spi, u8 *idcode)
 	flash->addr_size = params->addr_size;
 	flash->size = params->size;
 
+	gparams = params;
+
 	return flash;
 }
 #endif
@@ -1027,6 +1086,8 @@ void spi_nor_init(unsigned int *addrsize)
 	}else{
 		*addrsize = params->addr_size;
 	}
+
+	gparams = params;
 }
 
 void spi_load(unsigned int src_addr, unsigned int count, unsigned int dst_addr)
@@ -1037,6 +1098,11 @@ void spi_load(unsigned int src_addr, unsigned int count, unsigned int dst_addr)
 
 	spi_init();
 	spi_nor_init(&addr_len);
+
+	if(gparams->die_num > 0 && src_addr >= gparams->size / gparams->die_num) {
+		active_die(1);
+		 src_addr-= gparams->size / gparams->die_num;
+	}
 
 	jz_cs_reversal();
 	if(addr_len == 4){
