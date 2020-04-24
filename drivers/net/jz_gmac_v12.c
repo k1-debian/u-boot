@@ -614,9 +614,16 @@ int jz_net_initialize(bd_t *bis)
 
 	u32 cpm_mphyc = 0;
 #if defined(CONFIG_NET_X2000_V12)
+	unsigned int rx_clk_delay = CONFIG_GMAC_RX_CLK_DELAY;
+	unsigned int tx_clk_delay = CONFIG_GMAC_TX_CLK_DELAY;
 	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
 	cpm_mphyc &= ~0x7;
 	cpm_mphyc |= CONFIG_NET_GMAC_PHY_MODE;
+	if(tx_clk_delay > 0 && tx_clk_delay <= 128)
+		cpm_mphyc = (cpm_mphyc & ~(0x7f << 12)) | ((tx_clk_delay-1) << 12) | (0x1 << 19);
+
+	if(rx_clk_delay > 0 && rx_clk_delay <= 128)
+		cpm_mphyc = (cpm_mphyc & ~(0x7f << 4)) | ((rx_clk_delay-1) << 4) | (0x1 << 11);
 	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
 #elif defined(CONFIG_NET_JZ4775)
 
