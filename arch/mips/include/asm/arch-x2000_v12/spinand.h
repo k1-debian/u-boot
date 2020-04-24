@@ -23,6 +23,13 @@ struct jz_sfcnand_burner_param {
 	struct jz_sfcnand_partition *partition;
 };
 
+struct jz_sfcnand_partition_param {
+	uint8_t num_partition;
+/*	struct mtd_partition *partition;*/
+	struct jz_sfcnand_partition *partition;
+};
+
+
 /*
  * u-boot private
  */
@@ -50,12 +57,6 @@ struct jz_sfcnand_base_param {
 
 	uint8_t ecc_max;
 	uint8_t need_quad;
-};
-
-struct jz_sfcnand_partition_param {
-	uint8_t num_partition;
-/*	struct mtd_partition *partition;*/
-	struct jz_sfcnand_partition *partition;
 };
 
 struct device_id_struct {

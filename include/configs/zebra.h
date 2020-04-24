@@ -214,14 +214,30 @@
     #else
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
     #endif
-      #ifdef CONFIG_OTA_VERSION20
-             #define CONFIG_PAR_NV_NAME        "NV_RW"
-             #define CONFIG_PAR_NV_NUM        (3)
-             #define CONFIG_PAT_USERFS_NAME   "userfs"
-             #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
-             #undef CONFIG_SPL_BOOTARGS
-             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
-     #endif /*CONFIG_OTA_VERSION20*/
+    #ifdef CONFIG_KUNPENG_OTA_VERSION20
+		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
+		#define CONFIG_PAT_RECOVERY_NAME  "recovery"
+		#define CONFIG_PAT_NV_NAME        "nv"
+		#undef CONFIG_SPL_BOOTARGS
+		#ifdef CONFIG_SPL_SFC_NOR
+			#define CONFIG_PAT_USERFS_NAME   "userfs"
+			#define CONFIG_PAT_UPDATEFS_NAME "updatefs"
+            		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+		#else
+        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro"
+        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc"
+		#endif
+    #else
+		#ifdef CONFIG_BOOT_VMLINUX
+			#undef CONFIG_SPL_BOOTARGS
+			#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
+		#endif /* CONFIG_BOOT_VMLINUX */
+
+        #define CONFIG_SOFT_BURNER
+        #define CONFIG_AUDIO_CAL_DIV
+        #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
+        #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
+    #endif /*CONFIG_KUNPENG_OTA_VERSION20*/
 
      #ifdef CONFIG_BOOT_VMLINUX
              #undef CONFIG_SPL_BOOTARGS
@@ -230,9 +246,8 @@
 
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+     #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
-	#undef CONFIG_SPL_BOOTARGS
-	#define CONFIG_SPL_BOOTARGS	CONFIG_BOOTX_BOOTARGS
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
      #ifdef CONFIG_BOOT_RTOS

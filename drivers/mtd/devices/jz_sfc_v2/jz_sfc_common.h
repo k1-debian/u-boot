@@ -1,6 +1,7 @@
 #ifndef SFC_COMMON_H
 #define SFC_COMMON_H
 
+#include <asm/arch/sfc.h>
 
 void sfc_start(struct sfc *sfc);
 void sfc_flush_fifo(struct sfc *sfc);

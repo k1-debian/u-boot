@@ -27,12 +27,6 @@
 #include "jz_sfc_common.h"
 #include "./nand_device/nand_common.h"
 
-/* winbond current not support */
-//extern void active_die(struct sfc_flash *flash, uint8_t die_id);
-
-#define W25M02GV_MID	    (0xEF)
-#define W25M02GV_DID	    (0xAB)
-
 #ifdef MTDIDS_DEFAULT
 static const char *const mtdids_default = MTDIDS_DEFAULT;
 #else
@@ -108,9 +102,6 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 		addr += mtd->erasesize;
 	}
 
-	if(nand_info->id_manufactory == W25M02GV_MID &&
-	    nand_info->id_device == W25M02GV_DID)
-		//active_die(flash, 0);  //winbond current not support
 
 	instr->state = MTD_ERASE_DONE;
 erase_exit:
@@ -239,9 +230,7 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 		buf += rlen;
 		*retlen += rlen;
 	}
-	if(nand_info->id_manufactory == W25M02GV_MID &&
-	    nand_info->id_device == W25M02GV_DID)
-		//active_die(flash, 0);  //winbond current not support
+
 	return reterr ? reterr : (ret_eccvalue ? ret_eccvalue : ret);
 }
 
@@ -414,9 +403,6 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		buf += wlen;
 	}
 
-//	if(nand_info->id_manufactory == W25M02GV_MID &&
-//	    nand_info->id_device == W25M02GV_DID)
-		//active_die(flash, 0);  //winbond current not support
 	return ret;
 }
 

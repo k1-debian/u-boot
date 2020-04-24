@@ -8,6 +8,9 @@
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
 
+#ifdef CONFIG_KUNPENG_OTA_VERSION20
+#include "spl_ota_kunpeng.h"
+#endif
 
 //#define CONFIG_SPI_STANDARD
 #define CONFIG_NAND_BPP             (2048)
@@ -334,6 +337,34 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 	return 0;
 }
 
+#ifdef CONFIG_KUNPENG_OTA_VERSION20
+struct jz_sfcnand_partition_param *get_partitions(void)
+{
+	struct jz_sfcnand_burner_param *burn_param;
+	static struct jz_sfcnand_partition_param partitions;
+
+	/*read param*/
+	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
+	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
+	partitions.num_partition = burn_param->partition_num;
+	partitions.partition = (struct jz_sfcnand_partition *)&burn_param->partition;
+
+	return &partitions;
+}
+
+unsigned int get_part_offset_by_name(struct jz_sfcnand_partition_param *partitions, char *name)
+{
+	int i = 0;
+
+	for(i = 0; i < partitions->num_partition; i++) {
+		if (!strncmp(partitions->partition[i].name, name, sizeof(name))) {
+			return partitions->partition[i].offset;
+		}
+	}
+	return -1;
+}
+#endif
+
 void spl_load_kernel(long offset)
 {
 	struct image_header *header;
@@ -350,6 +381,7 @@ void sfc_init(void)
 	spinand_init();
 }
 
+#ifndef CONFIG_KUNPENG_OTA_VERSION20
 void spl_sfc_nand_load(void)
 {
 	struct image_header *header;
@@ -391,9 +423,25 @@ void spl_sfc_nand_load(void)
 	spl_parse_image_header(header);
 #endif
 }
+#endif
+
+#ifdef CONFIG_KUNPENG_OTA_VERSION20
+static struct ota_ops ota_ops = {
+	.flash_init = sfc_init,
+	.flash_read = sfc_nand_load,
+	.flash_get_partitions = get_partitions,
+	.flash_get_part_offset_by_name = get_part_offset_by_name,
+	.flash_load_kernel = spl_load_kernel,
+};
+#endif
 
 char* spl_sfc_nand_load_image(void)
 {
+#ifdef CONFIG_KUNPENG_OTA_VERSION20
+	register_ota_ops(&ota_ops);
+	return spl_ota_load_image();
+#else
 	spl_sfc_nand_load();
 	return NULL;
+#endif
 }
