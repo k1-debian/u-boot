@@ -103,6 +103,13 @@
 #endif
 
 
+/*
+ *  # cat /proc/jz/reset/reset
+ *  wdt     hibernate       recovery        burnerboot
+ *  # echo burnerboot > /proc/jz/reset/reset
+*/
+#define CONFIG_SOFT_BURNER
+
 #define CONFIG_CMD_FASTBOOT	/* USB device command */
 /*#define CONFIG_CMD_USBSERIAL*/
 #define CONFIG_ARDUINO
@@ -157,7 +164,7 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS1,115200n8 mem=32M@0x0 loglevel=7 "
+#define BOOTARGS_COMMON "console=ttyS1,115200n8 mem=32M@0x0 loglevel=4 "
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
 		#if defined(CONFIG_SPL_SFC_NOR)
