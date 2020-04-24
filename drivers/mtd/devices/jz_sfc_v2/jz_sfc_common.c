@@ -20,6 +20,7 @@
 #include <linux/types.h>
 #include <linux/err.h>
 #include <common.h>
+#include <malloc.h>
 
 #include <asm/arch/sfc.h>
 
@@ -337,7 +338,6 @@ int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup,
 	unsigned int c_setup;
 	unsigned int t_in, c_in, val;
 	unsigned long cycle;
-	unsigned long long ns;
 	unsigned int rate;
 
 	rate = sfc->src_clk / 1000000;
@@ -623,6 +623,7 @@ static void sfc_set_addr(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
 	sfc_writel(sfc, SFC_STA_ADDR1, xfer->staaddr1);
 }
 
+extern void flush_cache_all(void);
 static void sfc_set_data_config(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
 {
 	sfc_set_dataen(sfc, xfer->dataen);
