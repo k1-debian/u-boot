@@ -85,7 +85,6 @@ static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 	uint32_t addr = (uint32_t)instr->addr;
 	uint32_t end;
 	int32_t ret;
-	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	if(addr % mtd->erasesize) {
 		printf("ERROR:%s line %d eraseaddr no align\n", __func__,__LINE__);
@@ -141,7 +140,7 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, const u_char *buffer, 
 	xfer.config.datalen = len;
 	xfer.config.data_dir = GLB_TRAN_DIR_WRITE;
 	xfer.config.ops_mode = CPU_OPS;
-	xfer.config.buf = buffer;
+	xfer.config.buf = (u_char *)buffer;
 
 	if(sfc_sync_cdt(flash->sfc, &xfer)) {
 		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
@@ -203,7 +202,6 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	uint32_t columnaddr;
 	uint32_t rlen;
 	int32_t ret = 0, reterr = 0, ret_eccvalue = 0;
-	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	*retlen = 0;
 	while((int)len > 0) {
@@ -383,7 +381,6 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 	uint32_t columnaddr;
 	uint32_t wlen;
 	int32_t ret;
-	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 
 	while(len) {
 		pageaddr = (uint32_t)to / pagesize;

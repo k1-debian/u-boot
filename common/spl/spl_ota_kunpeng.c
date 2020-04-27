@@ -23,7 +23,7 @@ void register_ota_ops(struct ota_ops *ops)
 	ota_ops = ops;
 }
 
-static int ota_init(void)
+static void ota_init(void)
 {
 	if (ota_ops->flash_init)
 		ota_ops->flash_init();

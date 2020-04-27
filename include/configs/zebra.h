@@ -214,7 +214,7 @@
     #else
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
     #endif
-    #ifdef CONFIG_KUNPENG_OTA_VERSION20
+    #ifdef CONFIG_OTA_VERSION30
 		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
 		#define CONFIG_PAT_RECOVERY_NAME  "recovery"
 		#define CONFIG_PAT_NV_NAME        "nv"
@@ -237,7 +237,7 @@
         #define CONFIG_AUDIO_CAL_DIV
         #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
         #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
-    #endif /*CONFIG_KUNPENG_OTA_VERSION20*/
+    #endif /*CONFIG_OTA_VERSION30*/
 
      #ifdef CONFIG_BOOT_VMLINUX
              #undef CONFIG_SPL_BOOTARGS
@@ -323,6 +323,11 @@
 /* #define CONFIG_JZ_SFC_PD_8BIT */
 /* #define CONFIG_JZ_SFC_PD_8BIT_PULL */
 #define CONFIG_JZ_SFC_PE
+
+/* sfc ota config */
+#ifdef CONFIG_OTA_VERSION30
+#define CONFIG_KUNPENG_OTA_VERSION20
+#endif
 
 /* sfc nor config */
 #ifdef CONFIG_SPL_SFC_NOR

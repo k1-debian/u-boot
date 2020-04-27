@@ -699,7 +699,7 @@ struct sfc *sfc_res_init(uint32_t sfc_rate)
 	memset(sfc, 0, sizeof(struct sfc));
 
 	/* sfc CDT init*/
-	sfc->cdt_addr = SFC_BASE + SFC_CDT;
+	sfc->cdt_addr = (volatile void *)(SFC_BASE + SFC_CDT);
 
 	sfc->src_clk = sfc_rate;
 	clk_set_rate(SFC, sfc->src_clk);

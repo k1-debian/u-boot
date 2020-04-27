@@ -8,7 +8,7 @@
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
 
-#ifdef CONFIG_KUNPENG_OTA_VERSION20
+#ifdef CONFIG_OTA_VERSION30
 #include "spl_ota_kunpeng.h"
 #endif
 
@@ -337,7 +337,7 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 	return 0;
 }
 
-#ifdef CONFIG_KUNPENG_OTA_VERSION20
+#ifdef CONFIG_OTA_VERSION30
 struct jz_sfcnand_partition_param *get_partitions(void)
 {
 	struct jz_sfcnand_burner_param *burn_param;
@@ -381,7 +381,7 @@ void sfc_init(void)
 	spinand_init();
 }
 
-#ifndef CONFIG_KUNPENG_OTA_VERSION20
+#ifndef CONFIG_OTA_VERSION30
 void spl_sfc_nand_load(void)
 {
 	struct image_header *header;
@@ -425,7 +425,7 @@ void spl_sfc_nand_load(void)
 }
 #endif
 
-#ifdef CONFIG_KUNPENG_OTA_VERSION20
+#ifdef CONFIG_OTA_VERSION30
 static struct ota_ops ota_ops = {
 	.flash_init = sfc_init,
 	.flash_read = sfc_nand_load,
@@ -437,7 +437,7 @@ static struct ota_ops ota_ops = {
 
 char* spl_sfc_nand_load_image(void)
 {
-#ifdef CONFIG_KUNPENG_OTA_VERSION20
+#ifdef CONFIG_OTA_VERSION30
 	register_ota_ops(&ota_ops);
 	return spl_ota_load_image();
 #else
