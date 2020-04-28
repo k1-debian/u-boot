@@ -1,3 +1,5 @@
+//#define DEBUG
+
 #include <common.h>
 #include <asm/io.h>
 #include <asm/errno.h>
@@ -11,7 +13,6 @@
 #include "../aes.h"
 #include "otp.h"
 
-//#define DEBUG
 
 #define PMU_EFUSE_1V8	"RICOH619_LDO2"
 static struct regulator *efuse_1v8 = NULL;
@@ -315,6 +316,53 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 	return 0;
 }
 
+static int check_nku(unsigned int *idata, unsigned int length)
+{
+	unsigned int ret;
+	unsigned int iLoop;
+	unsigned int rsa_key_word = 0;
+	volatile struct sc_args *args;
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
+	debug("xxxxxxxxxxx func : %s\n",__func__);
+
+	set_rsakey(idata + 2, length - 8);
+
+	nku[0] = rsakeylen * 8;
+	nku[1] = rsakeylen * 8;
+	rsa_key_word = rsakeylen / 4;
+
+	debug("N %d BITS\n",nku[0]);
+	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
+		nku[iLoop + 2] = rsakey[iLoop];
+
+		debug("%08x ", nku[iLoop + 2]);
+		if((iLoop + 1) % 4 == 0)
+			debug("\n");
+	}
+
+	debug("KU %d BITS\n",nku[1]);
+	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
+		nku[iLoop + 2 + rsa_key_word] = rsakey[iLoop + rsa_key_word];
+
+		debug("%08x ", nku[iLoop + 2 + rsa_key_word]);
+		if((iLoop + 1) % 4 == 0)
+			debug("\n");
+	}
+
+	REG32(EFUSE_REG_CTRL) = 0;
+	args->arg[0] = MCU_TCSM_PADDR(nku);
+	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
+
+	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+		printf("SC_FUNC_CHECKNKU failed! ret=0x%08x\n", *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+		return -1;
+	}
+	printf("SC_FUNC_CHECKNKU Success\n");
+	return 0;
+}
+
+
 int cpu_burn_nku(void *idata,unsigned int length)
 {
 	unsigned int ret = 0;
@@ -324,15 +372,27 @@ int cpu_burn_nku(void *idata,unsigned int length)
 		return 0;
 	}
 
-	if (cpu_load_nku(idata, length) < 0)
+	if (cpu_load_nku(idata, length) < 0) {
+		printf("load nku failed\n");
 		return -ESEC;
+	}
 
-	if (cpu_wtotp(WT_OTP_NKU) < 0)
+	if (cpu_wtotp(WT_OTP_NKU) < 0) {
+		printf("write nku failed\n");
 		return -ESEC;
+	}
 
-	ret = otp_w(EFUSE_PTCOFF_NKU);
+	if (otp_w(EFUSE_PTCOFF_NKU) < 0) {
+		printf("write nku protect bit failed\n");
+		return -ESEC;
+	}
 
-	return ret;
+	if (check_nku(idata, length) < 0) {
+		printf("check nku failed\n");
+		return -ESEC;
+	}
+
+	return 0;
 
 }
 

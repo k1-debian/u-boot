@@ -137,7 +137,7 @@ static ulong mmc_write_blocks(struct mmc *mmc, lbaint_t start,
 
 	if (mmc_send_cmd(mmc, &cmd, &data)) {
 		printf("mmc write failed\n");
-		return 0;
+		blkcnt = 0;
 	}
 
 	/* SPI multiblock writes terminate using a special

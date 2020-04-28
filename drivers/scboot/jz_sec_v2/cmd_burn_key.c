@@ -31,6 +31,71 @@
 #include "jz_pdma.h"
 #include "../secall.h"
 
+
+static unsigned int ukey[16] = {
+	   0xa9901e81,0xa34a4800,0xa3ba14b4,0x7b20d6df,
+	   0x68a135b8,0x851ea66b,0x492dfe47,0x3944a0dc,
+	   0x9d1633d1,0x5f3cc5ee,0xcc07ff5f,0x1926e2e1,
+	   0x1310a869,0x3a716c21,0xcf321748,0xe0656ef4,
+};
+
+
+static unsigned int nku[64 + 64 + 2] = {0x40, 0x40,
+	0xed19e044,0xe39195c2,0xf9865834,0xf71f5e4c,
+	0x254e42e3,0xe2152a64,0xcedf12f5,0x90368c26,
+	0x8e45a322,0x32dcb23f,0xdc93ba6c,0x1f413023,
+	0xc572c8d9,0xbf32d4da,0x8abfc305,0x34073d4c,
+	0x68cc7971,0xd2528711,0x502aba47,0xb746dcc2,
+	0xfd6ca9ef,0x502781ac,0x7865995a,0xa28061e3,
+	0x83a86f69,0xe97ad4c7,0x215acc4a,0x9b1f84c3,
+	0x0aacd5e5,0xebe243bb,0x07373439,0xc51bb560,
+	0x1ee0b212,0x7c6adceb,0x443915e6,0x954b43a8,
+	0xc81d2341,0x9e7139bf,0xa0883018,0xb9fe557f,
+	0x6b7e04e5,0x670e85fe,0x824215c7,0x41beb5bb,
+	0xaddd9ea1,0x0a8dbfe2,0x17a25cfe,0xdc0384c7,
+	0xee3ab9aa,0x629408b6,0xb0f4f830,0xaf8cd49b,
+	0x083329dc,0xe9b861ba,0x1bd6336f,0x66e0006f,
+	0x673c2d51,0x046a242a,0x817724a6,0x204c3daa,
+	0x705bef57,0x7c494b98,0x7a1cfc4c,0x71c0dcc3,
+
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00010001
+};
+
+/*sc_test */
+#define SC_OTP_SEL_UKEY 0x2
+#define SC_OTP_SEL_UKEY1 0x4
+
+static unsigned int a = 0x12345678;
+static unsigned int test_hash[8] = {0};
+static unsigned int b[4] = {0x12345678,};
+static unsigned int c[4] = {0};
+static unsigned int k[8] = {0x01};
+static unsigned int chipkey[8] = {0};
+static unsigned int ukey_en[8] = {0};
+static unsigned int ukey1_en[8] = {0};
+static unsigned int nkusig_en[8] = {0};
+static unsigned int nkusig_cmp[8] = {0};
+
+static unsigned int ckey[8] = {0};
+static unsigned int userkey[8] = {0};
+static unsigned int userkey1[8] = {0};
+static unsigned int nkusig[8] = {0};
+
 static void bitcpy(const unsigned int *s,unsigned int *d,
 			        const int ss,const int ds,int bsz)
 {
@@ -97,10 +162,22 @@ static int decode(unsigned int *s,int bits,unsigned int *d)
 	}
 
 	return i;
-
 }
 
-static unsigned int ckey[8] = {0};
+static int redundancy_rd(void)
+{
+	REG32(EFUSE_REG_DAT1) = 0;
+
+	REG32(EFUSE_REG_CTRL) = (0x1f << EFUSE_REGOFF_CRTL_ADDR) | (1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RWL;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
+
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
+	REG32(EFUSE_REG_CTRL) = 0;
+	printf("rir1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
+	printf("rir2 = 0x%08x\n", REG32(EFUSE_REG_DAT1 + 4));
+}
+
+
 static int read_ckey()
 {
 	unsigned int ret, i;
@@ -109,7 +186,7 @@ static int read_ckey()
 	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
 	memset(output, 0, BANK_SIZE);
 
-//	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	redundancy_rd();
 	args->arg[0] = SC_OTP_SEL_CKEY;
 	args->arg[1] = MCU_TCSM_PADDR(output);
 	ret = secall(args,SC_FUNC_SCOTP,0,1);
@@ -122,18 +199,17 @@ static int read_ckey()
 	printf("                    %08x-%08x-%08x-%08x-%08x\n", output[4], output[5], output[6], output[7], output[8]);
 	decode(output, 34 * 8, ckey);
 
-	printf("Ckey:\n");
+	printf("ckey:\n");
 	for (i = 0; i < 8; i++) {
 		printf("%04x ", ckey[i]);
 	}
 
-	printf("Ckey:end\n");
+	printf("\nckey:end\n");
 
 	return 0;
 }
 
-static unsigned int userkey[8] = {0};
-static unsigned int userkey1[8] = {0};
+
 
 static int read_ukey(int ukey_flag, unsigned int *ukey)
 {
@@ -141,10 +217,10 @@ static int read_ukey(int ukey_flag, unsigned int *ukey)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
-	unsigned int tmp[8];
 
 	memset(output, 0, BANK_SIZE);
-//	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+
+	redundancy_rd();
 	args->arg[0] = ukey_flag;
 	args->arg[1] = MCU_TCSM_PADDR(output);
 	ret = secall(args,SC_FUNC_SCOTP,0,1);
@@ -172,12 +248,11 @@ static int read_ukey(int ukey_flag, unsigned int *ukey)
 
 	}
 
-	printf("ukey end\n");
+	printf("\nukey end\n");
 
 	return 0;
 }
 
-static unsigned int nkusig[8] = {0};
 
 static int read_nkusig()
 {
@@ -186,10 +261,10 @@ static int read_nkusig()
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
 	*((volatile unsigned int *)(MCU_TCSM_OUTDATA)) = 1;
-	unsigned int tmp[8];
+
 	memset(output, 0, BANK_SIZE);
 
-//	gpio_output_value(AVDD_EFUSE_GPIO, 0);
+	redundancy_rd();
 	args->arg[0] = SC_OTP_SEL_NKU;
 	args->arg[1] = MCU_TCSM_PADDR(output);
 	ret = secall(args, SC_FUNC_SCOTP, 0,1);
@@ -214,55 +289,12 @@ static int read_nkusig()
 
 	}
 
-	printf("nkusig end\n");
+	printf("\nnkusig end\n");
 
 	return 0;
 }
 
 
-static unsigned int ukey[16] = {
-	   0xa9901e81,0xa34a4800,0xa3ba14b4,0x7b20d6df,
-	   0x68a135b8,0x851ea66b,0x492dfe47,0x3944a0dc,
-	   0x9d1633d1,0x5f3cc5ee,0xcc07ff5f,0x1926e2e1,
-	   0x1310a869,0x3a716c21,0xcf321748,0xe0656ef4,
-};
-
-
-static unsigned int nku[64 + 64 + 2] = {0x40, 0x40,
-	0xed19e044,0xe39195c2,0xf9865834,0xf71f5e4c,
-	0x254e42e3,0xe2152a64,0xcedf12f5,0x90368c26,
-	0x8e45a322,0x32dcb23f,0xdc93ba6c,0x1f413023,
-	0xc572c8d9,0xbf32d4da,0x8abfc305,0x34073d4c,
-	0x68cc7971,0xd2528711,0x502aba47,0xb746dcc2,
-	0xfd6ca9ef,0x502781ac,0x7865995a,0xa28061e3,
-	0x83a86f69,0xe97ad4c7,0x215acc4a,0x9b1f84c3,
-	0x0aacd5e5,0xebe243bb,0x07373439,0xc51bb560,
-	0x1ee0b212,0x7c6adceb,0x443915e6,0x954b43a8,
-	0xc81d2341,0x9e7139bf,0xa0883018,0xb9fe557f,
-	0x6b7e04e5,0x670e85fe,0x824215c7,0x41beb5bb,
-	0xaddd9ea1,0x0a8dbfe2,0x17a25cfe,0xdc0384c7,
-	0xee3ab9aa,0x629408b6,0xb0f4f830,0xaf8cd49b,
-	0x083329dc,0xe9b861ba,0x1bd6336f,0x66e0006f,
-	0x673c2d51,0x046a242a,0x817724a6,0x204c3daa,
-	0x705bef57,0x7c494b98,0x7a1cfc4c,0x71c0dcc3,
-
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x00000000,
-	0x00000000, 0x00000000, 0x00000000, 0x01000100
-};
 
 static int hash(const void *in, void *out, const size_t len)
 {
@@ -299,6 +331,51 @@ static int hash(const void *in, void *out, const size_t len)
 	}
 
 	printf("\nhash end\n");
+	return 0;
+}
+
+static int check_nku()
+{
+	unsigned int ret;
+	unsigned int iLoop;
+	unsigned int rsa_key_word = 0;
+	volatile struct sc_args *args;
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+	volatile unsigned int *tcsm_nku = (volatile unsigned int *)MCU_TCSM_NKU;
+
+	secall(args, SC_FUNC_INIT, 0, 1);
+
+	tcsm_nku[0] = nku[0] * 4 * 8;
+	tcsm_nku[1] = nku[1] * 4 * 8;
+	rsa_key_word = nku[0];
+
+	printf("N %d BITS\n",tcsm_nku[0]);
+	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
+		tcsm_nku[iLoop + 2] = nku[iLoop + 2];
+
+		printf("%08x ", tcsm_nku[iLoop + 2]);
+		if((iLoop + 1) % 4 == 0)
+			printf("\n");
+	}
+
+	printf("KU %d BITS\n",tcsm_nku[1]);
+	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
+		tcsm_nku[iLoop + 2 + rsa_key_word] = nku[iLoop + 2 + rsa_key_word];
+
+		printf("%08x ", tcsm_nku[iLoop + 2 + rsa_key_word]);
+		if((iLoop + 1) % 4 == 0)
+			printf("\n");
+	}
+
+	REG32(EFUSE_REG_CTRL) = 0;
+	args->arg[0] = MCU_TCSM_PADDR(tcsm_nku);
+	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
+
+	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+		printf("SC_FUNC_CHECKNKU failed! ret=0x%08x\n", *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+		return -1;
+	}
+	printf("SC_FUNC_CHECKNKU Success\n");
 	return 0;
 }
 
@@ -346,7 +423,7 @@ static unsigned int serom_code[] = {
          #include "./mcu_sc.hex"
 };
 
-int load_serom_firmware(struct pdma_message *pdma_msg)
+static int load_serom_firmware(struct pdma_message *pdma_msg)
 {
 	int i;
 	unsigned int *src_ptr = serom_code;
@@ -402,11 +479,14 @@ int load_serom_firmware(struct pdma_message *pdma_msg)
 	printf("ok!\n");
 	return 0;
 }
+
+#ifdef CONFIG_X2000_FPGA
 static unsigned int pdma_code[] = {
          #include "./pdma.hex"
 
 };
-void load_pdma_firmware()
+
+static void load_pdma_firmware()
 {
 	int i;
 	unsigned int *src_ptr = pdma_code;
@@ -424,7 +504,7 @@ static int init_seboot_t()
 	volatile struct pdma_message *pdma_msg;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	pdma_msg = (volatile struct pdma_message *)GET_PDMA_MESSAGE();
-//	gpio_direction_output(33, 0);
+
 	reset_mcu();
 	load_pdma_firmware();
 	boot_up_mcu();
@@ -439,20 +519,7 @@ static int init_seboot_t()
 
 	return 0;
 }
-/*sc_test */
-#define SC_OTP_SEL_UKEY 0x2
-#define SC_OTP_SEL_UKEY1 0x4
-
-unsigned int a = 0x12345678;
-unsigned int test_hash[8] = {0};
-unsigned int b[4] = {0x12345678,};
-unsigned int c[4] = {0};
-unsigned k[8] = {0x01};
-unsigned int chipkey[8] = {0};
-unsigned int ukey_en[8] = {0};
-unsigned int ukey1_en[8] = {0};
-unsigned int nkusig_en[8] = {0};
-unsigned int nkusig_cmp[8] = {0};
+#endif
 
 static int otp_r()
 {
@@ -552,6 +619,11 @@ static int do_sct(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			printf("burn_sc_en failed\n");
 			return 0;
 		}
+	} else if(strcmp(argv[1], "check_nku") == 0) {
+		if (check_nku() < 0) {
+			printf("check_nku failed\n");
+			return 0;
+		}
 	} else if (strcmp(argv[1], "test") == 0) {
 		//hash(&a, test_hash, 1);
 		for (index = 0; index < 4; index++)
@@ -566,7 +638,6 @@ static int do_sct(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 
 U_BOOT_CMD(sct, 2, 1, do_sct,
 	"Ingenic security test program",
-	"sctest init -- load firmware to pdma and se-rom.\n"
-	"sctest scboot -- test scboot function.\n"
-	"sctest xxx	-- test to be add!!\n"
+	"sct init    -- load firmware to pdma and se-rom.\n"
+	"sct xxx     -- test to be add!!\n"
 );

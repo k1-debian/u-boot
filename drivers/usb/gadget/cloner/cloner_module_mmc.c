@@ -128,13 +128,14 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 		return -EIO;
 
 	if (debug_args->write_back_chk) {
+		memset(addr, 0, cloner->cmd->write.length);
 		mmc->block_dev.block_read(dev, blk, cnt, addr);
-		debug_cond(BURNNER_DEBUG,"%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
+		BURNNER_PRI("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 		if (n != cnt)
 			return -EIO;
 
 		uint32_t tmp_crc = local_crc32(0xffffffff,addr,cloner->cmd->write.length);
-		debug_cond(BURNNER_DEBUG,"%d blocks check: %s\n",n,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
+		BURNNER_PRI("%d blocks check: %s\n",n,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
 		if (cloner->cmd->write.crc != tmp_crc) {
 			printf("src_crc32 = %08x , dst_crc32 = %08x\n",cloner->cmd->write.crc,tmp_crc);
 			return -EIO;
@@ -155,7 +156,7 @@ int clmd_mmc_check(struct cloner *cloner, int sub_type, void *ops_data)
 {
 	unsigned int buf[128];
 	int ret = 0, check_buf = 0;
-	ret = mmc_read_x(sub_type, buf, cloner->cmd->check.partition + cloner->cmd->check.offset, 512);
+	ret = mmc_read_x(sub_type, buf, cloner->cmd->check.partition + cloner->cmd->check.offset, MMC_BYTE_PER_BLOCK);
 	check_buf = buf[0];
 	if (!ret && check_buf == cloner->cmd->check.check)
 		return 0;

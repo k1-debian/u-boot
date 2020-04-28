@@ -13,13 +13,13 @@ COBJS-$(CONFIG_JZ_CKEYAES) += $(SCV)/ckey_aes.o spi_checksum.o
 COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += $(SCV)/scboot.o md5.o flash.o
 COBJS-y += aes.o rsa.o
 ifdef CONFIG_BURNER
-COBJS-y += secure.o
+COBJS-y += $(SCV)/secure.o $(SCV)/otp.o
 ifdef CONFIG_X2000_V12
-COBJS-y += $(SCV)/otp.o $(SCV)/cmd_burn_key.o
+COBJS-y += $(SCV)/cmd_burn_key.o
 else
-COBJS-y += $(SCV)/otp.o $(SCV)/get_rn.o $(SCV)/cmd_sctest.o \
-	$(SCV)/test_common.o $(SCV)/test_scboot.o $(SCV)/test_nku.o \
-	$(SCV)/test_otp.o
+COBJS-y += $(SCV)/get_rn.o $(SCV)/cmd_sctest.o $(SCV)/test_otp.o \
+	$(SCV)/test_common.o $(SCV)/test_scboot.o $(SCV)/test_nku.o
+
 endif
 endif
 endif

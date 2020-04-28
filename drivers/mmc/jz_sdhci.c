@@ -59,8 +59,10 @@ static void jz_set_mmc_clk(int index, unsigned int clock)
 		clk_id = MSC0;
 	else if(index == 1)
 		clk_id = MSC1;
+#ifdef CONFIG_X2000_V12
 	else if(index == 2)
 		clk_id = MSC2;
+#endif
 	clk_set_rate(clk_id, clock);
 #endif
 }
@@ -98,6 +100,7 @@ static int jz_sdhci_init(u32 regbase, int index)
 
 void jz_mmc_init(void)
 {
+	unsigned int val;
 #if defined(CONFIG_JZ_MMC_MSC0) && (!defined(CONFIG_SPL_BUILD) || defined(CONFIG_JZ_MMC_SPLMSC))
 	jz_sdhci_init(MSC0_BASE, 0);
 #endif
@@ -106,6 +109,10 @@ void jz_mmc_init(void)
 #endif
 #if defined(CONFIG_JZ_MMC_MSC2) && (!defined(CONFIG_SPL_BUILD) || defined(CONFIG_JZ_MMC_SPLMSC))
 	jz_sdhci_init(MSC2_BASE, 2);
+	val = readl(CPM_MSC2_CLK_R);
+	val &= ~(0x3 << 15);
+	val |= 0x3 << 15;
+	writel(val, CPM_MSC2_CLK_R);
 #endif
 }
 

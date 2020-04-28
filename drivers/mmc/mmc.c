@@ -124,6 +124,8 @@ int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 	}
 #else
 	ret = mmc->send_cmd(mmc, cmd, data);
+	if(ret < 0)
+		mmc->has_init = 0;
 #endif
 	return ret;
 }
