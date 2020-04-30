@@ -358,6 +358,17 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE		1
 #define CONFIG_SYS_NAND_BASE			0xb3441000
 #define CONFIG_SYS_MAXARGS			16
+
+/* sfc nand env config */
+#define CONFIG_MTD_DEVICE
+#define CONFIG_CMD_SAVEENV		/* saveenv */
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_CMD_MTDPARTS
+#define CONFIG_MTD_PARTITIONS
+#define MTDIDS_DEFAULT                  "nand0:nand"
+#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 #endif
 
 #define CONFIG_SYS_NAND_SELF_INIT
@@ -518,12 +529,14 @@
 #define CONFIG_CMD_SAVEENV
 
 #else
-/*
-#define CONFIG_ENV_IS_IN_NAND
-*/
-#define CONFIG_ENV_IS_NOWHERE
-#define CONFIG_ENV_SIZE			(32 << 10)
-#define CONFIG_ENV_OFFSET		(CONFIG_SYS_NAND_BLOCK_SIZE * 5)
+/* nand Environment variables */
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+#define CONFIG_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE /* 128K */
+#define SPI_NAND_BLK            CONFIG_SYS_NAND_BLOCK_SIZE /* the spi nand block size */
+#define CONFIG_ENV_SIZE         SPI_NAND_BLK /* uboot is 1M but the last block size is the env */
+#define CONFIG_ENV_OFFSET       (CONFIG_SYS_NAND_BLOCK_SIZE * 6) /* offset is 768k */
+#define CONFIG_ENV_OFFSET_REDUND (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+#define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
 /**
