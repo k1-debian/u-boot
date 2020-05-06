@@ -144,8 +144,8 @@
  * Boot arguments definitions.
  */
 
-/* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"
+/* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
+#define BOOTARGS_COMMON "console=ttyS3,115200 mem=128M@0x0"
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
