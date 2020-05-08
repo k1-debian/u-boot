@@ -13,7 +13,6 @@
 #include <generated/sfc_timing_val.h>
 
 
-#define GS_RETRY_TIMES	100
 #define STATUS_MAX_LEN  4      //4 * byte = 32 bit
 
 //#define SFC_NOR_DEBUG
@@ -349,18 +348,12 @@ static void set_quad_mode_reg(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
 	struct spi_nor_st_info *quad_set;
-	struct spi_nor_st_info *quad_get;
-	struct spi_nor_st_info *busy;
 
 	struct sfc_cdt_xfer xfer;
 	unsigned int data;
-	unsigned int val;
-	unsigned int times = GS_RETRY_TIMES;
 
 	spi_nor_info = &flash->g_nor_info;
 	quad_set = &spi_nor_info->quad_set;
-	quad_get = &spi_nor_info->quad_get;
-	busy = &spi_nor_info->busy;
 	data = (quad_set->val & quad_set->mask) << quad_set->bit_shift;
 
 	/* 1. set nor quad */
@@ -523,13 +516,13 @@ static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 		cdt[NOR_READ_STANDARD].staMsk = 0;
 
 		/* first create cdt table */
-		write_cdt(flash->sfc, &cdt, NOR_RESET_ENABLE, NOR_READ_STANDARD);
+		write_cdt(flash->sfc, cdt, NOR_RESET_ENABLE, NOR_READ_STANDARD);
 	}
 
 	if(flag == UPDATE_CDT){
 		nor_flash_info = &flash->g_nor_info;
 		params_to_cdt(nor_flash_info, cdt);
-		write_cdt(flash->sfc, &cdt, NOR_READ_STANDARD, NOR_EN_4BYTE);
+		write_cdt(flash->sfc, cdt, NOR_READ_STANDARD, NOR_EN_4BYTE);
 	}
 #ifdef SFC_NOR_DEBUG
 	dump_cdt(flash->sfc);
@@ -549,7 +542,7 @@ void sfc_init(void)
 	sfc_debug("Enter 'CDT' mode.\n");
 
 	/* try creating default CDT table */
-	flash->sfc->cdt_addr = SFC_BASE + SFC_CDT;
+	flash->sfc->cdt_addr = (volatile void *)(SFC_BASE + SFC_CDT);
 	create_cdt_table(flash, DEFAULT_CDT);
 
 	/* reset nor flash */

@@ -49,7 +49,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 char *env_name_spec = "SFC NAND Flash";
 
-static struct spi_flash *env_flash;
+/*static struct spi_flash *env_flash;*/
 
 #if defined(CONFIG_ENV_OFFSET_REDUND)
 static int sfc_nand_ops(int ops,u32 offset,size_t len,void *buf)
@@ -68,7 +68,7 @@ static int sfc_nand_ops(int ops,u32 offset,size_t len,void *buf)
 	if(ops == ERASE_OPS)
 		sprintf(command,"nand %s 0x%x 0x%x",cmd,offset,len);
 	else
-		sprintf(command,"nand %s.jffs2 0x%x 0x%x 0x%x",cmd,buf,offset,len);
+		sprintf(command,"nand %s.jffs2 0x%x 0x%x 0x%x",cmd,(unsigned int)buf,offset,len);
 
 	ret = run_command(command,0);
 	if(ret)

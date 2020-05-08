@@ -12,9 +12,6 @@
 #include "spl_ota_kunpeng.h"
 #endif
 
-//#define CONFIG_SPI_STANDARD
-#define CONFIG_NAND_BPP             (2048)
-#define CONFIG_NAND_PPB             (64)
 #define SPINAND_PARAM_SIZE			1024
 
 static struct spl_nand_param *curr_device;
@@ -205,7 +202,7 @@ read_oob:
 	if(curr_device->device_id == 0x20 || curr_device->device_id == 0x22 || (curr_device->device_id == 0x72))
 		column |= (((page >> 6) & 1) << 12);
 
-#ifndef CONFIG_SPI_STANDARD
+#ifdef CONFIG_SFC_QUAD
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_RDCH_X4, len, column, curr_device->addrlen, 8, 1, 0);
 #else
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_FRCH, len, column, curr_device->addrlen, 8, 1, 0);
@@ -306,8 +303,8 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 
 		ret = spinand_read_page(pageaddr, columnaddr, buf, rlen, pagesize);
 		if (ret > 0) {
-			debug("bad block %d\n", pageaddr / CONFIG_NAND_PPB);
-			src_addr += CONFIG_NAND_PPB * pagesize;
+			debug("bad block %d\n", pageaddr / CONFIG_SPI_NAND_PPB);
+			src_addr += CONFIG_SPI_NAND_PPB * pagesize;
 			continue;
 		}
 
@@ -324,7 +321,7 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 				columnaddr);
 			/* bad block */
 			retry_count = 5;
-			src_addr += CONFIG_NAND_PPB * pagesize;
+			src_addr += CONFIG_SPI_NAND_PPB * pagesize;
 			continue;
 		}
 
@@ -419,7 +416,7 @@ void spl_sfc_nand_load(void)
 #endif /* CONFIG_SPL_OS_BOOT */
 
 #else
-	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (void *)CONFIG_SYS_TEXT_BASE);
+	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (unsigned int)CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
 #endif
 }

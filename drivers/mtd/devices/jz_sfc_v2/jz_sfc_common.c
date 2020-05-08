@@ -342,6 +342,7 @@ int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup,
 
 	rate = sfc->src_clk / 1000000;
 	cycle = 1000 / rate;
+	val = 0;
 
 	c_hold = t_hold / cycle;
 	if(c_hold > 0)

@@ -68,7 +68,8 @@ int saveenv(void)
 	env_t   *env_ptr;
 	ssize_t len;
 	char    *res;
-	int   i, ret = 0, offset, conut = 0;
+	int   i, ret = 0, conut = 0;
+	unsigned int offset;
 	int  copy = 0;
 	int erase_size = params.spi_nor_info.erase_size;
 	int erase_offset;

@@ -125,7 +125,7 @@
 #include "./chips/LPDDR2_EDB1332BD.h"
 #endif
 
-#ifdef CONFIG_DDR3_FM38D16SAB-8KFD
+#ifdef CONFIG_DDR3_FM38D16SAB_8KFD
 #include "./chips/DDR3_FM38D16SAB-8KFD.h"
 #endif
 
@@ -133,7 +133,7 @@
 #include "./chips/LPDDR3_MT52L256M32D1PF_FPGA.h"
 #endif
 
-#ifdef CONFIG_LPDDR3_W63AH6NKB-BI
+#ifdef CONFIG_LPDDR3_W63AH6NKB_BI
 #include "./chips/LPDDR3_W63AH6NKB-BI.h"
 #endif
 
@@ -141,7 +141,7 @@
 #include "./chips/LPDDR3_W63CH2MBVABE.h"
 #endif
 
-#ifdef CONFIG_DDR2_SCB18T2G160AF-25DI
+#ifdef CONFIG_DDR2_SCB18T2G160AF_25DI
 #include "./chips/DDR2_SCB18T2G160AF-25DI.h"
 #endif
 #endif /* __DDR_CHIPS_H__ */

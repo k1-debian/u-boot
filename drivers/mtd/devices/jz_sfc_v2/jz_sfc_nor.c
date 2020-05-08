@@ -335,8 +335,7 @@ struct legacy_params *params_compatibility()
 
 int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
-	int ret = 0;
-	ret = sfc_nor_page_write(to, len, buf);
+	sfc_nor_page_write(to, len, buf);
 
 	return 0;
 }
@@ -383,7 +382,7 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	return 0;
 }
 
-int sfc_nor_do_special_func(void)
+void sfc_nor_do_special_func(void)
 {
 	int tchsh;
 	int tslch;

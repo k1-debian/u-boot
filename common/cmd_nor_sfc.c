@@ -7,7 +7,7 @@ extern void sfc_nor_load(unsigned int src_addr, unsigned int count,unsigned int 
 
 static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int src_addr,count,dst_addr,erase_en = 0,ret;
+	unsigned int src_addr,count,dst_addr,erase_en = 0;
 	if(argc < 4){
 		return CMD_RET_USAGE;
 	}
@@ -18,11 +18,15 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("sfcnor read Image from 0x%x to  0x%x size is 0x%x ...\n",src_addr,dst_addr,count);
 
 #if defined(CONFIG_JZ_SECURE_SUPPORT) && !defined(CONFIG_X2000_V12)
-		printf("Security boot rsa...\n");
-		ret = secure_boot_rsa_nku(src_addr);
-		if(ret) {
-			printf("ERROR:  check NKU failed!!\n");
-			return CMD_RET_FAILURE;
+		{
+			int ret;
+
+			printf("Security boot rsa...\n");
+			ret = secure_boot_rsa_nku(src_addr);
+			if(ret) {
+				printf("ERROR:  check NKU failed!!\n");
+				return CMD_RET_FAILURE;
+			}
 		}
 #endif
 		sfc_nor_read(src_addr,count, dst_addr);
@@ -50,7 +54,7 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	}else
 		return CMD_RET_USAGE;
-usage:
+
 	return CMD_RET_USAGE;
 }
 

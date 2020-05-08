@@ -151,6 +151,9 @@ static void spl_ram_load_image(void)
 }
 #endif
 
+extern char* spl_sfc_nand_load_image(void);
+extern char* spl_sfc_nor_load_image(void);
+
 void board_init_r(gd_t *dummy1, ulong dummy2)
 {
 	u32 boot_device;

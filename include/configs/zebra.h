@@ -104,7 +104,7 @@
 #ifdef CONFIG_DDR_TYPE_LPDDR3
 	/* #define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA*/
 	/* #define CONFIG_LPDDR3_AD310032C_AB_FPGA */
-	#define CONFIG_LPDDR3_W63AH6NKB-BI
+	#define CONFIG_LPDDR3_W63AH6NKB_BI
 #endif
 
 #define CONFIG_DDR_PHY_IMPEDANCE 40
@@ -348,6 +348,7 @@
 /* sfc nand config */
 #ifdef  CONFIG_SPL_SFC_NAND
 #define CONFIG_SFC_NAND_RATE    296000000	/* value <= 296000000(sfc 74Mhz)*/
+#define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 #define CONFIG_SPI_NAND_BPP                     (2048 +64)      /*Bytes Per Page*/

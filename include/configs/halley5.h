@@ -104,7 +104,7 @@
 #ifdef CONFIG_DDR_TYPE_LPDDR3
 	/* #define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA*/
 	/* #define CONFIG_LPDDR3_AD310032C_AB_FPGA */
-	#define CONFIG_LPDDR3_W63AH6NKB-BI
+	#define CONFIG_LPDDR3_W63AH6NKB_BI
 #endif
 
 #define CONFIG_DDR_PHY_IMPEDANCE 40
@@ -209,21 +209,52 @@
 
 
 #ifdef CONFIG_SPL_OS_BOOT
-      #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
-      #ifdef CONFIG_OTA_VERSION20
-             #define CONFIG_PAR_NV_NAME        "NV_RW"
-             #define CONFIG_PAR_NV_NUM        (3)
-             #define CONFIG_PAT_USERFS_NAME   "userfs"
-             #define CONFIG_PAT_UPDATEFS_NAME   "updatefs"
+    #ifdef  CONFIG_SPL_SFC_NOR
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #else
+	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+    #endif
+    #ifdef CONFIG_OTA_VERSION30
+		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
+		#define CONFIG_PAT_RECOVERY_NAME  "recovery"
+		#define CONFIG_PAT_NV_NAME        "nv"
+		#undef CONFIG_SPL_BOOTARGS
+		#ifdef CONFIG_SPL_SFC_NOR
+			#define CONFIG_PAT_USERFS_NAME   "userfs"
+			#define CONFIG_PAT_UPDATEFS_NAME "updatefs"
+            		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
+		#else
+        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro"
+        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc"
+		#endif
+    #else
+		#ifdef CONFIG_BOOT_VMLINUX
+			#undef CONFIG_SPL_BOOTARGS
+			#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
+		#endif /* CONFIG_BOOT_VMLINUX */
+
+        #define CONFIG_SOFT_BURNER
+        #define CONFIG_AUDIO_CAL_DIV
+        #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
+        #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
+    #endif /*CONFIG_OTA_VERSION30*/
+
+     #ifdef CONFIG_BOOT_VMLINUX
              #undef CONFIG_SPL_BOOTARGS
-             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
-     #endif /*CONFIG_OTA_VERSION20*/
+             #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
+     #endif /* CONFIG_BOOT_VMLINUX */
 
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
-     #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+     #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
+     #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
+     #ifdef CONFIG_BOOT_RTOS
+             #define CONFIG_LOAD_ADDR	0x80004000
+     #else
+             #define CONFIG_LOAD_ADDR	0x80001000
+     #endif
 #endif	/* CONFIG_SPL_OS_BOOT */
 
 
@@ -293,6 +324,11 @@
 /* #define CONFIG_JZ_SFC_PD_8BIT_PULL */
 #define CONFIG_JZ_SFC_PE
 
+/* sfc ota config */
+#ifdef CONFIG_OTA_VERSION30
+#define CONFIG_KUNPENG_OTA_VERSION20
+#endif
+
 /* sfc nor config */
 #ifdef CONFIG_SPL_SFC_NOR
 #define CONFIG_JZ_SFC
@@ -312,6 +348,7 @@
 /* sfc nand config */
 #ifdef  CONFIG_SPL_SFC_NAND
 #define CONFIG_SFC_NAND_RATE    296000000	/* value <= 296000000(sfc 74Mhz)*/
+#define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 #define CONFIG_SPI_NAND_BPP                     (2048 +64)      /*Bytes Per Page*/
@@ -322,6 +359,17 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE		1
 #define CONFIG_SYS_NAND_BASE			0xb3441000
 #define CONFIG_SYS_MAXARGS			16
+
+/* sfc nand env config */
+#define CONFIG_MTD_DEVICE
+#define CONFIG_CMD_SAVEENV		/* saveenv */
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_CMD_MTDPARTS
+#define CONFIG_MTD_PARTITIONS
+#define MTDIDS_DEFAULT                  "nand0:nand"
+#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 #endif
 
 #define CONFIG_SYS_NAND_SELF_INIT
@@ -481,12 +529,14 @@
 #define CONFIG_CMD_SAVEENV
 
 #else
-/*
-#define CONFIG_ENV_IS_IN_NAND
-*/
-#define CONFIG_ENV_IS_NOWHERE
-#define CONFIG_ENV_SIZE			(32 << 10)
-#define CONFIG_ENV_OFFSET		(CONFIG_SYS_NAND_BLOCK_SIZE * 5)
+/* nand Environment variables */
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+#define CONFIG_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE /* 128K */
+#define SPI_NAND_BLK            CONFIG_SYS_NAND_BLOCK_SIZE /* the spi nand block size */
+#define CONFIG_ENV_SIZE         SPI_NAND_BLK /* uboot is 1M but the last block size is the env */
+#define CONFIG_ENV_OFFSET       (CONFIG_SYS_NAND_BLOCK_SIZE * 6) /* offset is 768k */
+#define CONFIG_ENV_OFFSET_REDUND (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+#define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
 /**

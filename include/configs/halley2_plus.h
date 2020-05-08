@@ -70,7 +70,7 @@
 
 #ifdef CONFIG_HALLEY2_PLUS_V11
 #define CONFIG_DDR_TYPE_DDR3
-#define CONFIG_DDR3_FM38D16SAB-8KFD
+#define CONFIG_DDR3_FM38D16SAB_8KFD
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
 #define CONFIG_DDR_DW32         0   /* 1-32bit-width, 0-16bit-width */
 #endif

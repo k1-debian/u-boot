@@ -64,18 +64,13 @@ static int set_quad_mode_reg(struct sfc_flash *flash)
 {
 	struct spi_nor_info *spi_nor_info;
 	struct spi_nor_st_info *quad_set;
-	struct spi_nor_st_info *quad_get;
-	struct spi_nor_st_info *busy;
 
 	struct sfc_cdt_xfer xfer;
 	unsigned int data;
-	uint32_t sta_reg = 0;
 	int ret = 0;
 
 	spi_nor_info = flash->g_nor_info;
-	busy = &spi_nor_info->busy;
 	quad_set = &spi_nor_info->quad_set;
-	quad_get = &spi_nor_info->quad_get;
 	data = (quad_set->val & quad_set->mask) << quad_set->bit_shift;
 
 	/* 1. set nor quad */

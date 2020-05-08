@@ -6,7 +6,7 @@
 
 static unsigned char fs_xaw[] = {0x5, 0x6,};
 
-static struct device_struct device[1] = {
+static struct device_struct device[] = {
 	DEVICE_STRUCT(0xA1, 2048, 2, 4, 3, 2, fs_xaw),
 	DEVICE_STRUCT(0xB1, 2048, 2, 4, 3, 2, fs_xaw),
 };
