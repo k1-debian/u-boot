@@ -29,7 +29,7 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
-#define CONFIG_X1830		/* X1830 SoC */
+#define CONFIG_X1021		/* X1021 SoC */
 #define CONFIG_XBURST_TRAPS
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
@@ -37,25 +37,27 @@
 /**
  * PLL
  **/
-#define CONFIG_SYS_APLL_FREQ            900000000       /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD            ((74 << 20) | (1 << 14) | (1 << 11) | (2<<5))
+#define CONFIG_SYS_APLL_FREQ            912000000       /*If APLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_MNOD            ((75 << 20) | (1 << 14) | (1 << 11) | (2<<5))
 #define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
+#define CONFIG_SYS_VPLL_FREQ            1000000000	/*If VPLL not use mast be set 0*/
 
 #define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
 #define CONFIG_SYS_MEM_FREQ		(500000000)
-#define CONFIG_SYS_CPCCR_SEL		((2 << 30)| (1 << 28) | (2 << 26) | (2 << 24)   \
-						| (11 << 16) | (5 << 12) | (5 << 8)     \
-						| (1 << 4) | (0 << 0))
 
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 
+#define CONFIG_SYS_CPCCR_SEL		(2 << 30) | (1 << 28) | (2 << 26) | (2 << 24) \
+                                    | ((8 - 1) << 16) | ((4 - 1) << 12) | ((4 - 1) << 8) \
+                                    | ((2 - 1) << 4) | ((1 - 1) << 0)
+
 /**
  * CACHE
  **/
-#define CONFIG_SYS_DCACHE_SIZE		32768
-#define CONFIG_SYS_ICACHE_SIZE		32768
+#define CONFIG_SYS_DCACHE_SIZE		16384
+#define CONFIG_SYS_ICACHE_SIZE		16384
 #define CONFIG_SYS_CACHELINE_SIZE	32
 
 /**
@@ -65,14 +67,11 @@
 #define CONFIG_SYS_UART_INDEX		1
 #define CONFIG_BAUDRATE			115200
 
-/**
+/*
  * DDR
- **/
-
-
+ */
 #define CONFIG_DDR_INNOPHY
 #define CONFIG_X1XXX_INNOPHY
-
 #define CONFIG_DDR_TYPE_DDR2
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
@@ -80,10 +79,10 @@
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_DDR2_M14D1G1664A
-#define CONFIG_DDR_CHIP_ODT_VAL 1
-#define CONFIG_DDR_PHY_IMPEDANCE        40000
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE    50000
+#define CONFIG_DDR2_M14D5121632A
+#define DDR2_CHIP_DRIVER_OUT_STRENGTH 0
+#define CONFIG_DDR_PHY_IMPEDANCE 40000
+#define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
 
 /**
  * Environment
@@ -153,7 +152,7 @@
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
 #define CONFIG_SYS_SDRAM_BASE		0x80000000 /* cached (KSEG0) address */
-#define CONFIG_SYS_SDRAM_MAX_TOP	0x84000000 /* don't run into IO space */
+#define CONFIG_SYS_SDRAM_MAX_TOP	0x90000000 /* don't run into IO space */
 #define CONFIG_SYS_INIT_SP_OFFSET	0x400000
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		0x84000000
@@ -212,13 +211,12 @@
 #define CONFIG_BURNER
 #define CONFIG_USB_GADGET
 #define CONFIG_USB_JZ_BURNER_GADGET
-#define CONFIG_JZ_VERDOR_BURN_EXTPOL
 #define	CONFIG_JZ_VERDOR_BURN_FUNCTION
 #define CONFIG_USB_JZ_DWC2_UDC_V1_1
 #define CONFIG_USB_SELF_POLLING
 #define CONFIG_USB_PRODUCT_ID           0xc309
 #define CONFIG_USB_VENDOR_ID            0xa108
-#define CONFIG_BURNER_CPU_INFO          "BOOTx1830"
+#define CONFIG_BURNER_CPU_INFO          "BOOTx1021"
 #define CONFIG_USB_GADGET_VBUS_DRAW     500
 #define CONFIG_BURNER_PRIDUCT_INFO      "X1830 USB Boot Device"
 

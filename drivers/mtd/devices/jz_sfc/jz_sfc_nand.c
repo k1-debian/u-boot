@@ -842,6 +842,8 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 #endif
 
 #ifdef CONFIG_BURNER
+	flash_info->param.need_quad = sfc_quad_mode;
+
 	/* for burner get pt indext */
 	flash_info->partition.num_partition = param->partition_num;
 	flash_info->partition.partition = &param->partition;

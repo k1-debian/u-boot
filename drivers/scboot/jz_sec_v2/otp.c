@@ -14,8 +14,11 @@
 #include "otp.h"
 
 
+#ifdef CONFIG_PMU_RICOH6x
 #define PMU_EFUSE_1V8	"RICOH619_LDO2"
 static struct regulator *efuse_1v8 = NULL;
+extern int ricoh61x_regulator_init(void);
+#endif
 
 unsigned int rsakey[256];
 
@@ -39,6 +42,7 @@ int get_rsakeylen(void)
 
 static void efuse_1v8_output(int enable)
 {
+#ifdef CONFIG_PMU_RICOH6x
 	mdelay(1);		/* delay 1ms for power down. prevent miss of WT_DONE. */
 	if(enable) {
 		regulator_set_voltage(efuse_1v8, 1800000, 1800000);
@@ -47,6 +51,7 @@ static void efuse_1v8_output(int enable)
 		regulator_disable(efuse_1v8);
 	}
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+#endif
 }
 
 static int efuse_config(void)
@@ -185,21 +190,31 @@ int cpu_wtotp(int opera)
 	return 0;
 }
 
-void otp_init(void)
+int otp_init(void)
 {
+	int ret;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT, 0, 1);
 
+#ifdef CONFIG_PMU_RICOH6x
+	ret = ricoh61x_regulator_init();
+	if(ret < 0) {
+		printf("regulator init error!\n");
+		return -ESEC;
+	}
+
 	efuse_1v8 = regulator_get(PMU_EFUSE_1V8);
 	if(efuse_1v8 == NULL){
 		printf("regulator get efuse 1.8v error!\n");
-		return;
+		return -ESEC;
 	}
+#endif
 
 	efuse_config();
 	efuse_update_state();
 	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
+	return 0;
 }
 
 int otp_r()

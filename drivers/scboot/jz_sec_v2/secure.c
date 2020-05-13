@@ -40,6 +40,7 @@ extern void load_pdma_firmware();
 int init_seboot(void)
 {
 	//reset mcu
+	int ret = 0;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 #ifdef CONFIG_X2000_FPGA
@@ -55,7 +56,7 @@ int init_seboot(void)
 #ifdef CONFIG_X2000_FPGA
 	load_serom_firmware(pdma_msg);
 #else
-	otp_init();
+	ret = otp_init();
 #endif
-	return 0;
+	return ret;
 }
