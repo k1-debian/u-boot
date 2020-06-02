@@ -174,6 +174,12 @@ struct legacy_params {
 
 };
 
+struct multi_die_flash {
+	uint32_t flash_id;
+	uint32_t die_num;
+	char* flash_name;
+};
+
 
 /* SFC CDT Maximum INDEX number */
 #define INDEX_MAX_NUM 32
@@ -229,6 +235,12 @@ enum {
 	NOR_CHIP_ERASE_WRITE_ENABLE,
 	NOR_CHIP_ERASE,
 	NOR_CHIP_ERASE_FINISH,
+
+	/* 13. active die */
+	NOR_DIE_SELECT,
+
+	/* 14. read die id */
+	NOR_READ_ACTIVE_DIE_ID,
 
 	/* index count */
 	NOR_MAX_INDEX,
