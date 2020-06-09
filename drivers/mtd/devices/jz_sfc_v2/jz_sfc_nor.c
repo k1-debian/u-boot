@@ -738,8 +738,10 @@ int jz_sfc_chip_erase(void)
 	do {
 		printf("chip erasing...die%d\n", die_id);
 
-		sfc_active_die(die_id);
-		flash->current_die_id = die_id;
+		if (flash->die_num > 1) {
+			sfc_active_die(die_id);
+			flash->current_die_id = die_id;
+		}
 
 		ret = sfc_do_chip_erase();
 		if (ret < 0) {
