@@ -15,7 +15,7 @@
 #endif
 
 
-#if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12)
+#if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12) || defined(CONFIG_M300)
 #include <asm/ddr_innophy.h>
 #include <ddr/ddrp_inno.h>
 #include <ddr/ddrc_x2000.h>

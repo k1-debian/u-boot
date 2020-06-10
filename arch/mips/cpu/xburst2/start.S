@@ -40,7 +40,7 @@
 	.globl _start
 	.text
 _start:
-#ifdef CONFIG_X2000_V12
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300))
 #ifdef CONFIG_CMD_BURN
         li      $2, 3                   // cacheable for kseg0 access
         mtc0    $2, $16                 // CP0_CONFIG

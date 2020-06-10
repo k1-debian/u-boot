@@ -48,7 +48,7 @@ void __attribute__((weak)) _machine_restart(void)
 #endif
 	writel(time, WDT_BASE + WDT_TDR);
 	writel(TCSR_PRESCALE | TCSR_RTC_EN
-#ifdef CONFIG_X2000_V12
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300))
 			| TCSR_CLRZ
 #endif
 			, WDT_BASE + WDT_TCSR);

@@ -59,6 +59,9 @@
 #ifdef CONFIG_X2000_V12
 #define SKIP_SIZE 2048
 #endif
+#ifdef CONFIG_M300
+#define SKIP_SIZE 2048
+#endif
 
 #define le(a) (((a & 0xff)<<24) | ((a>>8 & 0xff)<< 16) | ((a>>16 & 0xff)<< 8) | ((a>>24 & 0xff)))
 
@@ -67,7 +70,7 @@
  */
 #if defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SPL_SPI_NAND)
 
-#ifdef CONFIG_X2000_V12
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300))
 #define BUFFER_SIZE 256
 #else
 #define BUFFER_SIZE 4
@@ -153,8 +156,8 @@ int main(int argc, char *argv[])
 		count += bytes_read;
 	}
 
-	printf("spi spl count = %08x \n", count);
-	printf("spi spl crc7 = %x \n", crc);
+	printf("spi spl count = 0x%08x \n", count);
+	printf("spi spl crc7 = 0x%x \n", crc);
 
 	/*set crc*/
 	lseek( fd, CRC_POSITION, SEEK_SET);
@@ -166,7 +169,7 @@ int main(int argc, char *argv[])
 
 	/*set spl len*/
 	lseek( fd, SPL_LENGTH_POSITION, SEEK_SET);
-#ifdef CONFIG_X2000_V12
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300))
 	if ((t = write(fd, &count, 2)) != 2) {
 #else
 	if ((t = write(fd, &count, 4)) != 4) {
@@ -175,7 +178,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-#if defined(CONFIG_X2000_V12)
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300))
 	/* set env crc */
 	lseek(fd, 0x100, SEEK_SET);
 
