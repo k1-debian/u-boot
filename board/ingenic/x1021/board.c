@@ -1,5 +1,5 @@
 /*
- * Ingenic x1630 setup code
+ * Ingenic x1021 setup code
  *
  * Copyright (c) 2017 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
@@ -91,7 +91,7 @@ int spl_start_uboot(void)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: X1630 (Ingenic XBurst X1630 SoC)\n");
+	puts("Board: X1021 (Ingenic XBurst X1021 SoC)\n");
 	return 0;
 }
 

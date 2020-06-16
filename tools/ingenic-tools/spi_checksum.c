@@ -53,6 +53,9 @@
 #ifdef CONFIG_X1520
 #define SKIP_SIZE 2048
 #endif
+#ifdef CONFIG_X1021
+#define SKIP_SIZE 2048
+#endif
 #ifdef CONFIG_X1800
 #define SKIP_SIZE 2048
 #endif

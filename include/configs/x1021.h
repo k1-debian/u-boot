@@ -21,51 +21,103 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __CONFIG_X1630_H__
-#define __CONFIG_X1630_H__
+#ifndef __CONFIG_X1021_H__
+#define __CONFIG_X1021_H__
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
-#define CONFIG_X1630		        /* X1630 SoC */
+#define CONFIG_X1021		        /* X1021 SoC */
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
+
+/* #define CONFIG_HIGH_PERF          // Core voltage 1.2V */
 
 /**
  * PLL
  **/
-#define CONFIG_SYS_APLL_FREQ            912000000       /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD            ((75 << 20) | (1 << 14) | (1 << 11) | (2<<5))
-#define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
-#define CONFIG_SYS_VPLL_FREQ		1000000000	/*If VPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ        	1000000000
+#ifdef CONFIG_HIGH_PERF
+#define CONFIG_SYS_APLL_FREQ        1200000000 /*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_MNOD        ((49 << 20) | (0 << 14) | (1 << 11) | (3 << 5))
+#define DDR_500M
+#else
+#define CONFIG_SYS_APLL_FREQ        864000000 /*If APLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_MNOD        ((71 << 20) | (1 << 14) | (1 << 11) | (2 << 5))
+#define DDR_450M
+#endif
+
+#ifdef DDR_450M
+#define CONFIG_SYS_MPLL_FREQ        900000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD        ((74 << 20) | (1 << 14) | (1 << 11) | (2<<5))
+#elif defined DDR_500M
+#define CONFIG_SYS_MPLL_FREQ        1000000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD        ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
+#else
+#error please define DDR_FREQ
+#endif
+
+#define CONFIG_SYS_VPLL_FREQ        912000000 /*If VPLL not use mast be set 0*/
+#define CONFIG_SYS_VPLL_MNOD        ((75 << 20) | (1 << 14) | (1 << 11) | (2<<5))
+
+#define SEL_SCLKA                   2
+#define SEL_CPU                     1
+#define SEL_H0                      2
+#define SEL_H2                      2
+
+#ifdef DDR_450M
+#define DIV_PCLK                    8
+#define DIV_H2                      4
+#define DIV_H0                      4
+#elif defined DDR_500M
+#define DIV_PCLK                    8
+#define DIV_H2                      4
+#define DIV_H0                      4
+#else
+#error please define DDR_FREQ
+#endif
+
+#define DIV_L2                      2
+#define DIV_CPU                     1
 
 /**
  * CACHE
  **/
-#define CONFIG_SYS_DCACHE_SIZE		32768
-#define CONFIG_SYS_ICACHE_SIZE		32768
-#define CONFIG_SYS_CACHELINE_SIZE	32
+#define CONFIG_SYS_DCACHE_SIZE      16384
+#define CONFIG_SYS_ICACHE_SIZE      16384
+#define CONFIG_SYS_CACHELINE_SIZE   32
 
 /**
  * DEBUG
  **/
-#define CONFIG_SYS_UART_INDEX		1
-#define CONFIG_BAUDRATE			115200
-#define CONFIG_BAUDRATE_STR             "115200"
+#define CONFIG_SYS_UART_INDEX       1
+#define CONFIG_BAUDRATE             115200
+#define CONFIG_BAUDRATE_STR         "115200"
 /**
  * CPU & DDR
  **/
-#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		(500000000)
-#define CONFIG_SYS_CPCCR_SEL		(2 << 30) | (1 << 28) | (2 << 26) | (2 << 24) \
-						| ((8 - 1) << 16) | ((4 - 1) << 12) | ((4 - 1) << 8)	\
-						| ((2 - 1) << 4) | ((1 - 1) << 0)
-#define CONFIG_CPU_SEL_PLL		APLL
-#define CONFIG_DDR_SEL_PLL		MPLL
+#define CONFIG_CPU_SEL_PLL          APLL
+#define CONFIG_DDR_SEL_PLL          MPLL
+#define CONFIG_SYS_CPU_FREQ         CONFIG_SYS_APLL_FREQ
+
+#ifdef DDR_450M
+#define CONFIG_SYS_MEM_FREQ         (CONFIG_SYS_MPLL_FREQ / 2)
+#elif defined DDR_500M
+#define CONFIG_SYS_MEM_FREQ         (CONFIG_SYS_MPLL_FREQ / 2)
+#else
+#error please define DDR_FREQ
+#endif
+
+#define CONFIG_SYS_CPCCR_SEL        (((SEL_SCLKA & 3) << 30)            \
+                                     | ((SEL_CPU & 3) << 28)            \
+                                     | ((SEL_H0 & 3) << 26)             \
+                                     | ((SEL_H2 & 3) << 24)             \
+                                     | (((DIV_PCLK - 1) & 0xf) << 16)   \
+                                     | (((DIV_H2 - 1) & 0xf) << 12)     \
+                                     | (((DIV_H0 - 1) & 0xf) << 8)      \
+                                     | (((DIV_L2 - 1) & 0xf) << 4)      \
+                                     | (((DIV_CPU - 1) & 0xf) << 0))
 
 
 #define CONFIG_DDR_INNOPHY
@@ -300,4 +352,4 @@
 #define CONFIG_GPT_TABLE_PATH	"$(TOPDIR)/board/$(BOARDDIR)"
 #endif
 
-#endif /*__CONFIG_X1630_H__*/
+#endif /*__CONFIG_X1021_H__*/
