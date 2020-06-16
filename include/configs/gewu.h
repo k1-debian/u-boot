@@ -26,7 +26,7 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST2
 #define CONFIG_SYS_LITTLE_ENDIAN
-#define CONFIG_M300	/* x2000_v12 SoC */
+#define CONFIG_M300	/* M300 SoC */
 
 
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
