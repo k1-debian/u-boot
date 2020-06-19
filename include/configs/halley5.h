@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __ZEBRA__
-#define	__ZEBRA__
+#ifndef __HALLEY5__
+#define	__HALLEY5__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -36,6 +36,16 @@
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		1200000000
 #define CONFIG_SYS_MEM_FREQ		750000000
+
+
+/* Device Tree Configuration*/
+//#define CONFIG_OF_LIBFDT 1
+
+#ifdef CONFIG_OF_LIBFDT
+#define IMAGE_ENABLE_OF_LIBFDT	1
+#define CONFIG_LMB
+#endif
+
 
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
@@ -164,6 +174,7 @@
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
   #elif defined(CONFIG_SPL_SFC_NAND)
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+	/*#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=3 root=ubi0:rootfs ubi.mtd=4 rootfstype=ubifs rw"*/ /*dtb support*/
   #else
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 root=ubi0:root rootfstype=ubifs rw"
   #endif
@@ -200,6 +211,7 @@
 	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
   #elif defined(CONFIG_SPL_SFC_NAND)
 	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x400000 0x80600000 ;bootm 0x80600000"
+	/*#define CONFIG_BOOTCOMMAND "set uImage 0x80600000; set dtb 0x83000000; sfcnand read 0x100000 0x400000 $(uImage); sfcnand read 0x900000 0x20000 $(dtb); bootm $(uImage) - ${dtb}"*/  /*dtb support*/
   #else
     #define CONFIG_BOOTCOMMAND						\
 	"mtdparts default; ubi part system; ubifsmount ubi:boot; "	\
