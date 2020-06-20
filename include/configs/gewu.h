@@ -39,8 +39,7 @@
 
 
 /* Device Tree Configuration*/
-//#define CONFIG_OF_LIBFDT 1
-
+/*#define CONFIG_OF_LIBFDT 1*/
 #ifdef CONFIG_OF_LIBFDT
 #define IMAGE_ENABLE_OF_LIBFDT	1
 #define CONFIG_LMB
@@ -166,6 +165,7 @@
 #else
   #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	/*#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"*/ /*dtb support*/
   #elif defined(CONFIG_SPL_NOR_SUPPORT)
   /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=192.168.10.210:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw" */
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
@@ -207,6 +207,7 @@
     /*#define CONFIG_BOOTCOMMAND "loady 0x80600000; bootm 0x80600000"*/
   #elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
     #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2000; bootm 0x80600000"
+    /*#define CONFIG_BOOTCOMMAND "set dtb 0x83000000; set uImage 0x80600000; mmc dev 0;mmc read ${uImage} 0x1800 0x2000; mmc read ${dtb} 0x6000 0x100; bootm ${uImage} - ${dtb}"*/ /*dtb support*/
   #elif defined(CONFIG_SPL_SFC_NOR)
 	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
   #elif defined(CONFIG_SPL_SFC_NAND)
