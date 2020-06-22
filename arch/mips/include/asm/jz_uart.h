@@ -47,6 +47,12 @@ struct jz_uart {
 	uint8_t isr;	/* 0x20 RW 8b infrared selection reg */
 	uint8_t pad08[3];
 	uint8_t umr;	/* 0x24 RW 8b */
+	uint8_t pad09[3];
+	uint16_t uacr; /* 0x28 RW 8b */
+	uint8_t pad10[22];
+	uint8_t urcr;/* 0x40 RW 8b */
+	uint8_t pad11[3];
+	uint8_t utcr;/* 0x44 RW 8b */
 };
 
 /*
