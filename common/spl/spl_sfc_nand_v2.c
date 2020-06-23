@@ -334,7 +334,6 @@ int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_ad
 	return 0;
 }
 
-#ifdef CONFIG_OTA_VERSION30
 struct jz_sfcnand_partition_param *get_partitions(void)
 {
 	struct jz_sfcnand_burner_param *burn_param;
@@ -354,13 +353,26 @@ unsigned int get_part_offset_by_name(struct jz_sfcnand_partition_param *partitio
 	int i = 0;
 
 	for(i = 0; i < partitions->num_partition; i++) {
-		if (!strncmp(partitions->partition[i].name, name, sizeof(name))) {
+		if (!strncmp(partitions->partition[i].name, name, strlen(name))) {
 			return partitions->partition[i].offset;
 		}
 	}
+
 	return -1;
 }
-#endif
+
+struct jz_sfcnand_partition *get_part_by_name(struct jz_sfcnand_partition_param *partitions, char *name)
+{
+	int i = 0;
+
+	for(i = 0; i < partitions->num_partition; i++) {
+		if (!strncmp(partitions->partition[i].name, name, strlen(name))) {
+			return &partitions->partition[i];
+		}
+	}
+
+	return NULL;
+}
 
 void spl_load_kernel(long offset)
 {
@@ -378,47 +390,83 @@ void sfc_init(void)
 	spinand_init();
 }
 
-#ifndef CONFIG_OTA_VERSION30
-void spl_sfc_nand_load(void)
-{
-	struct image_header *header;
 #ifdef CONFIG_SPL_OS_BOOT
-	struct jz_sfcnand_burner_param *burn_param;
-	struct jz_sfcnand_partition *partition;
+void spl_sfc_nand_os_load(void)
+{
+	struct jz_sfcnand_partition_param *partitions;
 	unsigned int bootimg_addr = 0;
-	unsigned int bootimg_size = 0;
-	unsigned int i = 0;
-#endif
-	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_init();
-#ifdef CONFIG_SPL_OS_BOOT
-	/* read burn param */
-	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
-	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
-	partition = (struct jz_sfcnand_partition *)&burn_param->partition;
 
-	for(i = 0; i < burn_param->partition_num; i++) {
-		if (!strncmp(partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
-			bootimg_addr = partition[i].offset;
-			bootimg_size = partition[i].size;
-			break;
-		}
+	partitions = get_partitions();
+	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OS_NAME);
+	if (bootimg_addr == -1){
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
 	}
-
-#ifdef CONFIG_BOOT_RTOS
-	spl_image.entry_point = CONFIG_LOAD_ADDR;
-	sfc_nand_load(bootimg_addr, bootimg_size, (unsigned int*)CONFIG_LOAD_ADDR);
-#else /* CONFIG_BOOT_RTOS */
 
 	/* read image head */
 	spl_load_kernel(bootimg_addr);
-#endif /* CONFIG_SPL_OS_BOOT */
-
-#else
-	sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (unsigned int)CONFIG_SYS_TEXT_BASE);
-	spl_parse_image_header(header);
+}
 #endif
+
+#ifdef CONFIG_BOOT_RTOS
+void spl_sfc_nand_rtos_load(void)
+{
+	struct jz_sfcnand_partition_param *partitions;
+	struct jz_sfcnand_partition *partition;
+
+	sfc_init();
+
+	partitions = get_partitions();
+	partition = get_part_by_name(partitions, CONFIG_SPL_OS_NAME);
+	if (partition == NULL) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	spl_image.entry_point = CONFIG_LOAD_ADDR;
+	sfc_nand_load(partition->offset, partition->size, (unsigned int*)CONFIG_LOAD_ADDR);
+}
+#endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+static char *spl_sfc_os_ota_load(void)
+{
+	struct jz_sfcnand_partition_param *partitions;
+	unsigned int img_addr = 0;
+	int is_kernel2=0;
+	const char *kernel_name=CONFIG_SPL_OS_NAME;
+
+	sfc_init();
+
+	partitions = get_partitions();
+	img_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
+	if (img_addr != -1) {
+		char buf[128];
+		const char kernel2[] = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_nand_load(img_addr, sizeof(buf), (unsigned int)buf);
+		buf[sizeof(buf) - 1] = 0;
+		if (!strncmp(kernel2, buf, sizeof(kernel2)-1)) {
+			is_kernel2 = 1;
+			kernel_name=CONFIG_SPL_OS_NAME2;
+		}
+	}
+
+	img_addr = get_part_offset_by_name(partitions, kernel_name);
+	if (img_addr == -1) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	debug("kernel:%s %x\n", kernel_name, img_addr);
+
+	spl_load_kernel(img_addr);
+
+	if (is_kernel2)
+		return CONFIG_SYS_SPL_ARGS_ADDR2;
+	else
+		return CONFIG_SYS_SPL_ARGS_ADDR;
 }
 #endif
 
@@ -437,8 +485,22 @@ char* spl_sfc_nand_load_image(void)
 #ifdef CONFIG_OTA_VERSION30
 	register_ota_ops(&ota_ops);
 	return spl_ota_load_image();
+#elif defined(CONFIG_BOOT_RTOS)
+	spl_sfc_nand_rtos_load();
+	return NULL;
+#elif defined(CONFIG_SPL_OS_OTA_BOOT)
+	return spl_sfc_nand_os_ota_load();
+#elif defined(CONFIG_SPL_OS_BOOT)
+	spl_sfc_nand_os_load();
+	return NULL;
 #else
-	spl_sfc_nand_load();
+	{
+		struct image_header *header;
+		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
+		sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (unsigned int)CONFIG_SYS_TEXT_BASE);
+		spl_parse_image_header(header);
+	}
 	return NULL;
 #endif
 }
