@@ -497,6 +497,7 @@ char* spl_sfc_nand_load_image(void)
 	{
 		struct image_header *header;
 		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+		sfc_init();
 
 		sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (unsigned int)CONFIG_SYS_TEXT_BASE);
 		spl_parse_image_header(header);
