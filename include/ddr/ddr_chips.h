@@ -144,4 +144,9 @@
 #ifdef CONFIG_DDR2_SCB18T2G160AF_25DI
 #include "./chips/DDR2_SCB18T2G160AF-25DI.h"
 #endif
+
+#ifdef CONFIG_LPDDR2_W97BV6MK
+#include "./chips/LPDDR2_W97BV6MK.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */
