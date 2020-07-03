@@ -123,10 +123,13 @@ void ddr_inno_phy_init(void)
 	/*
 	 * ddr phy pll initialization
 	 */
-	//phy_writel(0x14, INNO_PLL_FBDIV);
-	//phy_writel(0x5, INNO_PLL_PDIV);
+#ifdef CONFIG_X1021
 	phy_writel(0x8, INNO_PLL_FBDIV);
 	phy_writel(0x2, INNO_PLL_PDIV);
+#else
+	phy_writel(0x14, INNO_PLL_FBDIV);
+	phy_writel(0x5, INNO_PLL_PDIV);
+#endif
 	phy_writel(0x1a, INNO_PLL_CTRL);
 	phy_writel(0x18, INNO_PLL_CTRL);
 #ifndef CONFIG_FASTBOOT
