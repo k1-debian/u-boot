@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define DOSILICON_DEVICES_NUM         2
+#define DOSILICON_DEVICES_NUM         3
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -54,11 +54,31 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[2] = {
+	/*DS35Q2GBXXX*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x71, "DS35X1GAXXX", &dosilicon_param[0]),
 	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[1]),
+	DEVICE_ID_STRUCT(0xF2, "DS35Q2GBXXX", &dosilicon_param[2]),
 };
 
 static void dosilicon_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -129,9 +149,20 @@ retry:
 				    ret = -EIO;
 			}
 			break;
+		case 0xF2:
+			switch((ecc_status >> 4) & 0x7) {
+				case 0x2:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
+			}
+			break;
+
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-		ret = -EIO;
+			ret = -EIO;
 	}
 	return ret;
 }
@@ -148,9 +179,10 @@ static void dosilicon_single_read(struct sfc_transfer *transfer, struct flash_op
 	    case 0x71:
 			break;
 	    case 0x72:
+	    case 0xF2:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
-		    break;
+			break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 		    break;
@@ -184,9 +216,10 @@ static void dosilicon_quad_read(struct sfc_transfer *transfer, struct flash_oper
 	    case 0x71:
 			break;
 	    case 0x72:
+	    case 0xF2:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
-		    break;
+			break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 		    break;
@@ -217,13 +250,14 @@ static void dosilicon_single_load(struct sfc_transfer *transfer, struct flash_op
 	int plane_flag = 0;
 
 	switch(device_id) {
-	    case 0x71:
+		case 0x71:
 			break;
 		case 0x72:
+		case 0xF2:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
 			break;
-	    default:
+		default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 		    break;
 	}
@@ -255,6 +289,7 @@ static void dosilicon_quad_load(struct sfc_transfer *transfer, struct flash_oper
 		case 0x71:
 			break;
 		case 0x72:
+		case 0xF2:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
 			break;

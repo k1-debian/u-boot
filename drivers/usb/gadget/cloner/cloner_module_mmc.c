@@ -146,6 +146,20 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 
 int clmd_mmc_read(struct cloner *cloner, int sub_type, void *ops_data)
 {
+	int dev = sub_type;
+
+	struct mmc *mmc = find_mmc_device(dev);
+	if (!mmc) {
+		printf("no mmc device at slot %x\n", dev);
+		return -ENODEV;
+	}
+	mmc_init(mmc);
+
+	if (mmc_getwp(mmc) == 1) {
+		printf("Error: card is write protected!\n");
+		return -EPERM;
+	}
+
 	realloc_buf(cloner, ((cloner->cmd->read.length + 0x200) & (~(0x200 - 1))));
 	return mmc_read_x(sub_type, cloner->read_req->buf,
 			cloner->cmd->read.partition + cloner->cmd->read.offset,

@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define DOSILICON_DEVICES_NUM         2
+#define DOSILICON_DEVICES_NUM         3
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -57,11 +57,32 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[2] = {
+	/*DS35Q2GBXXX*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 1,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x71, "DS35X1GAXXX", &dosilicon_param[0]),
 	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[1]),
+	DEVICE_ID_STRUCT(0xF2, "DS35Q2GBXXX", &dosilicon_param[2]),
 };
 
 
@@ -72,6 +93,7 @@ static cdt_params_t *dosilicon_get_cdt_params(struct sfc_flash *flash, uint8_t d
 	switch(device_id) {
 	    case 0x71:
 	    case 0x72:
+	    case 0xF2:
 		    break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -102,6 +124,17 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 				    ret = -EIO;
 			}
 			break;
+		case 0xF2:
+			switch((ecc_status >> 4) & 0x7) {
+				case 0x2:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
+			}
+			break;
+
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 		ret = -EIO;
