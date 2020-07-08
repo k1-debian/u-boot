@@ -54,7 +54,6 @@
 # Generated files
 #
 
-/tools/ingenic-tools/sfc_*
 /include/charge_logo.h
 /tools/logos/ingenic.rle
 /include/rle_boot_logo.h

@@ -25,3 +25,5 @@
 /ingenic-tools/spi_checksum
 /ingenic-tools/spl_params_fixer
 /ingenic-tools/nand_device/sfc_nand_params
+/ingenic-tools/sfc_timing_params
+/ingenic-tools/sfc_nor_builtin_params
