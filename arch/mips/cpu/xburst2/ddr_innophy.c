@@ -301,6 +301,7 @@ static void ddrp_auto_calibration(void)
 
 	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x2) == 2) && --timeout) {
 
+		udelay(1);
 		printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
 		printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
 		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
