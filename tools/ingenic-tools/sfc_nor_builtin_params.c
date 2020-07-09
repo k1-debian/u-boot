@@ -29,9 +29,12 @@
 #include <config.h>
 #include <asm/arch/spinor.h>
 
+/* global params */
+extern struct spi_nor_info builtin_spi_nor_info;
+extern struct norflash_partitions builtin_norflash_partitions;
+
 static struct builtin_params builtin_params;
 
-extern int nor_device_init(struct builtin_params *);
 void dump_cloner_params(struct burner_params *params);
 void dump_mini_cloner_params(struct mini_spi_nor_info *mini_params);
 
@@ -47,9 +50,54 @@ static void dump_params(void)
 	printf("uk_quad=%d\n", burner_params->uk_quad);
 }
 
+void mini_spi_nor_info_init(struct burner_params *params, struct mini_spi_nor_info *mini)
+{
+	struct spi_nor_info *info = &params->spi_nor_info;
+
+	memcpy((void *)mini->name, (void *)info->name, sizeof(mini->name));
+	mini->id = info->id;
+	mini->read_standard = info->read_standard;
+	mini->read_quad = info->read_quad;
+	mini->wr_en = info->wr_en;
+	mini->en4byte = info->en4byte;
+	mini->quad_set = info->quad_set;
+	mini->quad_get = info->quad_get;
+	mini->busy = info->busy;
+	mini->quad_ops_mode = info->quad_ops_mode;
+	mini->chip_size = info->chip_size;
+	mini->page_size = info->page_size;
+	mini->erase_size = info->erase_size;
+}
+
 static int nor_builtin_params_init(void)
 {
-	 return nor_device_init(&builtin_params);
+	struct burner_params *burner_params = &builtin_params.burner_params;
+	struct mini_spi_nor_info *mini_params = &builtin_params.mini_spi_nor_info;
+
+	/* 1.other params */
+	burner_params->magic = NOR_MAGIC;
+	burner_params->version = NOR_VERSION;
+	burner_params->fs_erase_size = 32768;
+	burner_params->uk_quad = 1;
+
+	/* 2.spi nor info params */
+	memcpy((void *)&burner_params->spi_nor_info, &builtin_spi_nor_info,
+			sizeof(struct spi_nor_info));
+
+	/* 3.nor flash partitions params */
+	memcpy((void *)&burner_params->norflash_partitions, &builtin_norflash_partitions,
+			sizeof(struct norflash_partitions));
+
+
+	/* 4.mini params */
+	mini_spi_nor_info_init(burner_params, mini_params);
+
+	if(!burner_params->spi_nor_info.id && !mini_params->id) {
+		printf("nor builtin params init fail!\n");
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 int main(int argc, char *argv[])
@@ -73,7 +121,7 @@ int main(int argc, char *argv[])
 		return ret;
 
 	/* dump builtin params */
-	dump_params();
+	//dump_params();
 
 	printf("fix_file:%s spl_path:%s offset:%d\n", fix_file, spl_path, offset);
 
@@ -186,7 +234,6 @@ void dump_mini_cloner_params(struct mini_spi_nor_info *mini_params)
 	spi_nor_info = mini_params;
 
 	printf("mini_name=%s\n", spi_nor_info->name);
-	printf("mini_name=%x\n", spi_nor_info->name);
 	printf("mini_id=0x%x\n", spi_nor_info->id);
 
 	printf("mini_read_standard->cmd=0x%x\n",		spi_nor_info->read_standard.cmd);
