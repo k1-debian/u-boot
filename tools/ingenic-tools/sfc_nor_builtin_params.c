@@ -28,10 +28,12 @@
 #include <stdlib.h>
 #include <config.h>
 #include <asm/arch/spinor.h>
+#include "nor_device/nor_device.h"
 
 /* global params */
 extern struct spi_nor_info builtin_spi_nor_info;
 extern struct norflash_partitions builtin_norflash_partitions;
+extern private_params_t builtin_private_params;
 
 static struct builtin_params builtin_params;
 
@@ -77,8 +79,8 @@ static int nor_builtin_params_init(void)
 	/* 1.other params */
 	burner_params->magic = NOR_MAGIC;
 	burner_params->version = NOR_VERSION;
-	burner_params->fs_erase_size = 32768;
-	burner_params->uk_quad = 1;
+	burner_params->fs_erase_size = builtin_private_params.fs_erase_size;
+	burner_params->uk_quad = builtin_private_params.uk_quad;
 
 	/* 2.spi nor info params */
 	memcpy((void *)&burner_params->spi_nor_info, &builtin_spi_nor_info,

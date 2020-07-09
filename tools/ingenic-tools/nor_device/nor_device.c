@@ -1,8 +1,7 @@
 #include "nor_device.h"
-#include <asm/arch/spinor.h>
 
 
-/* 
+/*
  * Only one is supported at a time
  */
 #define CONFIG_INGENIC_GD25Q127C
@@ -78,5 +77,14 @@ struct norflash_partitions builtin_norflash_partitions = {
 		[2].size = 0xca0000,
 		[2].mask_flags = NORFLASH_PART_RW,
 	},
+};
+
+
+/*
+ * params: private params
+ */
+private_params_t builtin_private_params = {
+	.fs_erase_size = 32768,
+	.uk_quad = 1,
 };
 

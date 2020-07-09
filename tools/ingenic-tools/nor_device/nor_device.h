@@ -1,6 +1,12 @@
 #ifndef  __NOR_DEVICE_H
 #define  __NOR_DEVICE_H
 
+#include <asm/arch/spinor.h>
+
+typedef struct private_params {
+	unsigned int fs_erase_size;  /* erase size */
+	unsigned char uk_quad;	/* set quad mode */
+}private_params_t;
 
 #define CMD_INFO(COMMAND, DUMMY_BIT, ADDR_LEN, TRANSFER_MODE) {	\
 	.cmd = COMMAND,			\
