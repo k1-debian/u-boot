@@ -9,6 +9,8 @@
 #define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
 #define UBI_MANAGER             0x1
 
+#define SPINAND_MAGIC_NUM	0x646e616e   //ascii "nand"
+
 struct jz_sfcnand_partition {
 	char name[32];		/* identifier string */
 	uint32_t size;          /* partition size */

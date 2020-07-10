@@ -53,6 +53,7 @@ MMC-$(CONFIG_MMC_SPL_PARAMS)		+= mmc_params
 SPI-$(CONFIG_SPL_SFC_SUPPORT)		+= sfc_timing_val.h
 SPI-$(CONFIG_SPL_SFC_NAND)		+= sfc_nand_params.h
 SPI-$(CONFIG_NOR_BUILTIN_PARAMS)	+= sfc_nor_builtin_params
+SPI-$(CONFIG_NAND_BUILTIN_PARAMS)	+= sfc_nand_builtin_params
 SPL-$(CONFIG_SPL_PARAMS_FIXER)		+= spl_params_fixer
 AUDIO-$(CONFIG_AUDIO_CAL_DIV) += audio_div_values.h
 #IMG2RLE-$(CONFIG_RLE_LCD_LOGO)          += img2rle
@@ -218,7 +219,11 @@ $(obj)sfc_timing_params: sfc_timing_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
-$(obj)sfc_nor_builtin_params: sfc_nor_builtin_params.c nor_device/nor_device.c
+$(obj)sfc_nor_builtin_params: sfc_nor_builtin_params.c sfc_builtin_params/nor_device.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
+
+$(obj)sfc_nand_builtin_params: sfc_nand_builtin_params.c sfc_builtin_params/nand_device.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
@@ -236,7 +241,8 @@ clean:
 		$(obj)ddr_params_creator \
 		$(obj)sfc_nand_params \
 		$(obj)sfc_timing_params \
-		$(obj)sfc_nor_builtin_params
+		$(obj)sfc_nor_builtin_params \
+		$(obj)sfc_nand_builtin_params
 
 distclean:	clean
 

@@ -191,6 +191,9 @@ endif
 ifdef CONFIG_NOR_BUILTIN_PARAMS
 	$(OBJTREE)/tools/ingenic-tools/sfc_nor_builtin_params $@ $@ $(CONFIG_SPIFLASH_PART_OFFSET)
 endif
+ifdef CONFIG_NAND_BUILTIN_PARAMS
+	$(OBJTREE)/tools/ingenic-tools/sfc_nand_builtin_params $@ $@ $(CONFIG_SPIFLASH_PART_OFFSET)
+endif
 
 GEN_UBOOT = \
 	cd $(obj) && $(LD) $(LDFLAGS) $(LDFLAGS_$(@F)) $(__START) \

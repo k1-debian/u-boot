@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <config.h>
 #include <asm/arch/spinor.h>
-#include "nor_device/nor_device.h"
+#include "sfc_builtin_params/nor_device.h"
 
 /* global params */
 extern struct spi_nor_info builtin_spi_nor_info;

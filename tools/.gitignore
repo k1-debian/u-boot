@@ -27,3 +27,5 @@
 /ingenic-tools/nand_device/sfc_nand_params
 /ingenic-tools/sfc_timing_params
 /ingenic-tools/sfc_nor_builtin_params
+/ingenic-tools/sfc_nand_builtin_params
+/ingenic-tools/sfc_nand_params
