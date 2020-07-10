@@ -217,6 +217,7 @@ COBJS-$(CONFIG_CMD_ZIP) += cmd_zip.o
 COBJS-$(CONFIG_CMD_ZFS) += cmd_zfs.o
 COBJS-$(CONFIG_CMD_USBHID) += cmd_hid.o
 COBJS-$(CONFIG_DDR_PARAM_DEBUG) += cmd_ddr.o
+COBJS-$(CONFIG_DDR_PARAM_DEBUG) += cmd_ddr_param.o
 # others
 COBJS-$(CONFIG_BOOTSTAGE) += bootstage.o
 COBJS-$(CONFIG_CONSOLE_MUX) += iomux.o
