@@ -171,6 +171,20 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 	reg = cgu->addr;
 	regval = readl(reg);
 
+	if (clk_id == DDR) {
+		switch (regval >> 30) {
+		case 1:
+			pll_rate = pll_get_rate(APLL);
+			break;
+		case 2:
+			pll_rate = pll_get_rate(MPLL);
+			break;
+		default:
+			printf("DDR clk src err!!!\n");
+			break;
+		}
+	}
+
 	switch (regval >> 30) {
 	case 0:
 		pll_rate = pll_get_rate(APLL);
@@ -185,7 +199,7 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 			pll_rate = pll_get_rate(EPLL);
 		break;
 	default:
-		printf("MSC clk src err!!!\n");
+		printf(" clk src err!!!\n");
 		break;
 	}
 
