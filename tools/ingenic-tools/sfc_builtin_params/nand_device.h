@@ -2,6 +2,10 @@
 #define  __NAND_DEVICE_H
 
 #include <asm/arch/spinand.h>
+#include <mtd/mtd-abi.h>
+
+#define NANDFLASH_PART_RW 0
+#define NANDFLASH_PART_RO (MTD_WRITEABLE)
 
 typedef struct nand_partition_builtin_params {
 	uint32_t magic_num;
