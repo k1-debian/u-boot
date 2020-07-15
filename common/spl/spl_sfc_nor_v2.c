@@ -533,7 +533,9 @@ void sfc_init(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
 
-	clk_set_rate(SFC, CONFIG_SFC_NOR_RATE);
+	/* default: sfc rate 50MHz */
+	clk_set_rate(SFC, 200000000L);
+
 	sfc->threshold = THRESHOLD;
 	flash->sfc = sfc;
 

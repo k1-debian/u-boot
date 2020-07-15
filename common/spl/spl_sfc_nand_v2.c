@@ -147,13 +147,15 @@ static void sfc_controler_init(void)
 {
 	unsigned int tmp;
 
-	clk_set_rate(SFC, CONFIG_SFC_NAND_RATE);
+	/* default: SFC rate 50MHz */
+	clk_set_rate(SFC, 200000000L);
 
 	tmp = sfc_readl(SFC_GLB);
 	tmp &= ~(GLB_THRESHOLD_MSK);
 	tmp |= (THRESHOLD << GLB_THRESHOLD_OFFSET);
 	sfc_writel(tmp, SFC_GLB);
 
+	/* default: tSH--5cycle, tSETUP--1/2cycle, tHOLD--1/2cycle */
 	set_flash_timing();
 }
 

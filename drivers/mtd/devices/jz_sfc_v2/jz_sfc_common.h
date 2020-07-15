@@ -18,6 +18,7 @@ void write_cdt(struct sfc *sfc, struct sfc_cdt *cdt, uint16_t start_index, uint1
 
 int sfc_sync_cdt(struct sfc *sfc, struct sfc_cdt_xfer *xfer);
 struct sfc *sfc_res_init(uint32_t sfc_rate);
+struct sfc *sfc_clk_init(uint32_t sfc_rate);
 
 int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup, unsigned int t_shslrd, unsigned int t_shslwr);
 

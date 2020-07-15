@@ -54,7 +54,7 @@ void dump_sfc_reg(struct sfc *sfc)
 	printf("SFC_TRAN_LEN	 = %08x\n", sfc_readl(sfc, SFC_TRAN_LEN));
 	for(i = 0; i < 6; i++){
 		printf("SFC_DEV_ADDR%d		= %08x\n", i, sfc_readl(sfc, SFC_DEV_ADDR(i)));
-		printf("SFC_DEV_ADDR_PLUS%d	= %08x\n", sfc_readl(sfc, SFC_DEV_ADDR_PLUS(i)));
+		printf("SFC_DEV_ADDR_PLUS%d	= %08x\n", i, sfc_readl(sfc, SFC_DEV_ADDR_PLUS(i)));
 	}
 	printf("SFC_MEM_ADDR	= %08x\n", sfc_readl(sfc, SFC_MEM_ADDR));
 	printf("SFC_TRIG	= %08x\n", sfc_readl(sfc, SFC_TRIG));
@@ -682,14 +682,21 @@ static int sfc_ctl_init(struct sfc *sfc)
 	printf("Enter 'CDT' mode.\n");
 
 	sfc_transfer_mode(sfc, SLAVE_MODE);
-	if(sfc->src_clk >= 100000000){
-		/* set sample delay */
-		sfc_smp_delay(sfc,DEV_CONF_SMP_DELAY_180);
-	}
 	return 0;
 }
 
-struct sfc *sfc_res_init(uint32_t sfc_rate)
+void sfc_clk_set(struct sfc *sfc, uint32_t sfc_rate)
+{
+	sfc->src_clk = (unsigned long)sfc_rate;
+	clk_set_rate(SFC, sfc->src_clk);
+
+	if(sfc->src_clk >= 200000000){
+		/* set sample delay */
+		sfc_smp_delay(sfc,DEV_CONF_SMP_DELAY_180);
+	}
+}
+
+struct sfc *sfc_res_init(uint32_t def_sfc_rate)
 {
 	struct sfc *sfc = NULL;
 	sfc = malloc(sizeof(struct sfc));
@@ -702,8 +709,7 @@ struct sfc *sfc_res_init(uint32_t sfc_rate)
 	/* sfc CDT init*/
 	sfc->cdt_addr = (volatile void *)(SFC_BASE + SFC_CDT);
 
-	sfc->src_clk = sfc_rate;
-	clk_set_rate(SFC, sfc->src_clk);
+	sfc_clk_set(sfc, def_sfc_rate);
 
 	sfc->threshold = THRESHOLD;
 

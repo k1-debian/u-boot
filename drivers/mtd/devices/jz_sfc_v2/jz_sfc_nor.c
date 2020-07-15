@@ -674,7 +674,8 @@ int sfc_nor_flash_init(void)
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
 
-	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_RATE);
+	/* default: sfc rate 50MHz */
+	flash->sfc = sfc_res_init(200000000);
 
 	/* try creating default CDT table */
 	create_cdt_table(flash, DEFAULT_CDT);
@@ -696,6 +697,9 @@ int sfc_nor_flash_init(void)
 
 	/* Update to private CDT table */
 	create_cdt_table(flash, UPDATE_CDT);
+
+	/* update sfc rate */
+	sfc_clk_set(flash->sfc, CONFIG_SFC_NOR_RATE);
 
 	sfc_nor_do_special_func();
 
@@ -982,6 +986,9 @@ int norflash_get_params_from_burner(unsigned char *addr)
 
 	/* Update to private CDT table */
 	create_cdt_table(flash, UPDATE_CDT);
+
+	/* update sfc rate */
+	sfc_clk_set(flash->sfc, CONFIG_SFC_NOR_RATE);
 
 	sfc_nor_do_special_func();
 
