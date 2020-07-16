@@ -149,4 +149,8 @@
 #include "./chips/LPDDR2_W97BV6MK.h"
 #endif
 
+#ifdef CONFIG_LVDDR_W9464L6KH-5I
+#include "./chips/LVDDR_W9464L6KH-5I.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */

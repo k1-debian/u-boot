@@ -68,6 +68,10 @@
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
 #include "jz_gpio/x1021_gpio.c"
+#elif defined (CONFIG_X1521)
+#undef JZGPIO_GROUP_OFFSET
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/x1521_gpio.c"
 #endif
 DECLARE_GLOBAL_DATA_PTR;
 
