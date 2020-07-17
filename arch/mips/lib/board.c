@@ -149,6 +149,7 @@ void board_init_f(ulong bootflag)
 	bd_t *bd;
 	init_fnc_t **init_fnc_ptr;
 	ulong addr, addr_sp, len;
+	ulong addr_param;
 	ulong *s;
 
 	/* Pointer is writable since we allocated a register for it.
@@ -202,14 +203,14 @@ void board_init_f(ulong bootflag)
 
 	/* Reserve memory for boot params.
 	 */
-	addr -= CONFIG_SYS_BOOTPARAMS_LEN;
-	bd->bi_boot_params = addr;
+	addr_param = addr - CONFIG_SYS_BOOTPARAMS_LEN;
+	bd->bi_boot_params = addr_param;
 	printf("Reserving %dk for boot params() at: %08lx\n",
-			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr);
+			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr_param);
 
 	 /* Reserve memory for malloc() arena.
 	 */
-	addr_sp = addr - TOTAL_MALLOC_LEN;
+	addr_sp = addr_param - TOTAL_MALLOC_LEN;
 	printf("Reserving %dk for malloc() at: %08lx\n",
 			TOTAL_MALLOC_LEN >> 10, addr_sp);
 
