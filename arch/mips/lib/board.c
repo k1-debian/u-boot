@@ -200,6 +200,13 @@ void board_init_f(ulong bootflag)
 
 	printf("Reserving %ldk for U-Boot at: %08lx\n", len >> 10, addr);
 
+	/* Reserve memory for boot params.
+	 */
+	addr -= CONFIG_SYS_BOOTPARAMS_LEN;
+	bd->bi_boot_params = addr;
+	printf("Reserving %dk for boot params() at: %08lx\n",
+			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr);
+
 	 /* Reserve memory for malloc() arena.
 	 */
 	addr_sp = addr - TOTAL_MALLOC_LEN;
@@ -220,13 +227,6 @@ void board_init_f(ulong bootflag)
 	id = (gd_t *)addr_sp;
 	printf("Reserving %zu Bytes for Global Data at: %08lx\n",
 			sizeof(gd_t), addr_sp);
-
-	/* Reserve memory for boot params.
-	 */
-	addr_sp -= CONFIG_SYS_BOOTPARAMS_LEN;
-	bd->bi_boot_params = addr_sp;
-	printf("Reserving %dk for boot params() at: %08lx\n",
-			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr_sp);
 
 	/*
 	 * Finally, we set up a new (bigger) stack.
