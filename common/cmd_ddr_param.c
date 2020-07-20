@@ -108,7 +108,102 @@ static int do_ddr_param_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 	return CMD_RET_SUCCESS;
 }
 
+extern void serial_put_hex(unsigned int  d);
+
+unsigned int last_p;
+static int do_ddr_asr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+//	char ddr_memory[8][16384][1024][2];
+	unsigned int *ddr_memory = 0x80800000;	// Start @ 8M, 8M 之前给uboot运行使用.
+	unsigned long asr_state = 0;
+	unsigned long long total_cnt = 0;
+
+	unsigned int rand_addr = 0;
+	unsigned int test_cnt = 0;
+
+	char *bank[8];
+	int i;
+	for(i = 0; i < 8; i++) {
+		bank[i] = 0x80000000 + 0x2000000 * i;
+		printf("bank[%d]: %x\n", i, bank[i]);
+	}
+
+	unsigned int *p = ddr_memory;
+	while(p < 0x90000000) {
+		*p = p;
+		p++;
+	}
+
+	srand(get_timer(0));
+
+	printf("random: %d\n", rand());
+	printf("random: %d\n", rand());
+
+	while(1) {
+
+		if(*(volatile unsigned int *)0xb3012004 & (1 << 4)) {
+			asr_state++;
+		} else {
+
+		}
+
+		unsigned int r = rand();
+		rand_addr = r & 0x1fffffc;
+
+		unsigned int b = r % 8;
+		rand_addr = (unsigned int)bank[b] | (unsigned int)rand_addr;
+
+		if(rand_addr < ddr_memory) {
+			/*uboot area.*/
+			continue;
+		}
+		//printf("rand_addr:%x\n", rand_addr);
+
+		if(rand_addr & 3) {
+			printf("---------------unaligned address: %x, r: %d, bank[r % 8]: %x\n", rand_addr, r, bank[b]);
+		}
+		p = (unsigned int *)rand_addr;
+		last_p = p;
+		unsigned int v = *p;
+		if(v != p) {
+
+			jz_serial_puts("error@"); serial_put_hex(p);
+			jz_serial_puts("bank:"); serial_put_hex(b);
+			jz_serial_puts("value:"); serial_put_hex(v);
+			unsigned int *xdata = p;
+			for(i = 0; i < 64; i++) {
+				serial_put_hex(&xdata[i - 32]); jz_serial_puts(":"); serial_put_hex(xdata[i - 32]);
+				if(&xdata[i - 32] == p) {
+					jz_serial_puts("<=====\n");
+				} else {
+					jz_serial_puts("\n");
+				}
+			}
+			while(1);
+		}
+
+#if 1
+		test_cnt ++;
+		if(test_cnt == 5000) {
+			printf("--total_cnt: %lld, test_cnt: %d, asr_state: %d\n", total_cnt, test_cnt, asr_state);
+			test_cnt = 0;
+			asr_state = 0;
+			total_cnt ++;
+		}
+#endif
+		if(ctrlc()) {
+			break;
+		}
+
+	}
+	return CMD_RET_SUCCESS;
+}
+
 U_BOOT_CMD(ddrc_timings, 1, 1, do_ddr_param_read,
 	"ddrc_timing for X2000/M300",
+	"no param\n"
+);
+U_BOOT_CMD(ddr_asr, 1, 1, do_ddr_asr,
+	"ddr auto self-refresh_test for X2000/M300",
 	"no param\n"
 );
