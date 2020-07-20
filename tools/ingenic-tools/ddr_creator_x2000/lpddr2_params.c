@@ -34,12 +34,17 @@ static struct ddr_out_impedance out_impedance[]={
 
 static int find_ddr_lattency(struct ddr_latency_table *table,int size,unsigned int freq)
 {
-	int i;
-	unsigned int date_rate = freq * 2;
+	int i, max;
+	unsigned int data_rate = freq * 2;
 	i = size / sizeof(struct ddr_latency_table) - 1;
+	max = i;
 	for(;i>=0;i--) {
-		if(date_rate >= table[i].freq)
-			return table[i].latency;
+		if(data_rate >= table[i].freq) {
+			if ((data_rate % table[i].freq) && (data_rate <= table[max].freq))
+				return table[i + 1].latency;
+			else
+				return table[i].latency;
+		}
 	}
 	return table[0].latency;
 }
