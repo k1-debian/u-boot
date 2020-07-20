@@ -181,6 +181,34 @@ static void jz_serial_putc(const char c)
 		;
 }
 
+
+void jz_serial_puts (const char *s)
+{
+        while (*s) {
+                jz_serial_putc(*s++);
+        }
+}
+
+
+void serial_put_hex(unsigned int  d)
+{
+        char c[12];
+        unsigned char i;
+        for(i = 0; i < 8; i++)
+        {
+                c[i] = (d >> ((7 - i) * 4)) & 0xf;
+                if(c[i] < 10)
+                        c[i] += 0x30;
+                else
+                        c[i] += (0x41 - 10);
+        }
+
+	c[8] = 0;
+        jz_serial_puts(c);
+}
+
+
+
 static int jz_serial_getc(void)
 {
 	while (!serial_tstc())
