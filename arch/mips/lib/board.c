@@ -204,10 +204,6 @@ void board_init_f(ulong bootflag)
 	/* Reserve memory for boot params.
 	 */
 	addr_param = addr - CONFIG_SYS_BOOTPARAMS_LEN;
-	bd->bi_boot_params = addr_param;
-	printf("Reserving %dk for boot params() at: %08lx\n",
-			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr_param);
-
 	 /* Reserve memory for malloc() arena.
 	 */
 	addr_sp = addr_param - TOTAL_MALLOC_LEN;
@@ -223,6 +219,10 @@ void board_init_f(ulong bootflag)
 	gd->bd = bd;
 	printf("Reserving %zu Bytes for Board Info at: %08lx\n",
 			sizeof(bd_t), addr_sp);
+
+	bd->bi_boot_params = addr_param;
+	printf("Reserving %dk for boot params() at: %08lx\n",
+			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr_param);
 
 	addr_sp -= sizeof(gd_t);
 	id = (gd_t *)addr_sp;
