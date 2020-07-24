@@ -87,11 +87,10 @@ int sfc_program(struct cloner *cloner)
 
 
 	BURNNER_PRI("the offset = %x\n",offset);
-	BURNNER_PRI("the length = %x\n",length);
 
 	if (length < blk_size || length%blk_size == 0){
 		len = length;
-		BURNNER_PRI("the length = %x\n",len);
+		BURNNER_PRI("the length = %x\n",length);
 	}
 	else{
 		len = (length/blk_size)*blk_size + blk_size;
@@ -113,11 +112,15 @@ int sfc_program(struct cloner *cloner)
 
 			if (partition->manager_mode == MTD_D_MODE) {
 				ret = sfc_nor_erase(offset, length);
+				BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n",
+						(size_t)length, (u32)offset,
+						ret ? "ERROR" : "OK");
 			} else {
 				ret = sfc_nor_erase(partition->offset, partition->size);
+				BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n",
+						(size_t)partition->size, (u32)partition->offset,
+						ret ? "ERROR" : "OK");
 			}
-			BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
-					ret ? "ERROR" : "OK");
 		}
 	}
 
