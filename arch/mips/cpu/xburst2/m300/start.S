@@ -115,6 +115,9 @@ init_caches:
         mtc0    $2, $16                 // CP0_CONFIG
         nop
 
+	li	t0, 0xb2200FE0
+	li	t1, (1<<9)
+	sw	t1, 0(t0)
 
 
 #if 0
