@@ -46,7 +46,7 @@
  #define DDR_WL  	-1 	/* LPDDR2: Write Latency - 1 2 2 3 4 4 , tck */ 
 #define DDR_tCCD 	DDR__tck(2)	/* CAS# to CAS# command delay , tCK */
 #define DDR_tFAW 	DDR_SELECT_MAX__tCK_ps(8, 50 * 1000)	/* Four bank activate period, ns */
-#define DDR_tCKESR	DDR_SELECT_MAX__tCK_ps(3, DDR__ns(15))	/* CKE minimum pulse width, tCK */
+#define DDR_tCKESR	DDR_SELECT_MAX__tCK_ps(3, DDR__ns(150))	/* CKE minimum pulse width, tCK */
 #define DDR_tCKE	DDR__tck(3)		/* CKE minimum pulse width, tCK */
 
 /*
