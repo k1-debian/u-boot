@@ -21,7 +21,7 @@
  * MA 02111-1307 USA
  */
 
-#define DEBUG
+/*#define DEBUG*/
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -52,8 +52,6 @@ extern void validate_cache(void);
 
 void board_init_f(ulong dummy)
 {
-
-//	gpio_direction_output(GPIO_PC(17),1);
 	/* Set global data pointer */
 	gd = &gdata;
 
@@ -65,12 +63,8 @@ void board_init_f(ulong dummy)
 #endif
 	gpio_init();
 
-
 	/* Init uart first */
 	enable_uart_clk();
-
-//	printf("%x, ",gd->arch.gi->uart_gpio[0].pins);
-
 
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
@@ -112,29 +106,6 @@ void board_init_f(ulong dummy)
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
 #else
-
-//	gpio_direction_output(GPIO_PC(17),1);
-
-#if 0
-	volatile unsigned int addr = 0x80100000;
-	int val1 = 0x5a5a5a5a, val2  = 0;
-	int ddrsize = 32 * 1024;
-	int i = 0;
-
-	for(i = 0; i < ddrsize; i+=4) {
-		*(volatile unsigned int *)(addr + i) = val1;
-//		printf("write addr = %x, val = %x\n",(addr + i), val1);
-	}
-	for(i = 0; i < ddrsize; i+=4) {
-		val2 = *(volatile unsigned int *)(addr + i);
-
-			printf("read addr = %x, val = %x\n",(addr + i), val2);
-		if(val1 != val2){
-			printf("error addr = %x, val = %x\n",(addr + i), val2);
-			break;
-		}
-	}
-#endif
 	debug("run firmware finished\n");
 	return ;
 #endif
