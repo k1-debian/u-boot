@@ -56,7 +56,7 @@
 #endif
 
 #ifndef CONFIG_BAUDRATE
-#define CONFIG_BAUDRATE			115200
+#define CONFIG_BAUDRATE			3000000
 #endif
 
 
