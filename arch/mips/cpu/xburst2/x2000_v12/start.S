@@ -107,11 +107,7 @@ _start:
 	mtc0	t0, CP0_CAUSE
 
 init_caches:
-#if defined(CONFIG_X2000_V12) && defined(CONFIG_CMD_BURN)
-        li      $2, 2                   // cacheable for kseg0 access
-#else
         li      $2, 3                   // cacheable for kseg0 access
-#endif
         mtc0    $2, $16                 // CP0_CONFIG
         nop
 

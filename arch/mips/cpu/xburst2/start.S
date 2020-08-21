@@ -41,12 +41,9 @@
 	.text
 _start:
 #if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300))
-#ifdef CONFIG_CMD_BURN
-        li      $2, 3                   // cacheable for kseg0 access
-        mtc0    $2, $16                 // CP0_CONFIG
-	nop
-#elif defined(CONFIG_JZ_SECURE_SUPPORT)
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 	.space 2048, 0
+
 #endif
 #endif
 
