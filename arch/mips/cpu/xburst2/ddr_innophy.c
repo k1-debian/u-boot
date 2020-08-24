@@ -607,6 +607,69 @@ void ddrc_dfi_init(enum ddr_type type)
 		mdelay(1);
 		ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11
 		mdelay(1);
+
+#ifdef CONFIG_LPDDR2_W97BV6MK
+
+#define DDRC_LMR_MRW(v)                                                          \
+                DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		 \
+		((v & 0xff) << 24)  |                           		 \
+		(((v >> 8) & 0xff) << (16))
+
+		if(DDRC_AUTOSR_EN_VALUE) {
+			ddr_writel(DDRC_LMR_MRW(0x092a), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0915), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0900), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x093c), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0900), DDRC_LMR);
+			mdelay(1);
+
+			ddr_writel(DDRC_LMR_MRW(0x092a), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0915), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0951), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x093c), DDRC_LMR);
+			mdelay(1);
+
+			ddr_writel(DDRC_LMR_MRW(0x092a), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0915), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0917), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x093c), DDRC_LMR);
+			mdelay(1);
+
+			ddr_writel(DDRC_LMR_MRW(0x092a), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MRW(0x0915), DDRC_LMR);
+			mdelay(1);
+
+			// test mode pattern1: ok? on board1, on board x2
+			ddr_writel(DDRC_LMR_MRW(0x0907), DDRC_LMR);
+			mdelay(1);
+			//printf("test pattern1 0x0907\n");
+
+			// test mode pattern2
+			//ddr_writel(DDRC_LMR_MRW(0x0945), DDRC_LMR);
+			//mdelay(1);
+			//printf("test pattern2 0x0945\n");
+			// test mode pattern3
+			//ddr_writel(DDRC_LMR_MRW(0x09F7), DDRC_LMR);
+			//mdelay(1);
+			//printf("test pattern3 0x09F7\n");
+
+			ddr_writel(DDRC_LMR_MRW(0x093c), DDRC_LMR);
+			mdelay(1);
+		}
+#endif
+
+
 #undef DDRC_LMR_MR
 		break;
 
