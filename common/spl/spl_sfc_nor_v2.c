@@ -667,7 +667,7 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 	*base_addr = nv_addr + nv_off * blocksize;
 }
 #endif
-void spl_sfc_nor_load_image(void)
+char* spl_sfc_nor_load_image(void)
 {
 	struct image_header *header;
 #ifdef CONFIG_SPL_OS_BOOT
@@ -704,13 +704,13 @@ void spl_sfc_nor_load_image(void)
 		spl_image.os = IH_OS_LINUX;
 		spl_image.entry_point = CONFIG_LOAD_ADDR;
 		sfc_read_data(bootimg_addr, bootimg_size, (unsigned char *)CONFIG_LOAD_ADDR);
-		return 0;
+		return NULL;
 #endif
 #ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
 	sfc_read_data(bootimg_addr, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
 	spl_parse_image_header(header);
 	sfc_read_data(bootimg_addr, spl_image.size, (unsigned char *)spl_image.load_addr);
-	return ;
+	return NULL;
 #else //not defined CONFIG_NOR_SPL_BOOT_OS
 	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nv_rw_size);
 	sfc_read_data(src_addr, count, (unsigned char *)nv_buf);
@@ -727,6 +727,6 @@ void spl_sfc_nor_load_image(void)
 		spl_parse_image_header(header);
 		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned char *)CONFIG_SYS_TEXT_BASE);
 	}
-	return;
+	return NULL;
 
 }
