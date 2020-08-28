@@ -70,6 +70,10 @@ endif
 TOOLS	= $(DDR-y) $(MBR-y) $(GPT-y) $(SPI-y) $(MMC-y) $(SPL-y) $(LOGO-y) $(CHARGE_LOGO-y) $(AUDIO-y) #$(IMG2RLE-y) $(BIN2ARRAY-y)
 TOOLS	:= $(addprefix $(obj),$(TOOLS))
 
+ifeq ($(CONFIG_GPT_TAB_BUILT_IN),y)
+TOOLS := $(TOOLS) gpt_partitions_to_c
+endif
+
 DDR_CREATOR_DIR := ddr_creator
 ifeq ($(if $(CONFIG_X2000)$(CONFIG_X2000_V12)$(CONFIG_M300),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x2000
@@ -230,6 +234,12 @@ $(obj)sfc_nand_builtin_params: sfc_nand_builtin_params.c sfc_builtin_params/nand
 $(obj)sfc_nand_params: nand_device/
 	make -C $<
 	cp -f nand_device/sfc_nand_params $@
+
+gpt_partitions_to_c:
+	$(SRCTREE)/tools/ingenic-tools/gpt_tab_to_c.sh \
+	 $(CONFIG_GPT_TABLE_PATH)/partitions.tab > $(SRCTREE)/common/spl/spl_gpt_tab_data.h
+
+.PHONY:gpt_partitions_to_c
 
 clean:
 	rm -f $(TOOLS) $(obj).depend  \

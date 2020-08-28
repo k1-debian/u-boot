@@ -7,6 +7,7 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/mmc.h>
 #include <asm/io.h>
+#include "spl_gpt_partition.h"
 
 //#define DEBUG_MSC
 //#define DEBUG_DDR_CONTENT
@@ -27,8 +28,9 @@ static int highcap = 0;
 
 #if defined(CONFIG_SPL_JZ_MSC_BUS_8BIT)
 static uint32_t bus_width = MSC_BUS_WIDTH_8;
-#else
-/* static uint32_t bus_width = MSC_BUS_WIDTH_4;*/
+#elif defined(CONFIG_SPL_JZ_MSC_BUS_4BIT)
+static uint32_t bus_width = MSC_BUS_WIDTH_4;
+#else // CONFIG_SPL_JZ_MSC_BUS_1BIT
 static uint32_t bus_width = MSC_BUS_WIDTH_1;
 #endif
 
@@ -630,7 +632,28 @@ end:
 	return err;
 }
 
-void spl_mmc_load_image(void)
+#ifdef CONFIG_SPL_OS_BOOT
+
+#ifndef CONFIG_GPT_CREATOR
+#error "must define CONFIG_GPT_CREATOR"
+#endif
+
+static int mmc_load_img_from_partition(const char *name)
+{
+	unsigned int start_sector;
+	int ret;
+
+	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
+	if (ret) {
+		printf("mmc: failed to get partition: %s\n", name);
+		return ret;
+	}
+
+	return mmc_load_image_raw(start_sector);
+}
+#endif
+
+char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
 	io_base = MSC0_BASE;
@@ -643,5 +666,12 @@ void spl_mmc_load_image(void)
 #endif
 
 	jzmmc_init();
+
+#if defined(CONFIG_SPL_OS_BOOT)
+	mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
+#else
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+#endif
+
+	return NULL;
 }

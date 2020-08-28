@@ -61,6 +61,8 @@
 /include/rle_charge_logo.h
 /common/rle_logo.c
 /tools/logos/ingenic.jpg.rle
+common/spl/spl_gpt_tab_data.h
+tools/ingenic-tools/mmc_params
 
 *.depend*
 /LOG

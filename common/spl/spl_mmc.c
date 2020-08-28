@@ -138,7 +138,7 @@ static int mmc_load_image_fat_os(struct mmc *mmc)
 
 #endif
 
-void spl_mmc_load_image(void)
+char *spl_mmc_load_image(void)
 {
 	struct mmc *mmc;
 	int err;
@@ -174,7 +174,7 @@ void spl_mmc_load_image(void)
 		spl_image.entry_point = CONFIG_LOAD_VMLINUX_ADDR;
 		spl_image.load_addr = CONFIG_LOAD_VMLINUX_ADDR;
 		err = mmc->block_dev.block_read(0, 0x1800, 0x6000,(void *)spl_image.load_addr);
-		return;
+		return NULL;
 #endif /* CONFIG_BOOT_VMLINUX */
 #ifdef CONFIG_SPL_OS_BOOT
 		if (spl_start_uboot() || mmc_load_image_raw_os(mmc))
@@ -208,4 +208,6 @@ void spl_mmc_load_image(void)
 
 	if (err)
 		hang();
+
+	return NULL;
 }

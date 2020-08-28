@@ -385,7 +385,8 @@ end:
 #endif
 	return err;
 }
-void spl_mmc_load_image(void)
+
+char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
 	io_base = MSC0_BASE;
@@ -395,4 +396,5 @@ void spl_mmc_load_image(void)
 
 	jzmmc_init();
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+	return NULL;
 }

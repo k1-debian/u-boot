@@ -173,6 +173,14 @@
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
 
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#if defined(CONFIG_SPL_JZ_MSC_BUS_1BIT)
+#elif defined(CONFIG_SPL_JZ_MSC_BUS_8BIT)
+#elif defined(CONFIG_SPL_JZ_MSC_BUS_4BIT)
+#else
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT
+#endif
+#endif
 
 /* SFC */
 #define CONFIG_SFC_V20
@@ -392,7 +400,10 @@
  * GPT configuration
  */
 #ifdef CONFIG_GPT_CREATOR
+#define CONFIG_GPT_TAB_BUILT_IN
+#ifndef CONFIG_GPT_TABLE_PATH
 #define CONFIG_GPT_TABLE_PATH	"$(TOPDIR)/board/$(BOARDDIR)"
+#endif
 #else
 /* USE MBR + zero-GPT-table instead if no gpt table defined*/
 #define CONFIG_MBR_P0_OFF	64mb
@@ -488,7 +499,11 @@
 #endif
 
 #ifndef CONFIG_ROOTFS_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
+#else
 #define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
+#endif
 #endif
 
 #define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_DEV" "ARG_ROOTFS_TYPE
