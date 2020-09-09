@@ -195,11 +195,11 @@
     #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/pzqi/uImage; bootm 0x80600000"
     /*#define CONFIG_BOOTCOMMAND "loady 0x80600000; bootm 0x80600000"*/
   #elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2000; bootm 0x80600000"
+    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2800; bootm 0x80600000"
   #elif defined(CONFIG_SPL_SFC_NOR)
 	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
   #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x400000 0x80600000 ;bootm 0x80600000"
+	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x500000 0x80600000 ;bootm 0x80600000"
   #else
     #define CONFIG_BOOTCOMMAND						\
 	"mtdparts default; ubi part system; ubifsmount ubi:boot; "	\
