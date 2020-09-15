@@ -33,21 +33,17 @@ DECLARE_GLOBAL_DATA_PTR;
 
 void pll_init(void)
 {
-        unsigned int tmp;
-
-	cpm_outl(CONFIG_SYS_APLL_MNOD | (0x1 << 0), CPM_CPAPCR);
-	while(!(cpm_inl(CPM_CPAPCR) & (0x1 << 3)));
+	unsigned int tmp;
 
 	cpm_outl(CONFIG_SYS_MPLL_MNOD | (0x1 << 0), CPM_CPMPCR);
 	while(!(cpm_inl(CPM_CPMPCR) & (0x1 << 3)));
 
-	tmp = (cpm_inl(CPM_CPCCR) & (0xff << 24))
-		| (CONFIG_SYS_CPCCR_SEL & ~(0xff << 24))
-		| (7 << 20);
+	tmp = (cpm_inl(CPM_CPCCR) & (0xff << 24)) | (CONFIG_SYS_CPCCR_SEL & ~(0xff << 24)) | (7 << 20);
 	cpm_outl(tmp, CPM_CPCCR);
 	while(cpm_inl(CPM_CPCSR) & 0x7);
-	tmp = (CONFIG_SYS_CPCCR_SEL & (0xff << 24)) | (cpm_inl(CPM_CPCCR) & ~(0xff << 24));
+	tmp = (cpm_inl(CPM_CPCCR) & ~(0xff << 24)) | (CONFIG_SYS_CPCCR_SEL & (0xff << 24));
 	cpm_outl(tmp,CPM_CPCCR);
+	while(!(cpm_inl(CPM_CPCSR) & (0x1f << 27)));
 
 	printf("cpapcr %x\n", cpm_inl(CPM_CPAPCR));
 	printf("cpmpcr %x\n", cpm_inl(CPM_CPMPCR));

@@ -38,32 +38,15 @@
 /**
  * PLL
  **/
-#define CONFIG_SYS_APLL_FREQ        900000000   /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD        ((75 << 20) | (1 << 14) | (2 << 11) | (1<<8))
-#define CONFIG_SYS_MPLL_FREQ        1000000000  /*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_MNOD        ((125 << 20) | (1 << 14) | (3 << 11) | (1<<8))
-#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		( CONFIG_SYS_MPLL_FREQ / 2 )
+#define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
 
-#define SEL_SCLKA		2
-#define SEL_CPU			1
-#define SEL_H0			2
-#define SEL_H2			2
+#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_MPLL_FREQ
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
 
-#define DIV_PCLK		8
-#define DIV_H2			4
-#define DIV_H0			4
-#define DIV_L2			2
-#define DIV_CPU			1
-#define CONFIG_SYS_CPCCR_SEL		(((SEL_SCLKA & 3) << 30			\
-					| ((SEL_CPU & 3) << 28)			\
-					| ((SEL_H0 & 3) << 26)			\
-					| ((SEL_H2 & 3) << 24)			\
-					| (((DIV_PCLK - 1) & 0xf) << 16)	\
-					| (((DIV_H2 - 1) & 0xf) << 12)		\
-					| (((DIV_H0 - 1) & 0xf) << 8)		\
-					| (((DIV_L2 - 1) & 0xf) << 4)		\
-					| (((DIV_CPU - 1) & 0xf) << 0)))
+#define CONFIG_SYS_CPCCR_SEL		(1 << 30) | (2 << 28) | (2 << 26) | (2 << 24) \
+                                    | ((10 - 1) << 16) | ((5 - 1) << 12) | ((5 - 1) << 8) \
+                                    | ((2 - 1) << 4) | ((1 - 1) << 0)
 
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL

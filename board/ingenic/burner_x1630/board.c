@@ -37,13 +37,8 @@ extern struct jz_uart *uart;
 #endif
 
 struct cgu_clk_src cgu_clk_src[] = {
-	{HELIX, MPLL},
-	{MACPHY, MPLL},
-	{MSC, APLL},
+	{MSC, MPLL},
 	{SSI, MPLL},
-	{CIM, VPLL},
-	{ISP, MPLL},
-	{I2S, VPLL}, //i2s使用VPLL
 	{SRC_EOF,SRC_EOF}
 };
 

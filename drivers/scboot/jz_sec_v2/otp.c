@@ -268,17 +268,19 @@ int cpu_burn_rckey(void)
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
 
-	efuse_1v8_output(1);
 	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
-	efuse_1v8_output(0);
 
 	ret = *(volatile unsigned int *)(MCU_TCSM_RETVAL);
 	if (ret != SC_ERR_SUCC && ret != SC_ERR_CK_EXISTENCE && ret != SC_ERR_RIR) {
 		return -ESEC;
 	}
 
-	REG32(EFUSE_REG_CTRL) = 0;
-	ret = otp_w(EFUSE_PTCOFF_CKP);
+	if (cpu_wtotp(WT_OTP_CK) < 0) {
+		printf("write chipkey protect err\n");
+		return -ESEC;
+	}
+
+	otp_w(EFUSE_PTCOFF_CKP);
 
 	return ret;
 }
@@ -430,7 +432,7 @@ int cpu_burn_ukey(void *idata)
 
 	debug("xxxxxxxxxxx func : %s\n",__func__);
 
-	if(EFUSTATE_UK_PRT && EFUSTATE_UK1_PRT) {
+	if(EFUSTATE_UK_PRT || EFUSTATE_UK1_PRT) {
 		printf("EFUSTATE: userkey protect bit have been written\n");
 		return 0;
 	}
@@ -463,22 +465,19 @@ int cpu_burn_ukey(void *idata)
 		return -ESEC;
 	}
 
-	if (EFUSTATE_UK_PRT == 0) {
-		if (cpu_wtotp(WT_OTP_UK) < 0) {
-			return -ESEC;
-		}
-
-		otp_w(EFUSE_PTCOFF_UKP);
+	if (cpu_wtotp(WT_OTP_UK) < 0) {
+		printf("write ukey protect err\n");
+		return -ESEC;
 	}
 
-	if (EFUSTATE_UK1_PRT == 0) {
-		if (cpu_wtotp(WT_OTP_UK1) < 0) {
-			printf("%s %d\n", __func__, __LINE__);
-			return -ESEC;
-		}
+	otp_w(EFUSE_PTCOFF_UKP);
 
-		otp_w(EFUSE_PTCOFF_UKP1);
+	if (cpu_wtotp(WT_OTP_UK1) < 0) {
+		printf("write ukey1 protect err\n");
+		return -ESEC;
 	}
+
+	otp_w(EFUSE_PTCOFF_UKP1);
 
 	return 0;
 }

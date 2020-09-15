@@ -39,13 +39,8 @@ extern struct jz_uart *uart;
 
 
 struct cgu_clk_src cgu_clk_src[] = {
-	{VPU, MPLL},
-	{MACPHY, MPLL},
-	{MSC, APLL},
+	{MSC, MPLL},
 	{SSI, MPLL},
-	{CIM, VPLL},
-	{ISP, MPLL},
-	{I2S, APLL},
 	{SRC_EOF,SRC_EOF}
 };
 

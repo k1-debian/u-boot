@@ -571,12 +571,14 @@ int f_cloner_bind(struct usb_configuration *c,
 
 	cloner->buf_size = ARGS_LEN;
 	cloner->buf = calloc(1,ARGS_LEN);
+	memset(cloner->buf, 0, ARGS_LEN);
 	cloner->write_req->complete = handle_write;
 	cloner->write_req->buf = cloner->buf;
 	cloner->write_req->length = ARGS_LEN;
 	cloner->write_req->context = cloner;
 
 	cloner->args = calloc(1,ARGS_LEN);
+	memset(cloner->args, 0, ARGS_LEN);
 	global_args = (struct ParameterInfo*)(cloner->args);
 	cloner->args_req->complete = handle_args;
 	cloner->args_req->buf = cloner->args;

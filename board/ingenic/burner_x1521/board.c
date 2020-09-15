@@ -37,13 +37,8 @@ extern struct jz_uart *uart;
 #endif
 
 struct cgu_clk_src cgu_clk_src[] = {
-	{HELIX, MPLL},
-	{MACPHY, MPLL},
-	{MSC, APLL},
+	{MSC, MPLL},
 	{SSI, MPLL},
-	{CIM, VPLL},
-	{ISP, MPLL},
-	{I2S, VPLL}, //i2s使用VPLL
 	{SRC_EOF,SRC_EOF}
 };
 
@@ -83,7 +78,7 @@ int board_mmc_init(bd_t *bd)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: burner_x1621 (Ingenic XBurst X1621 SoC)\n");
+	puts("Board: burner_x1521 (Ingenic XBurst X1521 SoC)\n");
 	return 0;
 }
 

@@ -216,6 +216,21 @@ static int dwc_udc_init(struct dwc2_udc *dev)
 		dep->flags |= DWC2_EP_ACTIVE;
 	}
 	udc_set_reg(DIEPCTL_TX_FIFO_NUM_MASK, DIEPCTL_TX_FIFO_NUM(1), DIEP_CTL(1));
+
+#if defined(CONFIG_X2000_V12) && defined(CONFIG_BURNER)
+#define usb_phy_readb(addr)        readb((addr))
+#define usb_phy_writeb(val, addr)  writeb(val,(addr))
+#define PHY_BASE                   (0xb0078000)
+#define PHY_RX_SQU_TRI             (0x64)
+#define PHY_RX_SQU_TRI_125MV       (0x8)
+
+	u8 reg;
+	reg = usb_phy_readb(PHY_BASE + PHY_RX_SQU_TRI);
+	reg &= ~(0xf << 3);
+	reg |= PHY_RX_SQU_TRI_125MV << 3;
+	usb_phy_writeb(reg, PHY_BASE + PHY_RX_SQU_TRI);
+#endif
+
 #endif
 	return 0;
 }

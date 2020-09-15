@@ -34,25 +34,20 @@
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 
-
-
 /**
  * PLL
  **/
-#define CONFIG_SYS_APLL_FREQ            600000000       /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD            ((99 << 20) | (1 << 14) | (2 << 11) | (2<<5))
-#define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
-#define CONFIG_SYS_VPLL_FREQ            1000000000	/*If VPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ            600000000     /*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD            ((49 << 20) | (0 << 14) | (2 << 11) | (3<<5))
 
-#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		(200000000)
+#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_MPLL_FREQ
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 6)
 
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 
-#define CONFIG_SYS_CPCCR_SEL		(2 << 30) | (1 << 28) | (2 << 26) | (2 << 24) \
-                                      | ((8 - 1) << 16) | ((4 - 1) << 12) | ((4 - 1) << 8) \
+#define CONFIG_SYS_CPCCR_SEL		(1 << 30) | (2 << 28) | (2 << 26) | (2 << 24) \
+                                      | ((6 - 1) << 16) | ((3 - 1) << 12) | ((3 - 1) << 8) \
                                       | ((2 - 1) << 4) | ((1 - 1) << 0)
 
 
