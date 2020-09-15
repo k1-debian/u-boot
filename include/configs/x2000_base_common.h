@@ -510,6 +510,14 @@
 
 /* boot args rootfs2
  */
+#ifndef CONFIG_ROOTFS2_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
+#else
+#define CONFIG_ROOTFS2_DEV "root=/dev/mtdblock_bbt_ro4"
+#endif
+#endif
+
 #ifdef CONFIG_ROOTFS2_DEV
 #if defined(CONFIG_ROOTFS2_UBI)
 #define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
@@ -529,6 +537,17 @@
 #endif
 
 #define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " ARGS_MEM " " CONFIG_ARGS_EXTRA
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+#define CONFIG_SPL_OS_BOOT
+#endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+    #define CONFIG_SPL_OTA_NAME       "ota"
+    #define CONFIG_SPL_OS_NAME2       "kernel2"
+    #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
+    #define CONFIG_SYS_SPL_ARGS_ADDR2 CONFIG_SPL_BOOTARGS2
+#endif
 
 #ifdef CONFIG_SPL_OS_BOOT
     #define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " " ARGS_ROOTFS

@@ -433,7 +433,7 @@ void spl_sfc_nand_rtos_load(void)
 #endif
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
-static char *spl_sfc_os_ota_load(void)
+static char *spl_sfc_nand_os_ota_load(void)
 {
 	struct jz_sfcnand_partition_param *partitions;
 	unsigned int img_addr = 0;
@@ -446,10 +446,9 @@ static char *spl_sfc_os_ota_load(void)
 	img_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
 	if (img_addr != -1) {
 		char buf[128];
-		const char kernel2[] = "ota:"CONFIG_SPL_OS_NAME2;
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
 		sfc_nand_load(img_addr, sizeof(buf), (unsigned int)buf);
-		buf[sizeof(buf) - 1] = 0;
-		if (!strncmp(kernel2, buf, sizeof(kernel2)-1)) {
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
 			is_kernel2 = 1;
 			kernel_name=CONFIG_SPL_OS_NAME2;
 		}

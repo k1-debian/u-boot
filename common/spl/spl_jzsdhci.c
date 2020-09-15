@@ -653,6 +653,45 @@ static int mmc_load_img_from_partition(const char *name)
 }
 #endif
 
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+
+static int mmc_ota_load_img_from_partition(const char *name)
+{
+	unsigned int start_sector;
+	int ret;
+	int is_kernel2 = 0;
+	const char *kernel_name = name;
+
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OTA_NAME, &start_sector, NULL);
+	if (!ret) {
+		const char *buf= (const char *)(CONFIG_SYS_TEXT_BASE);
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+
+		mmc_block_read(start_sector, 1, (u32 *)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			is_kernel2 = 1;
+			kernel_name = CONFIG_SPL_OS_NAME2;
+		}
+	}
+
+	ret = spl_get_built_in_gpt_partition(kernel_name, &start_sector, NULL);
+	if (ret) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	debug("kernel:%s %x\n", kernel_name, start_sector);
+
+	mmc_load_image_raw(start_sector);
+
+	if (is_kernel2)
+		return CONFIG_SYS_SPL_ARGS_ADDR2;
+	else
+		return CONFIG_SYS_SPL_ARGS_ADDR;
+
+}
+#endif
+
 char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -667,7 +706,9 @@ char *spl_mmc_load_image(void)
 
 	jzmmc_init();
 
-#if defined(CONFIG_SPL_OS_BOOT)
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	return mmc_ota_load_img_from_partition(CONFIG_SPL_OS_NAME);
+#elif defined(CONFIG_SPL_OS_BOOT)
 	mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
 #else
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
