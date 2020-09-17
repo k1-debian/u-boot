@@ -130,7 +130,7 @@ void pll_init(void)
 
 	tmp = (cpm_inl(CPM_CPCCR) & ~(0xff << 24)) | (cpccr & (0xff << 24));
 	cpm_outl(tmp ,CPM_CPCCR);
-	while(!(cpm_inl(CPM_CPCSR) & 0xf0000000));
+	while(!(cpm_inl(CPM_CPCSR) & (0x1f << 27)));
 
 	printf("cpapcr %x\n", cpm_inl(CPM_CPAPCR));
 	printf("cpmpcr %x\n", cpm_inl(CPM_CPMPCR));

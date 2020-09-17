@@ -72,7 +72,8 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 #endif
 #ifdef CONFIG_MTD_SFCNAND
 	if(policy_args->use_sfc_nand){
-		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,spi_args->flash_info);
+		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,
+				debug_args->write_back_chk, spi_args->flash_info);
 		if (!ret)
 			get_burner_nandinfo(spi_args->flash_info);
 	}

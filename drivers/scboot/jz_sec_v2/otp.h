@@ -24,6 +24,7 @@
 #define WT_OTP_UK   0x1
 #define WT_OTP_UK1  0x2
 #define WT_OTP_NKU  0x4
+#define WT_OTP_CK   0x8
 #define EFUSE_ADDR_PROT  0x1C
 #define EFUSE_REG_CTRL_PS  (0x1 << 9)
 #define EFUSE_REG_CTRL_PD  (0x1 << 8)

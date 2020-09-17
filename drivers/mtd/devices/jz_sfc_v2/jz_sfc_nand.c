@@ -34,7 +34,9 @@ static const char *const mtdids_default = "nand0:nand";
 #endif
 
 static LIST_HEAD(nand_list);
-static	struct sfc_flash *flash;
+static struct sfc_flash *flash;
+static int burn_readback = 0;
+static char *readback_buf = NULL;
 
 /*struct nand_param_from_burner nand_param_from_burner;*/
 struct jz_sfcnand_burner_param jz_sfc_nand_burner_param;
@@ -394,6 +396,38 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 				pageaddr, columnaddr, wlen);
 			break;
 		}
+
+		if(burn_readback) {
+			if(!readback_buf) {
+				readback_buf = (char *)malloc(wlen);
+				if(!readback_buf) {
+					printf("burn read back buffer malloc failed!\n");
+					ret = -ENOMEM;
+					break;
+				}
+			}
+			memset(readback_buf, 0, wlen);
+			ret = jz_sfc_nand_read(flash, pageaddr, columnaddr, readback_buf, wlen);
+			if(ret != 0) {
+				printf("%s %s %d: jz_sfc_nand_read error, ret = %d, \
+						pageaddr = %u, columnaddr = %u, rlen = %u\n",
+						__FILE__, __func__, __LINE__,
+						ret, pageaddr, columnaddr, wlen);
+				break;
+			} else if (ret > 0) {
+				printf("%s %s %d: jz_sfc_nand_read, ecc value = %d\n",
+						__FILE__, __func__, __LINE__, ret);
+				break;
+			}
+
+			ret = buf_compare(buf, readback_buf, wlen, to);
+			if(ret != 0) {
+				printf("%s %s %d: burn read back compare error!\n",
+						__FILE__, __func__, __LINE__);
+				break;
+			}
+		}
+
 		*retlen += wlen;
 		len -= wlen;
 		to += wlen;
@@ -873,6 +907,7 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 #endif
 
 #ifdef CONFIG_BURNER
+	readback_buf = (char *)malloc(flash_info->param.pagesize);
 	flash_info->param.need_quad = sfc_quad_mode;
 
 	/* for burner get pt indext */
@@ -992,11 +1027,13 @@ struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param)
+int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, int read_back, struct jz_sfcnand_burner_param *param)
 {
 	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
 	int32_t ret;
+
+	burn_readback = read_back;
 
 	if(jz_sfc_nand_init(sfc_quad_mode, param)) {
 		printf("ERR: jz_sfc_nand_init error!\n");

@@ -134,24 +134,6 @@ int spinand_program(struct cloner *cloner)
 			BURNNER_PRI("ERROR : out of partition !!!\n");
 		}
 
-		if (debug_args->write_back_chk) {
-			if (!readbuf) {
-				readbuf = malloc(length);
-				if (!readbuf) {
-					printf("malloc read buffer spaces error!\n");
-					return -1;
-				}
-			}
-			memset(readbuf,0,length);
-			memset(command, 0 , 128);
-			sprintf(command,"nand read.jffs2 0x%x 0x%x 0x%x",readbuf,startaddr, length);
-			run_command(command,0);
-			ret = buf_compare(cloner->write_req->buf,readbuf,length,startaddr);
-			if (ret) {
-				return -1;
-			}
-		}
-
 	} else if (partition->manager_mode == UBI_MANAGER) {
 		if (startaddr == partition->offset) {
 			if (!spi_args->spi_erase) {

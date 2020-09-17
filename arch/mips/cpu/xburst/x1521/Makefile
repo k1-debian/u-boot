@@ -26,8 +26,9 @@ LIB	= $(obj)lib$(SOC).o
 
 SOBJS-y	=
 COBJS-y	= soc.o
-COBJS-$(CONFIG_BURNER) += burner_pll.o
-ifndef CONFIG_BURNER
+ifdef CONFIG_BURNER
+COBJS-y	+= burner_pll.o
+else
 COBJS-y += pll.o
 endif
 COBJS-y += clk.o

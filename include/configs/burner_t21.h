@@ -37,16 +37,15 @@
 /**
  * PLL
  **/
-#define CONFIG_SYS_APLL_FREQ            900000000       /*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD            ((74 << 20) | (1 << 14) | (1 << 11) | (2<<5))
 #define CONFIG_SYS_MPLL_FREQ            1000000000      /*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_MNOD            ((124 << 20) | (2 << 14) | (1 << 11) | (1<<5))
 
-#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		(500000000)
-#define CONFIG_SYS_CPCCR_SEL		((2 << 30)| (1 << 28) | (2 << 26) | (2 << 24)   \
-						| (11 << 16) | (5 << 12) | (5 << 8)     \
-						| (1 << 4) | (0 << 0))
+#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_MPLL_FREQ
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
+
+#define CONFIG_SYS_CPCCR_SEL		(1 << 30) | (2 << 28) | (2 << 26) | (2 << 24) \
+					| ((10 - 1) << 16) | ((5 - 1) << 12) | ((5 - 1) << 8) \
+					| ((2 - 1) << 4) | ((1 - 1) << 0)
 
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL

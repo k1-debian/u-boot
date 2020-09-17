@@ -35,12 +35,8 @@
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 
-#define CONFIG_SYS_APLL_FREQ		600000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_APLL_MNOD            ((99 << 20) | (1 << 14) | (2 << 11) | (2<<5))
-
+#define CONFIG_SYS_APLL_FREQ		864000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1000000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_MNOD		((149 << 20) | (2 << 14) | (1 << 11) | (1<<5))
-
 #define CONFIG_SYS_VPLL_FREQ		1000000000	/*If VPLL not use mast be set 0*/
 
 #define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ

@@ -315,7 +315,7 @@ static void ddrc_dfi_init(void)/*need parmer*/
 	reg = (0x32<<12)|0x011;
 	writel(reg, REG_DDR_LMR);
 	writel(0,REG_DDR_LMR);
-	reg = (0x98<<12)|0x211;
+	reg = (0x2<<12)|0x111;
 	writel(reg, REG_DDR_LMR);
 }
 
