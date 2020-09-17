@@ -26,6 +26,12 @@
 #include <asm/arch/spinand.h>
 #include "jz_sfc_common.h"
 #include "./nand_device/nand_common.h"
+#ifdef CONFIG_BURNER
+#include <cloner/cloner.h>
+
+static int burn_readback = 0;
+static char *readback_buf = NULL;
+#endif
 
 #ifdef MTDIDS_DEFAULT
 static const char *const mtdids_default = MTDIDS_DEFAULT;
@@ -35,8 +41,6 @@ static const char *const mtdids_default = "nand0:nand";
 
 static LIST_HEAD(nand_list);
 static struct sfc_flash *flash;
-static int burn_readback = 0;
-static char *readback_buf = NULL;
 
 /*struct nand_param_from_burner nand_param_from_burner;*/
 struct jz_sfcnand_burner_param jz_sfc_nand_burner_param;
@@ -397,6 +401,7 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 			break;
 		}
 
+#ifdef CONFIG_BURNER
 		if(burn_readback) {
 			if(!readback_buf) {
 				readback_buf = (char *)malloc(wlen);
@@ -427,6 +432,7 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 				break;
 			}
 		}
+#endif
 
 		*retlen += wlen;
 		len -= wlen;
@@ -1032,9 +1038,9 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, i
 	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
 	int32_t ret;
-
+#ifdef CONFIG_BURNER
 	burn_readback = read_back;
-
+#endif
 	if(jz_sfc_nand_init(sfc_quad_mode, param)) {
 		printf("ERR: jz_sfc_nand_init error!\n");
 		return -EIO;
