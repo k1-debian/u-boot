@@ -8,6 +8,9 @@
 #include <asm/arch/mmc.h>
 #include <asm/io.h>
 #include "spl_gpt_partition.h"
+#ifdef CONFIG_JZSD_OTA_VERSION20
+#include "spl_ota_jzsd.h"
+#endif
 
 //#define DEBUG_MSC
 //#define DEBUG_DDR_CONTENT
@@ -692,6 +695,12 @@ static int mmc_ota_load_img_from_partition(const char *name)
 }
 #endif
 
+#ifdef CONFIG_JZSD_OTA_VERSION20
+static struct jzsd_ota_ops jzsd_ota_ops = {
+	.jzsd_read = mmc_block_read,
+	.jzsd_load_img_from_partition = mmc_load_img_from_partition,
+};
+#endif
 char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -709,7 +718,12 @@ char *spl_mmc_load_image(void)
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 	return mmc_ota_load_img_from_partition(CONFIG_SPL_OS_NAME);
 #elif defined(CONFIG_SPL_OS_BOOT)
+#ifdef CONFIG_JZSD_OTA_VERSION20
+	register_jzsd_ota_ops(&jzsd_ota_ops);
+	return spl_jzsd_ota_load_image();
+#else
 	mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
+#endif
 #else
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
 #endif

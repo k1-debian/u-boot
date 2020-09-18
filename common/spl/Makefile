@@ -25,6 +25,7 @@ COBJS-$(CONFIG_SPL_NET_SUPPORT) += spl_net.o
 COBJS-$(CONFIG_SPL_MMC_SUPPORT) += spl_mmc.o
 ifdef CONFIG_SPL_JZSDHCI
 COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzsdhci.o
+COBJS-$(CONFIG_JZSD_OTA_VERSION20) += spl_ota_jzsd.o
 else
 COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzmmc.o
 endif
