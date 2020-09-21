@@ -521,6 +521,7 @@ static int sd_found(void)
 static int mmc_found(void)
 {
 	u8 *resp;
+	u32 rca, status;
 	u32 buswidth_arg, buswidth, timeout = 100;
 
 	msc_debug("mmc_found\n");
@@ -535,24 +536,37 @@ static int mmc_found(void)
 		resp = mmc_cmd(1, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
 	}
 
-	if (!(resp[4] & 0x80)) {
-		printf("mmc init fail!\n");
+	if (!timeout) {
+		printf("emmc card init err ...\n");
 		return -1;
 	}
+
 	if((resp[4] & 0x60 ) == 0x40)
 		highcap = 1;
 	else
 		highcap =0;
 
 	resp = mmc_cmd(2, 0, 0, MSC_CMDAT_RESPONSE_R2);
-	resp = mmc_cmd(3, 0x10, 0, MSC_CMDAT_RESPONSE_R1);
 
-	msc_clk_switch(1);
-	resp = mmc_cmd(7, 0x10, 0, MSC_CMDAT_RESPONSE_R1);
+	rca = 0x10 << 16;
+	resp = mmc_cmd(3, rca, 0, MSC_CMDAT_RESPONSE_R1);
+
+	resp = mmc_cmd(7, rca, 0, MSC_CMDAT_RESPONSE_R1);
 
 	buswidth = (bus_width - 1) < 0 ? 0 : (bus_width - 1);
 	buswidth_arg = 0x3 << 24 | 183 << 16 | buswidth << 8 | 0x1;
-	resp = mmc_cmd(6, buswidth_arg, 0, MSC_CMDAT_RESPONSE_R1); /* set buswidth*/
+	resp = mmc_cmd(6, buswidth_arg, 0, MSC_CMDAT_RESPONSE_R1b); /* set buswidth*/
+
+	timeout = 1000;
+	do{
+		resp = mmc_cmd(13, rca, 0, MSC_CMDAT_RESPONSE_R1);
+		status = resp[1] | (resp[2] << 8) | (resp[3] << 16) | (resp[4] << 24);
+		if((status & (0xf << 9)) != (7 << 9))
+			break;
+		udelay(100);
+	}while(--timeout);
+
+	msc_clk_switch(1);
 
 	return 0;
 }
