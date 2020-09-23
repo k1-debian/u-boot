@@ -202,20 +202,20 @@ static void fill_mr_params_lpddr3(struct ddr_params *p)
 
 }
 
-static void fill_in_params_lpddr3(struct ddr_params *ddr_params)
+static void fill_in_params_lpddr3(struct ddr_params *ddr_params, struct ddr_chip_info *chip)
 {
 	int tmp;
 	struct lpddr3_params *params = &ddr_params->private_params.lpddr3_params;
 
 
-	params->tMRD = DDR_tMRD;
-	params->tDQSCK = DDR_tDQSCK;
-	params->tDQSCKMAX = DDR_tDQSCKMAX;
-	params->tXSR = DDR_tXSR;
-	params->tCKESR = DDR_tCKESR;
-	params->tRTP = DDR_tRTP;
-	params->tCCD = ps2cycle_ceil(DDR_tCCD,1);
-	params->tFAW = DDR_tFAW;
+	params->tMRD 		= chip->DDR_tMRW;
+	params->tDQSCK 		= chip->DDR_tDQSCK;
+	params->tDQSCKMAX 	= chip->DDR_tDQSCKMAX;
+	params->tXSR 		= chip->DDR_tXSR;
+	params->tCKESR 		= chip->DDR_tCKESR;
+	params->tRTP 		= chip->DDR_tRTP;
+	params->tCCD 		= ps2cycle_ceil(chip->DDR_tCCD,1);
+	params->tFAW 		= chip->DDR_tFAW;
 	if(params->RL == -1)
 	{
 		tmp = find_ddr_lattency(rl_lpddr3,sizeof(rl_lpddr3),ddr_params->freq);
@@ -331,7 +331,9 @@ static struct ddr_creator_ops lpddr3_creator_ops = {
 	.ddrp_params_creator = ddrp_params_creator_lpddr3,
 
 };
-void ddr_creator_init(void)
+
+
+void lpddr3_creator_init(void)
 {
 	register_ddr_creator(&lpddr3_creator_ops);
 }

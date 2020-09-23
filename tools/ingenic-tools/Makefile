@@ -140,6 +140,10 @@ DDR-TYPE-$(CONFIG_DDR_TYPE_LPDDR) += $(DDR_CREATOR_DIR)/lpddr_params.o
 DDR-TYPE-$(CONFIG_DDR_TYPE_DDR2) += $(DDR_CREATOR_DIR)/ddr2_params.o
 DDR-TYPE-$(CONFIG_DDR_TYPE_DDR3) += $(DDR_CREATOR_DIR)/ddr3_params.o
 
+ifeq ($(DDR_CREATOR_DIR), ddr_creator_x2000)
+DDR-TYPE-y	+= $(DDR_CREATOR_DIR)/supported_ddr_chips.o
+endif
+
 define PRIVATE_BUILD
 $(1):$(2) $(3)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -c -o $(1) $(2)

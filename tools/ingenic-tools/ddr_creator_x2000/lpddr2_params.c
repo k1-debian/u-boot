@@ -174,19 +174,19 @@ static void fill_mr_params_lpddr2(struct ddr_params *p)
 	p->mr63.lpddr2.MA = 0x3f;
 }
 
-static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
+static void fill_in_params_lpddr2(struct ddr_params *ddr_params, struct ddr_chip_info *chip)
 {
 	int tmp;
 	struct lpddr2_params *params = &ddr_params->private_params.lpddr2_params;
 
-	params->tDQSCK = DDR_tDQSCK;
-	params->tDQSCKMAX = DDR_tDQSCKMAX;
-	params->tCKESR = DDR_tCKESR;
-	params->tXSR = DDR_tXSR;
-	params->tRTP = DDR_tRTP;
-	params->tCCD = ddr_params->bl/2 ; /* tCCD = BL / 2 */
-	params->tFAW = DDR_tFAW;
-	params->tMRD = DDR_tMRW;
+	params->tDQSCK 		= chip->DDR_tDQSCK;
+	params->tDQSCKMAX 	= chip->DDR_tDQSCKMAX;
+	params->tCKESR 		= chip->DDR_tCKESR;
+	params->tXSR 		= chip->DDR_tXSR;
+	params->tRTP 		= chip->DDR_tRTP;
+	params->tCCD 		= ddr_params->bl/2 ; /* tCCD = BL / 2 */
+	params->tFAW 		= chip->DDR_tFAW;
+	params->tMRD 		= chip->DDR_tMRW;
 
 	if(params->RL == -1)
 	{
@@ -302,7 +302,7 @@ static struct ddr_creator_ops lpddr2_creator_ops = {
 	.ddrp_params_creator = ddrp_params_creator_lpddr2,
 
 };
-void ddr_creator_init(void)
+void lpddr2_creator_init(void)
 {
 	register_ddr_creator(&lpddr2_creator_ops);
 }

@@ -1,0 +1,9 @@
+#ifndef __DDR_CHIPS_V2_H__
+#define __DDR_CHIPS_V2_H__
+
+#include  "chips-v2/ddr_chip.h"
+
+#include "chips-v2/LPDDR2_W97BV6MK.h"
+#include "chips-v2/LPDDR3_W63AH6NKB-BI.h"
+
+#endif

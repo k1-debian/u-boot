@@ -15,15 +15,7 @@
 #include <config.h>
 #include <ddr/ddr_common.h>
 
-
-#if (CONFIG_DDR_CS1 == 1)
-#ifndef DDR_ROW1
-#error "please define DDR_ROW1"
-#endif /* DDR_ROW1 */
-#ifndef DDR_COL1
-#error "please define DDR_COL1"
-#endif /* DDR_COL1 */
-#endif /* CONFIG_DDR_CS1 */
+#define ARRAY_SIZE(A) (sizeof(A)/sizeof(A[0]))
 
 #define MAX(a,b) (a > b ? a : b)
 #define MIN(a,b) (a > b ? b : a)
@@ -70,11 +62,9 @@
 		 ddrp->dtpr##n.b.name = tmp;				\
 	 }while(0)
 
-#define DDR_PARAMS_FILL(params,name) params->name = DDR_##name
-
 struct ddr_creator_ops{
 	int type;
-	void (*fill_in_params)(struct ddr_params *ddr_params);
+	void (*fill_in_params)(struct ddr_params *ddr_params, struct ddr_chip_info *chip);
 	void (*ddrc_params_creator)(struct ddrc_reg *ddrc, struct ddr_params *p);
 	void (*ddrp_params_creator)(struct ddrp_reg *ddrc, struct ddr_params *p);
 };
@@ -86,5 +76,11 @@ struct ddr_out_impedance
 struct ddr_out_impedance* find_nearby_impedance(struct ddr_out_impedance *table,int table_size,int r_ohm);
 int ps2cycle_ceil(int ps,int div_tck);
 void register_ddr_creator(struct ddr_creator_ops *ops);
-void ddr_creator_init(void);
+void lpddr2_creator_init(void);
+void lpddr3_creator_init(void);
+int init_supported_ddr(void);
+void dump_supported_ddr(void);
+void create_supported_ddr_params(struct ddr_reg_value *generated_reg_values);
+int create_one_ddr_params(struct ddr_chip_info *chip, struct ddr_reg_value *reg);
+
 #endif /*__DDR_PARAMS_CREATOR_H__*/

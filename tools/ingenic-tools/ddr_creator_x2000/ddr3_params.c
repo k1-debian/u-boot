@@ -95,23 +95,23 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 	p->mr2.ddr3.CWL = tmp - 5;
 }
 
-static void fill_in_params_ddr3(struct ddr_params *ddr_params)
+static void fill_in_params_ddr3(struct ddr_params *ddr_params, struct ddr_chip_info *chip)
 {
 	struct ddr3_params *params = &ddr_params->private_params.ddr3_params;
 	if(params->RL == -1  || params->WL == -1) {
 		out_error("lpddr cann't surpport auto mode!\n");
 		assert(1);
 	}
-	params->tMRD = DDR_tMRD;
-	params->tXSDLL = DDR_tXSDLL;
-	params->tMOD = DDR_tMOD;
-	params->tXPDLL = DDR_tXPDLL;
-	params->tCKESR = DDR_tCKESR;
-	params->tCKSRE = DDR_tCKSRE;
-	params->tXS =  DDR_tXSR;
-	params->tRTP = DDR_tRTP;
-	params->tCCD = DDR_tCCD;
-	params->tFAW = DDR_tFAW;
+	params->tMRD 	= chip->DDR_tMRW;
+	params->tXSDLL 	= chip->DDR_tXSDLL;
+	params->tMOD 	= chip->DDR_tMOD;
+	params->tXPDLL 	= chip->DDR_tXPDLL;
+	params->tCKESR 	= chip->DDR_tCKESR;
+	params->tCKSRE 	= chip->DDR_tCKSRE;
+	params->tXS 	= chip->DDR_tXSR;
+	params->tRTP 	= chip->DDR_tRTP;
+	params->tCCD 	= chip->DDR_tCCD;
+	params->tFAW 	= chip->DDR_tFAW;
 
 #ifdef CONFIG_DDR_INNOPHY
 	fill_mr_params_ddr3(ddr_params);

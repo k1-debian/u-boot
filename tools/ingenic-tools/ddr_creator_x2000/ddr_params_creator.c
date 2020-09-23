@@ -1,5 +1,5 @@
 /*
- * Jz4775 ddr parameters creator.
+ * X2000 ddr parameters creator.
  *
  * Copyright (C) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
@@ -96,6 +96,7 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 #endif
 	*rfc = tmp;
 }
+#if 0
 static void get_dynamic_refcnt(struct ddr_params *p)
 {
 	unsigned int div = 0;
@@ -125,6 +126,7 @@ static void get_dynamic_refcnt(struct ddr_params *p)
 	printf("\t}\n");
 	printf("}\n");
 }
+#endif
 struct ddr_out_impedance* find_nearby_impedance(struct ddr_out_impedance *table,int table_size,int r_ohm)
 {
 	int i;
@@ -170,27 +172,26 @@ static unsigned int sdram_size(int cs, struct ddr_params *p)
 	return size;
 }
 
-static void ddr_base_params_fill(struct ddr_params *ddr_params)
+static void ddr_base_params_fill(struct ddr_params *ddr_params, struct ddr_chip_info *chip)
 {
 	struct ddr_params_common *params = &ddr_params->private_params.ddr_base_params;
 	memset(&ddr_params->private_params, 0, sizeof(union private_params));
-	DDR_PARAMS_FILL(params,tRAS);
-	DDR_PARAMS_FILL(params,tRP);
-	DDR_PARAMS_FILL(params,tRCD);
-	DDR_PARAMS_FILL(params,tRC);
-	DDR_PARAMS_FILL(params,tWR);
-	DDR_PARAMS_FILL(params,tRRD);
-	DDR_PARAMS_FILL(params,tWTR);
-	DDR_PARAMS_FILL(params,tRFC);
-	DDR_PARAMS_FILL(params,tXP);
-	DDR_PARAMS_FILL(params,tCKE);
-	DDR_PARAMS_FILL(params,tREFI);
-	DDR_PARAMS_FILL(params,WL);
-	DDR_PARAMS_FILL(params,RL);
-#ifdef CONFIG_DDR_tREFI
-	params->tREFI = CONFIG_DDR_tREFI;
-#endif
+
+	params->tRAS 	= chip->DDR_tRAS;
+	params->tRP	= chip->DDR_tRP;
+	params->tRCD	= chip->DDR_tRCD;
+	params->tRC	= chip->DDR_tRC;
+	params->tWR	= chip->DDR_tWR;
+	params->tRRD	= chip->DDR_tRRD;
+	params->tWTR	= chip->DDR_tWTR;
+	params->tRFC	= chip->DDR_tRFC;
+	params->tXP	= chip->DDR_tXP;
+	params->tCKE	= chip->DDR_tCKE;
+	params->tREFI	= chip->DDR_tREFI;
+	params->WL	= chip->DDR_WL;
+	params->RL	= chip->DDR_RL;
 }
+
 static int ddr_refi_div(int reftck, unsigned *div)
 {
 	int tmp,factor = 0;
@@ -433,138 +434,34 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 		DDRC_CGU_PA;
 }
 
-#ifndef CONFIG_DDR_INNOPHY
-static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p)
+
+void init_ddr_params_common(struct ddr_params *ddr_params, struct ddr_chip_info *chip)
 {
-	int tmp = 0;
 
-	switch (p->type) {
-#define _CASE(D, P)				\
-		case D:				\
-			tmp = P;		\
-			break
-		_CASE(DDR3, 3);		/* DDR3:0b110 */
-		_CASE(LPDDR, 0);	/* LPDDR:0b011 */
-		_CASE(LPDDR2, 4);	/* LPDDR2:0b101 */
-		_CASE(DDR2, 2);	    /* DDR2:0b100 */
-#undef _CASE
-	default:
-		break;
-	}
-	ddrp->dcr = tmp | (p->bank8 << 3);
-
-	/* MR0'Register is differ in lpddr ddr2 lpddr2 ddr3 */
-
-	/* DTPR0 registers */
-	/* tMRD is differ in lpddr ddr2 lpddr2 ddr3 */
-	/* tRTP is differ for ddr2 */
-	DDRP_TIMING_SET(0,ddr_base_params,tWTR,3,1,6);
-	DDRP_TIMING_SET(0,ddr_base_params,tRP,4,2,11);
-	DDRP_TIMING_SET(0,ddr_base_params,tRCD,4,2,11);
-	DDRP_TIMING_SET(0,ddr_base_params,tRAS,5,2,31);
-	DDRP_TIMING_SET(0,ddr_base_params,tRRD,4,1,8);
-	DDRP_TIMING_SET(0,ddr_base_params,tRC,6,2,42);
-	/* tCCD is differ in lpddr ddr2 lpddr2 ddr3 */
-
-	/* DTPR1 registers */
-	/* tAOND is only used by DDR2. */
-	/* tRTW is differ in lpddr ddr2 lpddr2 ddr3 */
-	/* tFAW is differ in lpddr ddr2 lpddr2 ddr3 */
-	/* tMOD is used by ddr3 */
-	/* tRTODT is used by ddr3 */
-	DDRP_TIMING_SET(1,ddr_base_params,tRFC,8,0,255);
-	/* tDQSCKmin is used by lpddr2 */
-	/* tDQSCKmax is used by lpddr2 */
-
-	/* DTPR2 registers */
-	/* tXS is differ in lpddr2 ddr3 */
-	/* tXP is differ in lpddr2 ddr3 */
-	/* tCKE is differ in ddr3 */
-
-	/* PTRn registers */
-	tmp = ps2cycle_ceil(50 * 1000,1);   /* default 50 ns and min clk is 8 cycle */
-	ASSERT_MASK(tmp,6);
-	if(tmp < 8) tmp = 8;
-	ddrp->ptr0.b.tDLLSRST = tmp;
-
-
-	tmp = ps2cycle_ceil(5120*1000, 1); /* default 5.12 us*/
-	ASSERT_MASK(tmp,12);
-	ddrp->ptr0.b.tDLLLOCK = tmp;
-
-	ddrp->ptr0.b.tITMSRST = 8;    /* default 8 cycle & more than 8 */
-
-	//BETWEEN(tmp, 2, 1023);
-	ddrp->dtpr2.b.tDLLK = 512;
-	/* PGCR'Register is differ in lpddr ddr2 lpddr2 ddr3 */
-}
-#else
-static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p){}
-#endif
-
-void init_ddr_params_common(struct ddr_params *ddr_params,int type)
-{
-	ddr_params->type = type;
-	ddr_params->freq = CONFIG_SYS_MEM_FREQ;
+	ddr_params->type = chip->type;
+	ddr_params->freq = chip->freq;
 	ddr_params->cs0 = CONFIG_DDR_CS0;
 	ddr_params->cs1 = CONFIG_DDR_CS1;
 	ddr_params->dw32 = CONFIG_DDR_DW32;
-	ddr_params->bl = DDR_BL;
-#ifdef DDR_CL
-	ddr_params->cl = DDR_CL;
-#endif
-	ddr_params->col = DDR_COL;
-	ddr_params->row = DDR_ROW;
+	ddr_params->bl = chip->DDR_BL;
+//	ddr_params->cl = chip->DDR_CL;
+	ddr_params->col = chip->DDR_COL;
+	ddr_params->row = chip->DDR_ROW;
 
-#ifdef DDR_COL1
-	ddr_params->col1 = DDR_COL1;
-#endif
-#ifdef DDR_ROW1
-	ddr_params->row1 = DDR_ROW1;
-#endif
-	ddr_params->bank8 = DDR_BANK8;
+	if(ddr_params->cs1) {
+		ddr_params->col1 = chip->DDR_COL1;
+		ddr_params->row1 = chip->DDR_ROW1;
+	} else {
+		ddr_params->col1 = 0;
+		ddr_params->row1 = 0;
+	}
+	ddr_params->bank8 = chip->DDR_BANK8;
 	ddr_params->size.chip0 = sdram_size(0, ddr_params);
 	ddr_params->size.chip1 = sdram_size(1, ddr_params);
 }
 
 
 
-/* #define CONFIG_DDR_CHIP_IMPEDANCE */
-#ifndef CONFIG_DDR_INNOPHY
-static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
-{
-	int i;
-	unsigned char rzq[]={
-		0x00,0x01,0x02,0x03,0x06,0x07,0x04,0x05,
-		0x0C,0x0D,0x0E,0x0F,0x0A,0x0B,0x08,0x09,
-		0x18,0x19,0x1A,0x1B,0x1E,0x1F,0x1C,0x1D,
-		0x14,0x15,0x16,0x17,0x12,0x13,0x10,0x11};  //from ddr multiphy page 158.
-	ddrp->odtcr.d32 = 0;
-#ifdef CONFIG_DDR_CHIP_ODT
-	ddrp->odtcr.d32 = 0x84210000;   //power on default.
-#endif
-	/* DDRC registers assign */
-	for(i = 0;i < 4;i++)
-		ddrp->dxngcrt[i].d32 = 0x00090e80;
-	i = 0;
-#ifdef CONFIG_DDR_PHY_ODT
-	for(i = 0;i < (CONFIG_DDR_DW32 + 1) * 2;i++){
-		ddrp->dxngcrt[i].b.dqsrtt = 1;
-		ddrp->dxngcrt[i].b.dqrtt = 1;
-		ddrp->dxngcrt[i].b.dqsodt = 1;
-		ddrp->dxngcrt[i].b.dqodt = 1;
-	}
-#else
-	for(i = 0;i < (CONFIG_DDR_DW32 + 1) * 2;i++){
-		ddrp->dxngcrt[i].b.dqsrtt = 0;
-		ddrp->dxngcrt[i].b.dqrtt = 0;
-		ddrp->dxngcrt[i].b.dxen = 1;
-	}
-#endif
-	for(i = 0;i<sizeof(rzq);i++)
-		    ddrp->rzq_table[i] = rzq[i];
-}
-#else
 static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	switch (p->type) {
@@ -586,107 +483,7 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 	else if(p->bl == 8)
 		ddrp->memcfg.b.brusel = 1;
 }
-#endif
 
-static void Timing_Reg_print(struct ddrc_reg * ddrc)
-{
-	printf("#define timing1_tWL		%d\n", ddrc->timing1.b.tWL);
-	printf("#define timing1_tWR		%d\n", ddrc->timing1.b.tWR);
-	printf("#define timing1_tWTR		%d\n", ddrc->timing1.b.tWTR);
-	printf("#define timing1_tWDLAT		%d\n", ddrc->timing1.b.tWDLAT);
-
-	printf("#define timing2_tRL		%d\n", ddrc->timing2.b.tRL);
-	printf("#define timing2_tRTP		%d\n", ddrc->timing2.b.tRTP);
-	printf("#define timing2_tRTW		%d\n", ddrc->timing2.b.tRTW);
-	printf("#define timing2_tRDLAT		%d\n", ddrc->timing2.b.tRDLAT);
-
-	printf("#define timing3_tRP		%d\n", ddrc->timing3.b.tRP);
-	printf("#define timing3_tCCD		%d\n", ddrc->timing3.b.tCCD);
-	printf("#define timing3_tRCD		%d\n", ddrc->timing3.b.tRCD);
-	printf("#define timing3_ttEXTRW		%d\n", ddrc->timing3.b.tEXTRW);
-
-	printf("#define timing4_tRRD		%d\n", ddrc->timing4.b.tRRD);
-	printf("#define timing4_tRAS		%d\n", ddrc->timing4.b.tRAS);
-	printf("#define timing4_tRC		%d\n", ddrc->timing4.b.tRC);
-	printf("#define timing4_tFAW		%d\n", ddrc->timing4.b.tFAW);
-
-	printf("#define timing5_tCKE		%d\n", ddrc->timing5.b.tCKE);
-	printf("#define timing5_tXP		%d\n", ddrc->timing5.b.tXP);
-	printf("#define timing5_tCKSRE		%d\n", ddrc->timing5.b.tCKSRE);
-	printf("#define timing5_tCKESR		%d\n", ddrc->timing5.b.tCKESR);
-	printf("#define timing5_tXS		%d\n", ddrc->timing5.b.tXS);
-}
-static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
-{
-	int i;
-	/* DDRC registers print */
-	printf("#define DDRC_CFG_VALUE			0x%08x\n", ddrc->cfg.d32);
-	printf("#define DDRC_CTRL_VALUE			0x%08x\n", ddrc->ctrl);
-	printf("#define DDRC_DLMR_VALUE			0x%08x\n", ddrc->dlmr);
-	printf("#define DDRC_DDLP_VALUE			0x%08x\n", ddrc->ddlp);
-	printf("#define DDRC_MMAP0_VALUE		0x%08x\n", ddrc->mmap[0]);
-	printf("#define DDRC_MMAP1_VALUE		0x%08x\n", ddrc->mmap[1]);
-	printf("#define DDRC_REFCNT_VALUE		0x%08x\n", ddrc->refcnt);
-	printf("#define DDRC_TIMING1_VALUE		0x%08x\n", ddrc->timing1.d32);
-	printf("#define DDRC_TIMING2_VALUE		0x%08x\n", ddrc->timing2.d32);
-	printf("#define DDRC_TIMING3_VALUE		0x%08x\n", ddrc->timing3.d32);
-	printf("#define DDRC_TIMING4_VALUE		0x%08x\n", ddrc->timing4.d32);
-	printf("#define DDRC_TIMING5_VALUE		0x%08x\n", ddrc->timing5.d32);
-	printf("#define DDRC_AUTOSR_CNT_VALUE		0x%08x\n", ddrc->autosr_cnt);
-	printf("#define DDRC_AUTOSR_EN_VALUE		0x%08x\n", ddrc->autosr_en);
-	printf("#define DDRC_HREGPRO_VALUE		0x%08x\n", ddrc->hregpro);
-	printf("#define DDRC_PREGPRO_VALUE		0x%08x\n", ddrc->pregpro);
-	printf("#define DDRC_CGUC0_VALUE		0x%08x\n", ddrc->cguc0);
-	printf("#define DDRC_CGUC1_VALUE		0x%08x\n", ddrc->cguc1);
-
-#ifndef CONFIG_DDR_INNOPHY
-	/* DDRP registers print */
-	printf("#define DDRP_DCR_VALUE			0x%08x\n", ddrp->dcr);
-	printf("#define	DDRP_MR0_VALUE			0x%08x\n", ddrp->mr0.d32);
-	printf("#define	DDRP_MR1_VALUE			0x%08x\n", ddrp->mr1.d32);
-	printf("#define	DDRP_MR2_VALUE			0x%08x\n", ddrp->mr2.d32);
-	printf("#define	DDRP_MR3_VALUE			0x%08x\n", ddrp->mr3.d32);
-	printf("#define	DDRP_PTR0_VALUE			0x%08x\n", ddrp->ptr0.d32);
-	printf("#define	DDRP_PTR1_VALUE			0x%08x\n", ddrp->ptr1.d32);
-	printf("#define	DDRP_PTR2_VALUE			0x%08x\n", ddrp->ptr2.d32);
-	printf("#define	DDRP_DTPR0_VALUE		0x%08x\n", ddrp->dtpr0.d32);
-	printf("#define	DDRP_DTPR1_VALUE		0x%08x\n", ddrp->dtpr1.d32);
-	printf("#define	DDRP_DTPR2_VALUE		0x%08x\n", ddrp->dtpr2.d32);
-	printf("#define	DDRP_PGCR_VALUE			0x%08x\n", ddrp->pgcr);
-	printf("#define DDRP_ODTCR_VALUE		0x%08x\n", ddrp->odtcr.d32);
-	for(i = 0;i < 4;i++){
-		printf("#define DDRP_DX%dGCR_VALUE              0x%08x\n",i,ddrp->dxngcrt[i].d32);
-	}
-	printf("#define DDRP_ZQNCR1_VALUE               0x%08x\n", ddrp->zqncr1);
-	printf("#define DDRP_IMPANDCE_ARRAY             {0x%08x,0x%08x} //0-cal_value 1-req_value\n", ddrp->impedance[0],ddrp->impedance[1]);
-	printf("#define DDRP_ODT_IMPANDCE_ARRAY         {0x%08x,0x%08x} //0-cal_value 1-req_value\n", ddrp->odt_impedance[0],ddrp->odt_impedance[1]);
-	printf("#define DDRP_RZQ_TABLE  {0x%02x",ddrp->rzq_table[0]);
-	for(i = 1;i < sizeof(ddrp->rzq_table);i++){
-		printf(",0x%02x",ddrp->rzq_table[i]);
-	}
-	printf("}\n");
-#else
-	printf("#define DDRP_MEMCFG_VALUE		0x%08x\n", ddrp->memcfg.d32);
-	printf("#define DDRP_CL_VALUE			0x%08x\n", ddrp->cl);
-	printf("#define DDRP_CWL_VALUE			0x%08x\n", ddrp->cwl);
-#endif
-}
-
-static void ddr_mr_print(struct ddr_params *p)
-{
-	printf("#define	DDR_MR0_VALUE			0x%08x\n", p->mr0.d32);
-	printf("#define	DDR_MR1_VALUE			0x%08x\n", p->mr1.d32);
-	printf("#define	DDR_MR2_VALUE			0x%08x\n", p->mr2.d32);
-	printf("#define	DDR_MR3_VALUE			0x%08x\n", p->mr3.d32);
-	printf("#define	DDR_MR10_VALUE			0x%08x\n", p->mr10.d32);
-	printf("#define	DDR_MR11_VALUE			0x%08x\n", p->mr11.d32);
-	printf("#define	DDR_MR63_VALUE			0x%08x\n", p->mr63.d32);
-}
-static void sdram_size_print(struct ddr_params *p)
-{
-	printf("#define	DDR_CHIP_0_SIZE			%u\n", p->size.chip0);
-	printf("#define	DDR_CHIP_1_SIZE			%u\n", p->size.chip1);
-}
 static unsigned int frandom(int max)
 {
 	unsigned int rn;
@@ -702,7 +499,8 @@ static unsigned int frandom(int max)
 		buf[b2] = swap;							\
 	}while(0)
 
-static void mem_remap_print(struct ddr_params *p)
+
+static void fill_mem_remap(struct ddr_reg_value *reg, struct ddr_params *p)
 {
 	int address_bits;
 	int swap_bits;
@@ -719,19 +517,20 @@ static void mem_remap_print(struct ddr_params *p)
 	if(p->size.chip1 && (p->size.chip0 != p->size.chip1))
 		return;
 
-	bank_bits = DDR_BANK8 == 1 ? 3 : 2;
+	bank_bits = p->bank8 == 1 ? 3 : 2;
 	bit_width = CONFIG_DDR_DW32 == 1 ? 2 : 1;
 
 	/*
 	 * count the chips's address space bits.
 	 */
-	address_bits =  bit_width + DDR_COL + DDR_ROW + bank_bits + (CONFIG_DDR_CS0 + CONFIG_DDR_CS1 - 1);
+	address_bits =  bit_width + p->col + p->row + bank_bits + (CONFIG_DDR_CS0 + CONFIG_DDR_CS1 - 1);
+
 	/*
 	 * count address space bits for swap.
 	 */
 	swap_bits = bank_bits + (CONFIG_DDR_CS0 + CONFIG_DDR_CS1 - 1);
 
-	startA = bit_width + DDR_COL > 12 ? bit_width + DDR_COL : 12;
+	startA = bit_width + p->col > 12 ? bit_width + p->col : 12;
 
 	startB = address_bits - swap_bits - startA;
 	startA = startA - 12;
@@ -743,98 +542,228 @@ static void mem_remap_print(struct ddr_params *p)
 		//swap_bytes(s,startA + i,startB + i,startB);
 	}
 
-
-    /*
-	 * random high address for securing.
-	 */
-#if 0
-	for(i = 0;i < swap_bits / 2;i++){
-		int sw = frandom(swap_bits - 1 - i);
-		swap_bytes(s,startA + i,startA + sw);
-	}
-
-	width = startB + startA;
-	startA = startA + swap_bits;
-	for(i = 0;i < width / 2;i++){
-		int sw = frandom(width - 1 - i);
-		swap_bytes(s,startA + i,startA + sw);
-	}
-#endif
-	printf("#define REMMAP_ARRAY {\\\n");
-	for(i = 0;i <sizeof(remap_array) / sizeof(remap_array[0]);i++)
+	for(i = 0; i <5; i++)
 	{
-		printf("\t0x%08x,\\\n",remap_array[i]);
+		reg->REMMAP_ARRAY[i] = remap_array[i];
 	}
-	printf("}\n");
-}
-static void file_head_print(void)
-{
-	printf("/*\n");
-	printf(" * DO NOT MODIFY.\n");
-	printf(" *\n");
-	printf(" * This file was generated by ddr_params_creator\n");
-	printf(" *\n");
-	printf(" */\n");
-	printf("\n");
-
-	printf("#ifndef __DDR_REG_VALUES_H__\n");
-	printf("#define __DDR_REG_VALUES_H__\n\n");
 }
 
-static void file_end_print(void)
-{
-	printf("\n#endif /* __DDR_REG_VALUES_H__ */\n");
-}
-
-static struct ddr_creator_ops *p_ddr_creator = NULL;
+static struct ddr_creator_ops *p_ddr_creator[5] = {NULL};
 static int ops_count = 0;
 void register_ddr_creator(struct ddr_creator_ops *ops)
 {
-	if(ops_count++ == 0){
-		p_ddr_creator = ops;
+	if(ops_count < 5){
+		p_ddr_creator[ops_count++] = ops;
 	}else{
-		out_error("Error: DDR CREATEOR cann't register %d\n",ops->type);
+		out_error("Error: DDR CREATEOR cann't register %d, ops_cout: %d\n",ops->type, ops_count);
 	}
 }
-/**
- * ddr parameter prev setting :
- *    1.  the ddr chip parameter is filled.
- *    2.  the ddr controller parameter is generated.
- *    3.  the ddr phy paramerter is generated.
- *    4.  all parameter is outputted.
- */
-int main(int argc, char *argv[])
+
+static void fill_reg_value(struct ddr_reg_value *reg, struct ddrc_reg *ddrc, struct ddrp_reg *ddrp, struct ddr_params *p)
+{
+
+	reg->freq		= p->freq;
+	reg->DDRC_CFG_VALUE	= ddrc->cfg.d32;
+	reg->DDRC_CTRL_VALUE	= ddrc->ctrl;
+	reg->DDRC_DLMR_VALUE	= ddrc->dlmr;
+	reg->DDRC_DDLP_VALUE	= ddrc->ddlp;
+	reg->DDRC_MMAP0_VALUE	= ddrc->mmap[0];
+	reg->DDRC_MMAP1_VALUE	= ddrc->mmap[1];
+	reg->DDRC_REFCNT_VALUE	=  ddrc->refcnt;
+	reg->DDRC_TIMING1_VALUE	= ddrc->timing1.d32;
+	reg->DDRC_TIMING2_VALUE	= ddrc->timing2.d32;
+	reg->DDRC_TIMING3_VALUE	= ddrc->timing3.d32;
+	reg->DDRC_TIMING4_VALUE	= ddrc->timing4.d32;
+	reg->DDRC_TIMING5_VALUE	 =  ddrc->timing5.d32;
+	reg->DDRC_AUTOSR_CNT_VALUE =  ddrc->autosr_cnt;
+	reg->DDRC_AUTOSR_EN_VALUE =  ddrc->autosr_en;
+	reg->DDRC_HREGPRO_VALUE	= ddrc->hregpro;
+	reg->DDRC_PREGPRO_VALUE	= ddrc->pregpro;
+	reg->DDRC_CGUC0_VALUE	= ddrc->cguc0;
+	reg->DDRC_CGUC1_VALUE	= ddrc->cguc1;
+	reg->DDRP_MEMCFG_VALUE  = ddrp->memcfg.d32;
+	reg->DDRP_CL_VALUE	= ddrp->cl;
+	reg->DDRP_CWL_VALUE	= ddrp->cwl;
+
+	reg->DDR_MR0_VALUE	= p->mr0.d32;
+	reg->DDR_MR1_VALUE	= p->mr1.d32;
+	reg->DDR_MR2_VALUE	= p->mr2.d32;
+	reg->DDR_MR3_VALUE	= p->mr3.d32;
+	reg->DDR_MR10_VALUE	= p->mr10.d32;
+	reg->DDR_MR11_VALUE	= p->mr11.d32;
+	reg->DDR_MR63_VALUE	= p->mr63.d32;
+
+	reg->DDR_CHIP_0_SIZE	= p->size.chip0;
+	reg->DDR_CHIP_1_SIZE	= p->size.chip1;
+
+	fill_mem_remap(reg, p);
+}
+
+int create_one_ddr_params(struct ddr_chip_info *chip, struct ddr_reg_value *reg)
 {
 	struct ddrc_reg ddrc;
 	struct ddrp_reg ddrp;
 	struct ddr_params ddr_params;
-	__ps_per_tck = (1000000000 / (CONFIG_SYS_MEM_FREQ / 1000));
+
+	struct ddr_creator_ops * ddr_creator = NULL;
+	int creator_found = 0;
+	int i;
+
+	/* 1. search ddr creator by type. */
+	for(i = 0; i < ops_count; i++) {
+		ddr_creator = p_ddr_creator[i];
+
+		if(ddr_creator->type == chip->type) {
+			creator_found = 1;
+			break;
+		}
+	}
+	if(!creator_found) {
+		printf("cannot find ddr_creator for ddr type: %d, please_check!\n", chip->type);
+		return -1;
+	}
+
 	memset(&ddrc, 0, sizeof(struct ddrc_reg));
 	memset(&ddrp, 0, sizeof(struct ddrp_reg));
 	memset(&ddr_params, 0, sizeof(struct ddr_params));
-	ddr_creator_init();
 
-	init_ddr_params_common(&ddr_params,p_ddr_creator->type);
-	ddr_base_params_fill(&ddr_params);
-	p_ddr_creator->fill_in_params(&ddr_params);
+	init_ddr_params_common(&ddr_params, chip);
+	ddr_base_params_fill(&ddr_params, chip);
+	ddr_creator->fill_in_params(&ddr_params, chip);
 
+	/* DDR controller creator.*/
 	ddrc_base_params_creator_common(&ddrc, &ddr_params);
-	p_ddr_creator->ddrc_params_creator(&ddrc, &ddr_params);
+	ddr_creator->ddrc_params_creator(&ddrc, &ddr_params);
 	ddrc_config_creator(&ddrc,&ddr_params);
 
-	ddrp_base_params_creator_common(&ddrp, &ddr_params);
-	p_ddr_creator->ddrp_params_creator(&ddrp, &ddr_params);
+	/* DDR phy creator. */
+	ddr_creator->ddrp_params_creator(&ddrp, &ddr_params);
 	ddrp_config_creator(&ddrp,&ddr_params);
-	file_head_print();
-	params_print(&ddrc, &ddrp);
-#ifdef CONFIG_DDR_INNOPHY
-	ddr_mr_print(&ddr_params);
-#endif
-	sdram_size_print(&ddr_params);
-	mem_remap_print(&ddr_params);
-	Timing_Reg_print(&ddrc);
-	get_dynamic_refcnt(&ddr_params);
-	file_end_print();
 
-	return 0;
+	/* output */
+	reg->id = chip->id;
+	reg->type = chip->type;
+
+	fill_reg_value(reg, &ddrc, &ddrp, &ddr_params);
+
+}
+
+void dump_generated_reg(struct ddr_reg_value *reg)
+{
+	int i;
+
+	printf("id		      = %08x\n", reg->id);
+	printf("type		      = %08x\n", reg->type);
+	printf("DDRC_CFG_VALUE        = %08x\n", reg->DDRC_CFG_VALUE);
+	printf("DDRC_CTRL_VALUE       = %08x\n", reg->DDRC_CTRL_VALUE);
+	printf("DDRC_DLMR_VALUE       = %08x\n", reg->DDRC_DLMR_VALUE);
+	printf("DDRC_DDLP_VALUE       = %08x\n", reg->DDRC_DDLP_VALUE);
+	printf("DDRC_MMAP0_VALUE      = %08x\n", reg->DDRC_MMAP0_VALUE);
+	printf("DDRC_MMAP1_VALUE      = %08x\n", reg->DDRC_MMAP1_VALUE);
+	printf("DDRC_REFCNT_VALUE     = %08x\n", reg->DDRC_REFCNT_VALUE);
+	printf("DDRC_TIMING1_VALUE    = %08x\n", reg->DDRC_TIMING1_VALUE);
+	printf("DDRC_TIMING2_VALUE    = %08x\n", reg->DDRC_TIMING2_VALUE);
+	printf("DDRC_TIMING3_VALUE    = %08x\n", reg->DDRC_TIMING3_VALUE);
+	printf("DDRC_TIMING4_VALUE    = %08x\n", reg->DDRC_TIMING4_VALUE);
+	printf("DDRC_TIMING5_VALUE    = %08x\n", reg->DDRC_TIMING5_VALUE);
+	printf("DDRC_AUTOSR_CNT_VALUE = %08x\n", reg->DDRC_AUTOSR_CNT_VALUE);
+	printf("DDRC_AUTOSR_EN_VALUE  = %08x\n", reg->DDRC_AUTOSR_EN_VALUE);
+	printf("DDRC_HREGPRO_VALUE    = %08x\n", reg->DDRC_HREGPRO_VALUE);
+	printf("DDRC_PREGPRO_VALUE    = %08x\n", reg->DDRC_PREGPRO_VALUE);
+	printf("DDRC_CGUC0_VALUE      = %08x\n", reg->DDRC_CGUC0_VALUE);
+	printf("DDRC_CGUC1_VALUE      = %08x\n", reg->DDRC_CGUC1_VALUE);
+	printf("DDRP_MEMCFG_VALUE     = %08x\n", reg->DDRP_MEMCFG_VALUE);
+	printf("DDRP_CL_VALUE         = %08x\n", reg->DDRP_CL_VALUE);
+	printf("DDRP_CWL_VALUE        = %08x\n", reg->DDRP_CWL_VALUE);
+	printf("DDR_MR0_VALUE         = %08x\n", reg->DDR_MR0_VALUE);
+	printf("DDR_MR1_VALUE         = %08x\n", reg->DDR_MR1_VALUE);
+	printf("DDR_MR2_VALUE         = %08x\n", reg->DDR_MR2_VALUE);
+	printf("DDR_MR3_VALUE         = %08x\n", reg->DDR_MR3_VALUE);
+	printf("DDR_MR10_VALUE        = %08x\n", reg->DDR_MR10_VALUE);
+	printf("DDR_MR11_VALUE        = %08x\n", reg->DDR_MR11_VALUE);
+	printf("DDR_MR63_VALUE        = %08x\n", reg->DDR_MR63_VALUE);
+	printf("DDR_CHIP_0_SIZE       = %08x\n", reg->DDR_CHIP_0_SIZE);
+	printf("DDR_CHIP_1_SIZE       = %08x\n", reg->DDR_CHIP_1_SIZE);
+	for(i = 0; i < 5; i++) {
+		printf("REMMAP_ARRAY[%d] = %08x\n", i, reg->REMMAP_ARRAY[i]);
+	}
+
+}
+
+void dump_generated_reg_struct(struct ddr_reg_value *reg)
+{
+	int i;
+
+	printf("{\n");
+	printf("	.id		       = 0x%08x,\n", reg->id);
+	printf("	.type		       = 0x%08x,\n", reg->type);
+	printf("	.freq		       = 0x%08x,\n", reg->freq);
+	printf("	.DDRC_CFG_VALUE        = 0x%08x,\n", reg->DDRC_CFG_VALUE);
+	printf("	.DDRC_CTRL_VALUE       = 0x%08x,\n", reg->DDRC_CTRL_VALUE);
+	printf("	.DDRC_DLMR_VALUE       = 0x%08x,\n", reg->DDRC_DLMR_VALUE);
+	printf("	.DDRC_DDLP_VALUE       = 0x%08x,\n", reg->DDRC_DDLP_VALUE);
+	printf("	.DDRC_MMAP0_VALUE      = 0x%08x,\n", reg->DDRC_MMAP0_VALUE);
+	printf("	.DDRC_MMAP1_VALUE      = 0x%08x,\n", reg->DDRC_MMAP1_VALUE);
+	printf("	.DDRC_REFCNT_VALUE     = 0x%08x,\n", reg->DDRC_REFCNT_VALUE);
+	printf("	.DDRC_TIMING1_VALUE    = 0x%08x,\n", reg->DDRC_TIMING1_VALUE);
+	printf("	.DDRC_TIMING2_VALUE    = 0x%08x,\n", reg->DDRC_TIMING2_VALUE);
+	printf("	.DDRC_TIMING3_VALUE    = 0x%08x,\n", reg->DDRC_TIMING3_VALUE);
+	printf("	.DDRC_TIMING4_VALUE    = 0x%08x,\n", reg->DDRC_TIMING4_VALUE);
+	printf("	.DDRC_TIMING5_VALUE    = 0x%08x,\n", reg->DDRC_TIMING5_VALUE);
+	printf("	.DDRC_AUTOSR_CNT_VALUE = 0x%08x,\n", reg->DDRC_AUTOSR_CNT_VALUE);
+	printf("	.DDRC_AUTOSR_EN_VALUE  = 0x%08x,\n", reg->DDRC_AUTOSR_EN_VALUE);
+	printf("	.DDRC_HREGPRO_VALUE    = 0x%08x,\n", reg->DDRC_HREGPRO_VALUE);
+	printf("	.DDRC_PREGPRO_VALUE    = 0x%08x,\n", reg->DDRC_PREGPRO_VALUE);
+	printf("	.DDRC_CGUC0_VALUE      = 0x%08x,\n", reg->DDRC_CGUC0_VALUE);
+	printf("	.DDRC_CGUC1_VALUE      = 0x%08x,\n", reg->DDRC_CGUC1_VALUE);
+	printf("	.DDRP_MEMCFG_VALUE     = 0x%08x,\n", reg->DDRP_MEMCFG_VALUE);
+	printf("	.DDRP_CL_VALUE         = 0x%08x,\n", reg->DDRP_CL_VALUE);
+	printf("	.DDRP_CWL_VALUE        = 0x%08x,\n", reg->DDRP_CWL_VALUE);
+	printf("	.DDR_MR0_VALUE         = 0x%08x,\n", reg->DDR_MR0_VALUE);
+	printf("	.DDR_MR1_VALUE         = 0x%08x,\n", reg->DDR_MR1_VALUE);
+	printf("	.DDR_MR2_VALUE         = 0x%08x,\n", reg->DDR_MR2_VALUE);
+	printf("	.DDR_MR3_VALUE         = 0x%08x,\n", reg->DDR_MR3_VALUE);
+	printf("	.DDR_MR10_VALUE        = 0x%08x,\n", reg->DDR_MR10_VALUE);
+	printf("	.DDR_MR11_VALUE        = 0x%08x,\n", reg->DDR_MR11_VALUE);
+	printf("	.DDR_MR63_VALUE        = 0x%08x,\n", reg->DDR_MR63_VALUE);
+	printf("	.DDR_CHIP_0_SIZE       = 0x%08x,\n", reg->DDR_CHIP_0_SIZE);
+	printf("	.DDR_CHIP_1_SIZE       = 0x%08x,\n", reg->DDR_CHIP_1_SIZE);
+	for(i = 0; i < 5; i++) {
+		printf("	.REMMAP_ARRAY[%d] = 0x%08x,\n", i, reg->REMMAP_ARRAY[i]);
+	}
+	printf("},\n");
+
+}
+
+
+int main(int argc, char *argv[])
+{
+	struct ddr_reg_value *generated_reg_values;
+	int ddr_nums = 0;
+	int i;
+
+	ddr_nums = init_supported_ddr();
+#ifdef CONFIG_DDR_TYPE_LPDDR2
+	lpddr2_creator_init();
+#endif
+
+#ifdef CONFIG_DDR_TYPE_LPDDR3
+	lpddr3_creator_init();
+#endif
+
+	generated_reg_values = malloc(ddr_nums * sizeof(struct ddr_reg_value));
+
+	create_supported_ddr_params(generated_reg_values);
+
+
+	printf("#ifndef __DDR_REG_VALUES_H__\n");
+	printf("#define __DDR_REG_VALUES_H__\n");
+	printf("#include <asm/ddr_innophy.h>\n");
+	printf("struct ddr_reg_value supported_ddr_reg_values[] = {\n");
+	for(i = 0; i < ddr_nums; i++) {
+		//dump_generated_reg(&generated_reg_values[i]);
+		dump_generated_reg_struct(&generated_reg_values[i]);
+	}
+	printf("};\n");
+	printf("#endif\n");
 }
