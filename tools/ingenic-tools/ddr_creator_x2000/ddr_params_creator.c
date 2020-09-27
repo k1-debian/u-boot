@@ -766,4 +766,6 @@ int main(int argc, char *argv[])
 	}
 	printf("};\n");
 	printf("#endif\n");
+
+	return 0;
 }
