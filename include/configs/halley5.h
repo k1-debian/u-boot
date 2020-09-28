@@ -160,7 +160,13 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
-#define BOOTARGS_COMMON "console=ttyS3,115200 mem=128M@0x0"
+#define CONFIG_BOOTARGS_MEM_INDEX	2	/*start from 1, position of the args mem=xxx@0x0*/
+#define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
+#define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
+#define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
+#define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
+
+#define BOOTARGS_COMMON "console=ttyS3,115200 mem=128M@0x0 "
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
@@ -519,7 +525,7 @@
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 
 #define CONFIG_SYS_MONITOR_LEN		(384 * 1024)
-#define CONFIG_SYS_MALLOC_LEN		(64 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(16 * 1024 * 1024)
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
 #define CONFIG_SYS_SDRAM_BASE		0x80000000 /* cached (KSEG0) address */

@@ -53,6 +53,7 @@ struct ddr_chip_info {
 
 enum {
 	VENDOR_WINBOND = 0x0,
+	VENDOR_ESMT    = 0x1,
 };
 enum {
 	TYPE_LPDDR2 = 0x0,

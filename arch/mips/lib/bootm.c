@@ -103,7 +103,22 @@ static void boot_jump_linux(bootm_headers_t *images)
 
 	/* we assume that the kernel is in place */
 	printf("\nStarting kernel ...\n\n");
-
+#ifdef CONFIG_BOOTARGS_AUTO_MODIFY
+	/*default environment*/
+#include <env_default.h>
+	unsigned long ram_size = (ulong)gd->ram_size >> 20;
+	if(gd->flags & GD_FLG_ENV_DEFAULT) {
+		/* 64M size ddr*/
+		if(ram_size == 64) {
+			sprintf(linux_argv[CONFIG_BOOTARGS_MEM_INDEX], CONFIG_BOOTARGS_MEM_64M);
+		} else if(ram_size == 128) {
+			sprintf(linux_argv[CONFIG_BOOTARGS_MEM_INDEX], CONFIG_BOOTARGS_MEM_128M);
+		} else if(ram_size == 256) {
+			sprintf(linux_argv[CONFIG_BOOTARGS_MEM_INDEX], CONFIG_BOOTARGS_MEM_256M);
+		} else {
+		}
+	}
+#endif
 	if (IMAGE_ENABLE_OF_LIBFDT && images->ft_len)
 		theKernel(-2, (ulong)images->ft_addr, 0, 0);
 	else
