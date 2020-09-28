@@ -562,7 +562,7 @@ void register_ddr_creator(struct ddr_creator_ops *ops)
 static void fill_reg_value(struct ddr_reg_value *reg, struct ddrc_reg *ddrc, struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 
-	reg->freq		= p->freq;
+	reg->h.freq		= p->freq;
 	reg->DDRC_CFG_VALUE	= ddrc->cfg.d32;
 	reg->DDRC_CTRL_VALUE	= ddrc->ctrl;
 	reg->DDRC_DLMR_VALUE	= ddrc->dlmr;
@@ -641,8 +641,8 @@ int create_one_ddr_params(struct ddr_chip_info *chip, struct ddr_reg_value *reg)
 	ddrp_config_creator(&ddrp,&ddr_params);
 
 	/* output */
-	reg->id = chip->id;
-	reg->type = chip->type;
+	reg->h.id = chip->id;
+	reg->h.type = chip->type;
 
 	fill_reg_value(reg, &ddrc, &ddrp, &ddr_params);
 
@@ -652,8 +652,8 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 {
 	int i;
 
-	printf("id		      = %08x\n", reg->id);
-	printf("type		      = %08x\n", reg->type);
+	printf("id		      = %08x\n", reg->h.id);
+	printf("type		      = %08x\n", reg->h.type);
 	printf("DDRC_CFG_VALUE        = %08x\n", reg->DDRC_CFG_VALUE);
 	printf("DDRC_CTRL_VALUE       = %08x\n", reg->DDRC_CTRL_VALUE);
 	printf("DDRC_DLMR_VALUE       = %08x\n", reg->DDRC_DLMR_VALUE);
@@ -695,9 +695,9 @@ void dump_generated_reg_struct(struct ddr_reg_value *reg)
 	int i;
 
 	printf("{\n");
-	printf("	.id		       = 0x%08x,\n", reg->id);
-	printf("	.type		       = 0x%08x,\n", reg->type);
-	printf("	.freq		       = 0x%08x,\n", reg->freq);
+	printf("	.h.id		       = 0x%08x,\n", reg->h.id);
+	printf("	.h.type		       = 0x%08x,\n", reg->h.type);
+	printf("	.h.freq		       = 0x%08x,\n", reg->h.freq);
 	printf("	.DDRC_CFG_VALUE        = 0x%08x,\n", reg->DDRC_CFG_VALUE);
 	printf("	.DDRC_CTRL_VALUE       = 0x%08x,\n", reg->DDRC_CTRL_VALUE);
 	printf("	.DDRC_DLMR_VALUE       = 0x%08x,\n", reg->DDRC_DLMR_VALUE);

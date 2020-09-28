@@ -307,10 +307,13 @@ extern unsigned int __ps_per_tck;
 #define DDR__ps(ps)   (ps)
 #define DDR__tck(tck) (tck * __ps_per_tck)
 
-struct ddr_reg_value {
+struct ddr_reg_header {
 	unsigned int id;	/*DDR ID: */
 	unsigned int type;	/*DDR type*/
 	unsigned int freq;	/*ddr freqency.*/
+};
+struct ddr_reg_value {
+	struct ddr_reg_header h;
 	unsigned int DDRC_CFG_VALUE;
 	unsigned int DDRC_CTRL_VALUE;
 	unsigned int DDRC_DLMR_VALUE;

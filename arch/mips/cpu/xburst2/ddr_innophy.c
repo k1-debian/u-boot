@@ -32,6 +32,7 @@
 #else
 #include "ddr_reg_data.h"
 #endif
+
 #include <asm/io.h>
 #include <asm/arch/clk.h>
 
@@ -76,31 +77,6 @@ static void dump_ddrc_register(void)
 	debug("DDRC_CGUC0          0x%x\n", ddr_readl(DDRC_CGUC0));
 	debug("DDRC_CGUC1          0x%x\n", ddr_readl(DDRC_CGUC1));
 
-	debug("#define timing1_tWL         %d\n", timing1_tWL);
-	debug("#define timing1_tWR         %d\n", timing1_tWR);
-	debug("#define timing1_tWTR        %d\n", timing1_tWTR);
-	debug("#define timing1_tWDLAT      %d\n", timing1_tWDLAT);
-
-	debug("#define timing2_tRL         %d\n", timing2_tRL);
-	debug("#define timing2_tRTP        %d\n", timing2_tRTP);
-	debug("#define timing2_tRTW        %d\n", timing2_tRTW);
-	debug("#define timing2_tRDLAT      %d\n", timing2_tRDLAT);
-
-	debug("#define timing3_tRP         %d\n", timing3_tRP);
-	debug("#define timing3_tCCD        %d\n", timing3_tCCD);
-	debug("#define timing3_tRCD        %d\n", timing3_tRCD);
-	debug("#define timing3_ttEXTRW     %d\n", timing3_ttEXTRW);
-
-	debug("#define timing4_tRRD        %d\n", timing4_tRRD);
-	debug("#define timing4_tRAS        %d\n", timing4_tRAS);
-	debug("#define timing4_tRC         %d\n", timing4_tRC);
-	debug("#define timing4_tFAW        %d\n", timing4_tFAW);
-
-	debug("#define timing5_tCKE        %d\n", timing5_tCKE);
-	debug("#define timing5_tXP         %d\n", timing5_tXP);
-	debug("#define timing5_tCKSRE      %d\n", timing5_tCKSRE);
-	debug("#define timing5_tCKESR      %d\n", timing5_tCKESR);
-	debug("#define timing5_tXS         %d\n", timing5_tXS);
 }
 
 static void dump_ddrp_register(void)
@@ -713,9 +689,9 @@ static void ddrc_post_init(void)
 void dump_generated_reg(struct ddr_reg_value *reg)
 {
 	int i;
-	printf("id		      = %x\n", reg->id);
-	printf("type		      = %x\n", reg->type);
-	printf("freq		      = %x\n", reg->freq);
+	printf("id		      = %x\n", reg->h.id);
+	printf("type		      = %x\n", reg->h.type);
+	printf("freq		      = %x\n", reg->h.freq);
 	printf("DDRC_CFG_VALUE        = %x\n", reg->DDRC_CFG_VALUE);
 	printf("DDRC_CTRL_VALUE       = %x\n", reg->DDRC_CTRL_VALUE);
 	printf("DDRC_DLMR_VALUE       = %x\n", reg->DDRC_DLMR_VALUE);
@@ -752,12 +728,12 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 
 }
 
-void get_ddr_params(void)
+#ifndef CONFIG_BURNER
+void get_ddr_params_normal(void)
 {
 	int found = 0;
 	int size = 0;
 	int i;
-
 	unsigned int burned_ddr_id = *(volatile unsigned int *)(0xb2401000 + 128);
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
@@ -774,7 +750,7 @@ void get_ddr_params(void)
 	} else {
 		for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 			global_reg_value = &supported_ddr_reg_values[i];
-			if(burned_ddr_id == global_reg_value->id) {
+			if(burned_ddr_id == global_reg_value->h.id) {
 				found = 1;
 				break;
 			}
@@ -787,6 +763,25 @@ void get_ddr_params(void)
 		printf("cound not found ddr params\n");
 	}
 
+
+}
+#else
+void get_ddr_params_burner(void)
+{
+	/* keep ddr_reg_value inc ddr_innophy.h
+	 * with ddr_registers the same
+	 * */
+	global_reg_value = (struct ddr_reg_value *)(g_ddr_param - (sizeof(struct ddr_reg_header)));
+}
+#endif
+
+void get_ddr_params(void)
+{
+#ifndef CONFIG_BURNER
+	get_ddr_params_normal();
+#else
+	get_ddr_params_burner();
+#endif
 	dump_generated_reg(global_reg_value);
 
 }
@@ -800,7 +795,8 @@ void sdram_init(void)
 	soc_ddr_init();
 	get_ddr_params();
 	type = get_ddr_type();
-	clk_set_rate(DDR, global_reg_value->freq);
+	clk_set_rate(DDR, global_reg_value->h.freq);
+
 	if(ddr_hook && ddr_hook->prev_ddr_init)
 		ddr_hook->prev_ddr_init(type);
 	rate = clk_get_rate(DDR);

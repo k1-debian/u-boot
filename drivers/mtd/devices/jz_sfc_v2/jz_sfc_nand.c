@@ -27,7 +27,6 @@
 #include "jz_sfc_common.h"
 #include "./nand_device/nand_common.h"
 #ifdef CONFIG_BURNER
-#include <cloner/cloner.h>
 
 static int burn_readback = 0;
 static char *readback_buf = NULL;
