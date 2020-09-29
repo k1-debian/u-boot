@@ -104,8 +104,18 @@
   #define CONFIG_BOOTARGS BOOTARGS_COMMON " init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw mtdparts=jz_sfc:256k(boot),2560k(kernel),12800k(root)"
 #elif defined(CONFIG_MTD_SFCNAND)
   #define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
-  #define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x300000 0x80600000 ;bootm 0x80600000"
+  #define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x400000 0x80600000 ;bootm 0x80600000"
 #endif /* CONFIG_SFC_NOR */
+
+#ifdef CONFIG_SPL_OS_BOOT
+  #if defined(CONFIG_SPL_SFC_NAND)
+    #define CONFIG_SPL_BOOTARGS BOOTARGS_COMMON " ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs ro"
+  #else
+	#error "not support config"
+  #endif
+  #define CONFIG_SPL_OS_NAME			"kernel"
+  #define CONFIG_SYS_SPL_ARGS_ADDR		CONFIG_SPL_BOOTARGS
+#endif
 /**
  * Drivers configuration.
  */
@@ -123,7 +133,9 @@
     #define CONFIG_NOR_MINOR_VERSION_NUMBER     0
     #define CONFIG_NOR_REVERSION_NUMBER         0
     #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
-    #define CONFIG_ENV_IS_IN_SFC_NOR
+    #ifdef CONFIG_ENV_IS_IN_SFC
+      #define CONFIG_ENV_IS_IN_SFC_NOR
+    #endif
   #elif defined(CONFIG_MTD_SFCNAND)
     #define CONFIG_SYS_NAND_SELF_INIT
     #define CONFIG_SFC_NAND_RATE    	100000000
@@ -141,7 +153,9 @@
     #define CONFIG_MTD_PARTITIONS
     #define MTDIDS_DEFAULT                  "nand0=nand"
     #define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),64M(rootfs),-(data)"
-    #define CONFIG_ENV_IS_IN_SFC_NAND
+    #ifdef CONFIG_ENV_IS_IN_SFC
+      #define CONFIG_ENV_IS_IN_SFC_NAND
+    #endif
   #endif
 #endif /*MTD_SFCNOR || MTD SFCNAND*/
 
@@ -195,7 +209,7 @@
 #define CONFIG_SYS_CBSIZE 1024 /* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 
-#define CONFIG_SYS_MONITOR_LEN		((256 * 1024) - CONFIG_SPL_PAD_TO)
+#define CONFIG_SYS_MONITOR_LEN		((512 * 1024) - CONFIG_SPL_PAD_TO)
 #define CONFIG_SYS_MALLOC_LEN		(32 * 1024 * 1024)
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
