@@ -290,6 +290,7 @@
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
 
+#define CONFIG_SPL_JZ_MSC_BUS_8BIT
 #define CONFIG_JZ_MMC_MSC0_PD   //set gpio
 /*#define CONFIG_MMC_TRACE		// only for DEBUG*/
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
@@ -321,6 +322,7 @@
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT
 
 #define CONFIG_JZ_MMC_MSC2_PE   //set gpio
 /*#define CONFIG_MMC_TRACE		// only for DEBUG*/
