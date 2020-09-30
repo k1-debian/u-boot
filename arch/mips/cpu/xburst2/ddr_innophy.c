@@ -29,8 +29,6 @@
 #include <ddr/ddr_common.h>
 #ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
-#else
-#include "ddr_reg_data.h"
 #endif
 
 #include <asm/io.h>
@@ -771,7 +769,7 @@ void get_ddr_params_burner(void)
 	/* keep ddr_reg_value inc ddr_innophy.h
 	 * with ddr_registers the same
 	 * */
-	global_reg_value = (struct ddr_reg_value *)(g_ddr_param - (sizeof(struct ddr_reg_header)));
+	global_reg_value = g_ddr_param;
 }
 #endif
 
@@ -782,7 +780,7 @@ void get_ddr_params(void)
 #else
 	get_ddr_params_burner();
 #endif
-	dump_generated_reg(global_reg_value);
+//	dump_generated_reg(global_reg_value);
 
 }
 void sdram_init(void)

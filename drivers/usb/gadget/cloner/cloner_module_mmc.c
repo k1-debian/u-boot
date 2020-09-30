@@ -4,11 +4,17 @@
 #include <mmc.h>
 #include <cloner/cloner.h>
 #include "burn_printf.h"
-#include "cloner_mmc.c"
 
 #define MMC_BYTE_PER_BLOCK 512
 
 struct mmc_param *mmc_args;
+struct ddr_param *ddr_args;
+
+static void mmc_add_info_to_flash(char *buf)
+{
+	if(ddr_args->ddr_type > 0)
+		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
+}
 
 static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 {
@@ -100,11 +106,13 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 
 int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
-	int dev = sub_type;
+	u32 n;
 	u32 blk = (cloner->cmd->write.partition + cloner->cmd->write.offset)/MMC_BYTE_PER_BLOCK;
 	u32 cnt = (cloner->cmd->write.length + MMC_BYTE_PER_BLOCK - 1)/MMC_BYTE_PER_BLOCK;
+	int dev = sub_type;
 	void *addr = (void *)cloner->write_req->buf;
-	u32 n;
+	uint32_t write_crc = cloner->cmd->write.crc;
+	uint32_t read_crc = 0;
 
 	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
@@ -121,6 +129,11 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 
 	BURNNER_PRI("MMC write: dev # %d, block # %d, count %d ... ", dev, blk, cnt);
 
+	if(blk == 0){
+		mmc_add_info_to_flash(addr);
+		write_crc = local_crc32(0xffffffff, addr, cloner->cmd->write.length);
+	}
+
 	n = mmc->block_dev.block_write(dev, blk, cnt, addr);
 	BURNNER_PRI("%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 
@@ -129,15 +142,15 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 
 	if (debug_args->write_back_chk) {
 		memset(addr, 0, cloner->cmd->write.length);
-		mmc->block_dev.block_read(dev, blk, cnt, addr);
+		n = mmc->block_dev.block_read(dev, blk, cnt, addr);
 		BURNNER_PRI("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 		if (n != cnt)
 			return -EIO;
 
-		uint32_t tmp_crc = local_crc32(0xffffffff,addr,cloner->cmd->write.length);
-		BURNNER_PRI("%d blocks check: %s\n",n,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
-		if (cloner->cmd->write.crc != tmp_crc) {
-			printf("src_crc32 = %08x , dst_crc32 = %08x\n",cloner->cmd->write.crc,tmp_crc);
+		read_crc = local_crc32(0xffffffff, addr, cloner->cmd->write.length);
+		BURNNER_PRI("%d blocks check: %s\n", n, (write_crc == read_crc) ? "OK" : "ERROR");
+		if (write_crc != read_crc) {
+			printf("src_crc32 = %08x , dst_crc32 = %08x\n", write_crc, read_crc);
 			return -EIO;
 		}
 	}
@@ -146,6 +159,10 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 
 int clmd_mmc_read(struct cloner *cloner, int sub_type, void *ops_data)
 {
+	u32 n;
+	u32 blk = (cloner->cmd->read.partition + cloner->cmd->read.offset)/MMC_BYTE_PER_BLOCK;
+	u32 cnt = (cloner->cmd->read.length + MMC_BYTE_PER_BLOCK - 1)/MMC_BYTE_PER_BLOCK;
+	void *buf = cloner->read_req->buf;
 	int dev = sub_type;
 
 	struct mmc *mmc = find_mmc_device(dev);
@@ -160,23 +177,14 @@ int clmd_mmc_read(struct cloner *cloner, int sub_type, void *ops_data)
 		return -EPERM;
 	}
 
-	realloc_buf(cloner, ((cloner->cmd->read.length + 0x200) & (~(0x200 - 1))));
-	return mmc_read_x(sub_type, cloner->read_req->buf,
-			cloner->cmd->read.partition + cloner->cmd->read.offset,
-			cloner->cmd->read.length);
+	realloc_buf(cloner, cnt * MMC_BYTE_PER_BLOCK);
+	n = mmc->block_dev.block_read(dev, blk, cnt, buf);
+	BURNNER_PRI("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
+	if (n != cnt)
+		return -EIO;
+	return 0;
 }
 
-int clmd_mmc_check(struct cloner *cloner, int sub_type, void *ops_data)
-{
-	unsigned int buf[128];
-	int ret = 0, check_buf = 0;
-	ret = mmc_read_x(sub_type, buf, cloner->cmd->check.partition + cloner->cmd->check.offset, MMC_BYTE_PER_BLOCK);
-	check_buf = buf[0];
-	if (!ret && check_buf == cloner->cmd->check.check)
-		return 0;
-	else
-		return -EINVAL;
-}
 
 int cloner_mmc_init(void)
 {
@@ -191,7 +199,7 @@ int cloner_mmc_init(void)
 	clmd->write = clmd_mmc_write;
 	clmd->init = clmd_mmc_init;
 	clmd->info = NULL;
-	clmd->check = clmd_mmc_check;
+	clmd->check = NULL;
 	clmd->data = NULL;
 	printf("cloner mmc register\n");
 	return register_cloner_moudle(clmd);

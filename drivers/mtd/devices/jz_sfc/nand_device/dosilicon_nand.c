@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define DOSILICON_DEVICES_NUM         3
+#define DOSILICON_DEVICES_NUM         4
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -73,12 +73,32 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[3] = {
+	/*DS35X1GAXXX-1.8V*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 70,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x71, "DS35X1GAXXX", &dosilicon_param[0]),
+	DEVICE_ID_STRUCT(0x71, "DS35Q1GAXXX", &dosilicon_param[0]),
 	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[1]),
 	DEVICE_ID_STRUCT(0xF2, "DS35Q2GBXXX", &dosilicon_param[2]),
+	DEVICE_ID_STRUCT(0x21, "DS35M1GAXXX", &dosilicon_param[3]),
 };
 
 static void dosilicon_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -134,6 +154,7 @@ retry:
 		goto retry;
 
 	switch(device_id) {
+		case 0x21:
 		case 0x71:
 		case 0x72:
 			switch((ecc_status >> 0x4) & 0x3) {
@@ -177,6 +198,7 @@ static void dosilicon_single_read(struct sfc_transfer *transfer, struct flash_op
 
 	switch(device_id) {
 	    case 0x71:
+	    case 0x21:
 			break;
 	    case 0x72:
 	    case 0xF2:
@@ -214,6 +236,7 @@ static void dosilicon_quad_read(struct sfc_transfer *transfer, struct flash_oper
 
 	switch(device_id) {
 	    case 0x71:
+	    case 0x21:
 			break;
 	    case 0x72:
 	    case 0xF2:
@@ -251,6 +274,7 @@ static void dosilicon_single_load(struct sfc_transfer *transfer, struct flash_op
 
 	switch(device_id) {
 		case 0x71:
+		case 0x21:
 			break;
 		case 0x72:
 		case 0xF2:

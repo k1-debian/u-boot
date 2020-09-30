@@ -23,7 +23,7 @@ int sfc_erase()
 	return ret;
 }
 
-static void add_sfc_nor_params_to_flash(unsigned char *buf)
+static void sfcnor_add_info_to_flash(unsigned char *buf)
 {
 	struct legacy_params *l_params;
 	int spl_version;
@@ -46,6 +46,9 @@ static void add_sfc_nor_params_to_flash(unsigned char *buf)
 			printf("spl uboot version error !\n");
 			break;
 	}
+
+	if(ddr_args->ddr_type > 0)
+		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
 
 	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
 		*(volatile unsigned int *)(buf + 512) = 0x1111;
@@ -125,7 +128,7 @@ int sfc_program(struct cloner *cloner)
 	}
 
 	if (offset == 0 && spi_args->download_params != 0) {
-		add_sfc_nor_params_to_flash(addr);
+		sfcnor_add_info_to_flash(addr);
 	}
 	ret = sfc_nor_write(offset, len, addr);
 	BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,

@@ -347,7 +347,7 @@ struct ddr_reg_value {
 	unsigned int REMMAP_ARRAY[5];
 };
 
-
+extern struct ddr_reg_value *g_ddr_param;
 
 struct jzsoc_ddr_hook
 {

@@ -197,12 +197,16 @@ struct nand_param{
 	MTDPartitionInfo MTDPartInfo;
 	nand_flash_param nand_params[0];
 };
+struct ddr_param{
+	int ddr_type;
+};
 
 extern struct policy_param	*policy_args;
 extern struct debug_param	*debug_args;
 extern struct spi_param		*spi_args;
 extern struct mmc_param		*mmc_args;
 extern struct nand_param	*nand_args;
+extern struct ddr_param		*ddr_args;
 /*end*/
 
 union cmd {
@@ -406,7 +410,7 @@ struct cloner_moudle {
 	uint32_t medium;
 	int ops;
 	struct list_head node;
-	int (*init)(struct cloenr *cloner, void *args, void* mdata);
+	int (*init)(struct cloner *cloner, void *args, void* mdata);
 	int (*info)(struct cloner *cloner);
 	int (*write)(struct cloner *cloner, int sub_ops, void* mdata);
 	int (*read)(struct cloner *cloner, int sub_ops, void* mdata);

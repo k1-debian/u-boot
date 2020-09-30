@@ -207,8 +207,8 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 4096,
 
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
+		.tSETUP  = 20,
+		.tHOLD   = 20,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 

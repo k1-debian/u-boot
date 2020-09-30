@@ -1,7 +1,9 @@
 #include <config.h>
 #include <common.h>
+#include <ddr/ddr_common.h>
+
 DECLARE_GLOBAL_DATA_PTR;
-struct ddr_registers *g_ddr_param = 0;
+struct ddr_reg_value *g_ddr_param = 0;
 struct param_info
 {
 	unsigned int magic_id;

@@ -209,6 +209,7 @@ int i2c_program(struct cloner *cloner)
 struct ParameterInfo	*global_args;
 struct policy_param	*policy_args;
 struct debug_param	*debug_args;
+struct ddr_param	*ddr_args;
 struct ParameterInfo	*m = NULL;
 
 void handle_args(struct usb_ep *ep,struct usb_request *req)
@@ -219,35 +220,36 @@ void handle_args(struct usb_ep *ep,struct usb_request *req)
 
 	while(1)
 	{
-		if(((int)p%4==0) && ((char*)p>=(char*)global_args)
-				&& ((char*)p<((char*)global_args+ARGS_LEN)) && (p->magic != 0))
-		{
-			printf("magic=");
-			for(i=3;i>=0;i--)
-				printf("%c",((char*)&p->magic)[i]);
-			printf("\n");
-			switch(p->magic)
-			{
-				case MAGIC_POLICY:
-					policy_args = p->data;
-					break;
-				case MAGIC_DEBUG:
-					debug_args = p->data;
-					L.enable = debug_args->log_enabled;
-					break;
-				case MAGIC_SFC:
-				case MAGIC_MMC:
-				case MAGIC_NAND:
-					m = p;
-					break;
-				default:
-					printf("Unknown magic!!!\n");
-					break;
-			}
-		}
-		else
-		{
+		if(((int)p % 4 != 0) || (p->magic == 0)
+			|| ((char*)p < (char*)global_args)
+			|| ((char*)p > ((char*)global_args + ARGS_LEN))) {
 			break;
+		}
+
+		printf("magic=");
+		for(i=3; i>=0; i--)
+			printf("%c", ((char*)&p->magic)[i]);
+		printf("\n");
+		switch(p->magic)
+		{
+			case MAGIC_POLICY:
+				policy_args = p->data;
+				break;
+			case MAGIC_DEBUG:
+				debug_args = p->data;
+				L.enable = debug_args->log_enabled;
+				break;
+			case MAGIC_DDR:
+				ddr_args = p->data;
+				break;
+			case MAGIC_SFC:
+			case MAGIC_MMC:
+			case MAGIC_NAND:
+				m = p;
+				break;
+			default:
+				printf("Unknown magic!!!\n");
+				break;
 		}
 		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t) * 2);
 	}
