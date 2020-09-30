@@ -26,9 +26,8 @@
 #include <asm/arch/spinand.h>
 #include "jz_sfc_common.h"
 #include "./nand_device/nand_common.h"
-#ifdef CONFIG_BURNER
-#include <cloner/cloner.h>
 
+#ifdef CONFIG_BURNER
 static int burn_readback = 0;
 static char *readback_buf = NULL;
 #endif
@@ -507,7 +506,7 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 				break;
 			}
 
-			ret = buf_compare(buf, readback_buf, wlen, to);
+			ret = buf_compare(buf, readback_buf, wlen, (uint32_t)to);
 			if(ret != 0) {
 				printf("%s %s %d: burn read back compare error!\n",
 						__FILE__, __func__, __LINE__);

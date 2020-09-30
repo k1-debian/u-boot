@@ -4,6 +4,7 @@
 static char *readbuf = NULL;
 extern struct ParameterInfo	*global_args;
 struct spi_param *spi_args;
+struct ddr_param *ddr_args;
 
 #ifdef CONFIG_MTD_SFCNOR
 #include "cloner_sfcnor.c"

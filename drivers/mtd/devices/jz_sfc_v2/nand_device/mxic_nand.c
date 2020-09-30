@@ -5,7 +5,7 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
-#define MXIC_DEVICES_NUM         3
+#define MXIC_DEVICES_NUM         2
 #define MXIC_CMD_GET_ECC	0x7c
 #define THOLD	    4
 #define TSETUP	    4
@@ -13,7 +13,6 @@
 #define TSHSL_W	    100
 
 #define TRD	    70
-#define TRD_14AC    25
 #define TPP	    600
 #define TBE	    4
 
@@ -60,33 +59,11 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
-	[2] = {
-	/*MX35LF2G14AC*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 2048,
-
-		.tHOLD  = THOLD,
-		.tSETUP = TSETUP,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = TRD_14AC,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.plane_select = 1,
-		.ecc_max = 0,
-		.need_quad = 1,
-	},
-
 };
 
 static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x12, "MX35LF1GE4AB", &mxic_param[0]),
 	DEVICE_ID_STRUCT(0x22, "MX35LF2GE4AB", &mxic_param[1]),
-	DEVICE_ID_STRUCT(0x20, "MX35LF2G14AC", &mxic_param[2]),
 };
 
 
@@ -100,7 +77,6 @@ static cdt_params_t *mxic_get_cdt_params(struct sfc_flash *flash, uint8_t device
 	switch(device_id) {
 	    case 0x12:
 	    case 0x22:
-	    case 0x20:
 		    break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -166,10 +142,6 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 					pr_err("it is flash Unknown state, device_id: 0x%02x\n", device_id);
 					ret = -EIO;
 			}
-			break;
-
-		case 0x20:
-			ret = 0;
 			break;
 		default:
 			pr_err("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);

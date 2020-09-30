@@ -96,7 +96,7 @@ int spinand_program(struct cloner *cloner)
 	if (pt_index < 0)
 		return -EIO;
 	if (startaddr==0 && spi_args->download_params != 0) {
-		add_information_to_spl(databuf);
+		sfcnand_add_info_to_flash(databuf);
 	}
 
 	if ((partition->manager_mode == MTD_MODE) || (partition->manager_mode == MTD_D_MODE)) {
@@ -196,16 +196,19 @@ out:
 }
 /****************************************************************************************
  * copy spinand information from burner to u-boot-with-spl.bin
- * char *databuf:u-boot-with-spl.bin date pointer
+ * char *buf:u-boot-with-spl.bin data pointer
  * in function :
  * param is global variable of struct nand_param_from_burner this struct is information in spinand
  * **************************************************************************************/
-void add_information_to_spl(char *databuf)
+void sfcnand_add_info_to_flash(char *buf)
 {
-	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfcnand_burner_param) - 4);
-	memcpy(databuf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, bp.partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
+	memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfcnand_burner_param) - 4);
+	memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, bp.partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
-	if(*(volatile unsigned int *)(databuf + 512) == 0 || *(volatile unsigned int *)(databuf + 512) > 65535)
-		*(volatile unsigned int *)(databuf + 512) = 0x1111;
+	if(ddr_args->ddr_type > 0)
+		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
+
+	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
+		*(volatile unsigned int *)(buf + 512) = 0x1111;
 }
 #endif
