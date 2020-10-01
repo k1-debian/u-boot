@@ -1,6 +1,5 @@
  /*
- * Copyright (c) 2016 Ingenic Semiconductor Co.,Ltd
- * Author: cxtan <chenxi.tan@ingenic.cn>
+ * Copyright (c) 2020 Ingenic Semiconductor Co.,Ltd
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,7 +17,7 @@
  * MA 02111-1307 USA
  */
 #ifndef __HALLEY5__
-#define	__HALLEY5__
+#define __HALLEY5__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -643,9 +642,4 @@
 #define CONFIG_MBR_P3_TYPE 	fat
 #endif
 
-
-/* Wrong keys. */
-#define CONFIG_GPIO_RECOVERY           GPIO_PB(11)
-#define CONFIG_GPIO_RECOVERY_ENLEVEL   0
-
-#endif/*END OF __ZEBRA__*/
+#endif /*END OF __ZEBRA__*/

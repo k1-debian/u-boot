@@ -88,6 +88,7 @@ void board_nand_init(void)
 
 int board_eth_init(bd_t *bis)
 {
+#ifdef CONFIG_NET_X2000_V12
 	int rv;
 #ifndef  CONFIG_USB_ETHER
 	/* reset grus DM9000 */
@@ -96,6 +97,9 @@ int board_eth_init(bd_t *bis)
 	rv = usb_eth_initialize(bis);
 #endif
 	return rv;
+#else
+	return 0;
+#endif	/* CONFIG_NET_X2000_V12 */
 }
 
 #ifdef CONFIG_SPL_NOR_SUPPORT
