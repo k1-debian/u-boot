@@ -6,6 +6,7 @@
 #include "burn_printf.h"
 
 #define MMC_BYTE_PER_BLOCK 512
+#define SPL_CODE_START_ADDRESS 0x4400
 
 struct mmc_param *mmc_args;
 struct ddr_param *ddr_args;
@@ -13,7 +14,7 @@ struct ddr_param *ddr_args;
 static void mmc_add_info_to_flash(char *buf)
 {
 	if(ddr_args->ddr_type > 0)
-		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
+		*(volatile unsigned int *)(buf + SPL_CODE_START_ADDRESS + 128) = ddr_args->ddr_type;
 }
 
 static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
