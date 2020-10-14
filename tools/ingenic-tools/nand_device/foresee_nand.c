@@ -2,13 +2,15 @@
 #include "nand_common.h"
 
 #define FS_MID			    0xCD
-#define FS_NAND_DEVICD_COUNT	    2
+#define FS_NAND_DEVICD_COUNT	    3
 
 static unsigned char fs_xaw[] = {0x5, 0x6,};
+static unsigned char fs_xaw1[] = {0x2};
 
 static struct device_struct device[] = {
 	DEVICE_STRUCT(0xA1, 2048, 2, 4, 3, 2, fs_xaw),
 	DEVICE_STRUCT(0xB1, 2048, 2, 4, 3, 2, fs_xaw),
+	DEVICE_STRUCT(0xEB, 2048, 2, 4, 3, 1, fs_xaw1),
 };
 
 static struct nand_desc fs_nand = {
