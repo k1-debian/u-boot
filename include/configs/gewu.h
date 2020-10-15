@@ -380,6 +380,7 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE		1
 #define CONFIG_SYS_NAND_BASE			0xb3441000
 #define CONFIG_SYS_MAXARGS			16
+/* #define CONFIG_NAND_BUILTIN_PARAMS */
 
 /* sfc nand env config */
 #define CONFIG_MTD_DEVICE
