@@ -783,6 +783,12 @@ void get_ddr_params(void)
 //	dump_generated_reg(global_reg_value);
 
 }
+
+unsigned int get_ddr_size(void)
+{
+	return (global_reg_value->DDR_CHIP_0_SIZE) >> 20;
+}
+
 void sdram_init(void)
 {
 	enum ddr_type type;

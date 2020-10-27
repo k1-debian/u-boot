@@ -46,6 +46,9 @@ ifndef CONFIG_SPL_LIBCOMMON_SUPPORT
 COBJS-y += spl_printf.o
 endif
 COBJS-$(CONFIG_GPT_TAB_BUILT_IN) += spl_gpt_partition.o
+
+COBJS-$(CONFIG_SPL_AUTO_PROBE_ARGS_MEM) += spl_auto_args_mem.o
+
 endif
 
 COBJS	:= $(sort $(COBJS-y))

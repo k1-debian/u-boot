@@ -73,19 +73,21 @@
 #define CONFIG_DDR_HOST_CC
 /* #define CONFIG_DDR_TYPE_DDR3 */
 #define CONFIG_DDR_TYPE_LPDDR3
-/*#define CONFIG_DDR_TYPE_LPDDR2*/
+#define CONFIG_DDR_TYPE_LPDDR2
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 /*#define CONFIG_DDR3_TSD34096M1333C9_E*/
 
 #ifdef CONFIG_DDR_TYPE_LPDDR2
-#define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA
-	/* #define CONFIG_LPDDR2_AD210032F_AB_FPGA */
+  /* #define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA */
+  /* #define CONFIG_LPDDR2_AD210032F_AB_FPGA */
+  #define CONFIG_LPDDR2_W97BV6MK
+  #define CONFIG_LPDDR2_W97BV6MK_MEM_FREQ		500000000
 #endif
 
 #ifdef CONFIG_DDR_TYPE_DDR3
-	#define CONFIG_DDR3_TSD34096M1333C9_E_FPGA
+  #define CONFIG_DDR3_TSD34096M1333C9_E_FPGA
 #endif
 
 #ifdef CONFIG_DDR_TYPE_LPDDR3
@@ -470,11 +472,13 @@
 
 /* boot args mem define
  */
-#ifdef CONFIG_RMEM_32M
-#define ARGS_MEM "mem=96M@0x0 rmem=32M@0x6000000"
-#else
-#define ARGS_MEM "mem=128M@0x0"
+#define CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+#define ARGS_MEM_RESERVED "[this string is reserved for probe mem size]"
+
+#ifndef CONFIG_RMEM_MB
+#define CONFIG_RMEM_MB 0
 #endif
+
 
 /* boot args init program
  */
@@ -536,7 +540,7 @@
 #define CONFIG_ARGS_EXTRA ""
 #endif
 
-#define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " ARGS_MEM " " CONFIG_ARGS_EXTRA
+#define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " ARGS_MEM_RESERVED " " CONFIG_ARGS_EXTRA
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 #define CONFIG_SPL_OS_BOOT

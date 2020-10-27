@@ -84,6 +84,8 @@ __weak char* spl_board_process_bootargs(char *arg)
 	return arg;
 }
 
+extern char* spl_board_process_mem_bootargs(char *arg);
+
 void spl_parse_image_header(const struct image_header *header)
 {
 	u32 header_size = sizeof(struct image_header);
@@ -267,7 +269,9 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 
 		cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
 		cmdargs = spl_board_process_bootargs(cmdargs);
-
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+		cmdargs = spl_board_process_mem_bootargs(cmdargs);
+#endif
 		debug("get cmdargs: %s.\n", cmdargs);
 		jump_to_image_linux((void *)cmdargs);
 #endif
