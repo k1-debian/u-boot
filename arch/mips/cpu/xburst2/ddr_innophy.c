@@ -122,37 +122,32 @@ static void mem_remap(void)
 static enum ddr_type get_ddr_type(void)
 {
 	int type;
-	ddrc_cfg_t ddrc_cfg;
-	ddrc_cfg.d32 = global_reg_value->DDRC_CFG_VALUE;
-	switch(ddrc_cfg.b.TYPE){
-	case 3:
-		type = LPDDR;
-		debug("DDR type is : LPDDR\n");
-		break;
-	case 4:
-		type = DDR2;
-		debug("DDR type is : DDR2\n");
-		break;
-	case 5:
-		type = LPDDR2;
-		debug("DDR type is : LPDDR2\n");
-		break;
-	case 6:
-		type = DDR3;
-		debug("DDR type is : DDR3\n");
-		break;
-	case 7:
-		type = LPDDR3;
-		debug("DDR type is : LPDDR3\n");
-		break;
-	default:
-		type = UNKOWN;
-		debug("unsupport ddr type!\n");
-		ddr_hang();
+
+	type = global_reg_value->h.type;
+	switch(global_reg_value->h.type){
+
+		case DDR3:
+			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
+		case LPDDR:
+			printf("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
+			break;
+		case LPDDR2:
+			printf("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
+			break;
+		case LPDDR3:
+			printf("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
+			break;
+		case DDR2:
+			printf("DDR: %s type is : DDR2\n", global_reg_value->h.name);
+			break;
+		default:
+			type = UNKOWN;
+			printf("unsupport ddr type!\n");
+			ddr_hang();
 	}
+
 	return type;
 }
-
 #if 0
 static void ddrc_reset_phy(void)
 {
@@ -524,40 +519,6 @@ void ddrc_dfi_init(enum ddr_type type)
 
 	switch(type) {
 	case LPDDR2:
-#if 0
-#define DDRC_LMR_MR(n)										\
-		DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
-			((DDR_MR##n##_VALUE & 0xff) << 24) |						\
-			(((DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
-		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
-		mdelay(1);
-#undef DDRC_LMR_MR
-		break;
-#endif
-#if 0
-	case DDR3:
-#define DDRC_LMR_MR(n)								\
-		DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
-		((DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |	\
-		(((DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
-
-		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR1
-		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
-		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
-		ddr_writel(DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
-#undef DDRC_LMR_MR
-		break;
-#endif
-	case LPDDR3:
 #define DDRC_LMR_MR(n)                                                          \
                 global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
 		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |                           \
@@ -582,6 +543,8 @@ void ddrc_dfi_init(enum ddr_type type)
 		((v & 0xff) << 24)  |                           		 \
 		(((v >> 8) & 0xff) << (16))
 
+		/* TODO: Force disable autosr. */
+		global_reg_value->DDRC_AUTOSR_EN_VALUE = 0;
 		if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
 			ddr_writel(DDRC_LMR_MRW(0x092a), DDRC_LMR);
 			mdelay(1);
@@ -635,9 +598,28 @@ void ddrc_dfi_init(enum ddr_type type)
 			mdelay(1);
 		}
 #endif
-
-
 #undef DDRC_LMR_MR
+
+		break;
+
+	case LPDDR3:
+#define DDRC_LMR_MR(n)                                                          \
+                global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
+		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |                           \
+		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
+		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11
+		mdelay(1);
+
 		break;
 
 	default:
@@ -687,6 +669,7 @@ static void ddrc_post_init(void)
 void dump_generated_reg(struct ddr_reg_value *reg)
 {
 	int i;
+	printf("name		      = %s\n", reg->h.name);
 	printf("id		      = %x\n", reg->h.id);
 	printf("type		      = %x\n", reg->h.type);
 	printf("freq		      = %x\n", reg->h.freq);
@@ -754,14 +737,6 @@ void get_ddr_params_normal(void)
 			}
 		}
 	}
-
-	if(found) {
-		printf("found ddr params with id: %x\n", burned_ddr_id);
-	} else {
-		printf("cound not found ddr params\n");
-	}
-
-
 }
 #else
 void get_ddr_params_burner(void)
@@ -780,7 +755,7 @@ void get_ddr_params(void)
 #else
 	get_ddr_params_burner();
 #endif
-//	dump_generated_reg(global_reg_value);
+	//dump_generated_reg(global_reg_value);
 
 }
 

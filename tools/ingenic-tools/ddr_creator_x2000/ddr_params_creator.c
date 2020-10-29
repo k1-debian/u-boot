@@ -643,6 +643,7 @@ int create_one_ddr_params(struct ddr_chip_info *chip, struct ddr_reg_value *reg)
 	/* output */
 	reg->h.id = chip->id;
 	reg->h.type = chip->type;
+	memcpy(reg->h.name, chip->name, sizeof(reg->h.name));
 
 	fill_reg_value(reg, &ddrc, &ddrp, &ddr_params);
 
@@ -695,6 +696,7 @@ void dump_generated_reg_struct(struct ddr_reg_value *reg)
 	int i;
 
 	printf("{\n");
+	printf("	.h.name		       = \"%s\",\n", reg->h.name);
 	printf("	.h.id		       = 0x%08x,\n", reg->h.id);
 	printf("	.h.type		       = 0x%08x,\n", reg->h.type);
 	printf("	.h.freq		       = 0x%08x,\n", reg->h.freq);
