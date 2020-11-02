@@ -536,7 +536,7 @@ void ddrc_dfi_init(enum ddr_type type)
 		ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11
 		mdelay(1);
 
-#ifdef CONFIG_LPDDR2_W97BV6MKX
+#ifdef CONFIG_LPDDR2_W97BV6MK
 
 #define DDRC_LMR_MRW(v)                                                          \
                 global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		 \

@@ -576,10 +576,16 @@ static void jz_gmac_phy_reset(void)
 #ifdef CONFIG_GMAC0
 	*(volatile unsigned int *)0xb00102a4 = CONFIG_GMAC_CRLT_PORT_PINS;
 	*(volatile unsigned int *)0xb00102b4 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb0010288 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb0010298 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb00102e4 = CONFIG_GMAC_CRLT_PORT_PINS;
 	clk_id = MACTX0;
 #else
 	*(volatile unsigned int *)0xb00101a4 = CONFIG_GMAC_CRLT_PORT_PINS;
 	*(volatile unsigned int *)0xb00101b4 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb0010188 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb0010198 = CONFIG_GMAC_CRLT_PORT_PINS;
+	*(volatile unsigned int *)0xb00101e4 = CONFIG_GMAC_CRLT_PORT_PINS;
 	clk_id = MACTX1;
 #endif
 	clk_set_rate(clk_id, 125000000);
