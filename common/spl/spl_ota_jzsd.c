@@ -16,6 +16,7 @@ struct nv_flags {
     unsigned int step;
     unsigned int start;
     unsigned int finish;
+	unsigned int needfullpkg;
 };
 
 static struct jzsd_ota_ops *ota_ops = NULL;
