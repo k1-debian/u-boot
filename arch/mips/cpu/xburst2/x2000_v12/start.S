@@ -1,5 +1,5 @@
 /*
- * Startup Code for MIPS32 XBURST M200 CPU-core
+ * Startup Code for MIPS32 XBURST2 X2000 CPU-core
  *
  * Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
  *

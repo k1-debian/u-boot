@@ -1,5 +1,5 @@
 /*
- * X2000 common routines
+ * M300 common routines
  *
  * Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
@@ -125,16 +125,6 @@ void board_init_f(ulong dummy)
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
 #else
-#if defined(CONFIG_CMD_BURN) && defined(M300)
-#define EFUSE_STATUS    	0xb3540008
-#define BOOT_MODE       	0xb2401800
-#define CHANGE_LENGTH   	0xb2400100
-#define CHANGE_LENGTH_SIZE      512 * 1024
-	writel(readl(EFUSE_STATUS), BOOT_MODE);
-	debug("EFUSE_STATUS=%x\n", readl(BOOT_MODE));
-	writel(CHANGE_LENGTH_SIZE, CHANGE_LENGTH);
-	debug("SPL_SIZE=%x\n", readl(CHANGE_LENGTH));
-#endif
 	debug("run start1 firmware finished\n");
 	return;
 #endif

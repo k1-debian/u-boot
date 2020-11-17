@@ -1,5 +1,5 @@
 /*
- * x2000 clock common interface
+ * M300 clock common interface
  *
  * Copyright (C) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>

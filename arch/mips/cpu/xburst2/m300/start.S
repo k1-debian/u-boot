@@ -1,5 +1,5 @@
 /*
- * Startup Code for MIPS32 XBURST M200 CPU-core
+ * Startup Code for MIPS32 XBURST2 M300 CPU-core
  *
  * Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
  *
@@ -107,11 +107,7 @@ _start:
 	mtc0	t0, CP0_CAUSE
 
 init_caches:
-#if defined(CONFIG_M300) && defined(CONFIG_CMD_BURN)
-        li      $2, 2                   // cacheable for kseg0 access
-#else
         li      $2, 3                   // cacheable for kseg0 access
-#endif
         mtc0    $2, $16                 // CP0_CONFIG
         nop
 
