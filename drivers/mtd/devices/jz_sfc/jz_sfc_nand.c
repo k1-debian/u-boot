@@ -494,16 +494,16 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 			}
 			memset(readback_buf, 0, wlen);
 			ret = jz_sfc_nand_read(flash, pageaddr, columnaddr, readback_buf, wlen);
-			if(ret != 0) {
+			if(ret < 0) {
 				printf("%s %s %d: jz_sfc_nand_read error, ret = %d, \
 						pageaddr = %u, columnaddr = %u, rlen = %u\n",
 						__FILE__, __func__, __LINE__,
 						ret, pageaddr, columnaddr, wlen);
-				break;
+				if(ret == -EIO)
+					break;
 			} else if (ret > 0) {
 				printf("%s %s %d: jz_sfc_nand_read, ecc value = %d\n",
 						__FILE__, __func__, __LINE__, ret);
-				break;
 			}
 
 			ret = buf_compare(buf, readback_buf, wlen, (uint32_t)to);
