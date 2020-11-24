@@ -68,8 +68,8 @@ char* spl_jzsd_ota_load_image(void)
 			printf("\n");
 	}
 #endif
-	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n",
-			((struct nv_flags*)nvdata)->boot, ((struct nv_flags*)nvdata)->step, ((struct nv_flags*)nvdata)->start, ((struct nv_flags*)nvdata)->finish);
+	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%x\n",
+			((struct nv_flags*)nvdata)->boot, ((struct nv_flags*)nvdata)->step, ((struct nv_flags*)nvdata)->start, ((struct nv_flags*)nvdata)->finish, ((struct nv_flags*)nvdata)->needfullpkg);
 
 	if(get_signature(RECOVERY_SIGNATURE) || (((struct nv_flags*)nvdata)->start == 0x5a5a5a5a)) {
 		if(((struct nv_flags*)nvdata)->boot) {
