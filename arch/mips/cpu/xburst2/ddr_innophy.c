@@ -517,6 +517,9 @@ void ddrc_dfi_init(enum ddr_type type)
 
 //	type = LPDDR3;
 
+	ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+	mdelay(1);
+
 	switch(type) {
 	case LPDDR2:
 #define DDRC_LMR_MR(n)                                                          \
