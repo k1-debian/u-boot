@@ -6,9 +6,9 @@
 #include <asm/gpio.h>
 #include <asm/arch/cpm.h>
 
-#include "../secall.h"
-#include "../pdma.h"
-#include "../aes.h"
+#include "secall.h"
+#include "pdma.h"
+#include "aes.h"
 #include "otp.h"
 
 #include <cloner/cloner.h>
@@ -275,6 +275,7 @@ int cpu_burn_rckey(void)
 	unsigned int ret;
 	volatile struct sc_args *args;
 
+	printf("xxxxxxxxxxx func : %s\n",__func__);
 	if(EFUSTATE_CK_PRT) {
 		printf("EFUSTATE: chipkey protect bit have been written\n");
 		return 0;
@@ -313,7 +314,7 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
 	secall(args, SC_FUNC_INIT, 0, 1);
 
-	debug("xxxxxxxxxxx func : %s\n",__func__);
+	printf("xxxxxxxxxxx func : %s\n",__func__);
 
 	set_rsakey(idata + 2, length - 8);
 
@@ -359,7 +360,7 @@ static int check_nku(unsigned int *idata, unsigned int length)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
-	debug("xxxxxxxxxxx func : %s\n",__func__);
+	printf("xxxxxxxxxxx func : %s\n",__func__);
 
 	set_rsakey(idata + 2, length - 8);
 
@@ -402,6 +403,7 @@ int cpu_burn_nku(void *idata,unsigned int length)
 {
 	unsigned int ret = 0;
 
+	printf("xxxxxxxxxxx func : %s\n",__func__);
 	if (EFUSTATE_NKU_PRT) {
 		printf("EFUSTATE: nku protect bit have been written\n");
 		return 0;

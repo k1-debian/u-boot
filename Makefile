@@ -284,7 +284,11 @@ LIBS-y += drivers/dma/libdma.o
 LIBS-y += drivers/fpga/libfpga.o
 LIBS-y += drivers/gpio/libgpio.o
 ifdef CONFIG_JZ_SCBOOT
-LIBS-y += drivers/scboot/libscboot.o
+ifdef CONFIG_X2000_V12
+LIBS-y += drivers/scboot/jz_sec_v2/libscboot.o
+else
+LIBS-y += drivers/scboot/jz_sec_v1/libscboot.o
+endif
 endif
 LIBS-y += drivers/hwmon/libhwmon.o
 LIBS-y += drivers/i2c/libi2c.o

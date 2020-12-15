@@ -1,10 +1,11 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/errno.h>
-#include <asm/arch/cpm.h>
-#include "../secall.h"
-#include "../pdma.h"
-#include "../secure.h"
+
+#include "secall.h"
+#include "pdma.h"
+
+#include "secure.h"
 
 static void pdma_wait(void)
 {

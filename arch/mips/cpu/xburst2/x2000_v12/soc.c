@@ -131,7 +131,7 @@ void board_init_f(ulong dummy)
 #endif
 }
 
-#ifdef CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
 static int secure_load_uboot(struct spl_image_info *spl_image)
 {
@@ -145,7 +145,7 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void  (*image_entry_noargs_t)(void);
 
-#ifdef CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 	flush_cache_all();
 	int ret = secure_load_uboot(spl_image);
 	if (ret) {

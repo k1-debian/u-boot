@@ -24,7 +24,7 @@
 #define SC_FUNC_SCBOOT          0x16
 #define SC_FUNC_RNG             0x17
 #define SC_FUNC_BURNRKCK        0x18
-#define SC_FUNC_SPLHASH		0x19
+#define SC_FUNC_SPLHASH			0x19
 #define SC_FUNC_SPLHASHCHECK	0x20
 #define SC_FUNC_INTERNAL_RSA	0x21
 #define SC_FUNC_INTERNAL_AES_INIT 0x22
@@ -60,7 +60,6 @@
 #define SC_ERR_INVALID_RNCNT    0x0e000011
 #define SC_ERR_CPAPCR_LOCK      0x0e000012
 #define SC_ERR_OKEY_UNMATCH     0x0e000013
-#define SC_ERR_RSA_PROCESS	0x0e000021
 
 struct sc_args {
 	unsigned int func;

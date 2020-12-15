@@ -4,11 +4,11 @@
 #include <asm/reboot.h>
 #include <asm/spl.h>
 
-#include "../secall.h"
-#include "../pdma.h"
-#include "../aes.h"
+#include "secall.h"
+#include "pdma.h"
 #include "otp.h"
-#include "test_common.c"
+#include "aes.h"
+
 /*
  * security boot.
  * 1. prepare a bin encrypted.

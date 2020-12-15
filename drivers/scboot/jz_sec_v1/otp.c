@@ -2,12 +2,12 @@
 #include <asm/io.h>
 #include <asm/errno.h>
 #include <asm/gpio.h>
-#include <cloner/cloner.h>
-#include "../secall.h"
-#include "../pdma.h"
-#include "../aes.h"
-#include "test_nku.h"
+#include "secall.h"
+#include "pdma.h"
+#include "aes.h"
 #include "otp.h"
+#include "test_nku.h"
+#include <cloner/cloner.h>
 
 unsigned int rsakey[128];
 unsigned int rsakeylen;

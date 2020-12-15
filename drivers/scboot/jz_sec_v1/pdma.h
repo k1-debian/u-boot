@@ -1,13 +1,6 @@
 #ifndef _PDMA_H_
 #define _PDMA_H_
-
-#include <common.h>
-#ifdef CONFIG_X2000_V12
-#include "jz_sec_v2/jz_pdma.h"
-#else
-#include "jz_sec_v1/jz_pdma.h"
-#endif
-
+#include "jz_pdma.h"
 #define SE_PASS 0
 #define SE_FAILURE 1
 //#define REG32(addr)	*((volatile unsigned int *)(addr))

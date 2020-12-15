@@ -2,8 +2,8 @@
 #include <asm/io.h>
 #include <asm/arch/cpm.h>
 
-#include "../secall.h"
-#include "../pdma.h"
+#include "secall.h"
+#include "pdma.h"
 #include "otp.h"
 
 /*
@@ -21,17 +21,10 @@
 #undef MCU_TCSM_RETVAL
 #undef MCU_TCSM_SECALL_MSG
 
-#ifdef CONFIG_X2000_V12
 #define TCSM_CODE_ADDR		(TCSM_BANK(7) + 0)
 #define TCSM_SC_KEY_ADDR	(TCSM_BANK(7) + 2048)
 #define MCU_TCSM_RETVAL		(TCSM_BANK(6) + 1108) /* cal from sc_interface. */
 #define MCU_TCSM_SECALL_MSG	(TCSM_BANK(6) + 128)  /* MCU_TCSM_SECALL_MSG */
-#else
-#define TCSM_CODE_ADDR			(TCSM_BANK(1) + 0)
-#define TCSM_SC_KEY_ADDR		(TCSM_BANK(1) + 2048)
-#define MCU_TCSM_RETVAL			(TCSM_BANK(0) + 2048 + 1076) /* cal from sc_interface. */
-#define MCU_TCSM_SECALL_MSG		(TCSM_BANK(0) + 2048 + 128) /* MCU_TCSM_SECALL_MSG */
-#endif
 
 #define SC_MAX_SIZE_PERTIME		(2048)
 #define SC_MAGIC_SIZE			(512)
@@ -131,8 +124,8 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 		binlen -= SC_MAX_SIZE_PERTIME;
 	} while (!endround);
 
-	if(ret)
-		return ret;
+//			if(ret)
+//				return ret;
 #else
 
 	args->arg[0] = 1 | 1 << 1 | 1 << 2;
@@ -141,12 +134,12 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 	flush_cache_all();
 	ret = secall(args, SC_FUNC_SCBOOT, 0, 1);
 	flush_cache_all();
+#endif
 
 	ret = *(volatile unsigned int *)MCU_TCSM_RETVAL;
 	ret &= 0xFFFF;
 
 	return ret;
-#endif
 }
 
 void pdma_wait(void)
@@ -175,6 +168,11 @@ int secure_scboot(void *input, void *output)
 	volatile unsigned int *pdma_bank0_off = (unsigned int *)TCSM_BANK0;
 	int issig = 0;
 	int tmp, i;
+
+	/* start aes, pdma clk */
+//	tmp = cpm_readl(CPM_CLKGR);
+//	tmp &= ~(CPM_CLKGR_AES | CPM_CLKGR_PDMA);
+//	cpm_writel(tmp, CPM_CLKGR);
 
 	for (i = 0; i < 6; i++)
 		pdma_bank0_off[i] = pdma_ins[i];
