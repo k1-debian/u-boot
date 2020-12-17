@@ -29,7 +29,7 @@
 #include "sc.h"
 #include "otp.h"
 #include "jz_pdma.h"
-#include "../secall.h"
+#include "secall.h"
 
 
 static unsigned int ukey[16] = {

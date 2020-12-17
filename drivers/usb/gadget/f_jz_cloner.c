@@ -40,16 +40,17 @@
 #include "cloner/cloner_efuse.c"
 
 #ifdef CONFIG_JZ_SCBOOT
-#include "../../scboot/secure.h"
-#include "../../scboot/aes.h"
-#include "../../scboot/spi_checksum.h"
 #ifdef CONFIG_X2000_V12
 #include "../../scboot/jz_sec_v2/otp.h"
+#include "../../scboot/jz_sec_v2/secure.h"
+#include "../../scboot/jz_sec_v2/aes.h"
+#include "../../scboot/jz_sec_v2/spi_checksum.h"
 #else
 #include "../../scboot/jz_sec_v1/otp.h"
+#include "../../scboot/jz_sec_v1/secure.h"
+#include "../../scboot/jz_sec_v1/aes.h"
+#include "../../scboot/jz_sec_v1/spi_checksum.h"
 #endif
-static bool is_security = false;
-static bool is_bootfile = false;
 #endif
 
 int buf_compare(unsigned char *org_data,unsigned char *read_data,unsigned int len,unsigned int offset)
@@ -453,10 +454,6 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			break;
 #ifdef CONFIG_JZ_SCBOOT
 		case VR_SEC_SEDEN:
-			if(cloner->cmd->security.security_en)
-				is_security = true;
-			else
-				is_security = false;
 			break;
 		case VR_SEC_INIT:  //1.init security boot
 			cloner->ack = init_seboot();
@@ -517,12 +514,6 @@ int f_cloner_setup_handle(struct usb_function *f,
 		case VR_SET_DATA_LEN:
 			cloner->full_size = ctlreq->wIndex | ctlreq->wValue << 16;
 			cloner->full_size_remainder = cloner->full_size;
-#ifdef CONFIG_JZ_SCBOOT
-			if(cloner->full_size < 0x100000)
-				is_bootfile = true;
-			else
-				is_bootfile = false;
-#endif
 			printf("cloner->full_size = %x\n", cloner->full_size);
 			break;
 #ifdef CONFIG_JZ_SCBOOT

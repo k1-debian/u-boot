@@ -5,12 +5,8 @@
 #include <asm/spl.h>
 #include "secall.h"
 #include "pdma.h"
+#include "otp.h"
 #include "aes.h"
-#ifdef CONFIG_X2000_V12
-#include "jz_sec_v2/otp.h"
-#else
-#include "jz_sec_v1/otp.h"
-#endif
 
 /*
  * security boot.

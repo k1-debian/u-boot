@@ -1,8 +1,8 @@
 #include <common.h>
 #include <asm/io.h>
 
-#include "../secall.h"
-#include "../pdma.h"
+#include "secall.h"
+#include "pdma.h"
 
 //#include "sc_firmware/aes.h"
 //#include "sc_firmware/otp.h"

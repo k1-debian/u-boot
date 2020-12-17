@@ -2,9 +2,9 @@
 #include <asm/io.h>
 #include <asm/errno.h>
 #include <asm/arch/cpm.h>
-#include "../secall.h"
-#include "../pdma.h"
-#include "../secure.h"
+#include "secall.h"
+#include "pdma.h"
+#include "secure.h"
 
 #ifndef CONFIG_X2000_FPGA
 static void pdma_wait(void)
