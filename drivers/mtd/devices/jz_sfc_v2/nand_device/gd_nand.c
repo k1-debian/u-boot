@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          9
+#define GD_DEVICES_NUM          10
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -204,6 +204,26 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[9] = {
+		/*GD5F1GQ5UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD_Q5,
+		.tPP = TPP_Q5,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
 
 };
 
@@ -217,6 +237,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
 	DEVICE_ID_STRUCT(0x55, "GD5F4GQ6UE",&gd_param[7]),
 	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[8]),
+	DEVICE_ID_STRUCT(0x51, "GD5F1GQ5UE",&gd_param[9]),
 };
 
 

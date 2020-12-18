@@ -13,7 +13,7 @@ struct ddr_param *ddr_args;
 
 static void mmc_add_info_to_flash(char *buf)
 {
-	if(ddr_args->ddr_type > 0)
+	if(ddr_args != NULL && ddr_args->ddr_type > 0)
 		*(volatile unsigned int *)(buf + SPL_CODE_START_ADDRESS + 128) = ddr_args->ddr_type;
 }
 
