@@ -8,6 +8,7 @@
 #include <asm/arch/mmc.h>
 #include <asm/io.h>
 #include "spl_gpt_partition.h"
+#include "spl_rtos.h"
 #ifdef CONFIG_JZSD_OTA_VERSION20
 #include "spl_ota_jzsd.h"
 #endif
@@ -715,6 +716,38 @@ static struct jzsd_ota_ops jzsd_ota_ops = {
 	.jzsd_load_img_from_partition = mmc_load_img_from_partition,
 };
 #endif
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+static void mmc_load_rtos_boot(unsigned long sector)
+{
+	int err = 0;
+	u32 rtos_size_sectors;
+	struct rtos_header *header;
+
+	header = (struct rtos_header *)(CONFIG_SYS_TEXT_BASE);
+
+	/* read rtos a sector size */
+	err = mmc_block_read(sector, 1, header);
+	if (err == 0)
+		goto end;
+
+	rtos_check_header(header);
+
+	rtos_size_sectors = (header->img_end - header->img_start + 512 - 1) / 512;
+
+	/* load rtos */
+	err = mmc_block_read(sector, rtos_size_sectors, header->img_start);
+	if (err == 0)
+		goto end;
+
+	rtos_start(header);
+
+end:
+	printf("spl: [rtos] mmc blk read err , %d\n", err);
+	hang();
+}
+#endif
+
 char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -729,7 +762,9 @@ char *spl_mmc_load_image(void)
 
 	jzmmc_init();
 
-#ifdef CONFIG_SPL_OS_OTA_BOOT
+#ifdef (CONFIG_SPL_RTOS_BOOT)
+	mmc_load_rtos_boot(CONFIG_RTOS_OFFSET_SECTOR);
+#elif defined CONFIG_SPL_OS_OTA_BOOT
 	return mmc_ota_load_img_from_partition(CONFIG_SPL_OS_NAME);
 #elif defined(CONFIG_SPL_OS_BOOT)
 #ifdef CONFIG_JZSD_OTA_VERSION20
