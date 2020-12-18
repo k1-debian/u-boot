@@ -762,7 +762,7 @@ char *spl_mmc_load_image(void)
 
 	jzmmc_init();
 
-#ifdef (CONFIG_SPL_RTOS_BOOT)
+#ifdef CONFIG_SPL_RTOS_BOOT
 	mmc_load_rtos_boot(CONFIG_RTOS_OFFSET_SECTOR);
 #elif defined CONFIG_SPL_OS_OTA_BOOT
 	return mmc_ota_load_img_from_partition(CONFIG_SPL_OS_NAME);
