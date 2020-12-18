@@ -47,7 +47,7 @@ static void sfcnor_add_info_to_flash(unsigned char *buf)
 			break;
 	}
 
-	if(ddr_args->ddr_type > 0)
+	if(ddr_args != NULL && ddr_args->ddr_type > 0)
 		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
 
 	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)

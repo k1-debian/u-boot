@@ -205,7 +205,7 @@ void sfcnand_add_info_to_flash(char *buf)
 	memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfcnand_burner_param) - 4);
 	memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, bp.partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
-	if(ddr_args->ddr_type > 0)
+	if(ddr_args != NULL && ddr_args->ddr_type > 0)
 		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
 
 	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
