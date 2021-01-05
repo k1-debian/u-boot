@@ -28,7 +28,6 @@
 #include <malloc.h>
 #include <mmc.h>
 #include <sdhci.h>
-
 #ifdef CONFIG_SPL_BUILD
 struct mmc jz_mmc_dev[1];
 void* memalign(size_t alignment, size_t bytes) {}
@@ -274,8 +273,8 @@ int sdhci_send_command(struct mmc *mmc, struct mmc_cmd *cmd,
 		return 0;
 	}
 
-	sdhci_reset(host, SDHCI_RESET_CMD);
 	sdhci_reset(host, SDHCI_RESET_DATA);
+	sdhci_reset(host, SDHCI_RESET_CMD);
 	if (stat & SDHCI_INT_TIMEOUT)
 		return TIMEOUT;
 	else
@@ -342,6 +341,7 @@ static int sdhci_set_clock(struct mmc *mmc, unsigned int clock)
 static void sdhci_set_power(struct sdhci_host *host, unsigned short power)
 {
 	u8 pwr = 0;
+	int val;
 
 	if (power != (unsigned short)-1) {
 		switch (1 << power) {
@@ -370,6 +370,8 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned short power)
 	pwr |= SDHCI_POWER_ON;
 
 	sdhci_writeb(host, pwr, SDHCI_POWER_CONTROL);
+	if(host->set_voltage)
+		host->set_voltage(host,pwr);
 }
 
 void sdhci_set_ios(struct mmc *mmc)

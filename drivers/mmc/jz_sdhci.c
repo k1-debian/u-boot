@@ -22,6 +22,9 @@
 #include <sdhci.h>
 #include <asm/arch/clk.h>
 
+#include <config.h>
+#include <asm/arch/gpio.h>
+#include <asm/arch/cpm.h>
 #include "jz_sdhci_regs.h"
 
 #ifdef CONFIG_SPL_BUILD
@@ -32,6 +35,30 @@ struct sdhci_host jz_sdhci_host[1];
 static char *JZ_NAME = "MSC";
 
 
+void jz_sdhci_set_voltage(struct sdhci_host *host,int pwr)
+{
+	int port = 0;
+	int pin = 0;
+	int val = 0;
+	if(!host->sdr_pin)
+		return;
+	port = host->sdr_pin / 32;
+	pin = host->sdr_pin % 32;
+	switch(pwr){
+		case SDHCI_POWER_180:
+			/*controlled SD voltage to 1.8V*/
+			val = cpm_inl(CPM_EXCLK_DS) | (1 << 31);
+			cpm_outl(val, CPM_EXCLK_DS);
+			gpio_set_func(port,GPIO_OUTPUT1,pin);
+			break;
+		case SDHCI_POWER_330:
+		default:
+			val = cpm_inl(CPM_EXCLK_DS) & ~(1 << 31);
+			cpm_outl(val, CPM_EXCLK_DS);
+			gpio_set_func(port,GPIO_OUTPUT0,pin);
+			break;
+	}
+}
 static void jz_set_mmc_clk(int index, unsigned int clock)
 {
 	unsigned int val;
@@ -94,7 +121,10 @@ static int jz_sdhci_init(u32 regbase, int index)
 	host->index = index;
 
 	host->host_caps = MMC_MODE_HC; //for emmc OCR
-
+#ifdef CONFIG_SDHCI_SDR_PIN
+	host->sdr_pin = CONFIG_SDHCI_SDR_PIN;
+	host->set_voltage = jz_sdhci_set_voltage;
+#endif
 	return add_sdhci(host, 24000000, 300000);
 }
 
