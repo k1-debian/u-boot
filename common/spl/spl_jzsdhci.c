@@ -511,11 +511,10 @@ static int sd_found(void)
 	rca = cardaddr << 16;
 	resp = mmc_cmd(9, rca, 0, MSC_CMDAT_RESPONSE_R2);
 
-	msc_clk_switch(1);
 	resp = mmc_cmd(7, rca, 0, MSC_CMDAT_RESPONSE_R1);
 	resp = mmc_cmd(55, rca, 0, MSC_CMDAT_RESPONSE_R1);
 	resp = mmc_cmd(6, bus_width, 0, MSC_CMDAT_RESPONSE_R1);
-
+	msc_clk_switch(1);
 	return 0;
 }
 
