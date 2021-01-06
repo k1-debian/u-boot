@@ -382,6 +382,7 @@ void spl_load_kernel(long offset)
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_nand_load(offset, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
 	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
 }

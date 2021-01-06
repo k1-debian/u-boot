@@ -628,6 +628,7 @@ static int mmc_load_image_raw(unsigned long sector)
 #ifdef DEBUG_DDR_CONTENT
 	dump_ddr_content(header, 0x200);
 #endif
+	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
 
 	/* convert size to sectors - round up */

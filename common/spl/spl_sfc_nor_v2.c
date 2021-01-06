@@ -529,6 +529,17 @@ static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 #endif
 }
 
+void spl_load_kernel(long offset)
+{
+	struct image_header *header;
+	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
+	sfc_read_data(offset, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
+	header->ih_name[IH_NMLEN - 1] = 0;
+	spl_parse_image_header(header);
+	sfc_read_data(offset, spl_image.size, (unsigned char *)spl_image.load_addr);
+}
+
 void sfc_init(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
@@ -707,9 +718,7 @@ char* spl_sfc_nor_load_image(void)
 		return NULL;
 #endif
 #ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
-	sfc_read_data(bootimg_addr, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
-	spl_parse_image_header(header);
-	sfc_read_data(bootimg_addr, spl_image.size, (unsigned char *)spl_image.load_addr);
+	spl_load_kernel(bootimg_addr);
 	return NULL;
 #else //not defined CONFIG_NOR_SPL_BOOT_OS
 	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nv_rw_size);
@@ -717,13 +726,12 @@ char* spl_sfc_nor_load_image(void)
 	updata_flag = nv_buf[1];
 	if((updata_flag & 0x3) != 0x3)
 	{
-		sfc_read_data(bootimg_addr, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
-		spl_parse_image_header(header);
-		sfc_read_data(bootimg_addr, spl_image.size, (unsigned char *)spl_image.load_addr);
+		spl_load_kernel(bootimg_addr);
 	} else
 #endif	/* CONFIG_OTA_VERSION20 */
 #endif	/* CONFIG_SPL_OS_BOOT */
 	{
+		header->ih_name[IH_NMLEN - 1] = 0;
 		spl_parse_image_header(header);
 		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned char *)CONFIG_SYS_TEXT_BASE);
 	}
