@@ -37,7 +37,6 @@
 #include <linux/usb/composite.h>
 #include <cloner/cloner.h>
 #include "cloner/burn_printf.h"
-#include "cloner/cloner_efuse.c"
 
 #ifdef CONFIG_JZ_SCBOOT
 #ifdef CONFIG_X2000_V12

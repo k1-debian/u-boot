@@ -63,4 +63,5 @@
 
 #define SFC_BASE        0xb3440000
 
+#define EFUSE_BASE      0xb3540000
 #endif /* __BASE_H__ */
