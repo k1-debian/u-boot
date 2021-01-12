@@ -10,6 +10,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_LPDDR3_W63AH6NKB_BI
 	LPDDR3_W63AH6NKB_BI,
 #endif
+#ifdef CONFIG_LPDDR2_M54D5121632A
+	LPDDR2_M54D5121632A,
+#endif
 };
 
 
