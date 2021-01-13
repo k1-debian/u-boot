@@ -38,6 +38,12 @@ struct soc_ddr_info soc_info[] = {
 		.type	= TYPE_LPDDR2,
 		.capacity = MEM_256M,
 	}
+	{
+		.soc_name = "X2100",
+		.vendor = VENDOR_ESMT,
+		.type	= TYPE_LPDDR2,
+		.capacity = MEM_64M,
+	}
 
 };
 
