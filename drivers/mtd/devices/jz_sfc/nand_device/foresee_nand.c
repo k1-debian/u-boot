@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define FS_DEVICES_NUM         3
+#define FS_DEVICES_NUM         4
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -74,12 +74,32 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[3] = {
+		/*FS35ND01G-S1*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 450,
+		.tPP = 800,
+		.tBE = 10,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xA1, "FS35ND01G-V1", &fs_param[0]),
 	DEVICE_ID_STRUCT(0xB1, "FS35ND01G-V2", &fs_param[1]),
 	DEVICE_ID_STRUCT(0xEB, "FS35ND02G",    &fs_param[2]),
+	DEVICE_ID_STRUCT(0xEA, "FS35ND01G-S1", &fs_param[3]),
 };
 
 static int32_t fs_get_read_feature(struct flash_operation_message *op_info) {
@@ -130,6 +150,7 @@ retry:
 			break;
 
 		case 0xEB:
+		case 0xEA:
 			switch((ret = ((ecc_status >> 4) & 0x3))) {
 				case 0x2:
 				    ret = -EBADMSG;

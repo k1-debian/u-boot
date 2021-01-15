@@ -86,10 +86,8 @@ static void jz_set_mmc_clk(int index, unsigned int clock)
 		clk_id = MSC0;
 	else if(index == 1)
 		clk_id = MSC1;
-#if defined(CONFIG_X2000_V12) || defined(CONFIG_M300)
 	else if(index == 2)
 		clk_id = MSC2;
-#endif
 	clk_set_rate(clk_id, clock);
 #endif
 }
