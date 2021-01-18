@@ -1341,6 +1341,52 @@ static int check_phy_init_yt8511(synopGMACdevice *gmacdev)
 	return status;
 }
 
+
+static int check_phy_init_ip101g(synopGMACdevice *gmacdev)
+{
+	u16 data;
+	s32 status = -ESYNOPGMACNOERR;
+	int speed_bit;
+
+	printf("########### check_phy_init_ip101g #############\n");
+
+	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_STATUS_REG, &data);
+	if(status)
+		return status;
+	if((data & Mii_Link) == 0){
+		printf("No Link\n");
+		gmacdev->LinkState = LINKDOWN;
+		return -ESYNOPGMACPHYERR;
+	}
+	else{
+		gmacdev->LinkState = LINKUP;
+		printf("Link UP\n");
+	}
+
+	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_SPECIFIC_STATUS_REG, &data);
+	if(status)
+		return status;
+	speed_bit = (data & (0xf<<5)) >> 5;
+	switch(speed_bit) {
+		case 0x8:
+			gmacdev->Speed = SPEED100;
+			gmacdev->DuplexMode = FULLDUPLEX;
+			break;
+		case 0x4:
+			gmacdev->Speed = SPEED100;
+			gmacdev->DuplexMode = HALFDUPLEX;
+			break;
+		case 0x2:
+			gmacdev->Speed = SPEED10;
+			gmacdev->DuplexMode = FULLDUPLEX;
+			break;
+		case 0x1:
+			gmacdev->Speed = SPEED10;
+			gmacdev->DuplexMode = HALFDUPLEX;
+			break;
+	}
+	return status;
+}
 struct phy_list {
 	unsigned int oui_id;
 	int (*check_init)(synopGMACdevice *gmacdev);
@@ -1364,6 +1410,10 @@ struct phy_list phy_lists[] = {
 		.oui_id = 0x10a,
 		.check_init = check_phy_init_yt8511,
 	},
+	[4] = {
+		.oui_id = 0x30243,
+		.check_init = check_phy_init_ip101g,
+	},
 };
 
 static int check_phy_negotiation_status(synopGMACdevice *gmacdev)
@@ -1376,10 +1426,8 @@ static int check_phy_negotiation_status(synopGMACdevice *gmacdev)
 
 	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_ID_HI_REG, &data);
 	phy_id_low = data; /* OUI 3 to 18 bit */
-
 	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_ID_LOW_REG, &data);
 	phy_id_hi = ((data >> 10) & 0x3f); /* OUI 19 to 24 bit */
-
 	phy_id = phy_id_hi << 16 | phy_id_low;
 
 	printf("mac phy_id is: %x\n", phy_id);
