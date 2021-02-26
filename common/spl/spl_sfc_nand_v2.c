@@ -413,6 +413,22 @@ void spl_sfc_nand_os_load(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_RTOS_BOOT
+static void spl_sfc_rtos_boot(void)
+{
+	struct rtos_header rtos;
+
+	sfc_init();
+
+	sfc_nand_load(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
+	if (rtos_check_header(&rtos))
+		hang();
+	sfc_nand_load(CONFIG_RTOS_OFFSET, rtos.img_end - rtos.img_start, rtos.img_start);
+
+	rtos_start(&rtos);
+}
+#endif
+
 #ifdef CONFIG_BOOT_RTOS
 void spl_sfc_nand_rtos_load(void)
 {
@@ -490,6 +506,8 @@ char* spl_sfc_nand_load_image(void)
 #elif defined(CONFIG_BOOT_RTOS)
 	spl_sfc_nand_rtos_load();
 	return NULL;
+#elif CONFIG_SPL_RTOS_BOOT
+	spl_sfc_rtos_boot();
 #elif defined(CONFIG_SPL_OS_OTA_BOOT)
 	return spl_sfc_nand_os_ota_load();
 #elif defined(CONFIG_SPL_OS_BOOT)
