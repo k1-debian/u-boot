@@ -8,6 +8,11 @@ extern struct burner_params params;
 extern struct mini_spi_nor_info mini_params;
 extern struct legacy_params *params_compatibility();
 
+int sfc_reset()
+{
+	return sfc_nor_reset();
+}
+
 int sfc_erase()
 {
 	unsigned int bus = CONFIG_SF_DEFAULT_BUS;

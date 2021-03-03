@@ -187,6 +187,27 @@ int clmg_check(struct cloner *cloner)
 	return clmd->check(cloner, MOUDLE_SUB_TYPE(cloner->cmd->check.ops), clmd->data);
 }
 
+int clmg_reset(struct cloner *cloner)
+{
+	struct cloner_moudle *clmd;
+	int ops;
+
+	if (!cloner)
+		return -EINVAL;
+
+	ops = MOUDLE_TYPE(cloner->cmd->check.ops);
+
+	clmd = find_cloner_moudle_ops(ops);
+	if (!clmd)
+		return -ENOSYS;
+
+	if (!clmd->reset) {
+		printf("moudle(%x) not support reset function\n", clmd->medium);
+		return 0;
+	}
+
+	return clmd->reset(cloner);
+}
 
 int i2c_program(struct cloner *cloner)
 {
@@ -292,6 +313,11 @@ void handle_read(struct cloner *cloner)
 
 void handle_read_complete(struct usb_ep *ep,struct usb_request *req)
 {
+}
+
+int handle_reset(struct cloner *cloner)
+{
+	return clmg_reset(cloner);
 }
 
 void handle_write(struct usb_ep *ep,struct usb_request *req)
@@ -445,6 +471,7 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 			do_udc_reset();
 			mdelay(10000);
 #endif
+			handle_reset(cloner);
 			do_reset(NULL,0,0,NULL);
 			break;
 		case VR_POWEROFF:

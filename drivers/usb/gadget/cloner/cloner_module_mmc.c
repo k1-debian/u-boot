@@ -201,6 +201,7 @@ int cloner_mmc_init(void)
 	clmd->init = clmd_mmc_init;
 	clmd->info = NULL;
 	clmd->check = NULL;
+	clmd->reset = NULL;
 	clmd->data = NULL;
 	printf("cloner mmc register\n");
 	return register_cloner_moudle(clmd);

@@ -14,6 +14,97 @@ struct mini_spi_nor_info mini_params;
 unsigned int burn_mode = 0;
 #endif
 
+//#define SFC_NOR_CLONER_DEBUG
+//#define SFC_REG_DEBUG
+
+#define MULTI_DIE_FLASH_NUM 1
+
+#define ACTIVE_DIE(addr)					\
+({								\
+	uint8_t die_id = addr >> flash->die_shift;		\
+	if (die_id != flash->current_die_id) {			\
+		sfc_active_die(die_id);				\
+		flash->current_die_id = die_id;			\
+	}							\
+	if (die_id)						\
+		addr = addr & ((1 << flash->die_shift) - 1);	\
+	addr;							\
+})								\
+
+
+int sfc_die_select(uint8_t die_id)
+{
+	struct sfc_transfer transfer;
+	int32_t ret = 0;
+
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
+
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = SPINOR_OP_DIE_SEL;
+
+	transfer.addr_len = 0;
+	transfer.addr = 0;
+
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.len = 1;
+	transfer.data = &die_id;
+	transfer.direction = GLB_TRAN_DIR_WRITE;
+
+	transfer.data_dummy_bits = 0;
+	transfer.ops_mode = CPU_OPS;
+
+	ret = sfc_sync(flash->sfc, &transfer);
+	if(ret) {
+		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		ret = -EIO;
+	}
+	return 0;
+}
+
+int sfc_read_active_die_id(uint8_t *value)
+{
+	struct sfc_transfer transfer;
+	int32_t ret = 0;
+
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
+
+	transfer.sfc_mode = TM_STD_SPI;
+	transfer.cmd_info.cmd = SPINOR_OP_READ_DIE_ID;
+
+	transfer.addr_len = 0;
+	transfer.addr = 0;
+
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.len = 1;
+	transfer.data = value;
+	transfer.direction = GLB_TRAN_DIR_READ;
+
+	transfer.data_dummy_bits = 0;
+	transfer.ops_mode = CPU_OPS;
+
+	ret = sfc_sync(flash->sfc, &transfer);
+	if(ret) {
+		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		ret = -EIO;
+	}
+	return 0;
+}
+
+int sfc_active_die(uint8_t die_id)
+{
+	uint8_t die_id_read;
+
+	sfc_die_select(die_id);
+	do {
+		sfc_read_active_die_id(&die_id_read);
+	}while(die_id != die_id_read);
+
+	return 0;
+}
+
+
 int32_t sfc_nor_reset()
 {
 	struct sfc_transfer transfer;
@@ -161,6 +252,10 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	memset(&transfer, 0, sizeof(transfer));
 	sfc_list_init(&transfer);
 
+	/* active die */
+	if (flash->die_num > 1)
+		addr = ACTIVE_DIE(addr);
+
 	transfer.sfc_mode = transfer_mode;
 	transfer.cmd_info.cmd = command;
 
@@ -200,6 +295,10 @@ static unsigned  int sfc_do_write(unsigned int addr, unsigned int len, const uns
 
 	memset(transfer, 0, sizeof(transfer));
 	sfc_list_init(transfer);
+
+	/* active die */
+	if (flash->die_num > 1)
+		addr = ACTIVE_DIE(addr);
 
 	/* write enable */
 	transfer[0].sfc_mode = transfer_mode;
@@ -252,6 +351,10 @@ static int sfc_do_erase(uint32_t addr)
 
 	memset(transfer, 0, sizeof(transfer));
 	sfc_list_init(transfer);
+
+	/* active die */
+	if (flash->die_num > 1)
+		addr = ACTIVE_DIE(addr);
 
 	/* write enable */
 	transfer[0].sfc_mode = wr_en->transfer_mode;
@@ -477,6 +580,10 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	return 0;
 }
 
+static struct multi_die_flash die_flash[MULTI_DIE_FLASH_NUM] = {
+	[0] = {0xc84019, 2, "GD25S512MD"},
+};
+
 int32_t sfc_nor_do_special_func()
 {
 	struct spinor_flashinfo *nor_info = flash->flash_info;
@@ -485,6 +592,7 @@ int32_t sfc_nor_do_special_func()
 	uint32_t tslch = spi_nor_info->tSLCH;
 	uint32_t tshsl_rd = spi_nor_info->tSHSL_RD;
 	uint32_t tshsl_wr = spi_nor_info->tSHSL_WR;
+	int i;
 
 	set_flash_timing(flash->sfc, tchsh, tslch, tshsl_rd, tshsl_wr);
 
@@ -507,6 +615,21 @@ int32_t sfc_nor_do_special_func()
 	if(spi_nor_info->chip_size > 0x1000000) {
 		if (nor_info->nor_flash_ops->set_4byte_mode)
 			nor_info->nor_flash_ops->set_4byte_mode(flash);
+	}
+
+	/* Multi Die support */
+	flash->die_num = 1;
+	for (i = 0; i < MULTI_DIE_FLASH_NUM; i++) {
+		if(!(strcmp(die_flash[i].flash_name, spi_nor_info->name))) {
+			flash->die_num = die_flash[i].die_num;
+			uint32_t die_size = spi_nor_info->chip_size / flash->die_num;
+
+			flash->die_shift = ffs(die_size) - 1;
+			flash->current_die_id = 0;
+
+			printf("Flash :%s support multi die, die number:%d\n", die_flash[i].flash_name, die_flash[i].die_num);
+			break;
+		}
 	}
 
 	get_current_operate_cmd(flash);
@@ -559,7 +682,8 @@ int32_t sfc_nor_flash_init()
 	return 0;
 }
 
-int jz_sfc_chip_erase()
+
+int sfc_do_chip_erase()
 {
 	struct spinor_flashinfo *nor_info = flash->flash_info;
 	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
@@ -569,7 +693,6 @@ int jz_sfc_chip_erase()
 	uint32_t sta_reg = 0;
 	int ret;
 
-	printf("chip erasing...\n");
 	memset(transfer, 0, sizeof(transfer));
 	sfc_list_init(transfer);
 
@@ -599,6 +722,30 @@ int jz_sfc_chip_erase()
 	            sta_reg = get_status(flash, busy->cmd, busy->len);
 		    sta_reg = (sta_reg >> busy->bit_shift) & busy->mask;
 	} while (sta_reg != busy->val);
+
+	return 0;
+}
+
+int jz_sfc_chip_erase(void)
+{
+	uint8_t die_id = 0;
+	int ret;
+
+	do {
+		printf("chip erasing...die%d\n", die_id);
+
+		if (flash->die_num > 1) {
+			sfc_active_die(die_id);
+			flash->current_die_id = die_id;
+		}
+
+		ret = sfc_do_chip_erase();
+		if (ret < 0) {
+			printf("chip erase error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+			return -EIO;
+		}
+
+	} while(++die_id < flash->die_num);
 
 	return 0;
 }

@@ -8,6 +8,10 @@ struct sfc_flash {
 	struct mtd_info  *mtd;
 
 	void *flash_info;
+
+	uint8_t current_die_id;
+	uint32_t die_shift;
+	uint32_t die_num;
 };
 
 #endif

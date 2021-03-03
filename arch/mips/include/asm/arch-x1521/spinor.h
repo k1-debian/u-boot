@@ -195,5 +195,11 @@ struct legacy_params {
 
 };
 
+struct multi_die_flash {
+	uint32_t flash_id;
+	uint32_t die_num;
+	char* flash_name;
+};
+
 
 #endif

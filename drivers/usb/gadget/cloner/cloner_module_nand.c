@@ -80,6 +80,7 @@ int cloner_nand_init(void)
 	clmd->read = NULL;
 	clmd->info = NULL;
 	clmd->check = NULL;
+	clmd->reset = NULL;
 	clmd->data = NULL;
 	printf("cloner nand register\n");
 	return register_cloner_moudle(clmd);

@@ -415,6 +415,7 @@ struct cloner_moudle {
 	int (*write)(struct cloner *cloner, int sub_ops, void* mdata);
 	int (*read)(struct cloner *cloner, int sub_ops, void* mdata);
 	int (*check)(struct cloner *cloner, int sub_ops, void* mdata);
+	int (*reset)(struct cloner *cloner);
 	void *data;
 };
 

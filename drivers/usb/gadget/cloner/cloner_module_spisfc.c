@@ -177,6 +177,26 @@ static int32_t clmd_spisfc_read(struct cloner *cloner, int sub_type, void *ops_d
 
 	return ret;
 }
+
+static int32_t clmd_spisfc_reset(struct cloner *cloner) {
+
+	int32_t ret = 0;
+
+	if(!policy_args)
+	{
+		printf("Not fount policy parameters (%s)\n",__func__);
+		return -EINVAL;
+	}
+
+#ifdef CONFIG_MTD_SFCNOR
+	if(policy_args->use_sfc_nor){
+		ret = sfc_reset();
+	}
+#endif
+
+	return ret;
+}
+
 int cloner_spisfc_init(void)
 {
 	struct cloner_moudle *clmd = malloc(sizeof(struct cloner_moudle));
@@ -191,6 +211,7 @@ int cloner_spisfc_init(void)
 	clmd->info = clmd_spisfc_info;
 	clmd->read = clmd_spisfc_read;
 	clmd->check = NULL;
+	clmd->reset = clmd_spisfc_reset;
 	clmd->data = NULL;
 	printf("cloner spisfc register\n");
 	return register_cloner_moudle(clmd);
