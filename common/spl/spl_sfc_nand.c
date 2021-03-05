@@ -180,7 +180,11 @@ read_oob:
 			return -1;
 	}
 
-	if(curr_device->device_id == 0x20 || curr_device->device_id == 0x22 || (curr_device->device_id == 0x72) || (curr_device->device_id == 0xF2))/*MXIC 2G plane select*/
+	/* plane select: MXIC 2G, Dosilicon 2G, Zetta 2G,XTX 2G */
+	if(curr_device->device_id == 0x20
+			|| curr_device->device_id == 0x22
+			|| curr_device->device_id == 0x72
+			|| curr_device->device_id == 0x24)
 		column |= (((page >> 6) & 1) << 12);
 
 #ifndef CONFIG_SPI_STANDARD
@@ -242,6 +246,8 @@ static int spinand_probe_id(struct jz_sfc *sfc)
 			please add it\n");
 		return -ENODEV;
 	}
+
+	printf("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]);
 	return 0;
 }
 

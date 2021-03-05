@@ -201,7 +201,11 @@ read_oob:
 	}
 
 	/* plane select: MXIC 2G, Dosilicon 2G, Zetta 2G */
-	if(curr_device->device_id == 0x20 || curr_device->device_id == 0x22 || (curr_device->device_id == 0x72) || (curr_device->device_id == 0xF2))
+	if(curr_device->device_id == 0x20
+			|| curr_device->device_id == 0x22
+			|| curr_device->device_id == 0x72
+			|| curr_device->device_id == 0xF2
+			|| curr_device->device_id == 0x24)
 		column |= (((page >> 6) & 1) << 12);
 
 #ifdef CONFIG_SFC_QUAD
