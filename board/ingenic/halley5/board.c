@@ -96,6 +96,11 @@ int board_eth_init(bd_t *bis)
 #else
 	rv = usb_eth_initialize(bis);
 #endif
+
+#ifdef CONFIG_NET_NAND_MAC
+	    gmac_set_nand_mac();
+#endif
+
 	return rv;
 #else
 	return 0;
