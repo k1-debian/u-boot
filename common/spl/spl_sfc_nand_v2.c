@@ -7,6 +7,7 @@
 #include "spl.h"
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
+#include "spl_rtos.h"
 
 #ifdef CONFIG_OTA_VERSION30
 #include "spl_ota_kunpeng.h"
