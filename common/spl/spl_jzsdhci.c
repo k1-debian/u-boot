@@ -154,7 +154,7 @@ static void msc_clk_switch(int high_frq)
 		clk_set_rate(CPM_MSC, MSC_WORKING_CLK);
 
 	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d\n", __func__,
-			CPM_MSC, MSC_WORKING_CLK, clk_get_rate(CPM_MSC));
+			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC));
 #endif
 
 }
