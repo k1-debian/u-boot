@@ -66,6 +66,9 @@ struct ddr3_params {
 	uint32_t tCCD;
 	uint32_t tFAW;
 	uint32_t tMRD;
+	uint32_t tCL;
+	uint32_t tCWL;
+	uint32_t tAL;
 };
 
 struct ddr2_params {
@@ -335,6 +338,7 @@ struct ddr_params {
 	uint32_t cs1;
 	uint32_t dw32;
 	uint32_t cl;
+	uint32_t cwl;
 	uint32_t bl;
 	uint32_t col;
 	uint32_t row;

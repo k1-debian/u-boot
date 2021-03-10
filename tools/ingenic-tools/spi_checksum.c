@@ -71,6 +71,9 @@
 #ifdef CONFIG_X2100
 #define SKIP_SIZE 2048
 #endif
+#ifdef CONFIG_X2500
+#define SKIP_SIZE 2048
+#endif
 
 #define le(a) (((a & 0xff)<<24) | ((a>>8 & 0xff)<< 16) | ((a>>16 & 0xff)<< 8) | ((a>>24 & 0xff)))
 
@@ -79,7 +82,7 @@
  */
 #if defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SPL_SPI_NAND)
 
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 #define BUFFER_SIZE 256
 #else
 #define BUFFER_SIZE 4
@@ -178,7 +181,7 @@ int main(int argc, char *argv[])
 
 	/*set spl len*/
 	lseek( fd, SPL_LENGTH_POSITION, SEEK_SET);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	if ((t = write(fd, &count, 2)) != 2) {
 #else
 	if ((t = write(fd, &count, 4)) != 4) {
@@ -187,7 +190,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	/* set env crc */
 	lseek(fd, 0x100, SEEK_SET);
 

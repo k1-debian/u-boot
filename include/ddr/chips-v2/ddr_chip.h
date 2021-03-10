@@ -48,7 +48,8 @@ struct ddr_chip_info {
 	unsigned int DDR_tMOD;
 	unsigned int DDR_tXPDLL;
 	unsigned int DDR_tCKSRE;
-
+	unsigned int DDR_CL;
+	unsigned int DDR_CWL;
 };
 
 enum {
@@ -58,6 +59,7 @@ enum {
 enum {
 	TYPE_LPDDR2 = 0x0,
 	TYPE_LPDDR3 = 0x1,
+	TYPE_DDR3 = 0x2,
 };
 enum {
 	MEM_256M	= 0x0,

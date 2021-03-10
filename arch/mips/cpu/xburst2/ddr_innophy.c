@@ -128,6 +128,7 @@ static enum ddr_type get_ddr_type(void)
 
 		case DDR3:
 			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
+			break;
 		case LPDDR:
 			printf("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
 			break;
@@ -390,7 +391,7 @@ static void ddrp_software_calibration(void)
 	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
 	debug("-----DDRP_INNOPHY_TRAINING_CTRL: %x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
 	debug("before trainning %x %x %x %x\n",ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL),
-ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+	ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
 
 
 	for(c = 0; c < 8; c ++) {
@@ -490,11 +491,169 @@ ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL),d
 }
 #endif
 
+#ifdef CONFIG_X2500
+static void ddrp_hardware_calibration_x2500(void)
+{
+	unsigned int val;
+	unsigned int timeout = 1000000;
+
+#ifdef CONFIG_DDR_TYPE_DDR3
+	unsigned int i = 0;
+	ddr_writel(0x4, DDRP_INNOPHY_INNO_WR_LEVEL1);
+	ddr_writel(0x40, DDRP_INNOPHY_INNO_WR_LEVEL2);
+	ddr_writel(0xa4, DDRP_INNOPHY_TRAINING_CTRL);
+	while (((ddr_readl(DDRP_INNOPHY_WL_DONE) & 0xf) != 0xf) && timeout--);
+	if(!timeout) {
+		printf("timeout:INNOPHY_WL_DONE %x\n", ddr_readl(DDRP_INNOPHY_WL_DONE));
+		hang();
+	}
+	ddr_writel(0xa0, DDRP_INNOPHY_TRAINING_CTRL);
+#endif
+
+
+    ddr_writel(0xa1, DDRP_INNOPHY_TRAINING_CTRL);
+	do
+	{
+		val = ddr_readl(DDRP_INNOPHY_CALIB_DONE);
+	} while (((val & 0xf) != 0xf) && timeout--);
+
+	if(!timeout) {
+		printf("timeout:INNOPHY_CALIB_DONE %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+		hang();
+	}
+
+	ddr_writel(0xa0, DDRP_INNOPHY_TRAINING_CTRL);
+
+	{
+		struct ddrp_calib al, ah, bl, bh;
+		al.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL);
+		printf("auto :CALIB_AL: dllsel %x, ophsel %x, cyclesel %x\n", al.bypass.b.dllsel, al.bypass.b.ophsel, al.bypass.b.cyclesel);
+		ah.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH);
+		printf("auto:CAHIB_AH: dllsel %x, ophsel %x, cyclesel %x\n", ah.bypass.b.dllsel, ah.bypass.b.ophsel, ah.bypass.b.cyclesel);
+		bl.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL);
+		printf("auto :CALIB_BL: dllsel %x, ophsel %x, cyclesel %x\n", bl.bypass.b.dllsel, bl.bypass.b.ophsel, bl.bypass.b.cyclesel);
+		bh.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH);
+		printf("auto:CAHIB_BH: dllsel %x, ophsel %x, cyclesel %x\n", bh.bypass.b.dllsel, bh.bypass.b.ophsel, bh.bypass.b.cyclesel);
+	}
+
+}
+#endif
+
+
+
 void ddr_phy_init(enum ddr_type type)
 {
 	FUNC_ENTER();
 	ddrp_pll_init();
 	ddrp_cfg();
+	FUNC_EXIT();
+}
+static void ddrp_pll_init_x2500(void)
+{
+	unsigned int val;
+	unsigned int timeout = 1000000;
+
+	/* fbdiv={reg21[0],reg20[7:0]};
+	 * pre_div = reg22[4:0];
+	 * post_div = 2^reg22[7:5];
+	 * fpll_2xclk = fpll_refclk * fbdiv / ( post_div * pre_div);
+	 *			  = fpll_refclk * 20 / ( 1 * 10 ) = fpll_refclk * 2;
+	 * fpll_1xclk = fpll_2xclk / 2 = fpll_refclk;
+	 * Use: IN:fpll_refclk, OUT:fpll_1xclk */
+
+	/* reg20; bit[7:0]fbdiv M[7:0] */
+	val = ddr_readl(DDRP_INNOPHY_PLL_FBDIV);
+	val &= ~(0xff);
+	//val |= 0x8;
+	val |= 0x10;
+	ddr_writel(val, DDRP_INNOPHY_PLL_FBDIV);
+
+	/* reg21; bit[7:2]reserved; bit[1]PLL reset; bit[0]fbdiv M8 */
+	val = ddr_readl(DDRP_INNOPHY_PLL_CTRL);
+	val &= ~(0xff);
+	val |= 0x1a;
+	ddr_writel(val, DDRP_INNOPHY_PLL_CTRL);
+
+	/* reg22; bit[7:5]post_div; bit[4:0]pre_div */
+	val = ddr_readl(DDRP_INNOPHY_PLL_PDIV);
+	val &= ~(0xff);
+	//val |= 0x2;
+	//val |= 0x21;
+	val |= 0x4;
+	ddr_writel(val, DDRP_INNOPHY_PLL_PDIV);
+
+	/* reg21; bit[7:2]reserved; bit[1]PLL reset; bit[0]fbdiv M8 */
+	val = ddr_readl(DDRP_INNOPHY_PLL_CTRL);
+	val &= ~(0xff);
+	val |= 0x18;
+	ddr_writel(val, DDRP_INNOPHY_PLL_CTRL);
+
+	/* reg1f; bit[7:4]reserved; bit[3:0]DQ width
+	 * DQ width bit[3:0]:0x1:8bit,0x3:16bit,0x7:24bit,0xf:32bit */
+	val = ddr_readl(DDRP_INNOPHY_DQ_WIDTH);
+	val &= ~(0xf);
+#if CONFIG_DDR_DW32
+	val |= 0xf; /* 32bit */
+#else
+	val |= DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L; /* 0x3:16bit */
+#endif
+	ddr_writel(val, DDRP_INNOPHY_DQ_WIDTH);
+
+	/* reg1; bit[7:5]reserved; bit[4]burst type; bit[3:2]reserved; bit[1:0]DDR mode */
+	val = ddr_readl(DDRP_INNOPHY_MEM_CFG);
+	val &= ~(0xff);
+	val |= 0x10; /* burst 8 */
+	ddr_writel(val, DDRP_INNOPHY_MEM_CFG);
+
+	/* bit[3]reset digital core; bit[2]reset analog logic; bit[0]Reset Initial status
+	 * other reserved */
+	val = ddr_readl(DDRP_INNOPHY_PHY_RST);
+	val &= ~(0xff);
+	val |= 0x0d;
+	ddr_writel(val, DDRP_INNOPHY_PHY_RST);
+
+	/* CWL */
+	val = ddr_readl(DDRP_INNOPHY_CWL);
+	val &= ~(0xf);
+	val |= global_reg_value->DDRP_CWL_VALUE;
+	ddr_writel(val, DDRP_INNOPHY_CWL);
+
+	/* CL */
+	val = ddr_readl(DDRP_INNOPHY_CL);
+	val &= ~(0xf);
+	val |= global_reg_value->DDRP_CL_VALUE;
+	ddr_writel(val, DDRP_INNOPHY_CL);
+
+	/* AL */
+	val = ddr_readl(DDRP_INNOPHY_AL);
+	val &= ~(0xf);
+	val = 0x0;
+	ddr_writel(val, DDRP_INNOPHY_AL);
+
+	while(!(ddr_readl(DDRP_INNOPHY_PLL_LOCK) & 1 << 3) && timeout--);
+	if(!timeout) {
+		printf("DDRP_INNOPHY_PLL_LOCK time out!!!\n");
+		hang();
+	}
+}
+void ddr_phy_init_x2500(enum ddr_type type)
+{
+	FUNC_ENTER();
+
+#ifdef CONFIG_DDR_TYPE_DDR3
+    unsigned int i = 0;
+    /* write leveling dq delay time config */
+    for (i = 0; i <= 30;i++) {
+	    ddr_writel(0xf, DDR_PHY_OFFSET + 0x440+(i*4));
+    }
+
+    for (i = 0; i <= 20;i++) {
+	    ddr_writel(0xf, DDR_PHY_OFFSET + 0x500+(i*4));
+	    ddr_writel(0xf, DDR_PHY_OFFSET + 0x700+(i*4));
+    }
+#endif
+
+	ddrp_pll_init_x2500();
 	FUNC_EXIT();
 }
 
@@ -624,6 +783,25 @@ void ddrc_dfi_init(enum ddr_type type)
 		mdelay(1);
 
 		break;
+
+	case DDR3:
+#define DDRC_LMR_MR(n)								\
+		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |           \
+			((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |       \
+			(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
+
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR1
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
+		udelay(5);
+		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
+#undef DDRC_LMR_MR
+		break;
+
 
 	default:
 		ddr_hang();
@@ -791,13 +969,20 @@ void sdram_init(void)
 
 	/* DDR PHY init*/
 //	ddr_phy_init(type);
+#ifndef CONFIG_X2500
 	ddrp_cfg();
+#endif
 
 	reg_val = ddr_readl(DDRC_CTRL);
 	reg_val &= ~ (1 << 20);
 	ddr_writel(reg_val, DDRC_CTRL); /*ddrc_reset_phy clear*/
 
+#ifndef CONFIG_X2500
 	ddrp_pll_init();
+#else
+	ddr_phy_init_x2500(type);
+#endif
+
 	ddrc_dfi_init(type);
 
 	dump_ddrp_register();
@@ -805,13 +990,19 @@ void sdram_init(void)
 	ddrc_prev_init();
 
 	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
-	ddrc_post_init();
 
+#ifdef CONFIG_X2500
+	/*disable auto refresh.*/
+	ddr_writel(1, DDRC_REFCNT);
+	ddrp_hardware_calibration_x2500();
+#else
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 	ddrp_software_calibration();
 #else
 	ddrp_auto_calibration();
 #endif
+#endif
+	ddrc_post_init();
 	dump_ddrp_register();
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);
@@ -824,6 +1015,7 @@ void sdram_init(void)
 	} else {
 		ddr_writel(0, DDRC_AUTOSR_EN);
 	}
+
 	dump_ddrc_register();
 
 	debug("DDR size is : %d MByte\n", (global_reg_value->DDR_CHIP_0_SIZE + global_reg_value->DDR_CHIP_1_SIZE) / 1024 /1024);

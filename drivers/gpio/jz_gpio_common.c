@@ -46,6 +46,9 @@
 #include "jz_gpio/x2000_v12_gpio.c"
 #elif defined (CONFIG_X2100)
 #include "jz_gpio/x2100_gpio.c"
+#elif defined (CONFIG_X2500)
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/x2500_gpio.c"
 #elif defined (CONFIG_M300)
 #include "jz_gpio/m300_gpio.c"
 #elif defined (CONFIG_X1520)

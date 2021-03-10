@@ -45,7 +45,7 @@ union ddrc_refcnt {
 		unsigned clk_div:3;
 		unsigned reserved4_15:12;
 		unsigned con:8;
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 		unsigned reserved24_31:8;
 #else
 		unsigned rfc:6;
@@ -67,7 +67,7 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 
 	tmp = ps2cycle_floor(p->private_params.ddr_base_params.tREFI);
 	/* TODO: x2000 need??*/
-#if ((!defined CONFIG_X2000_V12) && (!defined CONFIG_M300) && (!defined(CONFIG_X2100)))
+#if ((!defined CONFIG_X2000_V12) && (!defined CONFIG_M300) && (!defined CONFIG_X2100) && (!defined CONFIG_X2500))
 	tmp -= 16; // controller is add 16 cycles.
 #endif
 	if(tmp < 0){
@@ -89,7 +89,7 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tRFC,2) / 2;
 	if(tmp < 0)
 		tmp = 0;
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	ASSERT_MASK(tmp, 8);
 #else
 	ASSERT_MASK(tmp, 6);
@@ -207,7 +207,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 {
 	int tmp;
 	int div;
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	unsigned int rfc;
 #endif
 	/* tWTR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
@@ -242,7 +242,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	 */
 	DDRC_TIMING_SET(4,ddr_base_params,tRAS,6);
 	DDRC_TIMING_SET(4,ddr_base_params,tRRD,6);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	DDRC_TIMING_SET(4,ddr_base_params,tRC,7);
 #else
 	DDRC_TIMING_SET(4,ddr_base_params,tRC,6);
@@ -253,7 +253,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	 * timing5
 	 */
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tCKE,1);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	ASSERT_MASK(tmp,4);
 #else
 	ASSERT_MASK(tmp,3);
@@ -274,13 +274,13 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	/* tFAW is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	/* tXSR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	{
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 		unsigned int con, clk_div;
 #else
 		unsigned int rfc, con, clk_div;
 #endif
 		get_refcnt_value(p, &rfc, &con, &clk_div);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 		ddrc->refcnt = (con << DDRC_REFCNT_CON_BIT)
 			| (clk_div << DDRC_REFCNT_CLK_DIV_BIT)
 			| DDRC_REFCNT_REF_EN
@@ -325,7 +325,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	/* ddrc->refcnt |= tmp << DDRC_REFCNT_TRFC_BIT; */
 
 
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500))
 	ddrc->autosr_cnt = (rfc << 24) | CONFIG_DDR_AUTO_SELF_REFRESH_CNT;
 #else
 	ddrc->autosr_cnt = CONFIG_DDR_AUTO_SELF_REFRESH_CNT;
@@ -444,7 +444,8 @@ void init_ddr_params_common(struct ddr_params *ddr_params, struct ddr_chip_info 
 	ddr_params->cs1 = CONFIG_DDR_CS1;
 	ddr_params->dw32 = CONFIG_DDR_DW32;
 	ddr_params->bl = chip->DDR_BL;
-//	ddr_params->cl = chip->DDR_CL;
+	ddr_params->cl = chip->DDR_CL;
+	ddr_params->cwl = chip->DDR_CWL;
 	ddr_params->col = chip->DDR_COL;
 	ddr_params->row = chip->DDR_ROW;
 
@@ -753,6 +754,9 @@ int main(int argc, char *argv[])
 	lpddr3_creator_init();
 #endif
 
+#ifdef CONFIG_DDR_TYPE_DDR3
+	ddr3_creator_init();
+#endif
 	generated_reg_values = malloc(ddr_nums * sizeof(struct ddr_reg_value));
 
 	create_supported_ddr_params(generated_reg_values);
