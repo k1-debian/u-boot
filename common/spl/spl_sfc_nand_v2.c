@@ -381,15 +381,40 @@ struct jz_sfcnand_partition *get_part_by_name(struct jz_sfcnand_partition_param 
 	return NULL;
 }
 
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+extern int secure_scboot (void *, void *);
+#endif
+
 void spl_load_kernel(long offset)
 {
+
 	struct image_header *header;
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	int ret;
+	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
+
+	sfc_nand_load(offset, sizeof(struct image_header) + sizeof(int), CONFIG_SYS_TEXT_BASE);
+	header->ih_name[IH_NMLEN - 1] = 0;
+
+	spl_parse_image_header(header);
+	spl_image.load_addr -= 2048;
+	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
+
+	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
+	if(ret) {
+		printf("Error spl secure load kernel.\n");
+		hang();
+	}
+#else
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
 	sfc_nand_load(offset, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
 	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
+#endif
+
 }
 
 void sfc_init(void)
