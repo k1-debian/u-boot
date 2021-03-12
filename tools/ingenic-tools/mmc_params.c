@@ -25,7 +25,7 @@
 #include <string.h>
 #include <config.h>
 
-#if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100)
+#if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500)
 #define SPL_SIZE (24 * 1024)
 #endif
 

@@ -301,9 +301,9 @@
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
-#define CONFIG_SPL_JZ_MSC_BUS_8BIT
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT
 
-#define CONFIG_JZ_MMC_MSC0_PD   //set gpio
+#define CONFIG_JZ_MMC_MSC0_PB_4BIT   //set gpio
 /*#define CONFIG_MMC_TRACE		// only for DEBUG*/
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
@@ -319,28 +319,7 @@
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
 
-#define CONFIG_JZ_MMC_MSC1_PE   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
-
-#ifdef CONFIG_JZ_MMC_MSC2
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-#define CONFIG_SDHCI
-#define CONFIG_MMC_SPL_PARAMS
-#define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-
-/* MSC Command configuration */
-#define CONFIG_CMD_MMC
-#define CONFIG_SPL_JZ_MSC_BUS_4BIT
-
-#define CONFIG_JZ_MMC_MSC2_PE   //set gpio
-
-#define CONFIG_SDHCI_SDR_PIN	GPIO_PC(0)
-
-
+#define CONFIG_JZ_MMC_MSC1_PC   //set gpio
 /*#define CONFIG_MMC_TRACE		// only for DEBUG*/
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
@@ -615,7 +594,7 @@
 
 /* MMC  spl stage */
 #if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	82 /* 17k + 24k (17KB GPT offset and spl size CONFIG_SPL_PAD_TO) */
+#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	82 /* 17k + 24k (17KB GPT offset and spl size CONFIG_SPL_PAD_TO)*/
 #define CONFIG_CMD_SAVEENV  /* saveenv */
 /*#define CONFIG_SPL_JZ_MSC_BUS_8BIT	//only for emmc*/
   #ifdef CONFIG_SPL_JZMMC_SUPPORT
