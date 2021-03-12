@@ -35,6 +35,7 @@ struct sdhci_host jz_sdhci_host[1];
 static char *JZ_NAME = "MSC";
 
 
+#ifdef CONFIG_SDHCI_SDR_PIN
 void jz_sdhci_set_voltage(struct sdhci_host *host,int pwr)
 {
 	int port = 0;
@@ -59,6 +60,7 @@ void jz_sdhci_set_voltage(struct sdhci_host *host,int pwr)
 			break;
 	}
 }
+#endif
 static void jz_set_mmc_clk(int index, unsigned int clock)
 {
 	unsigned int val;
@@ -86,8 +88,10 @@ static void jz_set_mmc_clk(int index, unsigned int clock)
 		clk_id = MSC0;
 	else if(index == 1)
 		clk_id = MSC1;
+#ifdef CONFIG_JZ_MSC_MSC2
 	else if(index == 2)
 		clk_id = MSC2;
+#endif
 	clk_set_rate(clk_id, clock);
 #endif
 }
