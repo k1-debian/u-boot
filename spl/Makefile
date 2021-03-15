@@ -183,22 +183,54 @@ $(obj)$(BOARD)-spl.bin: $(obj)u-boot-spl.bin
 		$(obj)u-boot-spl.bin $(obj)$(BOARD)-spl.bin
 endif
 
+ifdef CONFIG_SPI_SPL_CHECK
+ifdef CONFIG_SPL_PARAMS_FIXER
+ifdef CONFIG_SPL_PAD_TO_BLOCK
 $(obj)u-boot-spl.bin:	$(obj)u-boot-spl
 	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
-ifdef CONFIG_MMC_SPL_PARAMS
-	$(OBJTREE)/tools/ingenic-tools/mmc_params $@
-endif
-ifdef CONFIG_SPL_PARAMS_FIXER
-	$(OBJTREE)/tools/ingenic-tools/spl_params_fixer $@ $@ 256 256 > /dev/null
-endif
-ifdef CONFIG_SPI_SPL_CHECK
+	$(OBJTREE)/tools/ingenic-tools/spl_pad_to_block $@
+	$(OBJTREE)/tools/ingenic-tools/spl_params_fixer $@ $@ 256 256
+	$(OBJTREE)/tools/ingenic-tools/spi_checksum $@
+else
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+	$(OBJTREE)/tools/ingenic-tools/spl_params_fixer $@ $@ 256 256
 	$(OBJTREE)/tools/ingenic-tools/spi_checksum $@
 endif
-ifdef CONFIG_NOR_BUILTIN_PARAMS
-	$(OBJTREE)/tools/ingenic-tools/sfc_nor_builtin_params $@ $@ $(CONFIG_SPIFLASH_PART_OFFSET)
+else
+ifdef CONFIG_SPL_PAD_TO_BLOCK
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+	$(OBJTREE)/tools/ingenic-tools/spl_pad_to_block $@
+	$(OBJTREE)/tools/ingenic-tools/spi_checksum $@
+else
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+	$(OBJTREE)/tools/ingenic-tools/spi_checksum $@
 endif
-ifdef CONFIG_NAND_BUILTIN_PARAMS
-	$(OBJTREE)/tools/ingenic-tools/sfc_nand_builtin_params $@ $@ $(CONFIG_SPIFLASH_PART_OFFSET)
+endif
+else
+ifdef CONFIG_SPL_PARAMS_FIXER
+ifdef CONFIG_SPL_PAD_TO_BLOCK
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+	$(OBJTREE)/tools/ingenic-tools/spl_pad_to_block $@
+	$(OBJTREE)/tools/ingenic-tools/spl_params_fixer $@ $@ 256 256
+else
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+	$(OBJTREE)/tools/ingenic-tools/spl_params_fixer $@ $@ 256 256
+endif
+else
+ifdef CONFIG_SPL_PAD_TO_BLOCK
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+	$(OBJTREE)/tools/ingenic-tools/spl_pad_to_block $@
+else
+$(obj)u-boot-spl.bin:	$(obj)u-boot-spl
+	$(OBJCOPY) $(OBJCFLAGS) -O binary $< $@
+endif
+endif
 endif
 
 GEN_UBOOT = \
