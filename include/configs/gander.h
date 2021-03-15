@@ -371,6 +371,8 @@
 #define CONFIG_SYS_NAND_BASE			0xb3441000
 #define CONFIG_SYS_MAXARGS			16
 /*#define CONFIG_NAND_BUILTIN_PARAMS*/
+#define CONFIG_SPL_PAD_TO_BLOCK
+
 
 /* sfc nand env config */
 #define CONFIG_MTD_DEVICE

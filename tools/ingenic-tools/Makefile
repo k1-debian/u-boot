@@ -55,6 +55,7 @@ SPI-$(CONFIG_SPL_SFC_NAND)		+= sfc_nand_params.h
 SPI-$(CONFIG_NOR_BUILTIN_PARAMS)	+= sfc_nor_builtin_params
 SPI-$(CONFIG_NAND_BUILTIN_PARAMS)	+= sfc_nand_builtin_params
 SPL-$(CONFIG_SPL_PARAMS_FIXER)		+= spl_params_fixer
+SPL-$(CONFIG_SPL_PAD_TO_BLOCK)		+= spl_pad_to_block
 AUDIO-$(CONFIG_AUDIO_CAL_DIV) += audio_div_values.h
 #IMG2RLE-$(CONFIG_RLE_LCD_LOGO)          += img2rle
 #BIN2ARRAY-$(CONFIG_RLE_LCD_LOGO)        += bin2array
@@ -236,6 +237,10 @@ $(obj)sfc_nor_builtin_params: sfc_nor_builtin_params.c sfc_builtin_params/nor_de
 	$(HOSTSTRIP) $@
 
 $(obj)sfc_nand_builtin_params: sfc_nand_builtin_params.c sfc_builtin_params/nand_device.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
+
+$(obj)spl_pad_to_block:	spl_pad_to_block.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
