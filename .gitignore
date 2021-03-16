@@ -63,6 +63,7 @@
 /tools/logos/ingenic.jpg.rle
 common/spl/spl_gpt_tab_data.h
 tools/ingenic-tools/mmc_params
+tools/ingenic-tools/spl_pad_to_block
 
 *.depend*
 /LOG

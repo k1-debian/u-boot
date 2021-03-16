@@ -186,6 +186,12 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 		break;
 	case 2:
 		if((clk_id == MSC0) || (clk_id == MSC1))
+			pll_rate = pll_get_rate(EPLL);
+		else
+			pll_rate = pll_get_rate(VPLL);
+		break;
+	case 3:
+		if((clk_id == MSC0) || (clk_id == MSC1))
 			pll_rate = CONFIG_SYS_EXTAL;
 		else
 			pll_rate = pll_get_rate(EPLL);
@@ -197,7 +203,7 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 	}
 
 	if((clk_id == MSC0) || (clk_id == MSC1))
-		ret = pll_rate / (((regval & 0xff) + 1) * 4);
+		ret = pll_rate / (((regval & 0xff) + 1) * 2);
 	else
 		ret = pll_rate / ((regval & 0xff) + 1);
 	return ret;
@@ -250,10 +256,19 @@ void clk_set_rate(int clk_id, unsigned long rate)
 		return;
 	}
 
-	cgu = &cgusetting[clk_id];
-	reg = cgu->addr;
-	pll_rate = pll_get_rate(cgu->sel_src);
 
+	if (clk_id == MSC1) {
+		cgu = &cgusetting[clk_id-1];
+		reg = cgu->addr;
+		pll_rate = pll_get_rate(cgu->sel_src);
+
+		cgu = &cgusetting[clk_id];
+		reg = cgu->addr;
+	} else {
+		cgu = &cgusetting[clk_id];
+		reg = cgu->addr;
+		pll_rate = pll_get_rate(cgu->sel_src);
+	}
 	if(!pll_rate) {
 		debug("clk id %d: get pll error\n", clk_id);
 		return;
@@ -273,7 +288,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 			regval = (regval & (~MSCCDR_MPCS_MASK)) | MSCCDR_MPCS_EXCLK;
 			pll_rate = CONFIG_SYS_EXTAL;
 		}
-		cdr = (((pll_rate + rate - 1)/rate)/4 - 1) & 0xff;
+		cdr = (((pll_rate + rate - 1)/rate)/2 - 1) & 0xff;
 	} else
 		cdr = ((pll_rate + rate - 1)/rate - 1 ) & 0xff;
 	/* debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr); */
