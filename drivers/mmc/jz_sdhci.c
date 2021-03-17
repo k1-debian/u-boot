@@ -88,7 +88,7 @@ static void jz_set_mmc_clk(int index, unsigned int clock)
 		clk_id = MSC0;
 	else if(index == 1)
 		clk_id = MSC1;
-#ifdef CONFIG_JZ_MSC_MSC2
+#ifdef CONFIG_JZ_MMC_MSC2
 	else if(index == 2)
 		clk_id = MSC2;
 #endif
