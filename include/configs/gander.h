@@ -29,13 +29,13 @@
 
 
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1000000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_VPLL_FREQ		1080000000	/*If VPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		891000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		1200000000
-#define CONFIG_SYS_MEM_FREQ		500000000
+#define CONFIG_SYS_MEM_FREQ		700000000
 
 #define CONFIG_SYS_AHB0_FREQ		234000000
 #define CONFIG_SYS_AHB2_FREQ		234000000	/*APB = AHB2/2*/

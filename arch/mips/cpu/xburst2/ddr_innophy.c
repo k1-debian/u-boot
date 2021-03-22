@@ -275,6 +275,38 @@ static void ddrp_auto_calibration(void)
 	}
 	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
 	debug("ddrp_auto_calibration success!\n");
+
+
+#if 0
+	{
+		unsigned int cycsel, tmp;
+		unsigned int read_data0, read_data1;
+		unsigned int c0, c1;
+		unsigned int max;
+
+		read_data0 = *(volatile unsigned int *)(0xb3011000 + (0x64 << 2));
+		read_data1 = *(volatile unsigned int *)(0xb3011000 + (0x65 << 2));
+		c0 = (read_data0 >> 4) & 0x7;
+		c1 = (read_data1 >> 4) & 0x7;
+
+		max = max(c0, c1);
+
+		cycsel = max + 1;
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + (0xa << 2));
+		tmp &= ~(7 << 1);
+		tmp |= cycsel << 1;
+		*(volatile unsigned int *)(0xb3011000 + (0xa << 2)) = tmp;
+
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + 0x4);
+		tmp |= 1 << 6;
+		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
+	}
+
+	printf("ddr calib test finish\n");
+#endif
+
 }
 
 //#define DDR_CHOOSE_PARAMS	0
@@ -536,6 +568,40 @@ static void ddrp_hardware_calibration_x2500(void)
 		printf("auto:CAHIB_BH: dllsel %x, ophsel %x, cyclesel %x\n", bh.bypass.b.dllsel, bh.bypass.b.ophsel, bh.bypass.b.cyclesel);
 	}
 
+#if 1
+	{
+		unsigned int cycsel, tmp;
+		unsigned int read_data0, read_data1;
+		unsigned int read_data2, read_data3;
+		unsigned int c0, c1, c2, c3;
+		unsigned int max;
+
+		read_data0 = *(volatile unsigned int *)(0xb3011000 + (0x74 << 2));
+		read_data1 = *(volatile unsigned int *)(0xb3011000 + (0x75 << 2));
+		read_data2 = *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2));
+		read_data3 = *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2));
+		c0 = (read_data0 >> 4) & 0x7;
+		c1 = (read_data1 >> 4) & 0x7;
+		c2 = (read_data0 >> 4) & 0x7;
+		c3 = (read_data1 >> 4) & 0x7;
+
+		max = max(max(c0, c1), max(c2, c3));
+
+		cycsel = max + 3;
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + (0xa << 2));
+		tmp &= ~(7 << 1);
+		tmp |= cycsel << 1;
+		*(volatile unsigned int *)(0xb3011000 + (0xa << 2)) = tmp;
+
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + 0x4);
+		tmp |= 1 << 6;
+		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
+	}
+
+	printf("ddr calib test finish\n");
+#endif
 }
 #endif
 
