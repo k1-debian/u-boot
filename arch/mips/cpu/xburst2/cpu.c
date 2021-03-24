@@ -43,7 +43,7 @@ void __attribute__((weak)) _machine_restart(void)
 
 	writel(TSCR_WDTSC, TCU_BASE + TCU_TSCR);
 
-#ifdef CONFIG_X2000
+#if (defined(CONFIG_X2000) || defined(CONFIG_X2500))
 	writel(0, WDT_BASE + WDT_TCNT);
 #endif
 	writel(time, WDT_BASE + WDT_TDR);

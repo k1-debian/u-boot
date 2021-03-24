@@ -32,7 +32,7 @@ COBJS-y += clk.o
 COBJS-y += pllsetting.o
 
 COBJS-y += ddr_set_dll.o
-COBJS-y += ../ddr_innophy.o
+COBJS-y += ddr_innophy.o
 
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
 COBJS-$(CONFIG_DDR_AUTO_REFRESH_TEST) += ../ddr_test_auto_refresh.o
