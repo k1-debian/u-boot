@@ -159,9 +159,15 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 	unsigned regval = 0, reg = 0;
 	unsigned int ret = 0;
 
-	cgu = &cgusetting[clk_id];
-	reg = cgu->addr;
-	regval = readl(reg);
+	if (clk_id == MSC1) {
+		cgu = &cgusetting[clk_id - 1];
+		reg = cgu->addr;
+		regval = readl(reg);
+	} else {
+		cgu = &cgusetting[clk_id];
+		reg = cgu->addr;
+		regval = readl(reg);
+	}
 
 	if (clk_id == DDR) {
 		switch (regval >> 30) {
@@ -202,8 +208,12 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 	}
 	}
 
-	if((clk_id == MSC0) || (clk_id == MSC1))
+	if((clk_id == MSC0) || (clk_id == MSC1)) {
+		cgu = &cgusetting[clk_id];
+		reg = cgu->addr;
+		regval = readl(reg);
 		ret = pll_rate / (((regval & 0xff) + 1) * 2);
+	}
 	else
 		ret = pll_rate / ((regval & 0xff) + 1);
 	return ret;
@@ -245,7 +255,6 @@ unsigned int clk_get_rate(int clk)
 
 void clk_set_rate(int clk_id, unsigned long rate)
 {
-#ifndef CONFIG_X2000_FPGA
 	unsigned int cdr;
 	unsigned int pll_rate;
 	struct clk_cgu_setting *cgu = NULL;
@@ -300,7 +309,6 @@ void clk_set_rate(int clk_id, unsigned long rate)
 		;
 #ifdef DUMP_CGU_SELECT
 	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  readl(reg));
-#endif
 #endif
 	return;
 }
