@@ -37,8 +37,8 @@
 #define CONFIG_SYS_CPU_FREQ		1200000000
 #define CONFIG_SYS_MEM_FREQ		700000000
 
-#define CONFIG_SYS_AHB0_FREQ		234000000
-#define CONFIG_SYS_AHB2_FREQ		234000000	/*APB = AHB2/2*/
+#define CONFIG_SYS_AHB0_FREQ		300000000
+#define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
 
 
 /* Device Tree Configuration*/
@@ -53,6 +53,7 @@
 #define  CGU_CLK_SRC {				\
 		{LCD, MPLL},			\
 		{MSC0, MPLL},			\
+		{MSC1, MPLL},			\
 		{SFC, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}

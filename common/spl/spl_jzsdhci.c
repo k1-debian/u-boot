@@ -133,7 +133,7 @@ static void msc_clk_switch(int high_frq)
 #else //CONFIG_FPGA
 #define MSC_INIT_CLK    200000
 #ifndef MSC_WORKING_CLK
-#define MSC_WORKING_CLK 24000000
+#define MSC_WORKING_CLK 100000000
 #endif
   #ifdef CONFIG_JZ_MMC_MSC0
 	#define CPM_MSC MSC0
