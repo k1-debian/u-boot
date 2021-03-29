@@ -168,7 +168,7 @@
 
 #define CONFIG_SYS_MONITOR_LEN		(1024 * 1024)
 #ifndef CONFIG_FPGA
-#define CONFIG_SYS_MALLOC_LEN		(2 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
 #else
 #define CONFIG_SYS_MALLOC_LEN		(16 * 1024 * 1024)
 #endif

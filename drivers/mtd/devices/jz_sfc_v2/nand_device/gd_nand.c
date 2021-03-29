@@ -328,9 +328,11 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 					break;
 				default:
 					ret = 0;
+					break;
 			}
 			break;
-		case 0x51 ... 0x55:
+		case 0x51:
+		case 0x55:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x3:
 				case 0x0:
@@ -341,6 +343,36 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 					break;
 				default:
 					ret = -EBADMSG;
+			}
+			break;
+		case 0x52:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x1:
+					if((ret = gd_get_f0_register_value(flash)) < 0)
+						return ret;
+					switch((ecc_status >> 4) & 0x3) {
+						case 0x0:
+							ret = 0x1;
+							break;
+						case 0x1:
+							ret = 0x2;
+							break;
+						case 0x2:
+							ret = 0x3;
+							break;
+						case 0x3:
+							ret = 0x4;
+							break;
+						default:
+							break;
+					}
+					break;
+				case 0x2:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0x0;
+					break;
 			}
 			break;
 		default:

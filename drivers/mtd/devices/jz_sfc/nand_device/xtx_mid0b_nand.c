@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_MID0B_DEVICES_NUM         1
+#define XTX_MID0B_DEVICES_NUM         3
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -35,12 +35,54 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 
 		.ecc_max = 0x4,
 		.need_quad = 1,
-	}
+	},
+
+	[1] = {
+		/*XT26G01C */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 150,
+		.tPP = 450,
+		.tBE = 4,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+
+	[2] = {
+		/*XT26G02C */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 125,
+		.tPP = 350,
+		.tBE = 3,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 
 };
 
 static struct device_id_struct device_id[XTX_MID0B_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[0]),
+	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[1]),
+	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[2]),
 };
 
 static int32_t xtx_mid0b_get_read_feature(struct flash_operation_message *op_info) {
@@ -92,6 +134,42 @@ retry:
 				    ret = 0;
 			}
 			break;
+
+		case 0x11:
+		case 0x12:
+			switch((ecc_status >> 4) & 0xf) {
+				case 0x01:
+					ret = 0x1;
+					break;
+				case 0x02:
+					ret = 0x2;
+					break;
+				case 0x03:
+					ret = 0x3;
+					break;
+				case 0x04:
+					ret = 0x4;
+					break;
+				case 0x05:
+					ret = 0x5;
+					break;
+				case 0x06:
+					ret = 0x6;
+					break;
+				case 0x07:
+					ret = 0x7;
+					break;
+				case 0x08:
+					ret = 0x8;
+					break;
+				case 0x0f:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+			}
+			break;
+
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			ret = -EIO;
