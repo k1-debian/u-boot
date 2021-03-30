@@ -28,6 +28,12 @@ static inline int rtos_check_header(struct rtos_header *rtos)
 	return 0;
 }
 
+static inline void rtos_raw_start(struct rtos_header *rtos)
+{
+	__attribute__ ((noreturn)) void (*func)(void) = (void *)rtos->img_start;
+	func();
+}
+
 static inline void rtos_start(struct rtos_header *rtos)
 {
 	void (*func)(void) = (void *)rtos->img_start;

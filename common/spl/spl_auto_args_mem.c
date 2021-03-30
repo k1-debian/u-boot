@@ -66,9 +66,9 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 		args_mem += string_copy(args_mem, " ", 1);
 
 		/* rmem=xxxM@0xxxx */
-		rmem_start = CONFIG_RMEM_MB * 1024 * 1024;
+		rmem_start = ram_size * 1024 * 1024;
 		args_mem += string_copy(args_mem, "rmem=", 5);
-		args_mem += int_to_string(args_mem, ram_size, 10);
+		args_mem += int_to_string(args_mem, CONFIG_RMEM_MB, 10);
 		args_mem += string_copy(args_mem, "M@0x", 4);
 		args_mem += int_to_string(args_mem, rmem_start, 16);
 	}

@@ -417,8 +417,15 @@ void spl_load_kernel(long offset)
 
 }
 
+static volatile int sfc_is_inited = 0;
+
 void sfc_init(void)
 {
+	if (sfc_is_inited)
+		return;
+
+	sfc_is_inited = 1;
+
 	sfc_controler_init();
 	spinand_init();
 }
@@ -444,18 +451,88 @@ void spl_sfc_nand_os_load(void)
 #endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
+
+struct rtos_header rtos_header;
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+#include <asm/arch/ccu.h>
+
+unsigned char second_cpu_little_stack[128] __attribute__((aligned(8)));
+
+__attribute__ ((noreturn)) void do_boot_second_cpu(void)
+{
+	rtos_raw_start(&rtos_header);
+	while (1);
+}
+
+static void boot_second_cpu(void)
+{
+  asm volatile (
+    "    .set    push                        \n"
+    "    .set    reorder                     \n"
+    "    .set    noat                        \n"
+    "    la    $29, (second_cpu_little_stack+128)   \n"
+    "    j do_boot_second_cpu   \n"
+    "    nop                    \n"
+    "    .set    pop                         \n"
+    :
+    :
+    : "memory"
+    );
+}
+
+static void start_second_cpu(void)
+{
+	writel((unsigned long)boot_second_cpu, CCU_IO_BASE+CCU_RER);
+	writel(0, CCU_IO_BASE+CCU_CSRR);
+}
+#endif
+
+static int spl_sfc_rtos_load(struct rtos_header *rtos, unsigned int offset)
+{
+	sfc_nand_load(offset, sizeof(*rtos), (unsigned int)rtos);
+	if (rtos_check_header(rtos))
+		return -1;
+
+	sfc_nand_load(offset, rtos->img_end - rtos->img_start, rtos->img_start);
+
+	return 0;
+}
+
 static void spl_sfc_rtos_boot(void)
 {
-	struct rtos_header rtos;
+	unsigned int rtos_offset = CONFIG_RTOS_OFFSET;
 
 	sfc_init();
 
-	sfc_nand_load(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
-	if (rtos_check_header(&rtos))
-		hang();
-	sfc_nand_load(CONFIG_RTOS_OFFSET, rtos.img_end - rtos.img_start, rtos.img_start);
+#ifdef CONFIG_SPL_RTOS_NAME
+	struct jz_sfcnand_partition_param *partitions = get_partitions();
 
-	rtos_start(&rtos);
+	rtos_offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_NAME);
+	if (rtos_offset == -1) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		hang();
+	}
+#endif
+
+	if (spl_sfc_rtos_load(&rtos_header, rtos_offset))
+		hang();
+
+	flush_cache_all();
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+	start_second_cpu();
+#else
+	/* NOTE: not return */
+	rtos_raw_start(&rtos_header);
+#endif
+
+#ifdef CONFIG_SPL_OS_BOOT
+	spl_sfc_nand_os_load();
+	return;
+#endif
+
+	hang();
 }
 #endif
 
@@ -538,6 +615,7 @@ char* spl_sfc_nand_load_image(void)
 	return NULL;
 #elif CONFIG_SPL_RTOS_BOOT
 	spl_sfc_rtos_boot();
+	return NULL;
 #elif defined(CONFIG_SPL_OS_OTA_BOOT)
 	return spl_sfc_nand_os_ota_load();
 #elif defined(CONFIG_SPL_OS_BOOT)
