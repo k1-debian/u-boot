@@ -11,6 +11,7 @@
 #include <asm/arch/sfc.h>
 #include <asm/arch/spinor.h>
 #include <generated/sfc_timing_val.h>
+#include "spl_rtos.h"
 
 
 #define STATUS_MAX_LEN  4      //4 * byte = 32 bit
@@ -678,6 +679,21 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 	*base_addr = nv_addr + nv_off * blocksize;
 }
 #endif
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+static void spl_sfc_nor_rtos_boot(void)
+{
+	struct rtos_header rtos;
+
+	sfc_read_data(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
+	if (rtos_check_header(&rtos))
+		hang();
+	sfc_read_data(CONFIG_RTOS_OFFSET, rtos.img_end - rtos.img_start, rtos.img_start);
+
+	rtos_start(&rtos);
+}
+#endif
+
 char* spl_sfc_nor_load_image(void)
 {
 	struct image_header *header;
@@ -730,6 +746,12 @@ char* spl_sfc_nor_load_image(void)
 	} else
 #endif	/* CONFIG_OTA_VERSION20 */
 #endif	/* CONFIG_SPL_OS_BOOT */
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+	spl_sfc_nor_rtos_boot();
+	return NULL;
+#endif
+
 	{
 		header->ih_name[IH_NMLEN - 1] = 0;
 		spl_parse_image_header(header);
