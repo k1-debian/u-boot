@@ -73,7 +73,7 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 		args_mem += int_to_string(args_mem, rmem_start, 16);
 	}
 
-	memmove(args_mem, args_mem_end, strlen(args_mem_end));
+	memmove(args_mem, args_mem_end, strlen(args_mem_end) + 1);
 
 	return cmdargs;
 }
