@@ -67,9 +67,18 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 #endif
 
 #ifdef CONFIG_DDR_DRIVER_OUT_STRENGTH
-	/*   00 - RZQ/6,01 - RZQ / 7 */
-	p->mr1.ddr3.DIC1 = CONFIG_DDR_DRIVER_OUT_STRENGTH;
-	BETWEEN(ddrp->mr1.ddr3.DIC1,0,1);
+	/**********************
+      	DIC5   DIC1
+	 * 0     0 - RZQ/6.   *
+	 * 0     1 - RZQ/7.   *
+	 * 1     0 - RZQ/3.   *
+	 * 1     1 - RZQ/4.   *
+	 **********************/
+	p->mr1.ddr3.DIC5 = CONFIG_DDR_DRIVER_OUT_STRENGTH_1;
+	BETWEEN(p->mr1.ddr3.DIC5,0,1);
+
+    	p->mr1.ddr3.DIC1 = CONFIG_DDR_DRIVER_OUT_STRENGTH_0;
+	BETWEEN(p->mr1.ddr3.DIC1,0,1);
 #else
 	p->mr1.ddr3.DIC1 = 1; /* Impedance=RZQ/7 */
 #endif
@@ -83,8 +92,25 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 	 * 100 - RZQ/12.      *
 	 * 101 - RZQ/8.       *
 	 **********************/
-	p->mr1.ddr3.RTT2 = CONFIG_DDR_CHIP_ODT_VAL; /* Effective resistance of ODT RZQ/4 */
-	BETWEEN(p->mr1.ddr3.RTT2,0,5);
+	p->mr1.ddr3.RTT9 = CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_9; /* Effective resistance of ODT RZQ/4 */
+	BETWEEN(p->mr1.ddr3.RTT9,0,1);
+
+    	p->mr1.ddr3.RTT6 = CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_6; /* Effective resistance of ODT RZQ/4 */
+	BETWEEN(p->mr1.ddr3.RTT6,0,1);
+
+	p->mr1.ddr3.RTT2 = CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_2; /* Effective resistance of ODT RZQ/4 */
+	BETWEEN(p->mr1.ddr3.RTT2,0,1);
+
+    	/* RTT_WR */
+    	/*****************************
+    	A10    A9
+    	* 0     0 - rtt_wr disable. *
+    	* 0     1 - RZQ/4.          *
+    	* 1     0 - RZQ/2.          *
+    	* 1     1 - reserved.       *
+    	*****************************/
+    	p->mr2.ddr3.RTTWR = CONFIG_DDR_CHIP_ODT_VAL_RTT_WR; /* Effective resistance of ODT RZQ/4 */
+    	BETWEEN(p->mr2.ddr3.RTTWR,0,3);
 #endif
 
 	tmp = -1;

@@ -88,11 +88,6 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 	printf("ERROR EPC %x\n", read_c0_errorepc());
-	if(*(volatile unsigned int *)0xbfc00084 == 0x244232c8) {
-		printf("Current Version: V2\n");
-	} else {
-		printf("Current Version: V1\n");
-	}
 #endif
 #ifndef CONFIG_X2000_FPGA
 	debug("Timer init\n");

@@ -19,8 +19,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __DDR_H__
-#define __DDR_H__
+#ifndef __DDR_INNOPHY_H__
+#define __DDR_INNOPHY_H__
 
 #include <asm/arch/base.h>
 
