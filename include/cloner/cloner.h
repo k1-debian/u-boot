@@ -9,8 +9,6 @@
 #include <spi.h>
 #include <spi_flash.h>
 #include <efuse.h>
-#include <ingenic_soft_i2c.h>
-#include <ingenic_soft_spi.h>
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 #include <linux/compiler.h>
@@ -19,6 +17,12 @@
 #include <linux/mtd/mtd.h>
 #include <nand.h>
 #include <ingenic_nand_mgr/nand_param.h>
+#include <ingenic_soft_i2c.h>
+
+#ifdef CONFIG_INGENIC_SOFT_SPI
+#include <ingenic_soft_spi.h>
+extern struct spi spi;
+#endif
 
 #define ARGS_LEN (1024*1024)
 #define BURNNER_DEBUG 0
@@ -26,7 +30,6 @@
 
 #define SSI_IDX 0
 
-struct spi spi;
 #define VR_GET_CPU_INFO		0x00  /*bootrom stage request*/
 #define VR_SET_DATA_ADDR	0x01
 #define VR_SET_DATA_LEN		0x02

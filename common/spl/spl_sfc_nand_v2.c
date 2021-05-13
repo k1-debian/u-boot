@@ -201,12 +201,11 @@ read_oob:
 			return -1;
 	}
 
-	/* plane select: MXIC 2G, Dosilicon 2G, Zetta 2G */
-	if(curr_device->device_id == 0x20
-			|| curr_device->device_id == 0x22
-			|| curr_device->device_id == 0x72
-			|| curr_device->device_id == 0xF2
-			|| curr_device->device_id == 0x24)
+	/* plane select */
+	if(curr_device->device_id == 0x22			/* MX35LF2GE4AB */
+			|| curr_device->device_id == 0x72	/* DS35Q2GAXXX,	ZD35Q2GA */
+			|| curr_device->device_id == 0xF2	/* DS35Q2GBXXX */
+			|| curr_device->device_id == 0x24)	/* XT26G02E */
 		column |= (((page >> 6) & 1) << 12);
 
 #ifdef CONFIG_SFC_QUAD

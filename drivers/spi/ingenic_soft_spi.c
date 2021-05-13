@@ -33,7 +33,7 @@
 /*-----------------------------------------------------------------------
  * Definitions
  */
-extern struct spi spi;
+struct spi spi;
 
 #ifdef DEBUG_SPI
 #define PRINTD(fmt,args...)	printf (fmt ,##args)

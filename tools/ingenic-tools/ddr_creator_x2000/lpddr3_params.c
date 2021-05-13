@@ -280,7 +280,7 @@ static void ddrc_params_creator_lpddr3(struct ddrc_reg *ddrc, struct ddr_params 
 	ASSERT_MASK(tmp,6);
 	ddrc->timing2.b.tRTW = tmp;
 
-	DDRC_TIMING_SET(2,lpddr2_params,tRTP,6);  //JEDC is diff
+	DDRC_TIMING_SET(2,lpddr3_params,tRTP,6);  //JEDC is diff
 
 	/**
 	 * timing3

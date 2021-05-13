@@ -376,7 +376,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 		_CASE(LPDDR2, 5);	/* LPDDR2:0b101 */
 		_CASE(DDR2, 4);	    /* DDR2:0b100 */
 		_CASE(LPDDR3, 5);	/* LPDDR3:0b111 Please contact IC department for more information */
-/*		_CASE(LPDDR3, 7);	/* LPDDR3:0b111 */
+//		_CASE(LPDDR3, 7);	/* LPDDR3:0b111 */
 #undef _CASE
 	default:
 		out_error("don't support the ddr type.!");

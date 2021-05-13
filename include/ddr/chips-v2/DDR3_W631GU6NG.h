@@ -100,10 +100,10 @@ static inline void DDR3_W631GU6NG_init(void *data)
 
 #define DDR3_W631GU6NG {					\
 	.name 	= "W631GU6NG",					\
-	.id	= DDR_CHIP_ID(VENDOR_WINBOND, TYPE_DDR3, MEM_128M),	\
+	.id	= DDR_CHIP_ID(VENDOR_WINBOND, TYPE_DDR3, MEM_256M),	\
 	.type	= DDR3,						\
 	.freq	= CONFIG_DDR3_W631GU6NG_MEM_FREQ,			\
-	.size	= 128,						\
+	.size	= 256,						\
 	.init	= DDR3_W631GU6NG_init,				\
 }
 

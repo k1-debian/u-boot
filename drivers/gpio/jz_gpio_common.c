@@ -85,6 +85,71 @@ static inline int is_gpio_from_chip(int gpio_num)
 	return gpio_num < (GPIO_NR_PORTS * 32) ? 1 : 0;
 }
 
+
+#if defined(PXPEL) && defined(PXPEH)
+#define BIT(nr)         (1UL << (nr))
+void gpio_set_driver_state(enum gpio_port n, unsigned int pins, unsigned int state)
+{
+	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * n;
+	unsigned int tmp = pins;
+	unsigned int val = 0;
+	unsigned int pin = 0;
+
+	if (tmp & 0xffff) {
+		val = readl(base + PXPEL);
+		while (!!(pin = fls((tmp & 0xffff)))) {
+			pin = pin - 1;
+			tmp &= ~(BIT(pin));
+			val |= state << (pin << 1);
+		}
+
+		writel(val, base + PXPEL);
+	}
+	if (tmp & 0xffff0000) {
+		val = readl(base + PXPEH);
+		while (!!(pin = fls((tmp)))) {
+			pin = pin - 1;
+			tmp &= ~(BIT(pin));
+			val |= state << ((pin - 16) << 1);
+		}
+
+		writel(val, base + PXPEH);
+	}
+}
+#endif
+
+#if defined(PXDSL) && defined(PXDSH)
+void gpio_set_driver_strength(enum gpio_port n, unsigned int pins, unsigned int ds)
+{
+	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * n;
+	unsigned int tmp = pins;
+	unsigned int val = 0;
+	unsigned int pin = 0;
+
+	if (tmp & 0xffff) {
+		val = readl(base + PXDSL);
+		while (!!(pin = fls((tmp & 0xffff)))) {
+			pin = pin - 1;
+			tmp &= ~(BIT(pin));
+			val |= ds << (pin << 1);
+		}
+
+		writel(val, base + PXDSL);
+	}
+	if (tmp & 0xffff0000) {
+		val = readl(base + PXDSH);
+		while (!!(pin = fls((tmp)))) {
+			pin = pin - 1;
+			tmp &= ~(BIT(pin));
+			val |= ds << ((pin - 16) << 1);
+		}
+
+		writel(val, base + PXDSH);
+	}
+}
+#endif
+
+
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 {
 	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * n;
@@ -102,6 +167,13 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
 	writel(func & 0x10? pins : 0, base + PXPEC);
 	writel(func & 0x10? 0 : pins, base + PXPES);
+#endif
+
+#if defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
+	gpio_set_driver_state(n, pins, PXPE_PULLUP);
+#endif
+#if defined(PXDSL) && defined(PXDSH)
+//	gpio_set_driver_strength(n, pins, PXDS_8mA);
 #endif
 }
 

@@ -91,6 +91,23 @@ struct jz_gpio_func_def {
 #define PXPEHC		0x128   /* Port Pull Disable Clear Register */
 
 
+#define PXDSL           0x130   /* Port Driver-strength 0 Register */
+#define PXDSLS          0x134   /* Port Driver-strength 0 Set Register */
+#define PXDSLC          0x138   /* Port Driver-strength 0 Clear Register */
+#define PXDSH           0x140   /* Port Driver-strength 1 Register */
+#define PXDSHS          0x144   /* Port Driver-strength 1 Set Register */
+#define PXDSHC          0x148   /* Port Driver-strength 1 Clear Register */
+
+
+#define PXPE_PULLHZ     0x0
+#define PXPE_PULLUP     0x1
+#define PXPE_PULLDN     0x2
+
+#define PXDS_2mA        0x0
+#define PXDS_4mA        0x1
+#define PXDS_8mA        0x2
+#define PXDS_12mA       0x3
+
 #define GPIO_PXPIN(n)	(GPIO_BASE + (PXPIN + (n)*0x1000)) /* PIN Level Register */
 #define GPIO_PXINT(n)	(GPIO_BASE + (PXINT + (n)*0x1000)) /* Port Interrupt Register */
 #define GPIO_PXINTS(n)	(GPIO_BASE + (PXINTS + (n)*0x1000)) /* Port Interrupt Set Register */

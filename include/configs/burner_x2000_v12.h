@@ -140,15 +140,6 @@
 #endif
 
 /**
- * Boot arguments definitions.
- */
-
-/* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=256M@0x30000000"
-#define        CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
-
-
-/**
  * Boot command definitions.
  */
 #define CONFIG_BOOTDELAY    0

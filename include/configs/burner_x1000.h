@@ -73,7 +73,7 @@
 
 /* SPI */
 #define CONFIG_SFC_NAND_RATE	       100000000
-#define CONFIG_SFC_NOR_RATE            150000000
+#define CONFIG_SFC_NOR_RATE            100000000
 #define CONFIG_CMD_SFC_NOR
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC

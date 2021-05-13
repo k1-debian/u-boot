@@ -4,7 +4,7 @@
 #define FS_MID			    0xCD
 #define FS_NAND_DEVICD_COUNT	    4
 
-static unsigned char fs_xaw[] = {0x5, 0x6,};
+static unsigned char fs_xaw[] = {0x4, 0x7};
 static unsigned char fs_xaw1[] = {0x2};
 
 static struct device_struct device[] = {
