@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __ROBAM_X2100__
-#define __ROBAM_X2100__
+#ifndef __HUABY_X2100__
+#define __HUABY_X2100__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -81,7 +81,7 @@
 #define CONFIG_SYS_SCACHE_WAYS		(8)
 
 
-#define CONFIG_SYS_UART_INDEX		5
+#define CONFIG_SYS_UART_INDEX		2
 #define CONFIG_BAUDRATE			115200
 
 /*
@@ -162,7 +162,7 @@
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 #define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
 
-#define BOOTARGS_COMMON "console=ttyS5,115200 mem=128M@0x0 "
+#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0 "
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
