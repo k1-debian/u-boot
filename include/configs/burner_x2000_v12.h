@@ -269,6 +269,9 @@
 #define CONFIG_MAC_SIZE	    (1 * 1024 * 1024)
 #define CONFIG_JZ_SPINAND_SN
 #define CONFIG_SN_SIZE	    (1 * 1024 * 1024)
+#define CONFIG_JZ_SPINAND_LICENSE
+#define CONFIG_LICENSE_SIZE (1 * 1024 * 1024)
+
 
 #endif
 

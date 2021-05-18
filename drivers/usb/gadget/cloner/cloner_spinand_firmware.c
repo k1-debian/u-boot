@@ -19,6 +19,11 @@ struct mac_config {
 	uint32_t crc_val;
 };
 
+struct license_config {
+	uint32_t license_len;
+	uint32_t crc_val;
+};
+
 static int32_t firmware_buf_compare(uint8_t *wbuf, uint8_t *rbuf, uint32_t len) {
 
 	int32_t i = 0;
@@ -134,6 +139,88 @@ static int32_t spinand_firmware_write(struct mtd_info *mtd, uint32_t flash_offs,
 
 	return 0;
 }
+
+#ifdef CONFIG_JZ_SPINAND_LICENSE
+int32_t spinand_license_program(struct cloner *cloner) {
+
+	struct mtd_info *mtd = (void *)nand_info;
+	struct license_config license = {
+		.license_len = cloner->cmd->write.length,
+		.crc_val = cloner->cmd->write.crc,
+	};
+	int32_t ret = 0;
+	void *buf = calloc(sizeof(license) + license.license_len, sizeof(uint8_t));
+	if(!buf) {
+		printf("alloc mem failed!\n");
+		return -ENOMEM;
+	}
+
+	memcpy(buf, &license, sizeof(license));
+	memcpy(buf + sizeof(license), (void *)cloner->write_req->buf, license.license_len);
+
+	if(spinand_firmware_write(mtd, mtd->size + CONFIG_MAC_SIZE + CONFIG_SN_SIZE, CONFIG_LICENSE_SIZE,
+		    buf, sizeof(license) + license.license_len)) {
+		printf("#########burner license firware failed!\n");
+		ret = -EIO;
+	}
+
+	free(buf);
+	return ret;
+}
+
+
+int32_t spinand_license_read(struct cloner *cloner) {
+
+	struct mtd_info *mtd = (void *)nand_info;
+	struct license_config license;
+	uint32_t read_off = mtd->size + CONFIG_MAC_SIZE + CONFIG_LICENSE_SIZE;
+	int32_t ret = 0, i = 0;
+	void *buf = cloner->read_req->buf;
+
+	for(i = 0; i < CONFIG_LICENSE_SIZE / mtd->erasesize; i++) {
+		memset(&license, 0, sizeof(license));
+		ret = flash_read_blk(mtd, read_off, sizeof(license), &license);
+		if(!ret && license.license_len != 0 && license.crc_val != 0)
+			break;
+		printf("%s %s %d: read license config failed!, retrycount = %d\n",
+			__FILE__, __func__, __LINE__, i);
+		read_off += mtd->erasesize;
+	}
+
+	if(i == CONFIG_LICENSE_SIZE / mtd->erasesize) {
+		printf("%s %s %d: read license config failed!\n",
+			__FILE__, __func__, __LINE__);
+		return -EIO;
+	}
+
+	if(license.license_len == -1 ||
+	    license.crc_val == -1 ||
+	    license.license_len >= FMW_SIZE_MAX) {
+		printf("license data error!\n");
+		return -EINVAL;
+	}
+
+	memcpy(buf, &license, sizeof(license));
+	buf += sizeof(license);
+
+	for(; i < CONFIG_LICENSE_SIZE / mtd->erasesize; i++) {
+		if(!flash_read_blk(mtd, read_off + sizeof(license), license.license_len, buf)) {
+			if(local_crc32(0xffffffff, buf, license.license_len) == license.crc_val)
+				break;
+		}
+		printf("%s %s %d: read license buf failed!, retrycount = %d\n",
+			__FILE__, __func__, __LINE__, i);
+		read_off += mtd->erasesize;
+	}
+
+	if(i == CONFIG_LICENSE_SIZE / mtd->erasesize) {
+		printf("%s %s %d: read sn failed!\n",
+			__FILE__, __func__, __LINE__);
+		return -EIO;
+	}
+	return 0;
+}
+#endif
 
 int32_t spinand_sn_program(struct cloner *cloner) {
 

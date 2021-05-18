@@ -118,6 +118,8 @@ enum spisfc_sub_type {
 	SFC_NAND_MAC_READ,
 	SPI_NAND,
 	SPI_NOR,
+	SFC_NAND_LICENSE_WRITE,
+	SFC_NAND_LICENSE_READ,
 };
 
 enum data_type {

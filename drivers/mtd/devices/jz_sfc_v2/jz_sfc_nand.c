@@ -907,6 +907,9 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 
 #if defined(CONFIG_JZ_SPINAND_SN) && defined(CONFIG_JZ_SPINAND_MAC)
 	mtd->size = flash_info->param.flashsize - CONFIG_SN_SIZE - CONFIG_MAC_SIZE;
+#ifdef CONFIG_JZ_SPINAND_LICENSE
+	mtd->size -= CONFIG_LICENSE_SIZE;
+#endif
 #else
 	mtd->size = flash_info->param.flashsize;
 #endif

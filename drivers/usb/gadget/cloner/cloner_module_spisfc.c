@@ -130,6 +130,12 @@ int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 			ret = spinand_mac_program(cloner);
 			break;
 #endif
+
+#ifdef CONFIG_JZ_SPINAND_LICENSE
+		case SFC_NAND_LICENSE_WRITE:
+			ret = spinand_license_program(cloner);
+			break;
+#endif
 		default:
 			printf("Not found sfc sub_type!\n");
 			return -EINVAL;
@@ -168,6 +174,12 @@ static int32_t clmd_spisfc_read(struct cloner *cloner, int sub_type, void *ops_d
 #ifdef CONFIG_JZ_SPINAND_MAC
 		case SFC_NAND_MAC_READ:
 			ret = spinand_mac_read(cloner);
+			break;
+#endif
+
+#ifdef CONFIG_JZ_SPINAND_LICENSE
+		case SFC_NAND_LICENSE_READ:
+			ret = spinand_license_read(cloner);
 			break;
 #endif
 		default:
