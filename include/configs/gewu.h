@@ -160,7 +160,7 @@
 #if defined(CONFIG_JZ_MMC_MSC0)
 	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
 #elif defined(CONFIG_JZ_MMC_MSC2)
-	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk1p7 rootdelay=3 rw"
+	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
 #endif
 
 #ifdef CONFIG_BOOT_ANDROID
