@@ -348,7 +348,7 @@ void clk_init(void)
 	reg_clkgr = cpm_inl(CPM_CLKGR1);
 	gate = 0
 #ifdef CONFIG_GMAC0
-		| CPM_CLKGR_GMAC0
+		| CPM_CLKGR1_GMAC0
 #endif
 #ifdef CONFIG_JZ_SCBOOT
 		| CPM_CLKGR_HASH

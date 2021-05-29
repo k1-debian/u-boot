@@ -119,7 +119,7 @@
 #define CPM_CLKGR1_I2D		(1 << 8)
 #define CPM_CLKGR1_MIPI_DSI	(1 << 7)
 #define CPM_CLKGR1_AES		(1 << 5)
-#define CPM_CLKGR1_GMAC		(1 << 4)
+#define CPM_CLKGR1_GMAC0	(1 << 4)
 #define CPM_CLKGR1_RADIX	(1 << 3)
 #define CPM_CLKGR1_IPU		(1 << 2)
 #define CPM_CLKGR1_DTRNG	(1 << 1)

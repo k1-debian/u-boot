@@ -1387,6 +1387,53 @@ static int check_phy_init_ip101g(synopGMACdevice *gmacdev)
 	}
 	return status;
 }
+
+static int check_phy_init_rtl8021f(synopGMACdevice *gmacdev)
+{
+	u16 data;
+	s32 status = -ESYNOPGMACNOERR;
+	int speed_bit;
+
+	printf("########### check_phy_init_rtl8021f #############\n");
+
+	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_STATUS_REG, &data);
+	if(status)
+		return status;
+	if((data & Mii_Link) == 0){
+		printf("No Link\n");
+		gmacdev->LinkState = LINKDOWN;
+		return -ESYNOPGMACPHYERR;
+	}
+	else{
+		gmacdev->LinkState = LINKUP;
+		printf("Link UP\n");
+	}
+
+	status = synopGMAC_read_phy_reg((u32 *)gmacdev->MacBase,gmacdev->PhyBase,PHY_SPECIFIC_STATUS_REG, &data);
+	if(status)
+		return status;
+	speed_bit = (data & (0xf<<5)) >> 5;
+	switch(speed_bit) {
+		case 0x8:
+			gmacdev->Speed = SPEED100;
+			gmacdev->DuplexMode = FULLDUPLEX;
+			break;
+		case 0x4:
+			gmacdev->Speed = SPEED100;
+			gmacdev->DuplexMode = HALFDUPLEX;
+			break;
+		case 0x2:
+			gmacdev->Speed = SPEED10;
+			gmacdev->DuplexMode = FULLDUPLEX;
+			break;
+		case 0x1:
+			gmacdev->Speed = SPEED10;
+			gmacdev->DuplexMode = HALFDUPLEX;
+			break;
+	}
+	return status;
+}
+
 struct phy_list {
 	unsigned int oui_id;
 	int (*check_init)(synopGMACdevice *gmacdev);
@@ -1413,6 +1460,10 @@ struct phy_list phy_lists[] = {
 	[4] = {
 		.oui_id = 0x30243,
 		.check_init = check_phy_init_ip101g,
+	},
+	[4] = {
+		.oui_id = 0x32001C,
+		.check_init = check_phy_init_rtl8021f,
 	},
 };
 

@@ -563,7 +563,7 @@ static void jz_gmac_phy_reset(void)
 }
 #endif
 
-#if defined(CONFIG_NET_X2000) || defined(CONFIG_NET_X2000_V12) || defined(CONFIG_X2100)
+#if defined(CONFIG_NET_X2000) || defined(CONFIG_NET_X2000_V12) || defined(CONFIG_X2100) || defined(CONFIG_X2500)
 static void jz_gmac_phy_reset(void)
 {
 #ifndef CONFIG_FPGA
@@ -619,7 +619,7 @@ int jz_net_initialize(bd_t *bis)
 	gmacdev->MacBase =  JZ_GMAC_BASE + MACBASE;
 
 	u32 cpm_mphyc = 0;
-#if defined(CONFIG_NET_X2000_V12) || defined(GONFIG_X2100)
+#if defined(CONFIG_NET_X2000_V12) || defined(GONFIG_X2100) || defined(CONFIG_X2500)
 	unsigned int rx_clk_delay = CONFIG_GMAC_RX_CLK_DELAY;
 	unsigned int tx_clk_delay = CONFIG_GMAC_TX_CLK_DELAY;
 	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
