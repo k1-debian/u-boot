@@ -12,7 +12,7 @@
 #include <asm/arch/spinor.h>
 #include <generated/sfc_timing_val.h>
 #include <asm/nvrw_interface.h>
-
+#include "spl_rtos.h"
 
 #define GS_RETRY_TIMES	100
 
@@ -464,6 +464,20 @@ static void nv_map_area(struct mini_spi_nor_info *spi_nor_info, unsigned int *ba
 }
 #endif
 
+#ifdef CONFIG_SPL_RTOS_BOOT
+static void spl_sfc_nor_rtos_boot(void)
+{
+	struct rtos_header rtos;
+
+	sfc_read_data(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
+	if (rtos_check_header(&rtos))
+		hang();
+	sfc_read_data(CONFIG_RTOS_OFFSET, rtos.img_end - rtos.img_start, rtos.img_start);
+
+	rtos_start(&rtos);
+}
+#endif
+
 static void spl_load_kernel(long offset)
 {
 	struct image_header *header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
@@ -571,6 +585,10 @@ char* spl_sfc_nor_load_image(void)
     #endif	/* CONFIG_NV_INFO_AS_IAD */
   #endif	/* CONFIG_OTA_VERSION20 */
 #else /* not define CONFIG_SPL_OS_BOOT */
+#ifdef CONFIG_SPL_RTOS_BOOT
+		spl_sfc_nor_rtos_boot();
+	return NULL;
+#endif
 	{
 		struct image_header *header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 		memset(header, 0, sizeof(struct image_header));
