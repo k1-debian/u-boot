@@ -38,6 +38,7 @@ static enum socid {
 	X1000_NEW = 0xff08,
 	X1000E_NEW = 0xff09,
 	X1500_NEW = 0xff0a,
+	X1501 = 0xff05,
 };
 
 static void read_efuse_segment(unsigned int addr, unsigned int length, unsigned int *buf)
@@ -119,6 +120,7 @@ int check_socid()
 	case X1000_NEW:
 	case X1500_NEW:
 	case X1500L_NEW:
+	case X1501:
 		gd->arch.gi->ddr_change_param.ddr_autosr = 1;
 		break;
 	case X1000E:
