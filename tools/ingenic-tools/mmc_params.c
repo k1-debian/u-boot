@@ -28,6 +28,9 @@
 #if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500)
 #define SPL_SIZE (24 * 1024)
 #endif
+#if defined(CONFIG_X1600)
+#define SPL_SIZE (26 * 1024)
+#endif
 
 #define BLOCK_SIZE 512
 #define SPL_MAX_BLOCK (SPL_SIZE / BLOCK_SIZE)

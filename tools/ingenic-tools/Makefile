@@ -222,6 +222,10 @@ else ifeq ($(if $(CONFIG_X2500),y,n),y)
 $(obj)spl_params_fixer:	spl_params_fixer_x2500.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
+else ifeq ($(if $(CONFIG_X1600),y,n),y)
+$(obj)spl_params_fixer:	spl_params_fixer_x1600.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
 else
 $(obj)spl_params_fixer:	spl_params_fixer.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^

@@ -1,8 +1,8 @@
 #
-# Copyright (C) 2011 Xiangfu Liu <xiangfu@openmobilefree.net>
-#
-# See file CREDITS for list of people who contributed to this
-# project.
+# Copyright (c) 2015 Ingenic Semiconductor Co.,Ltd
+# Author: Matthew <xu.guo@ingenic.com>
+# Based on: board/reliableIPTV/urboard/Makefile
+#           Written by Paul Burton <paul.burton@imgtec.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -22,42 +22,18 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(CPU).o
+LIB	= $(obj)lib$(BOARD).o
 
-START	= start.o
-SOBJS-y	=
-COBJS-y	= jz_serial.o
-ifdef CONFIG_SPL_BUILD
-COBJS-y	+= spl_cpu.o
-ifdef CONFIG_X1600
-COBJS-y += ./x1600/timer.o
-else
-COBJS-y += spl_timer.o
-endif
-else
-COBJS-y	+= cpu.o
-ifdef CONFIG_X1600
-COBJS-y	+= ./x1600/timer.o
-else
-COBJS-y	+= timer.o
-endif
-endif
-COBJS-$(CONFIG_XBURST_TRAPS) += traps.o
-COBJS-$(CONFIG_SPL_OS_BOOT) += os_boot.o
+COBJS-y	:= board.o
+COBJS-$(CONFIG_VIDEO_BM347WV_F_8991FTGF) += lcd-8991.o
+COBJS-$(CONFIG_VIDEO_TRULY_TFT240240_2_E) += lcd-truly-tft240240.o
+COBJS-$(CONFIG_VIDEO_BYD_BM8766U) += lcd-bydbm8766u.o
 
-ifdef	CONFIG_SPL_BUILD
-ifdef	CONFIG_SPL_NO_CPU_SUPPORT_CODE
-START	:=
-endif
-endif
+SRCS	:= $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
+OBJS	:= $(addprefix $(obj),$(COBJS-y))
+SOBJS   := $(addprefix $(obj),$(SOBJS-y))
 
-SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
-OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
-START	:= $(addprefix $(obj),$(START))
-
-all:	$(obj).depend $(START) $(LIB)
-
-$(LIB):	$(OBJS)
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
 	$(call cmd_link_o_target, $(OBJS))
 
 #########################################################################
