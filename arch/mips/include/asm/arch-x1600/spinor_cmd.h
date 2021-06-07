@@ -1,7 +1,5 @@
-#ifndef __LINUX_SPI_NOR_H
-#define __LINUX_SPI_NOR_H
-
-
+#ifndef __SPINOR_CMD_H
+#define __SPINOR_CMD_H
 
 /* Flash opcodes. */
 #define SPINOR_OP_RSTEN		0x66	/* reset enable */
@@ -27,6 +25,8 @@
 #define SPINOR_OP_RDID		0x9f	/* Read JEDEC ID */
 #define SPINOR_OP_RDCR		0x35	/* Read configuration register */
 #define SPINOR_OP_RDFSR		0x70	/* Read flag status register */
+#define SPINOR_OP_DIE_SEL	0xc2	/* Software Die Select */
+#define SPINOR_OP_READ_DIE_ID	0xf8	/* Read Active Die ID */
 
 /* 4-byte address opcodes - used on Spansion and some Macronix flashes. */
 #define SPINOR_OP_READ4		0x13	/* Read data bytes (low frequency) */
@@ -67,12 +67,18 @@
 #define CR_QUAD_EN_SPAN		0x2	/* Spansion Quad I/O */
 
 
-#define CMD_WREN 	0x06	/* Write Enable */
-#define CMD_EN4B				0xB7
-#define CMD_EX4B				0xE9
+#define CMD_WREN		0x06	/* Write Enable */
+#define CMD_EN4B		0xB7
+#define CMD_EX4B		0xE9
+
+
+/* nor cmd entry deep power down and Release from Deep Power-Down and Read Device ID */
+#define CMD_DP (0xB9)
+#define CMD_RDP (0xAB)
+
 
 #define BUFFER_SIZE PAGE_SIZE
 
-
+#define NOR_SIZE_16M	0x1000000
 
 #endif

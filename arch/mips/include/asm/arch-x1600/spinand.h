@@ -1,14 +1,16 @@
 #ifndef __SPINAND_H
 #define __SPINAND_H
-#include <asm/arch/jz_sfc_v2/sfc.h>
-#include <asm/arch/jz_sfc_v2/spinand_cmd.h>
+#include <asm/arch/sfc.h>
+#include <asm/arch/spinand_cmd.h>
 #include <linux/types.h>
 #include <linker_lists.h>
 
-/*
- * u-boot private
- */
-#ifndef CONFIG_SPL_BUILD
+#define MTD_MODE                0x0     //use mtd mode, erase partition when write
+#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
+#define UBI_MANAGER             0x1
+
+#define SPINAND_MAGIC_NUM	0x646e616e   //ascii "nand"
+
 struct jz_sfcnand_partition {
 	char name[32];		/* identifier string */
 	uint32_t size;          /* partition size */
@@ -23,6 +25,17 @@ struct jz_sfcnand_burner_param {
 	struct jz_sfcnand_partition *partition;
 };
 
+struct jz_sfcnand_partition_param {
+	uint8_t num_partition;
+/*	struct mtd_partition *partition;*/
+	struct jz_sfcnand_partition *partition;
+};
+
+
+/*
+ * u-boot private
+ */
+#ifndef CONFIG_SPL_BUILD
 struct jz_sfcnand_base_param {
 	uint32_t pagesize;
 	uint32_t blocksize;
@@ -46,12 +59,6 @@ struct jz_sfcnand_base_param {
 
 	uint8_t ecc_max;
 	uint8_t need_quad;
-};
-
-struct jz_sfcnand_partition_param {
-	uint8_t num_partition;
-/*	struct mtd_partition *partition;*/
-	struct jz_sfcnand_partition *partition;
 };
 
 struct device_id_struct {

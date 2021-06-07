@@ -140,9 +140,9 @@
 #elif defined(CONFIG_SPL_NOR_SUPPORT)
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.207:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/pzqi/rootfs-tst rw"
 #elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw flashtype=nor"
 #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw flashtype=nand"
 #else
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 root=ubi0:root rootfstype=ubifs rw"
 #endif
@@ -153,9 +153,9 @@
 #elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
 	#define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2000; bootm 0x80600000"
 #elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
+	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x600000 0x80a00000 ;bootm 0x80a00000"
 #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x400000 0x80600000 ;bootm 0x80600000"
+	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x600000 0x80a00000 ;bootm 0x80a00000"
 #else
 	#define CONFIG_BOOTCOMMAND						\
 	"mtdparts default; ubi part system; ubifsmount ubi:boot; "	\
@@ -172,55 +172,67 @@
 /* used for debug */
 /* #define CONFIG_SPL_LIBCOMMON_SUPPORT */
 
+#ifdef CONFIG_X1600_NEMC
+#define CONFIG_CMD_NEMC
+#endif
+
 #if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
 #define CONFIG_SPL_SFC_SUPPORT
 #define CONFIG_SPL_VERSION	1
 #endif
 
-/*
+/* SFC */
 #define CONFIG_SFC_V20
 
-#ifdef CONFIG_USE_SFC_V2
-#define CONFIG_JZ_SFC_V2
-#else
-#define CONFIG_JZ_SFC
-#endif
-*/
-#ifdef CONFIG_X1600_NEMC
-#define CONFIG_CMD_NEMC
-#endif
+/* sfc gpio */
+#define CONFIG_JZ_SFC_CE_PB31
 
+/* sfc nor config */
 #ifdef CONFIG_SPL_SFC_NOR
+#define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SFC_NOR_RATE	400000000	/* value <= 400000000(sfc 100Mhz)*/
-/*#define CONFIG_SFC_QUAD*/
-#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
-#define CONFIG_SPI_NORFLASH_PART_OFFSET     0x5874
-#define CONFIG_NOR_MAJOR_VERSION_NUMBER     1
-#define CONFIG_NOR_MINOR_VERSION_NUMBER     0
-#define CONFIG_NOR_REVERSION_NUMBER     0
+#define CONFIG_SFC_QUAD
+#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
+#define CONFIG_SPI_NORFLASH_PART_OFFSET		0x5874
+#define CONFIG_NOR_MAJOR_VERSION_NUMBER		1
+#define CONFIG_NOR_MINOR_VERSION_NUMBER		0
+#define CONFIG_NOR_REVERSION_NUMBER		0
 #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
+/*#define CONFIG_NOR_BUILTIN_PARAMS*/
 #endif
 
+/* sfc nand config */
 #ifdef  CONFIG_SPL_SFC_NAND
+#define CONFIG_JZ_SFC
 #define CONFIG_SFC_NAND_RATE    400000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
-#define CONFIG_SPI_NAND_BPP                     (2048 +64)              /*Bytes Per Page*/
+#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
+#define CONFIG_SPI_NAND_BPP                     (2048 +64)      /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
-#define CONFIG_MTD_SFCNAND
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND
-#define CONFIG_SYS_MAX_NAND_DEVICE      1
-#define CONFIG_SYS_NAND_BASE    0xb3441000
-#define CONFIG_SYS_MAXARGS      16
-#define CONFIG_SYS_MAX_NAND_DEVICE  1
+#define CONFIG_SYS_MAX_NAND_DEVICE		1
+#define CONFIG_SYS_NAND_BASE			0xb3441000
+#define CONFIG_SYS_MAXARGS			16
+/*#define CONFIG_NAND_BUILTIN_PARAMS*/
+
+/* sfc nand env config */
+#define CONFIG_MTD_DEVICE
+#define CONFIG_CMD_SAVEENV		/* saveenv */
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_CMD_MTDPARTS
+#define CONFIG_MTD_PARTITIONS
+#define MTDIDS_DEFAULT                  "nand0:nand"
+#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 #endif
 
 #define CONFIG_SYS_NAND_SELF_INIT
-
 /* end of sfc */
 
 /* MMC */
@@ -368,6 +380,7 @@
 #define CONFIG_SYS_MMC_ENV_DEV		0
 #define CONFIG_ENV_SIZE			(32 << 10)
 #define CONFIG_ENV_OFFSET		(CONFIG_SYS_MONITOR_LEN + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
+
 #elif defined(CONFIG_ENV_IS_IN_SFC)
 #define CONFIG_CMD_SFC_NOR
 #define CONFIG_ENV_SIZE                 (4 << 10)
@@ -375,12 +388,14 @@
 #define CONFIG_CMD_SAVEENV
 
 #else
-/*
-#define CONFIG_ENV_IS_IN_NAND
-*/
-#define CONFIG_ENV_IS_NOWHERE
-#define CONFIG_ENV_SIZE			(32 << 10)
-#define CONFIG_ENV_OFFSET		(CONFIG_SYS_NAND_BLOCK_SIZE * 5)
+/* nand Environment variables */
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+#define CONFIG_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE /* 128K */
+#define SPI_NAND_BLK            CONFIG_SYS_NAND_BLOCK_SIZE /* the spi nand block size */
+#define CONFIG_ENV_SIZE         SPI_NAND_BLK /* uboot is 1M but the last block size is the env */
+#define CONFIG_ENV_OFFSET       (CONFIG_SYS_NAND_BLOCK_SIZE * 6) /* offset is 768k */
+#define CONFIG_ENV_OFFSET_REDUND (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+#define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
 /**

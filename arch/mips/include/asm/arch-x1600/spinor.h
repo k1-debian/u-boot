@@ -16,6 +16,9 @@
 #define NORFLASH_PART_WO	1
 #define NORFLASH_PART_RO	2
 
+#define MTD_MODE                0x0     //use mtd mode, erase partition when write
+#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
+#define UBI_MANAGER             0x1
 
 struct spi_nor_cmd_info {
 	unsigned short cmd;
@@ -87,7 +90,7 @@ struct mini_spi_nor_info {
 	unsigned int page_size;
 	unsigned int erase_size;
 
-	unsigned char spl_quad;	/* reserve, for spl set quad mode */
+//	unsigned char spl_quad;	/* reserve, for spl set quad mode */
 };
 
 struct nor_partition {
@@ -110,6 +113,11 @@ struct burner_params {
 	struct norflash_partitions norflash_partitions;
 	unsigned int fs_erase_size;
 	unsigned char uk_quad;	/* for uboot kernel set quad mode */
+};
+
+struct builtin_params {
+	struct burner_params burner_params;
+	struct mini_spi_nor_info mini_spi_nor_info;
 };
 
 struct spiflash_info {
@@ -171,6 +179,12 @@ struct legacy_params {
 
 };
 
+struct multi_die_flash {
+	uint32_t flash_id;
+	uint32_t die_num;
+	char* flash_name;
+};
+
 
 /* SFC CDT Maximum INDEX number */
 #define INDEX_MAX_NUM 32
@@ -226,6 +240,12 @@ enum {
 	NOR_CHIP_ERASE_WRITE_ENABLE,
 	NOR_CHIP_ERASE,
 	NOR_CHIP_ERASE_FINISH,
+
+	/* 13. active die */
+	NOR_DIE_SELECT,
+
+	/* 14. read die id */
+	NOR_READ_ACTIVE_DIE_ID,
 
 	/* index count */
 	NOR_MAX_INDEX,

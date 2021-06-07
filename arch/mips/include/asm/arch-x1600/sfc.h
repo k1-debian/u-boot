@@ -4,61 +4,46 @@
 #ifndef CONFIG_SPL_BUILD
 #include <linux/list.h>
 #endif
-#include "sfc_params.h"
+#include "spinor.h"
 
 
-struct cmd_info{
-	short cmd;
-	char cmd_len;/*reserved; not use*/
-	char dataen;
-	char pollen;
-#ifndef CONFIG_SPL_BUILD
-	int sta_exp;
-	int sta_msk;
-#endif
+struct data_config {
+
+	uint32_t datalen;
+	uint32_t cur_len;
+	uint8_t data_dir;
+	uint8_t ops_mode;
+	uint8_t *buf;
 };
 
-struct sfc_transfer {
+struct sfc_cdt_xfer {
 
-	struct cmd_info cmd_info;
+	unsigned short cmd_index;
+	uint8_t dataen;
 
-	char addr_len;
-	char direction;
-	char addr_dummy_bits;/*cmd + addr_dummy_bits + addr*/
-	char data_dummy_bits;/*addr + data_dummy_bits + data*/
-	unsigned int addr;
-	unsigned int addr_plus;
-
-	char sfc_mode;
-	char ops_mode;
-	char phase_format;/*we just use default value;phase1:cmd+dummy+addr... phase0:cmd+addr+dummy...*/
-	unsigned char *data;
-	unsigned int len;
-	unsigned int cur_len;
-
-
-#ifndef CONFIG_SPL_BUILD
-	struct list_head transfer_list;
-#endif
+	struct data_config config;
+	struct {
+		uint32_t columnaddr;
+		uint32_t rowaddr;
+		uint32_t staaddr0;
+		uint32_t staaddr1;
+	};
 };
 
-#ifndef CONFIG_SPL_BUILD
-struct sfc_message {
-	struct list_head    transfers;
-	unsigned  int   actual_length;
-	int         status;
-
-};
-#endif
 
 struct sfc{
 
 #ifndef CONFIG_SPL_BUILD
 	unsigned long long src_clk;
 #endif
-	int			threshold;
+	int threshold;
 
-	struct sfc_transfer *transfer;
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_SFC_NAND)
+	struct sfc_transfer *transfer;  /*For nand spl*/
+#else
+	volatile void *cdt_addr;
+	struct sfc_cdt_xfer *xfer;
+#endif
 };
 
 struct sfc_flash {
@@ -71,13 +56,17 @@ struct sfc_flash {
 #else
 	struct mini_spi_nor_info g_nor_info;
 #endif
-	struct spi_nor_flash_ops	*nor_flash_ops;
-	struct spi_nor_cmd_info	 *cur_r_cmd;
-	struct spi_nor_cmd_info	 *cur_w_cmd;
+	struct spi_nor_flash_ops *nor_flash_ops;
+	unsigned short cur_r_cmd;
+	unsigned short cur_w_cmd;
 #ifndef CONFIG_SPL_BUILD
 	struct norflash_partitions *norflash_partitions;
 #endif
 	void *flash_info;
+
+	uint8_t current_die_id;
+	uint32_t die_shift;
+	uint32_t die_num;
 };
 
 
@@ -87,8 +76,7 @@ struct spi_nor_flash_ops {
 };
 
 /* SFC register */
-
-#define	SFC_GLB			(0x0000)
+#define	SFC_GLB				(0x0000)
 #define	SFC_DEV_CONF			(0x0004)
 #define	SFC_DEV_STA_EXP			(0x0008)
 #define	SFC_DEV_STA_RT			(0x000c)
@@ -113,7 +101,7 @@ struct spi_nor_flash_ops {
 #define SFC_GLB1			(0x0094)
 #define SFC_DEV1_STA_RT			(0x0098)
 #define	SFC_TRAN_CONF1(n)		(0x009c + (n * 4))
-#define SFC_LUT                         (0x0800)
+#define SFC_CDT                         (0x0800)
 #define	SFC_RM_DR			(0x1000)
 
 /* For SFC_GLB */
@@ -243,10 +231,10 @@ struct spi_nor_flash_ops {
 
 //SFC_CMD_IDX
 #define CMD_IDX_MSK                     (0x3f)
-#define LUT_DATAEN_MSK                  (0x1 << 31)
-#define LUT_DATAEN_OFF                  (31)
-#define LUT_DIR_MSK                     (0x1 << 30)
-#define LUT_DIR_OFF                     (30)
+#define CDT_DATAEN_MSK                  (0x1 << 31)
+#define CDT_DATAEN_OFF                  (31)
+#define CDT_DIR_MSK                     (0x1 << 30)
+#define CDT_DIR_OFF                     (30)
 
 /* For SFC_GLB */
 #define GLB1_DQS_EN			(1 << 2)
@@ -282,7 +270,10 @@ struct spi_nor_flash_ops {
 #define TM_OCTAL_FULL_SPI	11
 
 
+#define DEFAULT_CDT		1
+#define UPDATE_CDT		2
 #define DEFAULT_ADDRSIZE	3
+#define DEFAULT_ADDRMODE	0
 
 
 #define THRESHOLD		32
@@ -297,30 +288,87 @@ struct spi_nor_flash_ops {
 #ifdef CONFIG_SPL_SFC_NAND
 
 #ifdef CONFIG_SPL_BUILD
+
+struct spl_nand_param {
+		unsigned int pagesize:16;
+		unsigned int id_manufactory:8;
+		unsigned int device_id:8;
+
+		unsigned int addrlen:2;
+		unsigned int ecc_bit:3;
+		unsigned int bit_counts:3;
+
+		unsigned char eccstat_count;
+		unsigned char eccerrstatus[2];
+} __attribute__((aligned(4)));
+
+struct cmd_info {
+	uint8_t cmd;
+	uint8_t dataen;
+};
+
+struct sfc_transfer {
+
+	struct cmd_info cmd_info;
+
+	uint8_t addr_len;
+	uint8_t direction;
+	uint8_t data_dummy_bits;/*addr + data_dummy_bits + data*/
+	uint32_t addr;
+	uint32_t addr_plus;
+
+	uint8_t sfc_mode;
+	uint8_t ops_mode;
+	uint8_t phase_format;/*we just use default value;phase1:cmd+dummy+addr... phase0:cmd+addr+dummy...*/
+	uint8_t *data;
+	uint32_t len;
+	uint32_t cur_len;
+};
+
+
+typedef union sfc_tranconf_r {
+	/** raw register data */
+	unsigned int d32;
+	/** register bits */
+	struct {
+		unsigned cmd:16;
+		unsigned data_en:1;
+		unsigned dmy_bits:6;
+		unsigned phase_format:1;
+		unsigned cmd_en:1;
+		unsigned poll_en:1;
+		unsigned addr_width:3;
+		unsigned reserved:3;
+	} reg;
+} sfc_tranconf_r;
+
 struct jz_sfc {
+	sfc_tranconf_r tranconf;
     unsigned int  addr;
     unsigned int  len;
-    unsigned int  cmd;
+    unsigned int  tran_mode;
     unsigned int  addr_plus;
-    unsigned int  sfc_mode;
-    unsigned char daten;
-    unsigned char addr_len;
-    unsigned char pollen;
-    unsigned char phase;
-    unsigned char dummy_byte;
 };
+
+#define  SFC_SEND_COMMAND(sfc, a, b, c, d, e, f, g)   do{						\
+        ((struct jz_sfc *)sfc)->tranconf.d32 = 0;							\
+        ((struct jz_sfc *)sfc)->tranconf.reg.cmd_en = 1;						\
+		((struct jz_sfc *)sfc)->tranconf.reg.cmd = a;						\
+        ((struct jz_sfc *)sfc)->len = b;								\
+        ((struct jz_sfc *)sfc)->addr = c;								\
+        ((struct jz_sfc *)sfc)->tranconf.reg.addr_width = d;						\
+        ((struct jz_sfc *)sfc)->addr_plus = 0;								\
+        ((struct jz_sfc *)sfc)->tranconf.reg.dmy_bits = e;						\
+        ((struct jz_sfc *)sfc)->tranconf.reg.data_en = f;						\
+		if(a == SPINAND_CMD_RDCH_X4) {								\
+			((struct jz_sfc *)sfc)->tran_mode = TM_QI_QO_SPI;				\
+		} else {										\
+			((struct jz_sfc *)sfc)->tran_mode = TM_STD_SPI;					\
+		}											\
+        sfc_send_cmd(sfc, g);										\
+	} while(0)
+
 #endif
-
-struct spi_mode_peer {
-    int controller_mode;
-    int device_mode;
-};
-
-enum {
-    SPI_MODE_STANDARD,
-    SPI_MODE_STANDARD2,
-    SPI_MODE_QUAD,
-};
 
 #ifdef CONFIG_SFC_DEBUG
 #define sfc_debug(fmt, args...)         \
@@ -333,36 +381,53 @@ enum {
     } while (0)
 #endif
 
-#define  SFC_MODE_GENERATE(sfc, a)    do{                                       \
-        if ((a >= SPI_MODE_STANDARD) && (a <= SPI_MODE_QUAD)){                  \
-            ((struct jz_sfc *)sfc)->cmd = spi_mode_local[a].device_mode;        \
-        }                                                                       \
-        if((((struct jz_sfc *)sfc)->daten == 1)                                 \
-        && (((struct jz_sfc *)sfc)->addr_len != 0)){                            \
-            if (a == SPI_MODE_QUAD)                                             \
-                ((struct jz_sfc *)sfc)->sfc_mode = spi_mode_local[a].controller_mode; \
-            else                                                                \
-                ((struct jz_sfc *)sfc)->sfc_mode = 0;                           \
-        } else {                                                                \
-            ((struct jz_sfc *)sfc)->sfc_mode = 0;                               \
-        }                                                                       \
-} while(0)
-
-#define  SFC_SEND_COMMAND(sfc, a, b, c, d, e, f, g)   do{                       \
-        ((struct jz_sfc *)sfc)->cmd = a;                                        \
-        ((struct jz_sfc *)sfc)->len = b;                                        \
-        ((struct jz_sfc *)sfc)->addr = c;                                       \
-        ((struct jz_sfc *)sfc)->addr_len = d;                                   \
-        ((struct jz_sfc *)sfc)->addr_plus = 0;                                  \
-        ((struct jz_sfc *)sfc)->dummy_byte = e;                                \
-        ((struct jz_sfc *)sfc)->daten = f;                                      \
-        SFC_MODE_GENERATE(sfc, a);                                              \
-        sfc_send_cmd(sfc, g);                                                   \
-} while(0)
-
-
 #endif
 
+
+/*
+ * create cdt table
+ */
+enum{
+	COL_ADDR,
+	ROW_ADDR,
+	STA_ADDR0,
+	STA_ADDR1,
+};
+
+struct sfc_cdt{
+	uint32_t link;
+	uint32_t xfer;
+	uint32_t staExp;
+	uint32_t staMsk;
+};
+
+#define CMD_XFER(ADDR_WIDTH, POLL_EN, DMY_BITS, DATA_EN, CMD) (			\
+	(ADDR_WIDTH << TRAN_CONF0_ADDR_WIDTH_OFFSET)				\
+	| (POLL_EN << TRAN_CONF0_POLL_OFFSET)					\
+	| (TRAN_CONF0_CMDEN)							\
+	| (0 << TRAN_CONF0_FMAT_OFFSET)						\
+	| (DMY_BITS << TRAN_CONF0_DMYBITS_OFFSET)				\
+	| (DATA_EN << TRAN_CONF0_DATEEN_OFFSET)					\
+	| CMD									\
+	)
+
+#define CMD_LINK(LINK, ADDRMODE, TRAN_MODE) (					\
+	(LINK << 31) | (TRAN_MODE << TRAN_CONF1_TRAN_MODE_OFFSET) | (ADDRMODE)	\
+	)
+
+#define MK_CMD(cdt, cmd_info, LINK, ADDRMODE, DATA_EN)  {						\
+	cdt.link = CMD_LINK(LINK, ADDRMODE, cmd_info.transfer_mode);					\
+	cdt.xfer = CMD_XFER(cmd_info.addr_nbyte, DISABLE, cmd_info.dummy_byte, DATA_EN, cmd_info.cmd);	\
+	cdt.staExp = 0;											\
+	cdt.staMsk = 0;											\
+}
+
+#define MK_ST(cdt, st_info, LINK, ADDRMODE, ADDR_WIDTH, POLL_EN, DATA_EN, TRAN_MODE)  {			\
+	cdt.link = CMD_LINK(LINK, ADDRMODE, TRAN_MODE);							\
+	cdt.xfer = CMD_XFER(ADDR_WIDTH, POLL_EN, st_info.dummy, DATA_EN, st_info.cmd);			\
+	cdt.staExp = (st_info.val << st_info.bit_shift);						\
+	cdt.staMsk = (st_info.mask << st_info.bit_shift);						\
+}
 
 #endif
 
