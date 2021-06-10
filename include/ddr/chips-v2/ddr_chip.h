@@ -68,6 +68,7 @@ enum {
 	MEM_128M	= 0x1,
 	MEM_64M		= 0x2,
 	MEM_32M		= 0x3,
+	MEM_512M	= 0x4,
 };
 
 #define DDR_CHIP_ID(vendor, type, capacity)	(type << 6 | vendor << 3 | capacity)
