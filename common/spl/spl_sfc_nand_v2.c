@@ -504,7 +504,30 @@ static void spl_sfc_rtos_boot(void)
 
 	sfc_init();
 
-#ifdef CONFIG_SPL_RTOS_NAME
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	int is_kernel2 = 0;
+	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
+	struct jz_sfcnand_partition_param *partitions = get_partitions();
+
+	rtos_offset = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
+	if (rtos_offset != -1) {
+		char buf[128];
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_nand_load(rtos_offset, sizeof(buf), (unsigned int)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			is_kernel2 = 1;
+			rtos_name = CONFIG_SPL_RTOS_NAME2;
+		}
+	}
+
+	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
+	if (rtos_offset == -1) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		hang();
+	}
+
+	debug("rtos:%s %x\n", rtos_name, rtos_offset);
+#else
 	struct jz_sfcnand_partition_param *partitions = get_partitions();
 
 	rtos_offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_NAME);
@@ -525,13 +548,6 @@ static void spl_sfc_rtos_boot(void)
 	/* NOTE: not return */
 	rtos_raw_start(&rtos_header);
 #endif
-
-#ifdef CONFIG_SPL_OS_BOOT
-	spl_sfc_nand_os_load();
-	return;
-#endif
-
-	hang();
 }
 #endif
 
@@ -606,19 +622,23 @@ static struct ota_ops ota_ops = {
 
 char* spl_sfc_nand_load_image(void)
 {
+#if CONFIG_SPL_RTOS_BOOT
+	spl_sfc_rtos_boot();
+#endif
+
 #ifdef CONFIG_OTA_VERSION30
 	register_ota_ops(&ota_ops);
 	return spl_ota_load_image();
 #elif defined(CONFIG_BOOT_RTOS)
 	spl_sfc_nand_rtos_load();
 	return NULL;
-#elif CONFIG_SPL_RTOS_BOOT
-	spl_sfc_rtos_boot();
-	return NULL;
 #elif defined(CONFIG_SPL_OS_OTA_BOOT)
 	return spl_sfc_nand_os_ota_load();
 #elif defined(CONFIG_SPL_OS_BOOT)
 	spl_sfc_nand_os_load();
+	return NULL;
+#elif defined(CONFIG_SPL_RTOS_BOOT)
+	hang();
 	return NULL;
 #else
 	{

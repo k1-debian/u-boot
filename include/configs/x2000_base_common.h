@@ -576,6 +576,9 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
+#ifndef CONFIG_SPL_RTOS_NAME2
+    #define CONFIG_SPL_RTOS_NAME2    "rtos"
+#endif
     #define CONFIG_SPL_OTA_NAME       "ota"
     #define CONFIG_SPL_OS_NAME2       "kernel2"
     #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
@@ -583,6 +586,7 @@
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
+    #define CONFIG_SPL_RTOS_NAME    "rtos"
     #define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " " ARGS_ROOTFS
     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
