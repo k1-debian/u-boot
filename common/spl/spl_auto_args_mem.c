@@ -48,12 +48,13 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 	char *args_mem_end = NULL;
 	unsigned int mem_start;
 	unsigned int rmem_start;
+	unsigned int rtos_start;
 
 	args_mem = strstr(cmdargs, ARGS_MEM_RESERVED);
 
 	args_mem_end = args_mem + strlen(ARGS_MEM_RESERVED);
 
-	ram_size -= CONFIG_RMEM_MB;
+	ram_size = ram_size - CONFIG_RMEM_MB - CONFIG_RTOS_SIZE_MB;
 
 	/* mem=xxxM@0x0*/
 	mem_start = 0;
@@ -71,6 +72,15 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 		args_mem += int_to_string(args_mem, CONFIG_RMEM_MB, 10);
 		args_mem += string_copy(args_mem, "M@0x", 4);
 		args_mem += int_to_string(args_mem, rmem_start, 16);
+	}
+
+	if (CONFIG_RTOS_SIZE_MB) {
+		rtos_start = (ram_size + CONFIG_RMEM_MB) * 1024 * 1024;
+		args_mem += string_copy(args_mem, " ", 1);
+		args_mem += string_copy(args_mem, "rtos_size=", 10);
+		args_mem += int_to_string(args_mem, CONFIG_RTOS_SIZE_MB, 10);
+		args_mem += string_copy(args_mem, "M@0x", 4);
+		args_mem += int_to_string(args_mem, rtos_start, 16);
 	}
 
 	memmove(args_mem, args_mem_end, strlen(args_mem_end) + 1);

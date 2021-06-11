@@ -485,12 +485,15 @@
 /* boot args mem define
  */
 #define CONFIG_SPL_AUTO_PROBE_ARGS_MEM
-#define ARGS_MEM_RESERVED "[this string is reserved for probe mem size]"
+#define ARGS_MEM_RESERVED "[this string is reserved for probe mem size. NOTE: Don't cut.]"
 
 #ifndef CONFIG_RMEM_MB
 #define CONFIG_RMEM_MB 0
 #endif
 
+#ifndef CONFIG_RTOS_SIZE_MB
+#define CONFIG_RTOS_SIZE_MB 0
+#endif
 
 /* boot args init program
  */
