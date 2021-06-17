@@ -724,25 +724,23 @@ static void mmc_load_rtos_boot(unsigned long sector)
 {
 	int err = 0;
 	u32 rtos_size_sectors;
-	struct rtos_header *header;
-
-	header = (struct rtos_header *)(CONFIG_SYS_TEXT_BASE);
+	struct rtos_header rtos;
 
 	/* read rtos a sector size */
-	err = mmc_block_read(sector, 1, header);
+	err = mmc_block_read(sector, 1, &rtos);
 	if (err == 0)
 		goto end;
 
-	rtos_check_header(header);
+	rtos_check_header(&rtos);
 
-	rtos_size_sectors = (header->img_end - header->img_start + 512 - 1) / 512;
+	rtos_size_sectors = (rtos.img_end - rtos.img_start + 512 - 1) / 512;
 
 	/* load rtos */
-	err = mmc_block_read(sector, rtos_size_sectors, header->img_start);
+	err = mmc_block_read(sector, rtos_size_sectors, rtos.img_start);
 	if (err == 0)
 		goto end;
 
-	rtos_start(header);
+	rtos_start(&rtos);
 
 end:
 	printf("spl: [rtos] mmc blk read err , %d\n", err);
