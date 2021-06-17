@@ -25,10 +25,10 @@ static inline void LPDDR3_NK6CL256M16DKX_H1_init(void *data)
 	struct ddr_chip_info *c = (struct ddr_chip_info *)data;
 
 
-	c->DDR_ROW  		= 15,
-	c->DDR_ROW1 		= 15,
-	c->DDR_COL  		= 10,
-	c->DDR_COL1 		= 10,
+	c->DDR_ROW  		= 14,
+	c->DDR_ROW1 		= 14,
+	c->DDR_COL  		= 11,
+	c->DDR_COL1 		= 11,
 	c->DDR_BANK8 		= 1,
 	c->DDR_BL	   	= 8,
 /*
