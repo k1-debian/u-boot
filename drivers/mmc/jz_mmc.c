@@ -303,7 +303,7 @@ static int jz_mmc_core_init(struct mmc *mmc)
 
 #if defined(CONFIG_M200) || defined(CONFIG_X1000) || defined(CONFIG_X1630) || defined(CONFIG_X1830) \
 	|| defined(CONFIG_X1800) || defined(CONFIG_X1520) || defined(CONFIG_T31) || defined(CONFIG_X1021) \
-	|| defined(CONFIG_X1521)
+	|| defined(CONFIG_X1521) || defined(CONFIG_X1600)
 
 	int tmp;
 	tmp = jz_mmc_readl(priv, MSC_STRPCL);

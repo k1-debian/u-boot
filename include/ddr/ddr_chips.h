@@ -153,4 +153,8 @@
 #include "./chips/LVDDR_W9464L6KH-5I.h"
 #endif
 
+#ifdef CONFIG_LPDDR2_M54D5121632A
+#include "./chips/LPDDR2_M54D5121632A.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */

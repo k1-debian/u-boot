@@ -5,23 +5,23 @@ struct ddr_latency_table
 	int latency;
 };
 static struct ddr_latency_table rl_LPDDR2[] = {
-	{100000000,3},/*memclk xxM, RL*/
-	{150000000,3},
-	{200000000,4},
-	{300000000,5},
-	{400000000,6},
-	{450000000,7},
-	{500000000,8},
+	{333000000,3},/*Date Rate xxM, RL*/
+	{400000000,3},
+	{533000000,4},
+	{667000000,5},
+	{800000000,6},
+	{933000000,7},
+	{1066000000,8},
 };
 
 static struct ddr_latency_table wl_LPDDR2[]= {
-	{100000000,1},/*memclk xxM, WL*/
-	{150000000,1},
-	{200000000,2},
-	{300000000,2},
-	{400000000,3},
-	{450000000,4},
-	{500000000,4},
+	{333000000,1},/*Date Rate xxM, WL*/
+	{400000000,1},
+	{533000000,2},
+	{667000000,2},
+	{800000000,3},
+	{933000000,4},
+	{1066000000,4},
 };
 static struct ddr_out_impedance out_impedance[]={
 	{80000,5},
@@ -33,15 +33,147 @@ static struct ddr_out_impedance out_impedance[]={
 
 static int find_ddr_lattency(struct ddr_latency_table *table,int size,unsigned int freq)
 {
-	int i;
-	for(i = 0;i < size / sizeof(struct ddr_latency_table);i++)
-	{
-		if(freq < table[i].freq) {
-			return table[i].latency;
+	int i, max;
+	unsigned int data_rate = freq * 2;
+	i = size / sizeof(struct ddr_latency_table) - 1;
+	max = i;
+	for(;i>=0;i--) {
+		if(data_rate >= table[i].freq) {
+			if ((data_rate % table[i].freq) && (data_rate <= table[max].freq))
+				return table[i + 1].latency;
+			else
+				return table[i].latency;
 		}
 	}
-	return -1;
+	return table[0].latency;
 }
+#ifdef CONFIG_X1XXX_INNOPHY
+static void fill_mr_params_lpddr2(struct ddr_params *p)
+{
+	int tmp;
+	int rl = 0,wl = 0;
+	int  count = 0;
+	struct lpddr2_params *params = &p->private_params.lpddr2_params;
+
+	/**
+	 * MR1 registers
+	*/
+	p->mr1.d32 = 0;
+	p->mr1.lpddr2.MA = 0x1;
+
+	tmp = ps2cycle_ceil(params->tWR, 1);
+	ASSERT_MASK(tmp,6);
+	BETWEEN(tmp,3,8);
+	p->mr1.lpddr2.nWR = tmp -2;
+
+	p->mr1.lpddr2.WC = 0x0; // wrap control, 0b: Wrap, 1b: No wrap.
+	p->mr1.lpddr2.BT = 0x0; // burst type, 0b: Sequential, 1b: Interleaved.
+
+	if(p->bl != 8) {
+		out_error("BL(%d) only support 8\n", p->bl);
+		assert(1);
+	}
+	tmp = p->bl;
+	while (tmp >>= 1) count++;
+	p->mr1.lpddr2.BL = count;
+
+	/**
+	 * MR2 registers
+	 */
+	p->mr2.d32 = 0;
+	p->mr2.lpddr2.MA = 0x2;
+
+	tmp = ps2cycle_ceil(params->RL,1);
+	if(tmp < 3 ||
+	   tmp > 8)
+	{
+		out_error("the PHY don't support the RL(%d) \n",params->RL);
+		assert(1);
+	}
+	rl = tmp;
+
+	tmp = ps2cycle_ceil(params->WL,1);
+	if(tmp < 1 ||
+	   tmp > 4)
+	{
+		out_error("the PHY don't support the WL(%d) \n",params->WL);
+		assert(1);
+	}
+	wl = tmp;
+
+	tmp = wl | (rl << 4);
+
+	switch(tmp)
+	{
+	case 0x31:
+		tmp = 1;
+		break;
+	case 0x42:
+		tmp = 2;
+		break;
+	case 0x52:
+		tmp = 3;
+		break;
+	case 0x63:
+		tmp = 4;
+		break;
+	case 0x74:
+		tmp = 5;
+		break;
+	case 0x84:
+		tmp = 6;
+		break;
+	default:
+		out_error("the PHY don't support the WL(%d) or RL(%d)\n",
+				  params->WL,params->RL);
+		assert(1);
+	}
+	p->mr2.lpddr2.RL_WL = tmp;
+	/**
+	 * MR3 registers
+	 */
+	p->mr3.d32 = 0;
+	p->mr3.lpddr2.MA = 0x3;
+
+	/**
+	  * 0000b: Reserved
+	  * 0001b: 34.3 ohm typical
+	  * 0010b: 40 ohm typical (default)
+	  * 0011b: 48 ohm typical
+	  * 0100b: 60 ohm typical
+	  * 0101b: Reserved
+	  * 0110b: 80 ohm typical
+	  * 0111b: 120 ohm typical
+	  * All others: Reserved
+	 */
+#ifdef CONFIG_DDR_DRIVER_STRENGTH
+	p->mr3.lpddr2.DS = CONFIG_DDR_DRIVER_STRENGTH;
+#else
+	p->mr3.lpddr2.DS = 2;
+	out_warn("Warnning: Please set ddr driver strength.");
+#endif
+
+	/**
+	 * MR10 Calibration registers
+	 */
+	p->mr10.d32 = 0;
+	p->mr10.lpddr2.MA = 0x0a;
+	/**
+	   0xFF: Calibration command after initialization
+	   0xAB: Long calibration
+	   0x56: Short calibration
+	   0xC3: ZQRESET
+	*/
+	p->mr10.lpddr2.CAL_CODE = 0xFF;
+
+	/**
+	 * MR63 reset registers, RESET (MA[7:0] = 3Fh) – MRW Only
+	 */
+	p->mr63.d32 = 0;
+	p->mr63.lpddr2.MA = 0x3f;
+}
+#endif
+
 static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
 {
 	int tmp;
@@ -76,6 +208,10 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params)
 		params->WL = tmp * __ps_per_tck;
 	}
 
+#ifdef CONFIG_X1XXX_INNOPHY
+	fill_mr_params_lpddr2(ddr_params);
+#endif
+
 }
 
 static void ddrc_params_creator_lpddr2(struct ddrc_reg *ddrc, struct ddr_params *p)
@@ -103,6 +239,7 @@ static void ddrc_params_creator_lpddr2(struct ddrc_reg *ddrc, struct ddr_params 
 	if(tmp < 0)
 		tmp = 0;
 	ASSERT_MASK(tmp,4);
+	ddrc->timing3.b.tCKSRE = tmp;
 	ddrc->timing4.b.tMINSR = tmp;
 
 	ddrc->timing4.b.tMRD = 0;
@@ -116,10 +253,14 @@ static void ddrc_params_creator_lpddr2(struct ddrc_reg *ddrc, struct ddr_params 
 	tmp = ps2cycle_ceil(params->WL,1);
 	ASSERT_MASK(tmp,6);
 	ddrc->timing5.b.tWDLAT = tmp;
+
+#ifdef CONFIG_X1600
+	tmp = ps2cycle_ceil(params->RL,1);
+#else
 	tmp = ps2cycle_ceil(params->RL + params->tDQSCK,1);
+#endif
 	tmp = tmp - 2;
 	ASSERT_MASK(tmp,6);
-
 	ddrc->timing5.b.tRDLAT = tmp;
 
 	tmp = ps2cycle_ceil(params->tXSR,4) / 4;
@@ -131,7 +272,7 @@ static void ddrc_params_creator_lpddr2(struct ddrc_reg *ddrc, struct ddr_params 
 	ddrc->timing6.b.tFAW = tmp;
 }
 
-
+#ifndef CONFIG_X1XXX_INNOPHY
 static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp;
@@ -251,6 +392,21 @@ static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params 
 
 	ddrp->zqncr1 = (0xb << 4) | impedance->index;//7 - is odt impedance default.
 }
+#else
+static void ddrp_params_creator_lpddr2(struct ddrp_reg *ddrp, struct ddr_params *p)
+{
+	struct lpddr2_params *params = &p->private_params.lpddr2_params;
+	int tmp;
+
+	tmp =ps2cycle_ceil(params->WL,1);
+	ASSERT_MASK(tmp,4);
+	ddrp->cwl = tmp;
+
+	tmp =ps2cycle_ceil(params->RL,1);
+	ASSERT_MASK(tmp,8);
+	ddrp->cl = tmp;
+}
+#endif
 static struct ddr_creator_ops lpddr2_creator_ops = {
 	.type = LPDDR2,
 	.fill_in_params = fill_in_params_lpddr2,
