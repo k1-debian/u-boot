@@ -5,12 +5,13 @@
 
 #ifdef CONFIG_CPU_XBURST
 #include <ddr/ddr_chips.h>
-#include <asm/ddr_dwc.h>
 #include <ddr/ddrc.h>
 #ifdef CONFIG_X1XXX_INNOPHY
 #include <ddr/ddrp_inno.h>
+#include <asm/ddr_innophy.h>
 #else
 #include <ddr/ddrp_dwc.h>
+#include <asm/ddr_dwc.h>
 #endif
 #endif
 

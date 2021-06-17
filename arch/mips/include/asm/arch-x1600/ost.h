@@ -45,9 +45,9 @@
 #define TSR_OSTS    (1 << 15)   /*the clock supplies to osts is stopped */
 
 #define OST2_EN				(1 << 1)
-#define OST2CSR_PRESCALE_1		(0 << 3)
-#define OST2CSR_PRESCALE_4		(1 << 3)
-#define OST2CSR_PRESCALE_16		(2 << 3)
+#define OST2CSR_PRESCALE_1		(0 << 2)
+#define OST2CSR_PRESCALE_4		(1 << 2)
+#define OST2CSR_PRESCALE_16		(2 << 2)
 
 #define OST_DIV				4
 #if (OST_DIV == 1)

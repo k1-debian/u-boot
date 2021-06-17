@@ -117,6 +117,67 @@ static void ddrc_prev_init(void)
 	ddr_writel(DDRC_CTRL_VALUE & 0xffff8fff, DDRC_CTRL);
 }
 
+
+
+#ifdef CONFIG_X1600
+void ddr_inno_phy_init(void)
+{
+	u32 val = 0;
+	/*
+	 * ddr phy pll initialization
+	 */
+	ddr_writel(DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L, DDRP_INNOPHY_DQ_WIDTH);
+
+	ddr_writel(DDRP_MEMCFG_VALUE, DDRP_INNOPHY_MEM_CFG);
+
+	val = ddr_readl(DDRP_INNOPHY_CL);
+	val &= ~(0xf);
+	val |= RL;
+	ddr_writel(val, DDRP_INNOPHY_CL);
+
+	val = ddr_readl(DDRP_INNOPHY_CWL);
+	val &= ~(0xf);
+	val |= WL;
+	ddr_writel(val, DDRP_INNOPHY_CWL);
+
+	val = ddr_readl(DDRP_INNOPHY_AL);
+	val &= ~(0xf);
+	ddr_writel(val, DDRP_INNOPHY_AL);
+
+	/* ????   reserve   read only   ???? */
+	val = ddr_readl(DDRC_CTRL);
+	val &= ~ (1 << 20);
+	ddr_writel(val, DDRC_CTRL);
+
+
+	val = ddr_readl(DDRP_INNOPHY_PLL_FBDIV);
+	val &= ~(0xff);
+//	val |= 0x14;
+	val |= 0x10;
+	ddr_writel(val, DDRP_INNOPHY_PLL_FBDIV);
+
+	ddr_writel(ddr_readl(DDRP_INNOPHY_PLL_CTRL) | DDRP_PLL_CTRL_PLLPDEN, DDRP_INNOPHY_PLL_CTRL);
+
+	val = ddr_readl(DDRP_INNOPHY_PLL_PDIV);
+	val &= ~(0xff);
+//	val |= 0x5;
+	val |= 0x24;
+	ddr_writel(val, DDRP_INNOPHY_PLL_PDIV);
+
+	udelay(5);
+	/* pll reset */
+	ddr_writel(ddr_readl(DDRP_INNOPHY_PLL_CTRL) & ~DDRP_PLL_CTRL_PLLPDEN, DDRP_INNOPHY_PLL_CTRL);
+	udelay(5);
+
+	while(!(ddr_readl(DDRP_INNOPHY_PLL_LOCK) & (1 << 3)));
+	udelay(5);
+	while(!((*(volatile unsigned int *)0xb301208c) & (1 << 2)));
+	udelay(5);
+
+
+
+}
+#else
 void ddr_inno_phy_init(void)
 {
 	u32 reg = 0;
@@ -162,6 +223,7 @@ void ddr_inno_phy_init(void)
 	printf("AL = 0x%x\n", phy_readl(INNO_AL));
 #endif
 }
+#endif
 
 void ddrc_dfi_init(void)
 {
@@ -174,9 +236,23 @@ void ddrc_dfi_init(void)
 	printf("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
 #endif
 
+#ifdef CONFIG_X1600
+	reg = ddr_readl(DDRC_CTRL);
+	reg |= (1 << 23);
+	ddr_writel(reg, DDRC_CTRL); //set dfi_reset_n high
+
+	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
+
+	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
+
+	ddr_writel(7 << 8 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+	mdelay(1);
+#else
 	ddr_writel(0, DDRC_CTRL);
 	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
 	ddr_writel(0x2, DDRC_CTRL);
+#endif
+
 
 	if(current_ddr_type == DDR3) {
 #define DDRC_LMR_MR(n)						\
@@ -196,6 +272,27 @@ void ddrc_dfi_init(void)
 	ddr_writel(DDRC_LMR_MR(3)/*0x311*/, DDRC_LMR); //MR3
 	ddr_writel(DDRC_DLMR_VALUE | (0x4 << 3) | 0x1/*0x19*/, DDRC_LMR);
 
+#undef DDRC_LMR_MR
+	} else if(current_ddr_type == LPDDR2) {
+#define DDRC_LMR_MR(n)										\
+		DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
+			((DDR_MR##n##_VALUE & 0xff) << 24) |						\
+			(((DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
+		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
+		mdelay(1);
+		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
+		printf("mr2 = 0x%x\n", DDRC_LMR_MR(2));
+		printf("mr3 = 0x%x\n", DDRC_LMR_MR(3));
+		printf("mr10 = 0x%x\n", DDRC_LMR_MR(10));
+		printf("mr63 = 0x%x\n", DDRC_LMR_MR(63));
 #undef DDRC_LMR_MR
 	} else {
 		/*DDR2*/
@@ -274,7 +371,41 @@ void phy_calibration(void)
 	printf("INNO_TRAINING_CTRL 3: %x\n", phy_readl(INNO_TRAINING_CTRL));
 #endif
 }
-
+#ifdef CONFIG_X1600
+static enum ddr_type get_ddr_type(void)
+{
+	int type;
+	ddrc_cfg_t ddrc_cfg;
+	ddrc_cfg.d32 = DDRC_CFG_VALUE;
+	switch(ddrc_cfg.b.TYPE){
+	case 3:
+		type = LPDDR;
+		debug("DDR type is : LPDDR\n");
+		break;
+	case 4:
+		type = DDR2;
+		debug("DDR type is : DDR2\n");
+		break;
+	case 5:
+		type = LPDDR2;
+		debug("DDR type is : LPDDR2\n");
+		break;
+	case 6:
+		type = DDR3;
+		debug("DDR type is : DDR3\n");
+		break;
+	case 7:
+		type = LPDDR3;
+		debug("DDR type is : LPDDR3\n");
+		break;
+	default:
+		type = UNKOWN;
+		debug("unsupport ddr type!\n");
+		ddr_hang();
+	}
+	return type;
+}
+#else
 int get_ddr_type(void)
 {
 	int type;
@@ -317,6 +448,189 @@ int get_ddr_type(void)
 	return type;
 
 }
+#endif
+
+#ifdef CONFIG_X1600
+struct ddrp_calib {
+	union{
+		uint8_t u8;
+		struct{
+			unsigned dllsel:3;
+			unsigned ophsel:2;
+			unsigned cyclesel:3;
+		}b;
+	}bypass;
+	union{
+		uint8_t u8;
+		struct{
+			unsigned reserved:5;
+			unsigned rx_dll:3;
+		}b;
+	}rx_dll;
+};
+
+struct ddrp_calib calib_val[8 * 4 * 8 * 5];
+
+static void ddrp_software_calibration(void)
+{
+
+	int x, y, z;
+	int c, o, d =0, r = 0;
+	unsigned int addr = 0xa0100000, val;
+	unsigned int i, n, m = 0;
+	unsigned int reg;
+
+	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	reg |= (DDRP_TRAINING_CTRL_DSCSE_BP);
+	reg &= ~(DDRP_TRAINING_CTRL_DSACE_START);
+	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
+
+	for(c = 0; c < 8; c ++) {
+		for(o = 0; o < 2; o++) {
+			for (d = 0; d < 8; d++) {
+				x = c << 4 | o << 3 | d;
+				y = c << 4 | o << 3 | d;
+				ddr_writel(x, DDRP_INNOPHY_CALIB_BYPASS_AL);
+				ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
+
+				for(r = 0; r < 4; r++) {
+					unsigned int val1,val2;
+
+					val1 = ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL) & (~0x3);
+					ddr_writel((r << 0) | val1, DDRP_INNOPHY_RXDLL_DELAY_AL);
+					val1 = ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH) & (~0x3);
+					ddr_writel((r << 0)|val1, DDRP_INNOPHY_RXDLL_DELAY_AH);
+
+
+					for(i = 0; i < 0xff; i++) {
+						val = 0;
+						for(n = 0; n < 4; n++ ) {
+							val |= i<<(n * 8);
+						}
+						*(volatile unsigned int *)(addr + i * 4) = val;
+						volatile unsigned int val1;
+						val1 = *(volatile unsigned int *)(addr + i * 4);
+						if(val1 != val) {
+//						printf("val1 : 0x%x   val : 0x%x\n", val1, val);
+							break;
+						}
+					}
+					if(i == 0xff) {
+						calib_val[m].bypass.b.cyclesel = c;
+						calib_val[m].bypass.b.ophsel = o;
+						calib_val[m].bypass.b.dllsel = d;
+						calib_val[m].rx_dll.b.rx_dll = r;
+						m++;
+					}
+				}
+			}
+		}
+	}
+
+	if(!m) {
+		printf("calib bypass fail\n");
+		return ;
+	}
+
+
+	m = m  / 2;
+	c = calib_val[m].bypass.b.cyclesel;
+	o = calib_val[m].bypass.b.ophsel;
+	d = calib_val[m].bypass.b.dllsel;
+	r = calib_val[m].rx_dll.b.rx_dll;
+
+	printf("m = %d   c = %d   o = %d   d = %d  r = %d\n", m, c, o, d, r);
+
+	x = c << 4 | o << 3 | d;
+	y = c << 4 | o << 3 | d;
+	z = r << 4 | r << 0;
+	ddr_writel(x, DDRP_INNOPHY_CALIB_BYPASS_AL);
+	ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
+
+	ddr_writel(ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL) | r << 0, DDRP_INNOPHY_RXDLL_DELAY_AL);
+	ddr_writel(ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH) | r << 0, DDRP_INNOPHY_RXDLL_DELAY_AH);
+
+	{
+		struct ddrp_calib b_al, b_ah, r_al,r_ah;
+		b_al.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL);
+		printf("bypass :CALIB_AL: dllsel %x, ophsel %x, cyclesel %x\n",b_al.bypass.b.dllsel, b_al.bypass.b.ophsel, b_al.bypass.b.cyclesel);
+		b_ah.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH);
+		printf("bypass:CAHIB_AH: dllsel %x, ophsel %x, cyclesel %x\n", b_ah.bypass.b.dllsel, b_ah.bypass.b.ophsel, b_ah.bypass.b.cyclesel);
+		printf("rxdll delay al : %x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
+		printf("rxdll delay ah : %x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+
+	}
+}
+
+void ddrp_hardware_calibration(void)
+{
+	unsigned int reg;
+	unsigned int timeout = 0xffffff;
+	unsigned int al, ah;
+
+	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	reg &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
+	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
+
+	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	reg |= (DDRP_TRAINING_CTRL_DSACE_START);
+	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
+
+	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
+		udelay(1);
+		printf("DDRP_INNOPHY_CALIB_DELAY_AL : %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL));
+		printf("DDRP_INNOPHY_CALIB_DELAY_AH : %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH));
+		printf("DDRP_INNOPHY_CALIB_DONE : %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+	}
+
+	if(!timeout) {
+		debug("ddrp_auto_calibration failed!\n");
+	}
+
+	mdelay(5);
+	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	reg &= ~(1);
+	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
+
+	debug("ddrp_auto_calibration success!\n");
+	al = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL);
+	ah = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH);
+	debug("left  c : %d, o : %d,  d : %d\n", (al >> 4) & 7, (al >> 3) & 1, al & 7);
+	debug("right c : %d, o : %d,  d : %d\n", (ah >> 4) & 7, (ah >> 3) & 1, ah & 7);
+
+	{
+		unsigned int cycsel, tmp;
+		unsigned int read_data0, read_data1;
+		unsigned int c0, c1;
+		unsigned int max;
+
+		read_data0 = *(volatile unsigned int *)(0xb3011000 + (0x74 << 2));
+		read_data1 = *(volatile unsigned int *)(0xb3011000 + (0x75 << 2));
+		c0 = (read_data0 >> 4) & 0x7;
+		c1 = (read_data1 >> 4) & 0x7;
+
+		max = max(c0, c1);
+
+		cycsel = max + 1;
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + (0xa << 2));
+		tmp &= ~(7 << 1);
+		tmp |= cycsel << 1;
+		*(volatile unsigned int *)(0xb3011000 + (0xa << 2)) = tmp;
+
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + 0x4);
+		tmp |= 1 << 6;
+		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
+	}
+
+	printf("ddr calib back door finish\n");
+
+}
+#endif
+
+
+
 
 /* DDR sdram init */
 void sdram_init(void)
@@ -345,14 +659,28 @@ void sdram_init(void)
 	ddr_inno_phy_init();
 	ddrc_dfi_init();
 
+#ifndef CONFIG_X1600
 	ddrp_wl_training();
+#endif
         /* DDR Controller init*/
 	ddrc_prev_init();
+#ifndef CONFIG_X1600
 	phy_calibration();
+#endif
 	dwc_debug("DDR PHY init OK\n");
 	ddrc_post_init();
 
+#ifndef CONFIG_X1600
 	ddr_writel(ddr_readl(DDRC_STATUS) & ~DDRC_DSTATUS_MISS, DDRC_STATUS);
+#endif
+
+#ifdef CONFIG_X1600
+#ifdef CONFIG_DDRP_SOFTWARE_TRAINING
+	ddrp_software_calibration();
+#else
+	ddrp_hardware_calibration();
+#endif
+#endif
 
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
 	if(!bypass)

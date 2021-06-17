@@ -26,6 +26,7 @@
 #include <asm/io.h>
 #include <asm/mipsregs.h>
 #include <asm/arch/ost.h>
+#include <asm/arch/cpm.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -44,6 +45,10 @@ static void gost_writel(uint32_t val, uint32_t off)
 #define USEC_IN_1SEC 1000000
 int timer_init(void)
 {
+	unsigned int gate0 = cpm_inl(CPM_CLKGR0);
+	gate0 &= ~(CPM_CLKGR_OST);
+	cpm_outl(gate0, CPM_CLKGR0);
+
 	multiple = CONFIG_SYS_EXTAL / USEC_IN_1SEC / OST_DIV;
 
 	/* Disable OST */
@@ -56,7 +61,7 @@ int timer_init(void)
 	reset_timer();
 
 	/* Start OST */
-	gost_writel(1, OST_TESR);
+	gost_writel(3, OST_TESR);
 
 	return 0;
 }
@@ -70,6 +75,7 @@ static uint64_t get_timer64(void)
 {
 	uint32_t low = gost_readl(OST_T2CNTL);
 	uint32_t high = gost_readl(OST_T2CNTB);
+
 	return ((uint64_t)high << 32) | low;
 }
 

@@ -28,6 +28,7 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
 #include <spl.h>
+#include <asm/mipsregs.h>
 
 //#define CONFIG_SIMULATION
 #ifdef CONFIG_SPL_BUILD
@@ -89,6 +90,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 
 #ifndef CONFIG_FPGA
 	debug("Timer init\n");
@@ -150,6 +152,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	flush_cache_all();
 
 	debug("image entry point: 0x%X\n", spl_image->entry_point);
+
 	image_entry();
 }
 

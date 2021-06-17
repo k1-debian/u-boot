@@ -308,6 +308,7 @@ void clk_init(void)
 
 	reg_clkgr = cpm_inl(CPM_CLKGR1);
 	gate = 0
+		| CPM_CLKGR_INTC
 #ifdef CONFIG_GMAC0
 		| CPM_CLKGR_GMAC0
 #endif

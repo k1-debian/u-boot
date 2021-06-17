@@ -256,9 +256,13 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	}
 
 	/* CTRL  */
+#ifdef CONFIG_X1600
+	ddrc->ctrl =  DDRC_CTRL_CKE;
+#else
 	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
 		| DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN
 		| DDRC_CTRL_ALH | DDRC_CTRL_CKE;
+#endif
 	/* ddrc->ctrl = DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN */
 	/* 	| DDRC_CTRL_ALH | DDRC_CTRL_RDC | DDRC_CTRL_CKE; */
 #ifdef CONFIG_DDRC_CTRL_PDT
@@ -524,6 +528,7 @@ static void ddr_mr_print(struct ddr_params *p)
 	printf("#define	DDR_MR2_VALUE			0x%08x\n", p->mr2.d32);
 	printf("#define	DDR_MR3_VALUE			0x%08x\n", p->mr3.d32);
 	printf("#define	DDR_MR10_VALUE			0x%08x\n", p->mr10.d32);
+	printf("#define	DDR_MR11_VALUE			0x%08x\n", p->mr11.d32);
 	printf("#define	DDR_MR63_VALUE			0x%08x\n", p->mr63.d32);
 }
 #endif
@@ -667,6 +672,29 @@ int main(int argc, char *argv[])
 #ifdef CONFIG_X1XXX_INNOPHY
 	ddr_mr_print(&ddr_params);
 #endif
+	printf("#define tRAS		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRAS, 1));
+	printf("#define tRP		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRP, 1));
+	printf("#define tRP		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRP, 1));
+	printf("#define tRCD		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRCD, 1));
+	printf("#define tRC		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRC, 1));
+	printf("#define tWR		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tWR, 1));
+	printf("#define tRRD		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRRD, 1));
+	printf("#define tWTR		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tWTR, 1));
+	printf("#define tRFC		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRFC, 1));
+	printf("#define tXP		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tXP, 1));
+	printf("#define tCKE		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tCKE, 1));
+	printf("#define RL		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.RL, 1));
+	printf("#define WL		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.WL, 1));
+	printf("#define tREFI		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tREFI, 1));
+	printf("#define tCKESR		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tCKESR, 1));
+	printf("#define tXSR		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tXSR, 1));
+	printf("#define tMOD		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tMOD, 1));
+	printf("#define tDQSCK		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tDQSCK, 1));
+	printf("#define tDQSCKMAX	%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tDQSCKMAX, 1));
+	printf("#define tRTP		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tRTP, 1));
+	printf("#define tCCD		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tCCD, 1));
+	printf("#define tFAW		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tFAW, 1));
+	printf("#define tMRD		%d\n", ps2cycle_ceil(ddr_params.private_params.lpddr3_params.tMRD, 1));
 	sdram_size_print(&ddr_params);
 	mem_remap_print(&ddr_params);
 	file_end_print();

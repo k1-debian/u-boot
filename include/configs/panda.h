@@ -36,12 +36,12 @@
 
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		700000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		200000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		800000000
-#define CONFIG_SYS_MEM_FREQ		350000000
+#define CONFIG_SYS_MEM_FREQ		400000000
 
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 48 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
@@ -343,7 +343,7 @@
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 
 #define CONFIG_SYS_MONITOR_LEN		(768 * 1024)
-#define CONFIG_SYS_MALLOC_LEN		(16 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
 /*#define DBG_USE_UNCACHED_MEMORY*/
