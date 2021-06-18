@@ -65,17 +65,12 @@ void board_init_f(ulong dummy)
 	gd = &gdata;
 
 	/* Setup global info */
-#ifndef CONFIG_CMD_BURN
+#ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
 #else
-	gd->arch.gi = (struct global_info *)CONFIG_SPL_GINFO_BASE;
+	burner_param_info();
 #endif
 
-#ifdef CONFIG_BURNER
-	gd->arch.gi->ddr_div = ((gd->arch.gi->cpufreq % gd->arch.gi->ddrfreq) == 0)
-		               ? (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq)
-		               : (gd->arch.gi->cpufreq / gd->arch.gi->ddrfreq + 1);
-#endif
 
 	gpio_init();
 
@@ -101,9 +96,10 @@ void board_init_f(ulong dummy)
 	spl_regulator_set();
 #endif
 
+#ifndef CONFIG_BURNER
 	debug("CLK stop\n");
 	clk_prepare();
-
+#endif
 	debug("PLL init\n");
 	pll_init();
 

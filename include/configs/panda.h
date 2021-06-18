@@ -176,16 +176,18 @@
 #define CONFIG_CMD_NEMC
 #endif
 
+/* SFC */
 #if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+/* serial support */
+#define CONFIG_SPL_SERIAL_SUPPORT
+/* sfc gpio */
 #define CONFIG_SPL_SFC_SUPPORT
+/* spl version */
 #define CONFIG_SPL_VERSION	1
 #endif
 
-/* SFC */
+/* driver version */
 #define CONFIG_SFC_V20
-
-/* sfc gpio */
-#define CONFIG_JZ_SFC_CE_PB31
 
 /* sfc nor config */
 #ifdef CONFIG_SPL_SFC_NOR
@@ -193,7 +195,8 @@
 #define CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SFC_NOR_RATE	400000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_NOR_INIT_RATE		100000000
+#define CONFIG_SFC_NOR_RATE			100000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 #define CONFIG_SPI_NORFLASH_PART_OFFSET		0x5874
@@ -207,7 +210,8 @@
 /* sfc nand config */
 #ifdef  CONFIG_SPL_SFC_NAND
 #define CONFIG_JZ_SFC
-#define CONFIG_SFC_NAND_RATE    400000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_NAND_INIT_RATE		100000000
+#define CONFIG_SFC_NAND_RATE			100000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800

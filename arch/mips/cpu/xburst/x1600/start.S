@@ -80,11 +80,12 @@
 	.globl _start
 	.text
 _start:
+#ifndef CONFIG_BURNER
 	SETUP_SPL_MMC_HEADER()
 	SETUP_SPL_SFC_NOR_HEADER()
 	SETUP_SPL_SFC_NAND_HEADER()
 	SETUP_SPL_NOR_HEADER()
-
+#endif
 	/* === Real Executable Code Starts at 2048 offset, below === */
 
 

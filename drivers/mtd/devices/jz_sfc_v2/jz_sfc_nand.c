@@ -854,9 +854,12 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 			return -1;
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
-
+#ifdef CONFIG_SFC_NAND_INIT_RATE
+		flash->sfc = sfc_res_init(CONFIG_SFC_NAND_INIT_RATE);
+#else
 		/* default: sfc rate 50MHz */
 		flash->sfc = sfc_res_init(200000000);
+#endif
 	}
 	mtd = &nand_info[0];
 	flash_info = calloc(sizeof(struct jz_sfcnand_flashinfo), sizeof(uint8_t));

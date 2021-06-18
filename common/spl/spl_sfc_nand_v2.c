@@ -147,9 +147,12 @@ static int sfc_read_data(unsigned int *data, unsigned int length)
 static void sfc_controler_init(void)
 {
 	unsigned int tmp;
-
+#ifdef CONFIG_SFC_NAND_INIT_RATE
+	clk_set_rate(SFC, CONFIG_SFC_NAND_INIT_RATE);
+#else
 	/* default: SFC rate 50MHz */
 	clk_set_rate(SFC, 200000000L);
+#endif
 
 	tmp = sfc_readl(SFC_GLB);
 	tmp &= ~(GLB_THRESHOLD_MSK);

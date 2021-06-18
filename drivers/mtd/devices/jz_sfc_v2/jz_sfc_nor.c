@@ -673,9 +673,12 @@ int sfc_nor_flash_init(void)
 		return -1;
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
-
+#ifdef CONFIG_SFC_NOR_INIT_RATE
+	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_INIT_RATE);
+#else
 	/* default: sfc rate 50MHz */
 	flash->sfc = sfc_res_init(200000000);
+#endif
 
 	/* try creating default CDT table */
 	create_cdt_table(flash, DEFAULT_CDT);

@@ -544,9 +544,12 @@ void spl_load_kernel(long offset)
 void sfc_init(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
-
+#ifdef CONFIG_SFC_NOR_INIT_RATE
+	clk_set_rate(SFC, CONFIG_SFC_NOR_INIT_RATE);
+#else
 	/* default: sfc rate 50MHz */
 	clk_set_rate(SFC, 200000000L);
+#endif
 
 	sfc->threshold = THRESHOLD;
 	flash->sfc = sfc;
