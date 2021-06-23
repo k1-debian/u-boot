@@ -35,12 +35,12 @@
 #define CONFIG_SOC_NAME		x1600
 
 
-#define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		1300000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1600000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		200000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
-#define CONFIG_SYS_CPU_FREQ		800000000
+#define CONFIG_SYS_CPU_FREQ		1300000000
 #define CONFIG_SYS_MEM_FREQ		400000000
 
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 48 MHz */
@@ -110,10 +110,10 @@
 #define CONFIG_DDR_PHY_IMPEDANCE 40
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE 120
 
-/*
+
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
-*/
+
 
 /* #define CONFIG_DDR_DLL_OFF */
 /*

@@ -686,6 +686,9 @@ void sdram_init(void)
 	if(!bypass)
 		ddr_writel(0 , DDRC_DLP);
 	ddr_writel(0x1 ,DDRC_AUTOSR_EN);
+#ifdef CONFIG_X1600
+	ddr_writel(CONFIG_DDR_AUTO_SELF_REFRESH_CNT ,DDRC_AUTOSR_CNT);
+#endif
 #endif
 	ddr_writel(0 , DDRC_DLP);
 

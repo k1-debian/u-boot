@@ -37,8 +37,8 @@
 #define DDRC_CTRL			0x8
 #define DDRC_LMR			0xc
 #define DDRC_DLP			0xbc
-#define DDRC_AUTOSR_EN			(-0x4e0000 + 0x304)
-#define DDRC_AUTOSR_CNT			(-0x4e0000 + 0x308)
+#define DDRC_AUTOSR_EN			0x304
+#define DDRC_AUTOSR_CNT			0x308
 #define DDRC_REFCNT			0x18
 #define DDRC_DBGINFO			0xE8
 #define DDRC_TIMING(n)			(0x60 + 4 * (n - 1))

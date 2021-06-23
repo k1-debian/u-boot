@@ -39,7 +39,7 @@
 
 //#define MAX_P_CLK  M(150)
 #define MAX_P_CLK	(MAX_H2_CLK / 2)
-#define MAX_L2_CLK M(400)
+#define MAX_L2_CLK M(650)
 
 struct pll_setting
 {
