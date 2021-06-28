@@ -683,14 +683,18 @@ void sdram_init(void)
 #endif
 
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
+#ifndef CONFIG_X1600
 	if(!bypass)
 		ddr_writel(0 , DDRC_DLP);
+#endif
 	ddr_writel(0x1 ,DDRC_AUTOSR_EN);
 #ifdef CONFIG_X1600
 	ddr_writel(CONFIG_DDR_AUTO_SELF_REFRESH_CNT ,DDRC_AUTOSR_CNT);
 #endif
 #endif
+#ifndef CONFIG_X1600
 	ddr_writel(0 , DDRC_DLP);
+#endif
 
 	dump_ddrc_register();
 	dwc_debug("sdram init finished\n");
