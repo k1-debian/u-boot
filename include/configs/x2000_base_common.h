@@ -519,13 +519,7 @@
 
 #ifndef CONFIG_ROOTFS_DEV
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
-#if defined(CONFIG_JZ_MMC_MSC0)
 #define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
-#elif defined(CONFIG_JZ_MMC_MSC1)
-#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk1p2 rootwait"
-#elif defined(CONFIG_JZ_MMC_MSC2)
-#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk2p2 rootwait"
-#endif
 #else
 #define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
 #endif
