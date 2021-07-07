@@ -30,7 +30,9 @@
 #include <asm/arch/clk.h>
 #include <jz_lcd/jz_lcd_v12.h>
 
-/*#define DEBUG*/
+/* #define DEBUG */
+/* #define CONFIG_FB_JZ_DEBUG */
+/* #define CONFIG_SLCDC_CONTINUA */
 
 #ifdef CONFIG_JZ_MIPI_DSI
 #include <jz_lcd/jz_dsim.h>
@@ -53,6 +55,7 @@ void lcd_set_backlight_level(int num);
 	readl(lcd_config_info.lcdbaseoff+addr)
 
 #ifdef DEBUG
+#ifdef CONFIG_JZ_MIPI_DSI
 void dump_dsi_reg(struct dsi_device *dsi)
 {
 	printf( "===========>dump dsi reg\n");
@@ -194,6 +197,7 @@ void dump_dsi_reg(struct dsi_device *dsi)
 		 mipi_dsih_read_word(dsi, R_DSI_HOST_SDF_3D_ACT));
 
 }
+#endif CONFIG_JZ_MIPI_DSI
 void dump_lcd_reg()
 {
 	printf("$$$dump_lcd_reg\n");
@@ -285,6 +289,9 @@ void dump_lcd_reg()
 	printf("PCPAT0:\t0x%08x\n",*(unsigned int *)0xb0010240);
 	printf("==================================\n");
 
+#ifdef CONFIG_JZ_MIPI_DSI
+	dump_dsi_reg(dsi);
+#endif
 }/*end dump_lcd_reg*/
 #endif
 
@@ -982,10 +989,8 @@ void lcd_enable(void)
 	}
 	lcd_enable_state = 1;
 #ifdef DEBUG
+	printf("%s() %d\n", __func__, __LINE__);
 	dump_lcd_reg();
-#ifdef CONFIG_JZ_MIPI_DSI
-	dump_dsi_reg(dsi);
-#endif
 #endif
 }
 
@@ -1020,7 +1025,10 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
     if (!is_enabled) {
         lcd_enable();
     }
-
+#ifdef DEBUG
+    printf("%s() %d\n", __func__, __LINE__);
+    dump_lcd_reg();
+#endif
      if (info->smart_config.length_data_table &&
             info->smart_config.data_table) {
         for (i = 0; i < info->smart_config.length_data_table; i++) {
@@ -1055,9 +1063,11 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
         }
     }
 
-    if(info->bpp / info->smart_config.bus_width != 1 ) {
+     /* DTIMES_NEW */
+     if(info->smart_config.bus_width == 8) {
         int tmp = reg_read(SLCDC_CFG_NEW);
-        tmp &= ~(SMART_LCD_DWIDTH_MASK); //mask the 8~9bit
+        //tmp &= ~(SMART_LCD_DWIDTH_MASK); //mask the 8~9bit
+        tmp &= ~(3<<8); //mask the 8~9bit
         tmp |=  (info->bpp / info->smart_config.bus_width)  == 2 ? SMART_LCD_NEW_DTIMES_TWICE : SMART_LCD_NEW_DTIMES_THICE;
         reg_write(SLCDC_CFG_NEW, tmp);
         printf("the slcd slcd_cfg_new is %08x\n", tmp);
@@ -1067,12 +1077,64 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
     /*for register mode test,
      * you can write test code according to the lcd panel
      **/
+     //while(1) {
+     if(1) {
+	     int j,w,h;
+	     unsigned int gram_cmd;
+	     w = info->modes->xres;
+	     h = info->modes->yres;
+	     gram_cmd = *info->smart_config.write_gram_cmd;
+	     gram_cmd &= 0x00ffffff;
+	     printf("%s() slcd_send_mcu_data test, w,h,bpp(%d,%d,%d),gram_cmd=0x%08x\n",
+		    __func__, w, h, info->bpp, gram_cmd);
+	     slcd_send_mcu_command(info, gram_cmd);
+	     //slcd_send_mcu_command(info, 0x22);
+
+	     for (i=0;i<h;i++) {
+		     for (j=0;j<w;j++) {
+			     short c16;
+			     int c32;
+			     switch ((j / 16) % 4) {
+			     case 0:
+				     c16 = 0xF800;
+				     c32 = 0x00FF0000;
+				     break;
+			     case 1:
+				     c16 = 0x07C0;
+				     c32 = 0x0000FF00;
+				     break;
+			     case 2:
+				     c16 = 0x001F;
+				     c32 = 0x000000FF;
+				     break;
+			     default:
+				     c16 = 0xFFFF;
+				     c32 = 0xFFFFFFFF;
+				     break;
+			     }
+			     switch (info->bpp) {
+			     case 16:
+				     slcd_send_mcu_data(info, c16);
+				     break;
+			     default:
+				     slcd_send_mcu_data(info,c32);
+			     }
+		     }
+	     }
+	     mdelay(3000);
+     }
+
 #endif
 
     /* SLCD DMA mode select 0 */
     if (!is_enabled) {
         lcd_disable();
     }
+
+#ifdef DEBUG
+    printf("%s() %d\n", __func__, __LINE__);
+    dump_lcd_reg();
+#endif
 }
 
 static int jzfb_set_par(struct jzfb_config_info *info)
@@ -1352,8 +1414,176 @@ static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 	}else{
 		printf("%s error:lcd important config info is absenced, mode->pixclock=%d\n",__func__, mode->pixclock);
 	}
-
 }
+
+static void jzfb_display_v_color_bar(struct jzfb_config_info * info)
+{
+	int i, j;
+	int w, h;
+	int bpp;
+	unsigned short *p16;
+	unsigned int *p32;
+	struct fb_videomode *mode;
+
+	mode = info->modes;
+	if (!mode) {
+		printf("%s, video mode is NULL\n", __func__);
+		return;
+	}
+
+	p16 = (unsigned short *)info->screen;
+	p32 = (unsigned int *)info->screen;
+	w = mode->xres;
+	h = mode->yres;;
+	bpp = info->bpp;
+
+	printf("%s(), w,h,bpp(%d,%d,%d) jzfb->vidmem=%p\n",
+	       __func__,  w, h, bpp, info->screen);
+
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) {
+			short c16;
+			int c32 = 0;
+			switch ((j / 10) % 4) {
+			case 0:
+				c16 = 0xF800;
+				c32 = 0xFFFF0000;
+				break;
+			case 1:
+				c16 = 0x07C0;
+				c32 = 0xFF00FF00;
+				break;
+			case 2:
+				c16 = 0x001F;
+				c32 = 0xFF0000FF;
+				break;
+			default:
+				c16 = 0xFFFF;
+				c32 = 0xFFFFFFFF;
+				break;
+			}
+			switch (bpp) {
+			case 18:
+			case 24:
+			case 32:
+				*p32++ = c32;
+				break;
+			default:
+				*p16++ = c16;
+			}
+		}
+		/*if (w % PIXEL_ALIGN) {
+			switch (bpp) {
+			case 18:
+			case 24:
+			case 32:
+				p32 += (ALIGN(mode->xres, PIXEL_ALIGN) - w);
+				break;
+			default:
+				p16 += (ALIGN(mode->xres, PIXEL_ALIGN) - w);
+				break;
+			}
+		}*/
+	}
+	flush_cache_all();
+}
+
+
+static void jzfb_display_h_color_bar(struct jzfb_config_info * info)
+{
+	int i, j;
+	int w, h;
+	int bpp;
+	unsigned short *p16;
+	unsigned int *p32;
+	struct fb_videomode *mode;
+
+	mode = info->modes;
+	if (!mode) {
+		printf("%s, video mode is NULL\n", __func__);
+		return;
+	}
+
+	p16 = (unsigned short *)info->screen;
+	p32 = (unsigned int *)info->screen;
+	w = mode->xres;
+	h = mode->yres;;
+	bpp = info->bpp;
+
+	printf("%s(), w,h,bpp(%d,%d,%d) jzfb->vidmem=%p\n",
+	       __func__,  w, h, bpp, info->screen);
+
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) {
+			short c16;
+			int c32 = 0;
+			switch ((i / 10) % 4) {
+			case 0:
+				c16 = 0xF800;
+				c32 = 0xFFFF0000;
+				break;
+			case 1:
+				c16 = 0x07C0;
+				c32 = 0xFF00FF00;
+				break;
+			case 2:
+				c16 = 0x001F;
+				c32 = 0xFF0000FF;
+				break;
+			default:
+				c16 = 0xFFFF;
+				c32 = 0xFFFFFFFF;
+				break;
+			}
+			switch (bpp) {
+			case 18:
+			case 24:
+			case 32:
+				*p32++ = c32;
+				break;
+			default:
+				*p16++ = c16;
+			}
+		}
+		/*if (w % PIXEL_ALIGN) {
+			switch (bpp) {
+			case 18:
+			case 24:
+			case 32:
+				p32 += (ALIGN(mode->xres, PIXEL_ALIGN) - w);
+				break;
+			default:
+				p16 += (ALIGN(mode->xres, PIXEL_ALIGN) - w);
+				break;
+			}
+		}*/
+	}
+	flush_cache_all();
+}
+
+static void slcd_dma_test(struct jzfb_config_info * info)
+{
+	int count = 0;
+	printf("%s() L%d, info->smart_config.length_cmd=%d\n",
+	       __func__, __LINE__, info->smart_config.length_cmd);
+
+	//jzfb_display_v_color_bar(info);
+	lcd_enable();
+	lcd_restart_dma();
+	mdelay(3000);
+
+	while (count++<2) {
+		printf("%s() LINE%d, count=%d\n", __func__, __LINE__, count);
+
+		jzfb_display_v_color_bar(info);
+		lcd_restart_dma();
+		mdelay(3000);
+		jzfb_display_h_color_bar(info);
+		lcd_restart_dma();
+		mdelay(3000);
+	}
+}
+
 
 void lcd_ctrl_init(void *lcd_base)
 {
@@ -1415,7 +1645,10 @@ void lcd_ctrl_init(void *lcd_base)
 	lcd_set_backlight_level(CONFIG_SYS_BACKLIGHT_LEVEL);
 #else
 	lcd_set_backlight_level(80);
+#endif
 
+#ifdef CONFIG_FB_JZ_DEBUG
+	slcd_dma_test(&lcd_config_info);
 #endif
 	return;
 }

@@ -85,6 +85,9 @@ static struct jz_gpio_func_def gpio_func[] = {
 #ifdef  CONFIG_LCD_GPIO_FUNC2_SLCD
 	{.port = GPIO_PORT_C, .func = GPIO_FUNC_2, .pins = 0x0e0ff3fc, }
 #endif
+#ifdef  CONFIG_LCD_GPIO_FUNC2_SLCD_SERIAL_1BIT
+	{.port = GPIO_PORT_C, .func = GPIO_FUNC_2, .pins = (1<<19 | 1<<25 | 1<<26), },
+#endif
 #ifdef CONFIG_JZ_EPD
 	{.port = GPIO_PORT_C, .func = GPIO_FUNC_3, .pins = 0x0e4ff3fc, }
 #endif

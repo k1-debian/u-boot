@@ -141,6 +141,10 @@
 #include "./chips/LPDDR3_W63CH2MBVABE.h"
 #endif
 
+#ifdef CONFIG_NANYA_NT6CL128M32_LPDDR3
+#include "./chips/NANYA_NT6CL128M32_LPDDR3.h"
+#endif
+
 #ifdef CONFIG_DDR2_SCB18T2G160AF_25DI
 #include "./chips/DDR2_SCB18T2G160AF-25DI.h"
 #endif

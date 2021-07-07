@@ -155,6 +155,16 @@ extern int flush_cache_all(void);
 
 /************************************************************************/
 
+/**
+ * lcd_restart_dma() - Restart the dma of lcd controler
+ * This is a weak function, a typical
+ * implementation at drivers/video/jz_lcd/jz_lcd_v1_2.c
+ */
+__weak void lcd_dma_sync(void)
+{
+	return;
+}
+
 /* Flush LCD activity to the caches */
 void lcd_sync(void)
 {
@@ -171,9 +181,7 @@ void lcd_sync(void)
 			(u32)(lcd_base + lcd_get_size(&line_length)));
 #endif
 
-#ifdef CONFIG_JZ_LCD_V13
 	lcd_dma_sync();
-#endif
 }
 
 void lcd_set_flush_dcache(int flush)
@@ -466,20 +474,8 @@ void lcd_clear_black(void)
 {
 	unsigned int i;
 	int *lcdbase_p = (int *) gd->fb_base;
-        int *p = malloc(panel_info.vl_col * panel_info.vl_row * 4);
-        if(p == NULL)
-                return ;
-
-        memset(p, 0, panel_info.vl_col * panel_info.vl_row * 4);
-        fb_fill(p, lcd_base, panel_info.vl_col * panel_info.vl_row * 4);
-        lcd_sync();
-        free(p);
-#if 0
-	int *lcdbase_p = (int *) gd->fb_base;
-	for (i = 0; i < lcd_line_length * panel_info.vl_row / 4; i++) {
-		*lcdbase_p++ = 0x0;
-	}
-#endif
+	memset((void*)lcdbase_p, 0x00, lcd_line_length*panel_info.vl_row);
+	lcd_sync();
 }
 
 /*----------------------------------------------------------------------*/
@@ -550,6 +546,7 @@ static int do_lcd_clear(cmd_tbl_t *cmdtp, int flag, int argc,
 			char *const argv[])
 {
 	lcd_clear();
+	//lcd_clear_black();
 	return 0;
 }
 
@@ -623,8 +620,8 @@ ulong lcd_setmem(ulong addr)
 
 	size = lcd_get_size(&line_length);
 	/* Round up to nearest full page, or MMU section if defined */
-	 size = (size + PAGE_SIZE + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
-
+	size = (size + PAGE_SIZE + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1);
+	size += PAGE_SIZE*2;	/* Allocate 2 page for lcd dma desc */
 	/* Allocate pages for the frame buffer. */
 	addr -= size;
 	debug("Reserving %ldk for LCD Framebuffer at: %08lx\n",

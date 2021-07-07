@@ -37,13 +37,13 @@
 #endif //endif CONFIG_DORADO_V30
 
 #define CONFIG_RTC_JZ47XX
+
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		600000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		1200000000
 #define CONFIG_SYS_MEM_FREQ		300000000
-
 
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
@@ -75,6 +75,7 @@
 #define CONFIG_DDR_TYPE_LPDDR3
 #define CONFIG_MCP_H9CKNNN8GTMPLR_NUH_LPDDR3
 #define CONFIG_MCP_EDF8132A3MA_LPDDR3
+#define CONFIG_NANYA_NT6CL128M32_LPDDR3
 */
 
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
@@ -122,7 +123,7 @@
 #ifdef CONFIG_BOOT_ANDROID
   #ifdef CONFIG_SPL_MMC_SUPPORT
     #define CONFIG_BOOTCOMMAND	\
-	  "batterydet; cls; boota mmc 0 0x80f00000 6144"
+	  "rle display; batterydet; cls; boota mmc 0 0x80f00000 6144"
     #define CONFIG_NORMAL_BOOT CONFIG_BOOTCOMMAND
     #define CONFIG_RECOVERY_BOOT "boota mmc 0 0x80f00000 24576"
   #else
@@ -172,8 +173,10 @@
 #else
 #define CONFIG_LCD_GPIO_FUNC0_24BIT
 /*#define CONFIG_LCD_GPIO_FUNC2_SLCD*/
+/* #define CONFIG_LCD_GPIO_FUNC2_SLCD_SERIAL_1BIT */
 #define CONFIG_VIDEO_BM347WV_F_8991FTGF
 /*#define CONFIG_VIDEO_TRULY_TFT240240_2_E*/
+/* #define CONFIG_VIDEO_SPILCD_RRJ_R108103_GC9203_128x220 */
 #endif
 
 #ifdef CONFIG_RLE_LCD_LOGO
