@@ -168,7 +168,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		/*GD5F4GQ6UE*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
-		.oobsize = 256,
+		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 4096,
 
 		.tSETUP  = TSETUP,
