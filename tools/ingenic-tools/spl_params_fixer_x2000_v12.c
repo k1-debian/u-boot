@@ -172,10 +172,12 @@ struct params {
 
 			/*slect sclk_a; div = 1/16 frq=78M*/
 #define SFC_VAL		((0 << 30) | (1 << 29) | (7 << 0))
+#define OTG_SOFT_RESET	0x00001000
 struct desc descriptors[14] = {
 	/*
 	 * saddr,	paddr,		value,		poll_h_mask,	poll_l_mask
 	 */
+	{CPM_SRBC,	0,		OTG_SOFT_RESET,	0,		0x0},
 	{CPM_CPAPCR,	CPM_CPAPCR,	APLL_VAL,	APLL_POLL,	0},
 	{CPM_CPCCR,	CPM_CPCSR,	CPCCR_FRQ_VAL,	0,		CPCCR_FRQ_POLL},
 	{CPM_CPCCR,	CPM_CPCSR,	CPCCR_SEL_VAL,	CPCCR_SEL_POLL,	0},
