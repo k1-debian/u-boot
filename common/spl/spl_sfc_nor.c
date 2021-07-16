@@ -465,15 +465,43 @@ static void nv_map_area(struct mini_spi_nor_info *spi_nor_info, unsigned int *ba
 #endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
+
+#ifdef CONFIG_SPL_SCBOOT
+extern int scboot_only(void *input,void *output);
+extern int is_security_boot();
+#endif
 static void spl_sfc_nor_rtos_boot(void)
 {
 	struct rtos_header rtos;
-
+	int size = 0;
 	sfc_read_data(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
-	if (rtos_check_header(&rtos))
-		hang();
-	sfc_read_data(CONFIG_RTOS_OFFSET, rtos.img_end - rtos.img_start, rtos.img_start);
+	size = rtos.img_end - rtos.img_start;
 
+	if(size > 0)
+	{
+#ifdef CONFIG_SPL_SCBOOT
+		int sec = is_security_boot();
+		int start = rtos.img_end + 4096; 
+		int load_ok = 0;
+		if(sec){
+			if(rtos.tag == 0x52544f53){
+				sfc_read_data(CONFIG_RTOS_OFFSET,size,start);
+				scboot_only(start + sizeof(rtos),rtos.img_start);
+				load_ok = 1;
+			}
+		}
+		if(load_ok == 0) {
+			printf("no security firmware...\n");
+			size = 0;
+		}
+#else
+		if(rtos.tag == 0x534f5452){
+			sfc_read_data(CONFIG_RTOS_OFFSET,size,rtos.img_start);
+		}
+#endif
+	}
+	if (size == 0)
+		hang();
 	rtos_start(&rtos);
 }
 #endif

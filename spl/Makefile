@@ -86,12 +86,17 @@ LIBS-$(CONFIG_SPL_ETH_SUPPORT) += drivers/net/phy/libphy.o
 LIBS-$(CONFIG_SPL_MUSB_NEW_SUPPORT) += drivers/usb/musb-new/libusb_musb-new.o
 LIBS-$(CONFIG_SPL_USBETH_SUPPORT) += drivers/usb/gadget/libusb_gadget.o
 LIBS-$(CONFIG_JZ_WATCHDOG) += drivers/watchdog/jz_wdt.o
+
 ifdef CONFIG_JZ_SCBOOT
 ifdef CONFIG_X2000_V12
 LIBS-y += drivers/scboot/jz_sec_v2/libscboot.o
 else
 LIBS-y += drivers/scboot/jz_sec_v1/libscboot.o
 endif
+endif
+
+ifdef CONFIG_SPL_SCBOOT
+LIBS-y += drivers/scboot/jz_sec_boot/libsplscboot.o
 endif
 
 ifneq ($(CONFIG_AM33XX)$(CONFIG_OMAP34XX)$(CONFIG_OMAP44XX)$(CONFIG_OMAP54XX)$(CONFIG_TI814X),)

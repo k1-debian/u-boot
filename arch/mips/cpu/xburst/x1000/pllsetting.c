@@ -81,4 +81,5 @@ int pll_init(void)
 	cpccr_default();
 	pll_sets();
 	cpccr_sets();
+	return 0;
 }
