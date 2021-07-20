@@ -24,6 +24,7 @@
 #include "hamming.c"
 
 static int efuse_gpio = -1;
+static int efuse_en_active = 0;
 
 struct seg_info info;
 
@@ -41,7 +42,7 @@ void boost_vddq(int gpio)
 {
 	int val;
 	printf("boost vddq\n");
-	gpio_direction_output(gpio , CONFIG_EFUSE_LEVEL);
+	gpio_direction_output(gpio, efuse_en_active);
 	do {
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
@@ -53,7 +54,7 @@ void reduce_vddq(int gpio)
 {
 	int val;
 	printf("reduce vddq\n");
-	gpio_direction_output(gpio, !CONFIG_EFUSE_LEVEL);
+	gpio_direction_output(gpio, !efuse_en_active);
 	do {
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
@@ -649,12 +650,13 @@ int efuse_write(void *buf, int length, int seg_id)
 	return ret;
 }
 
-int efuse_init(int gpio_pin)
+int efuse_init(int gpio_pin, int active)
 {
 	if(gpio_pin >= 0){
 		if(efuse_gpio >= 0) gpio_free(efuse_gpio);
 		efuse_gpio = gpio_request(gpio_pin, "VDDQ");
 		if(efuse_gpio < 0) return efuse_gpio;
+		efuse_en_active = active;
 	}else{
 		efuse_gpio = -1;
 	}

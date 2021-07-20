@@ -177,7 +177,8 @@ struct policy_param{
 	uint32_t offsets[32];
 };
 struct debug_param{
-	uint32_t efuse_gpio;
+	uint32_t efuse_en_gpio;
+	uint32_t efuse_en_active;
 	uint32_t log_enabled;
 	uint32_t transfer_data_chk;
 	uint32_t write_back_chk;

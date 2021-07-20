@@ -20,7 +20,8 @@
 #endif
 
 static int efuse_debug = 0;
-static int efuse_gpio = -1;
+static int efuse_en_gpio = -1;
+static int efuse_en_active = 0;
 
 #define WRITE_EFUSE 0
 #define READ_EFUSE 1
@@ -125,7 +126,7 @@ static void boost_vddq(int gpio)
 {
 	int val;
 	printf("boost vddq\n");
-	gpio_direction_output(gpio , CONFIG_EFUSE_LEVEL);
+	gpio_direction_output(gpio , efuse_en_active);
 	do {
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
@@ -137,7 +138,7 @@ static void reduce_vddq(int gpio)
 {
 	int val;
 	printf("reduce vddq\n");
-	gpio_direction_output(gpio, !CONFIG_EFUSE_LEVEL);
+	gpio_direction_output(gpio, !efuse_en_active);
 	do {
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
@@ -157,8 +158,8 @@ static int efuse_read_data(void *buf, uint32_t start_addr, int length)
 
 	debug_cond(efuse_debug, "efuse read length %d from offset 0x%x\n",length, start_addr);
 
-	if (efuse_gpio >= 0)
-		reduce_vddq(efuse_gpio);
+	if (efuse_en_gpio >= 0)
+		reduce_vddq(efuse_en_gpio);
 
 	word_num = max_integral_multiple(length, 4);
 
@@ -231,7 +232,7 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 
 	printf("write data to start_addr: %x, length: %d\n", start_addr, length);
 
-	if  (efuse_gpio < 0) {
+	if  (efuse_en_gpio < 0) {
 		error("efuse gpio is not init");
 		return -ENODEV;
 	}
@@ -272,7 +273,7 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 	efuse_writel(val, EFUSE_CTRL);
 
 	/* Connect VDDQ pin from 2.5V */
-	boost_vddq(efuse_gpio);
+	boost_vddq(efuse_en_gpio);
 
 	/* clear write done status */
 	efuse_writel(0, EFUSE_STATE);
@@ -286,7 +287,7 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 	while(!(efuse_readl(EFUSE_STATE) & 0x2) &&  --timeout);
 
 	/* Disconnect VDDQ pin from 2.5V. */
-	reduce_vddq(efuse_gpio);
+	reduce_vddq(efuse_en_gpio);
 	/* clear PG_EN */
 	efuse_writel(0, EFUSE_CTRL);
 	/* clear write done status */
@@ -597,14 +598,15 @@ int efuse_read_id(void *buf, int length, int id)
 	return ret;
 }
 
-int efuse_init(int gpio_pin)
+int efuse_init(int gpio_pin, int active)
 {
 	if (gpio_pin >= 0) {
-		if (efuse_gpio >= 0) gpio_free(efuse_gpio);
-		efuse_gpio = gpio_request(gpio_pin, "VDDQ");
-		if (efuse_gpio < 0) return efuse_gpio;
+		if (efuse_en_gpio >= 0) gpio_free(efuse_en_gpio);
+		efuse_en_gpio = gpio_request(gpio_pin, "VDDQ");
+		if (efuse_en_gpio < 0) return efuse_en_gpio;
+		efuse_en_active = active;
 	} else {
-		efuse_gpio = -1;
+		efuse_en_gpio = -1;
 	}
 	if(adjust_efuse() < 0)
 		return -1;
@@ -613,9 +615,9 @@ int efuse_init(int gpio_pin)
 
 void efuse_deinit(void)
 {
-	if (efuse_gpio >= 0)
-		gpio_free(efuse_gpio);
-	efuse_gpio = -1;
+	if (efuse_en_gpio >= 0)
+		gpio_free(efuse_en_gpio);
+	efuse_en_gpio = -1;
 	return;
 }
 

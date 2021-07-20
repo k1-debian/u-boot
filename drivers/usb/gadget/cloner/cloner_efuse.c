@@ -27,7 +27,7 @@ static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_d
 	int ret = 0;
 
 	if(!enabled) {
-		ret = efuse_init(debug_args->efuse_gpio);
+		ret = efuse_init(debug_args->efuse_en_gpio, debug_args->efuse_en_active);
 		if(ret < 0) {
 			printf("efuse init error\n");
 			return ret;

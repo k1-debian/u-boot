@@ -257,9 +257,14 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	}
 
 	/* CTRL  */
+#ifdef CONFIG_X1XXX_INNOPHY
+	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
+		| 0 << 6 | DDRC_CTRL_CKE;
+#else
 	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
 		| DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN
 		| DDRC_CTRL_ALH | DDRC_CTRL_CKE;
+#endif
 	/* ddrc->ctrl = DDRC_CTRL_PRET_8 | 0 << 6 | DDRC_CTRL_UNALIGN */
 	/* 	| DDRC_CTRL_ALH | DDRC_CTRL_RDC | DDRC_CTRL_CKE; */
 #ifdef CONFIG_DDRC_CTRL_PDT

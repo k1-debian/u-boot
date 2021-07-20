@@ -40,6 +40,7 @@ static int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	int length = 0;
 	off_t offset = 0;
 	int pin = -1;
+	int active = 0;
 	int enable = 0;
 	int ret = 0;
 
@@ -72,14 +73,19 @@ static int do_efuse(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("efuse ops failed\n");
 		break;
 	case EFUSE_INIT:
-		if (argc == 3) {
+		if (argc == 4) {
 			pin = (int)simple_strtoul(argv[2], NULL, 10);
+			active = (int)simple_strtoul(argv[3], NULL, 10);
 		} else {
 #if defined(CONFIG_EFUSE_GPIO)
 			pin = CONFIG_EFUSE_GPIO;
 #endif
+#if defined(CONFIG_EFUSE_EN_ACTIVE)
+			active = CONFIG_EFUSE_EN_ACTIVE;
+#endif
+
 		}
-		ret = efuse_init(pin);
+		ret = efuse_init(pin, active);
 		if (ret)
 			printf("efuse init failed\n");
 		break;

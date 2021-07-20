@@ -142,7 +142,7 @@ static int efuse_config(void)
 
 void otp_init(void)
 {
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	gpio_output_value(debug_args->efuse_en_gpio, !debug_args->efuse_en_active);
 	efuse_config();
 	efuse_update_state();
 	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
@@ -162,12 +162,12 @@ int cpu_wtotp(int opera)
 
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	gpio_output_value(debug_args->efuse_en_gpio, debug_args->efuse_en_active);
 
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	gpio_output_value(debug_args->efuse_en_gpio, !debug_args->efuse_en_active);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
@@ -201,11 +201,11 @@ int cpu_burn_rckey(void)
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	gpio_output_value(debug_args->efuse_en_gpio, debug_args->efuse_en_active);
 
 	secall(args, SC_FUNC_BURNRKCK, 0, 1);
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	gpio_output_value(debug_args->efuse_en_gpio, !debug_args->efuse_en_active);
 	*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
@@ -360,13 +360,13 @@ int cpu_burn_secboot_enable(void)
 	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address, length(0+1) */
 
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	gpio_output_value(debug_args->efuse_en_gpio, debug_args->efuse_en_active);
 
 	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	gpio_output_value(debug_args->efuse_en_gpio, !debug_args->efuse_en_active);
 	//*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 	*reg_ctrl = 0;
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
@@ -384,13 +384,13 @@ int cpu_burn_secboot_enable(void)
 	*reg_ctrl = 0;
 	*reg_ctrl |= EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR; /* set address, length(0+1) */
 	*reg_ctrl |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-	gpio_output_value(debug_args->efuse_gpio, 0);
+	gpio_output_value(debug_args->efuse_en_gpio, debug_args->efuse_en_active);
 
 	*reg_ctrl |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(*reg_stat & EFUSE_REG_STAT_WTDONE));
 
-	gpio_output_value(debug_args->efuse_gpio, 1);
+	gpio_output_value(debug_args->efuse_en_gpio, !debug_args->efuse_en_active);
 	//*reg_ctrl &= ~EFUSE_REG_CTRL_PGEN;
 	*reg_ctrl = 0;
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */

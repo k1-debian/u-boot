@@ -26,7 +26,6 @@
 #include <common.h>
 #include <ddr/ddr_common.h>
 #include <asm/io.h>
-#include <asm/ddr_dwc.h>
 #include <asm/arch/cpm.h>
 
 void reset_dll(void)

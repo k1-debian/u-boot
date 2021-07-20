@@ -12,7 +12,7 @@
 #include "otp.h"
 
 #include <cloner/cloner.h>
-static int efuse_gpio = -1;
+static int efuse_en_gpio = -1;
 
 #ifdef CONFIG_PMU_RICOH6x
 #include <regulator.h>
@@ -42,10 +42,10 @@ int get_rsakeylen(void)
 
 static void efuse_1v8_output(int value)
 {
-	if(efuse_gpio != 0xffffffff || efuse_gpio != -1) {
+	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
 		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-		printf("EFUSE_EN_N gpio(%d) output %s!\n", efuse_gpio, value == 0 ? "low" : "high");
-		gpio_direction_output(efuse_gpio, value);
+		printf("EFUSE_EN_N gpio(%d) output %s!\n", efuse_en_gpio, value == 0 ? "low" : "high");
+		gpio_direction_output(efuse_en_gpio, value);
 		if (value)
 			mdelay(1);
 		else
@@ -183,10 +183,10 @@ int cpu_wtotp(int opera)
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
 
-	efuse_1v8_output(0);
+	efuse_1v8_output(debug_args->efuse_en_active);
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
-	efuse_1v8_output(1);
+	efuse_1v8_output(!debug_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
@@ -208,10 +208,10 @@ int otp_init(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT, 0, 1);
 
-	efuse_gpio = debug_args->efuse_gpio;
-	if(efuse_gpio != 0xffffffff || efuse_gpio != -1) {
-		printf("EFUSE_EN_N gpio(%d) output high!\n", efuse_gpio);
-		gpio_direction_output(efuse_gpio, 1);
+	efuse_en_gpio = debug_args->efuse_en_gpio;
+	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
+		printf("EFUSE_EN_N gpio(%d) output high!\n", efuse_en_gpio);
+		gpio_direction_output(efuse_en_gpio, debug_args->efuse_en_active);
 	}
 #ifdef CONFIG_PMU_RICOH6x
 	else {
@@ -237,7 +237,7 @@ int otp_init(void)
 
 int otp_r()
 {
-	efuse_1v8_output(1);
+	efuse_1v8_output(!debug_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR | 0x01 << EFUSE_REGOFF_CRTL_LENG);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
@@ -258,10 +258,10 @@ static int otp_w(unsigned int offset)
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
-	efuse_1v8_output(0);
+	efuse_1v8_output(debug_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	efuse_1v8_output(1);
+	efuse_1v8_output(!debug_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
@@ -514,10 +514,10 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
 
-	efuse_1v8_output(0);
+	efuse_1v8_output(debug_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	efuse_1v8_output(1);
+	efuse_1v8_output(!debug_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
