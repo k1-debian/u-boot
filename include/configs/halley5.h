@@ -265,9 +265,6 @@
 		#endif /* CONFIG_BOOT_VMLINUX */
 
         #define CONFIG_SOFT_BURNER
-        #define CONFIG_AUDIO_CAL_DIV
-        #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
-        #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
     #endif /*CONFIG_OTA_VERSION30*/
 
      #ifdef CONFIG_BOOT_VMLINUX
