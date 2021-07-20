@@ -33,23 +33,29 @@ struct soc_ddr_info soc_info[] = {
 		.capacity = MEM_256M,
 	},
 	{
+		.soc_name = "X2000H",
+		.vendor = VENDOR_NANYA,
+		.type	= TYPE_LPDDR3,
+		.capacity = MEM_512M,
+	},
+	{
 		.soc_name = "M300",
 		.vendor = VENDOR_WINBOND,
 		.type	= TYPE_LPDDR2,
 		.capacity = MEM_256M,
-	}
+	},
 	{
 		.soc_name = "X2100",
 		.vendor = VENDOR_ESMT,
 		.type	= TYPE_LPDDR2,
 		.capacity = MEM_64M,
-	}
+	},
 	{
 		.soc_name = "X2100L",
 		.vendor = VENDOR_UNILC,
 		.type	= TYPE_LPDDR2,
 		.capacity = MEM_32M,
-	}
+	},
 
 };
 
