@@ -28,13 +28,13 @@
 #ifdef CONFIG_SYS_AHB0_FREQ
 #define MAX_H0_CLK CONFIG_SYS_AHB0_FREQ
 #else
-#define MAX_H0_CLK M(200)
+#define MAX_H0_CLK M(300)
 #endif
 
 #ifdef CONFIG_SYS_AHB2_FREQ
 #define MAX_H2_CLK CONFIG_SYS_AHB2_FREQ
 #else
-#define MAX_H2_CLK M(200)
+#define MAX_H2_CLK M(300)
 #endif
 
 //#define MAX_P_CLK  M(150)

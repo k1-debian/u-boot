@@ -36,7 +36,7 @@
 
 
 #define CONFIG_SYS_APLL_FREQ		1300000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1600000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		200000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
@@ -88,6 +88,7 @@
 /*#define CONFIG_MCP_H9TP32A8JDMC_PRKGM_LPDDR2*/
 /*#define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA*/
 #define CONFIG_LPDDR2_M54D5121632A
+/*#define CONFIG_LPDDR2_SCB4BL256160AFL19GI*/
 #endif
 
 #ifdef CONFIG_DDR_TYPE_LPDDR
