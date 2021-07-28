@@ -23,7 +23,6 @@
 
 /*#define DEBUG*/
 /* #define DEBUG_READ_WRITE */
-/*#define CONFIG_DDRP_SOFTWARE_TRAINING	1*/
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
@@ -113,29 +112,6 @@ static void dump_inno_driver_strength_register(void)
 
 
 
-/*
- * Name     : ddrp_calibration()
- * Function : control the RX DQS window delay to the DQS
- *
- * a_low_8bit_delay	= al8_2x * clk_2x + al8_1x * clk_1x;
- * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
- *
- * */
-#if 0
-static void ddrp_calibration(int al8_1x,int ah8_1x,int al8_2x,int ah8_2x)
-{
-	ddr_writel(ddr_readl(DDRP_INNOPHY_TRAINING_CTRL) | DDRP_TRAINING_CTRL_DSCSE_BP, DDRP_INNOPHY_TRAINING_CTRL);
-
-	int x = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL);
-	int y = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH);
-	x = (x & ~(0xf << 3)) | (al8_1x << DDRP_CALIB_BP_CYCLESELBH_BIT) | (al8_2x << DDRP_CALIB_BP_OPHCSELBH_BIT);
-	y = (y & ~(0xf << 3)) | (ah8_1x << DDRP_CALIB_BP_CYCLESELBH_BIT) | (ah8_2x << DDRP_CALIB_BP_OPHCSELBH_BIT);
-	ddr_writel(x, DDRP_INNOPHY_CALIB_BYPASS_AL);
-	ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
-}
-#endif
-
-
 struct ddrp_calib {
 	union{
 		uint8_t u8;
@@ -154,15 +130,208 @@ struct ddrp_calib {
 	}rx_dll;
 };
 
-/*
- * Name     : ddrp_calibration_manual()
- * Function : control the RX DQS window delay to the DQS
- *
- * a_low_8bit_delay	= al8_2x * clk_2x + al8_1x * clk_1x;
- * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
- *
- * */
 
+static void ddrp_software_calibration_channel(unsigned int chan_index)
+{
+
+	int c, o, d, r;
+	unsigned int addr = 0xa0000000;
+	unsigned int i, n, m = 0;
+	struct ddrp_calib calib_val[8 * 2 * 8 * 5];
+	volatile unsigned int w_data = 0, r_data = 0;
+	unsigned int tmp;
+	unsigned int dly;
+	unsigned int BYPASS_REG, RXDLL_REG;
+	unsigned int training_len = 1024 * 1024;
+
+	printf("chan_index = %d \n ", chan_index);
+	switch(chan_index) {
+		case 0 :
+			BYPASS_REG = DDRP_INNOPHY_CALIB_BYPASS_AL;
+			RXDLL_REG = DDRP_INNOPHY_RXDLL_DELAY_AL;
+			break;
+		case 1 :
+			BYPASS_REG = DDRP_INNOPHY_CALIB_BYPASS_AH;
+			RXDLL_REG = DDRP_INNOPHY_RXDLL_DELAY_AH;
+			break;
+		case 2 :
+			BYPASS_REG = DDRP_INNOPHY_CALIB_BYPASS_BL;
+			RXDLL_REG = DDRP_INNOPHY_RXDLL_DELAY_BL;
+			break;
+		case 3 :
+			BYPASS_REG = DDRP_INNOPHY_CALIB_BYPASS_BH;
+			RXDLL_REG = DDRP_INNOPHY_RXDLL_DELAY_BH;
+			break;
+		default :
+			printf("unsupport training channel\n");
+	}
+
+
+	for (c= 0; c < 8; c++) {
+		for (o = 0; o < 2; o++) {
+			for (d = 0; d < 8; d++) {
+				dly = c << 4 | o << 3 | d;
+
+				tmp = ddr_readl(BYPASS_REG) & (~0x7f);
+				ddr_writel(dly | tmp, BYPASS_REG);
+
+				for (r = 0; r < 4; r++) {
+					tmp = ddr_readl(RXDLL_REG) & (~0x3);
+					ddr_writel(r | tmp, RXDLL_REG);
+
+					for(i = 0; i < training_len; i++) {
+						w_data = 0;
+						for(n = 0; n < 4; n++ ) {
+							w_data |= (i & 0xff) << (n * 8);
+						}
+						*(volatile unsigned int *)(addr + i * 4) = w_data;
+						r_data = *(volatile unsigned int *)(addr + i * 4);
+//						printf("c: %d, o: %d, d: %d, r: %d w_data: %x, r_data: %x\n", c, o, d, r, w_data, r_data);
+#if 1
+						if((r_data & (0xff << chan_index * 8)) != (w_data & (0xff << chan_index * 8))) {
+//							printf("c: %d, o: %d, d: %d, r: %d w_data: %x, r_data: %x\n", c, o, d, r, w_data, r_data);
+							break;
+						}
+#endif
+					}
+					if(i == training_len) {
+						calib_val[m].bypass.b.cyclesel = c;
+						calib_val[m].bypass.b.ophsel = o;
+						calib_val[m].bypass.b.dllsel = d;
+						calib_val[m].rx_dll.b.rx_dll = r;
+						m++;
+						printf("c: %d, o: %d, d: %d, r: %d\n", c, o, d, r);
+					}
+
+				}
+			}
+		}
+	}
+
+
+	if(!m) {
+		debug("calib bypass fail\n");
+		return ;
+	}
+
+	debug("total trainning pass params: %d\n", m);
+#ifdef DDR_CHOOSE_PARAMS
+	m = choose_params(m);
+#else
+	m = m  / 2;
+#endif
+
+
+	c = calib_val[m].bypass.b.cyclesel;
+	o = calib_val[m].bypass.b.ophsel;
+	d = calib_val[m].bypass.b.dllsel;
+	r = calib_val[m].rx_dll.b.rx_dll;
+
+
+	dly = c << 4 | o << 3 | d;
+
+
+	tmp = ddr_readl(BYPASS_REG) & (~0x7f);
+	ddr_writel(dly | tmp, BYPASS_REG);
+	tmp = ddr_readl(RXDLL_REG) & (~0x3);
+	ddr_writel( r| tmp, RXDLL_REG);
+
+
+	printf("c: %d, o: %d, d: %d, r: %d\n", c, o, d, r);
+
+}
+void ddrp_software_calibration(void)
+{
+	unsigned int reg_val;
+	int idx;
+
+	printf("begin\n");
+	reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	reg_val |= (DDRP_TRAINING_CTRL_DSCSE_BP);
+	reg_val &= ~DDRP_TRAINING_CTRL_DSACE_START;
+	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
+
+
+	debug("-----DDRP_INNOPHY_TRAINING_CTRL: %x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
+	debug("before trainning %x %x %x %x\n",ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL),
+	ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL),ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+
+	for (idx = 0; idx < 4; idx ++) {
+		ddrp_software_calibration_channel(idx);
+	}
+
+
+#if 1
+	{
+		unsigned int cycsel, tmp;
+		unsigned int read_data0, read_data1;
+		unsigned int read_data2, read_data3;
+		unsigned int c0, c1, c2, c3;
+		unsigned int max;
+
+		read_data0 = *(volatile unsigned int *)(0xb3011000 + (0x56 << 2));
+		read_data1 = *(volatile unsigned int *)(0xb3011000 + (0x66 << 2));
+		read_data2 = *(volatile unsigned int *)(0xb3011000 + (0x86 << 2));
+		read_data3 = *(volatile unsigned int *)(0xb3011000 + (0x96 << 2));
+		c0 = (read_data0 >> 4) & 0x7;
+		c1 = (read_data1 >> 4) & 0x7;
+		c2 = (read_data0 >> 4) & 0x7;
+		c3 = (read_data1 >> 4) & 0x7;
+
+		max = max(max(c0, c1), max(c2, c3));
+
+		cycsel = max + 1;
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + (0xa << 2));
+		tmp &= ~(7 << 1);
+		tmp |= cycsel << 1;
+		*(volatile unsigned int *)(0xb3011000 + (0xa << 2)) = tmp;
+
+
+		tmp = *(volatile unsigned int *)(0xb3011000 + 0x4);
+		tmp |= 1 << 6;
+		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
+	}
+
+	printf("ddr calib test finish\n");
+#endif
+	printf("soft A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
+	printf("soft A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
+	printf("soft B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
+	printf("soft B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
+	printf("soft A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
+	printf("soft A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
+	printf("soft B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
+	printf("soft B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
+	printf("soft A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
+	printf("soft A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
+	printf("soft B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
+	printf("soft B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
+
+#if 0
+	{
+		unsigned int i, n;
+		unsigned int w_data, r_data;
+		unsigned int addr = 0xa0000000;
+		for(i = 0; i < 10 * 1024 * 1024; i++) {
+			w_data = 0;
+			r_data = 0;
+			for(n = 0; n < 4; n++ ) {
+				w_data |= (i & 0xff) << (n * 8);
+			}
+
+			*(volatile unsigned int *)(addr + i * 4) = w_data;
+			r_data = *(volatile unsigned int *)(addr + i * 4);
+
+			if(r_data != w_data) {
+				printf("w_data : 0x%x   r_data : 0x%x\n", w_data, r_data);
+//				break;
+			}
+		}
+	}
+#endif
+
+}
 
 
 void ddrp_auto_calibration(void)
@@ -182,32 +351,6 @@ void ddrp_auto_calibration(void)
 		hang();
 	}
 	ddr_writel(ddr_readl(DDRP_INNOPHY_TRAINING_CTRL)&(~0x1), DDRP_INNOPHY_TRAINING_CTRL);
-
-	{
-		struct ddrp_calib al, ah, bl, bh;
-		al.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL);
-		printf("auto :CALIB_AL: dllsel %x, ophsel %x, cyclesel %x\n", al.bypass.b.dllsel, al.bypass.b.ophsel, al.bypass.b.cyclesel);
-		ah.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH);
-		printf("auto:CAHIB_AH: dllsel %x, ophsel %x, cyclesel %x\n", ah.bypass.b.dllsel, ah.bypass.b.ophsel, ah.bypass.b.cyclesel);
-		bl.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL);
-		printf("auto :CALIB_BL: dllsel %x, ophsel %x, cyclesel %x\n", bl.bypass.b.dllsel, bl.bypass.b.ophsel, bl.bypass.b.cyclesel);
-		bh.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH);
-		printf("auto:CAHIB_BH: dllsel %x, ophsel %x, cyclesel %x\n", bh.bypass.b.dllsel, bh.bypass.b.ophsel, bh.bypass.b.cyclesel);
-	}
-//	printf("hard A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
-//	printf("hard A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
-//	printf("hard B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
-//	printf("hard B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
-//	printf("hard A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
-//	printf("hard A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
-//	printf("hard B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
-//	printf("hard B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
-
-//	printf("hard A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
-//	printf("hard A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
-//	printf("hard B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
-//	printf("hard B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
-
 
 #if 1
 	{
@@ -243,6 +386,20 @@ void ddrp_auto_calibration(void)
 
 	printf("ddr calib test finish\n");
 #endif
+
+	printf("hard A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
+	printf("hard A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
+	printf("hard B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
+	printf("hard B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
+	printf("hard A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
+	printf("hard A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
+	printf("hard B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
+	printf("hard B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
+	printf("hard A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
+	printf("hard A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
+	printf("hard B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
+	printf("hard B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
+
 
 
 }
