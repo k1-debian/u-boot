@@ -23,7 +23,6 @@
 
 /*#define DEBUG*/
 /* #define DEBUG_READ_WRITE */
-/*#define CONFIG_DDRP_SOFTWARE_TRAINING	1*/
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
@@ -93,6 +92,70 @@ static void dump_ddrc_register(void)
 
 #define dump_ddrc_register()
 #define dump_ddrp_register()
+#endif
+
+#define DDR_CHOOSE_PARAMS	0
+#ifdef DDR_CHOOSE_PARAMS
+int atoi(char *pstr)
+{
+	int value = 0;
+	int sign = 1;
+	int radix;
+
+	if(*pstr == '-'){
+		sign = -1;
+		pstr++;
+	}
+	if(*pstr == '0' && (*(pstr+1) == 'x' || *(pstr+1) == 'X')){
+		radix = 16;
+		pstr += 2;
+	}
+	else
+		radix = 10;
+	while(*pstr){
+		if(radix == 16){
+			if(*pstr >= '0' && *pstr <= '9')
+				value = value * radix + *pstr - '0';
+			else if(*pstr >= 'A' && *pstr <= 'F')
+				value = value * radix + *pstr - 'A' + 10;
+			else if(*pstr >= 'a' && *pstr <= 'f')
+				value = value * radix + *pstr - 'a' + 10;
+		}
+		else
+			value = value * radix + *pstr - '0';
+		pstr++;
+	}
+	return sign*value;
+}
+
+
+int choose_params(int m)
+{
+	char buf[16];
+	char ch;
+	char *p = buf;
+	int select_m;
+
+	debug("Please select from [0 to %d]\n", m);
+
+	debug(">>  ");
+
+	while((ch = getc()) != '\r') {
+		putc(ch);
+		*p++ = ch;
+
+		if((p - buf) > 16)
+			break;
+	}
+	*p = '\0';
+
+	debug("\n");
+
+	select_m = atoi(buf);
+	debug("slected: %d\n", select_m);
+
+	return select_m;
+}
 #endif
 
 

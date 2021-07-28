@@ -9,5 +9,6 @@
 #include "chips-v2/LPDDR2_SCB4BL256160AFL19GI.h"
 #include "chips-v2/DDR3_W631GU6NG.h"
 #include "chips-v2/LPDDR3_NK6CL256M16DKX-H1.h"
+#include "chips-v2/DDR3_NK5CC128M8HKX.h"
 
 #endif
