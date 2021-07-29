@@ -35,6 +35,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static int linux_argc;
 static char **linux_argv;
+static char *argp;
 
 static char **linux_env;
 static char *linux_env_p;
@@ -89,6 +90,19 @@ static void boot_prep_linux(bootm_headers_t *images)
 		linux_env_set("eth1addr", cp);
 }
 
+static void linux_cmdline_set(const char *value, size_t len)
+{
+	unsigned char *linux_argp;
+	linux_argp = argp;
+	linux_argv[linux_argc] = linux_argp;
+	memcpy(linux_argp, value, len);
+	linux_argp[len] = 0;
+
+	linux_argp += len + 1;
+	linux_argc++;
+}
+
+
 static void boot_jump_linux(bootm_headers_t *images)
 {
 	void (*theKernel) (int, char **, char **, int *);
@@ -110,11 +124,13 @@ static void boot_jump_linux(bootm_headers_t *images)
 	if(gd->flags & GD_FLG_ENV_DEFAULT) {
 		/* 64M size ddr*/
 		if(ram_size == 64) {
-			sprintf(linux_argv[CONFIG_BOOTARGS_MEM_INDEX], CONFIG_BOOTARGS_MEM_64M);
+			linux_cmdline_set(CONFIG_BOOTARGS_MEM_64M, strlen(CONFIG_BOOTARGS_MEM_64M));
 		} else if(ram_size == 128) {
-			sprintf(linux_argv[CONFIG_BOOTARGS_MEM_INDEX], CONFIG_BOOTARGS_MEM_128M);
+			linux_cmdline_set(CONFIG_BOOTARGS_MEM_128M, strlen(CONFIG_BOOTARGS_MEM_128M));
 		} else if(ram_size == 256) {
-			sprintf(linux_argv[CONFIG_BOOTARGS_MEM_INDEX], CONFIG_BOOTARGS_MEM_256M);
+			linux_cmdline_set(CONFIG_BOOTARGS_MEM_256M, strlen(CONFIG_BOOTARGS_MEM_256M));
+		} else if(ram_size == 512) {
+			linux_cmdline_set(CONFIG_BOOTARGS_MEM_512M, strlen(CONFIG_BOOTARGS_MEM_512M));
 		} else {
 		}
 	}
@@ -151,7 +167,7 @@ int do_bootm_linux(int flag, int argc, char * const argv[],
 
 static void linux_params_init(ulong start, char *line)
 {
-	char *next, *quote, *argp;
+	char *next, *quote/*, *argp*/;
 
 	linux_argc = 1;
 	linux_argv = (char **) start;
