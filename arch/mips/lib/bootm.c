@@ -117,20 +117,28 @@ static void boot_jump_linux(bootm_headers_t *images)
 
 	/* we assume that the kernel is in place */
 	printf("\nStarting kernel ...\n\n");
-#ifdef CONFIG_BOOTARGS_AUTO_MODIFY
+#if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
 	/*default environment*/
 #include <env_default.h>
 	unsigned long ram_size = (ulong)gd->ram_size >> 20;
 	if(gd->flags & GD_FLG_ENV_DEFAULT) {
 		/* 64M size ddr*/
 		if(ram_size == 64) {
+#ifdef CONFIG_BOOTARGS_MEM_64M
 			linux_cmdline_set(CONFIG_BOOTARGS_MEM_64M, strlen(CONFIG_BOOTARGS_MEM_64M));
+#endif
 		} else if(ram_size == 128) {
+#ifdef CONFIG_BOOTARGS_MEM_128M
 			linux_cmdline_set(CONFIG_BOOTARGS_MEM_128M, strlen(CONFIG_BOOTARGS_MEM_128M));
+#endif
 		} else if(ram_size == 256) {
+#ifdef CONFIG_BOOTARGS_MEM_256M
 			linux_cmdline_set(CONFIG_BOOTARGS_MEM_256M, strlen(CONFIG_BOOTARGS_MEM_256M));
+#endif
 		} else if(ram_size == 512) {
+#ifdef CONFIG_BOOTARGS_MEM_512M
 			linux_cmdline_set(CONFIG_BOOTARGS_MEM_512M, strlen(CONFIG_BOOTARGS_MEM_512M));
+#endif
 		} else {
 		}
 	}
