@@ -552,6 +552,8 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 	uint8_t id_buf[2] = {0};
 	unsigned short index[2] = {NAND_TRY_ID, NAND_TRY_ID_DMY};
 	uint8_t i = 0;
+	struct device_id_struct *device_id = NULL;
+	int32_t id_count = 0;
 
 	for(i = 0; i < 2; i++) {
 		memset(&xfer, 0, sizeof(xfer));
@@ -577,13 +579,18 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 		printf("id_manufactory = %x, id_device %x\n", id_buf[0], id_buf[1]);
 		list_for_each_entry(nand_device, &nand_list, list) {
 			if(nand_device->id_manufactory == id_buf[0]) {
-				nand_info->id_manufactory = id_buf[0];
-				nand_info->id_device = id_buf[1];
-				break;
+				device_id = nand_device->id_device_list;
+				id_count = nand_device->id_device_count;
+				while(id_count--) {
+					if(device_id->id_device == id_buf[1]) {
+						nand_info->id_manufactory = id_buf[0];
+						nand_info->id_device = id_buf[1];
+						nand_info->param = *device_id->param;
+						goto found_param;
+					}
+					device_id++;
+				}
 			}
-		}
-		if(nand_info->id_manufactory && nand_info->id_device) {
-			break;
 		}
 		udelay(500);
 	}
@@ -591,23 +598,9 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 	if(!nand_info->id_manufactory && !nand_info->id_device) {
 		printf("ERROR!: don`t support this nand manufactory, please add nand driver, id_manufactory 0x%x id_device 0x%x\n", id_buf[0], id_buf[1]);
 		return -ENODEV;
-	} else {
-		struct device_id_struct *device_id = nand_device->id_device_list;
-		int32_t id_count = nand_device->id_device_count;
-		while(id_count--) {
-			if(device_id->id_device == nand_info->id_device) {
-				/*notice :base_param and partition param should read from nand*/
-				nand_info->param = *device_id->param;
-				break;
-			}
-			device_id++;
-		}
-		if(id_count < 0) {
-			printf("ERROR: do support this device, id_manufactory = 0x%02x, id_device = 0x%02x\n", nand_info->id_manufactory, nand_info->id_device);
-			return -ENODEV;
-		}
 	}
 
+found_param:
 	printf("Found nand: id_manufactory: 0x%02x id_device: 0x%02x\n", nand_info->id_manufactory, nand_info->id_device);
 
 	/* fill manufactory special operation and cdt params */

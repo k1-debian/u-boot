@@ -6,12 +6,19 @@
 #ifdef CONFIG_CPU_XBURST
 #include <ddr/ddr_chips.h>
 #include <ddr/ddrc.h>
-#ifdef CONFIG_X1XXX_INNOPHY
+
+#ifdef CONFIG_X1600
 #include <ddr/ddrp_inno.h>
 #include <asm/ddr_innophy.h>
 #else
-#include <ddr/ddrp_dwc.h>
+
 #include <asm/ddr_dwc.h>
+#ifdef CONFIG_X1XXX_INNOPHY
+#include <ddr/ddrp_inno.h>
+#else
+#include <ddr/ddrp_dwc.h>
+#endif
+
 #endif
 #endif
 

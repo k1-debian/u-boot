@@ -1,7 +1,6 @@
 #include <errno.h>
 #include <malloc.h>
 #include <linux/mtd/partitions.h>
-#include <asm/arch/spinand.h>
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
@@ -14,6 +13,8 @@
 #define TRD		100
 #define TPP		900
 #define TBE		10
+
+static struct jz_sfcnand_device *fm_nand;
 
 static struct jz_sfcnand_base_param fm_param[FM_DEVICES_NUM] = {
 	[0] = {
@@ -31,6 +32,7 @@ static struct jz_sfcnand_base_param fm_param[FM_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
+		.plane_select = 0,
 		.ecc_max = 0x1,
 		.need_quad = 1,
 	},
@@ -49,6 +51,7 @@ static struct jz_sfcnand_base_param fm_param[FM_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
+		.plane_select = 0,
 		.ecc_max = 0x1,
 		.need_quad = 1,
 	},
@@ -59,41 +62,27 @@ static struct device_id_struct device_id[FM_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xE5, "FM25S02A", &fm_param[1]),
 };
 
-static int32_t fm_get_read_feature(struct flash_operation_message *op_info) {
 
-	struct sfc_flash *flash = op_info->flash;
-	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	struct sfc_transfer transfer;
-	uint8_t device_id = nand_info->id_device;
-	uint8_t ecc_status = 0;
-	int32_t ret = 0;
+static cdt_params_t *fm_get_cdt_params(struct sfc_flash *flash, uint8_t device_id)
+{
+	CDT_PARAMS_INIT(fm_nand->cdt_params);
 
-retry:
-	ecc_status = 0;
-	memset(&transfer, 0, sizeof(transfer));
-	sfc_list_init(&transfer);
-
-	transfer.cmd_info.cmd = SPINAND_CMD_GET_FEATURE;
-	transfer.sfc_mode = TM_STD_SPI;
-
-	transfer.addr = SPINAND_ADDR_STATUS;
-	transfer.addr_len = 1;
-
-	transfer.cmd_info.dataen = ENABLE;
-	transfer.data = &ecc_status;
-	transfer.len = 1;
-	transfer.direction = GLB_TRAN_DIR_READ;
-
-	transfer.data_dummy_bits = 0;
-	transfer.ops_mode = CPU_OPS;
-
-	if(sfc_sync(flash->sfc, &transfer)) {
-	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
+	switch(device_id) {
+		case 0xE4:
+		case 0xE5:
+		    break;
+	    default:
+		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+		    return NULL;
 	}
 
-	if(ecc_status & SPINAND_IS_BUSY)
-		goto retry;
+	return &fm_nand->cdt_params;
+}
+
+
+static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
+{
+	int ret = 0;
 
 	switch(device_id) {
 		case 0xE4:
@@ -112,10 +101,12 @@ retry:
 
 	}
 	return ret;
+
 }
 
+
 static int fm_nand_init(void) {
-	struct jz_sfcnand_device *fm_nand;
+
 	fm_nand = kzalloc(sizeof(*fm_nand), GFP_KERNEL);
 	if(!fm_nand) {
 		pr_err("alloc fm_nand struct fail\n");
@@ -125,7 +116,14 @@ static int fm_nand_init(void) {
 	fm_nand->id_manufactory = 0xA1;
 	fm_nand->id_device_list = device_id;
 	fm_nand->id_device_count = FM_DEVICES_NUM;
-	fm_nand->ops.nand_read_ops.get_feature = fm_get_read_feature;
+
+	fm_nand->ops.get_cdt_params = fm_get_cdt_params;
+	fm_nand->ops.deal_ecc_status = deal_ecc_status;
+
+	/* use private get feature interface, please define it in this document */
+	fm_nand->ops.get_feature = NULL;
+
 	return jz_sfcnand_register(fm_nand);
 }
+
 SPINAND_MOUDLE_INIT(fm_nand_init);
