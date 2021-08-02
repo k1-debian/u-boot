@@ -173,7 +173,7 @@ void ddrp_auto_calibration(void)
 	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
 	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
 
-	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x2) == 2) && --timeout) {
+	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
 
 		udelay(1);
 		printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
