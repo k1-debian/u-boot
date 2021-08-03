@@ -145,7 +145,7 @@ static char* linux_cmdline_set(char *arg, const char *value, size_t len)
 
 static char *board_process_mem_arg(char *arg)
 {
-	unsigned long ram_size = 512;
+	unsigned long ram_size = initdram(0) >> 20;
 
 	if(ram_size == 64) {
 #ifdef CONFIG_BOOTARGS_MEM_64M

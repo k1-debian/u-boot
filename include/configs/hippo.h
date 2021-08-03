@@ -189,11 +189,7 @@
 
 #define BOOTARGS_COMMON " console=ttyS1,115200n8 mem=199M@0x0 rmem=1M@0xC700000 nmem=56M@0xC800000 "
 
-#if defined(CONFIG_JZ_MMC_MSC0)
-	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
-#elif defined(CONFIG_JZ_MMC_MSC2)
-	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
-#endif
+
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
@@ -203,7 +199,7 @@
   #endif
 #else
   #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON MSC_BOOTARGS
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
   #elif defined(CONFIG_SPL_NOR_SUPPORT)
   /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=192.168.10.210:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw" */
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
@@ -262,9 +258,11 @@
 
 #ifdef CONFIG_SPL_OS_BOOT
     #ifdef  CONFIG_SPL_SFC_NOR
-	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #elif defined (CONFIG_SPL_SFC_NAND)
+		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
     #else
-	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
     #endif
     #ifdef CONFIG_OTA_VERSION30
 		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
@@ -296,7 +294,12 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
      #endif /* CONFIG_BOOT_VMLINUX */
 
-     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #ifdef CONFIG_JZ_MMC_MSC0
+	#define CONFIG_SPL_OS_NAME        "boot" /* sd offset of xImage being loaded */
+    #else
+	#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #endif
+
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
      #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
