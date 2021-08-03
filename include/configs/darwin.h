@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __GANDER__
-#define __GANDER__
+#ifndef __DARWIN__
+#define __DARWIN__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -162,12 +162,12 @@
 
 /* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
 #define CONFIG_BOOTARGS_MEM_INDEX	2	/*start from 1, position of the args mem=xxx@0x0*/
-#define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
+#define CONFIG_BOOTARGS_AUTO_MODIFY	0	/*auto detect memory size, and modify bootargs for kernel.*/
 #define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 #define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
 
-#define BOOTARGS_COMMON "console=ttyS1,115200 mem=128M@0x0 "
+#define BOOTARGS_COMMON " console=ttyS1,115200n8 mem=199M@0x0 rmem=1M@0xC700000 nmem=56M@0xC800000 "
 
 #if defined(CONFIG_JZ_MMC_MSC0)
 	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
