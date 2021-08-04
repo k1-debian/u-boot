@@ -240,6 +240,8 @@
 #ifdef CONFIG_SPL_OS_BOOT
     #if defined(CONFIG_SPL_SFC_NOR)
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+    #elif defined(CONFIG_SPL_MMC_SUPPORT)
+	     #define CONFIG_SPL_BOOTARGS        BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
     #else
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
     #endif
@@ -282,6 +284,7 @@
              #define CONFIG_LOAD_ADDR	0x80001000
      #endif
 #endif	/* CONFIG_SPL_OS_BOOT */
+#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0x1800 /* address 0xa0000 */
 
 #define CONFIG_SYS_NAND_SELF_INIT
 /* end of sfc */
