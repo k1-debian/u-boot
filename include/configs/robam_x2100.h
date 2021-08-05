@@ -156,13 +156,24 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
-#define CONFIG_BOOTARGS_MEM_INDEX	2	/*start from 1, position of the args mem=xxx@0x0*/
+#define CONFIG_BOOTARGS_MEM_INDEX	1	/*start from 1, position of the args mem=xxx@0x0*/
 #define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
 #define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 #define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
 
-#define BOOTARGS_COMMON "console=ttyS5,115200 mem=128M@0x0 "
+#ifdef CONFIG_BOOTARGS_AUTO_MODIFY
+	#define BOOTARGS_COMMON "console=ttyS5,115200 "
+#else
+	#define BOOTARGS_COMMON "console=ttyS5,115200 mem=128M@0x0 "
+#endif
+
+
+#if defined(CONFIG_JZ_MMC_MSC0)
+	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+#elif defined(CONFIG_JZ_MMC_MSC2)
+	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
+#endif
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
@@ -172,7 +183,7 @@
   #endif
 #else
   #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON MSC_BOOTARGS
   #elif defined(CONFIG_SPL_NOR_SUPPORT)
   /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=192.168.10.210:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw" */
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
