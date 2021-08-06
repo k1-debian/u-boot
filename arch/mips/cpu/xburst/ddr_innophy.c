@@ -31,6 +31,8 @@
 #include "ddr_innophy.h"
 #include "ddr_debug.h"
 
+/*#define CONFIG_DDRP_SOFTWARE_TRAINING*/
+
 DECLARE_GLOBAL_DATA_PTR;
 extern unsigned int sdram_size(int cs, struct ddr_params *p);
 
@@ -296,31 +298,21 @@ void ddrc_dfi_init(void)
 #undef DDRC_LMR_MR
 	} else {
 		/*DDR2*/
+#define DDRC_LMR_MR(n)										\
+		DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
+			(((DDR_MR##n##_VALUE  >> 13) & 0x3) << 8) |						\
+			(((DDR_MR##n##_VALUE ) & 0x1fff) << (12))
 
-		ddr_writel(0x211,DDRC_LMR);
-#ifndef CONFIG_FASTBOOT
-		printf("DDRC_LMR: %x\n",ddr_readl(DDRC_LMR));
-#endif
-		ddr_writel(0,DDRC_LMR);
+		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR);
+		mdelay(1);
+		printf("mr0 = 0x%x\n", DDRC_LMR_MR(0));
+		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
+#undef DDRC_LMR_MR
 
-		ddr_writel(0x311,DDRC_LMR);
-#ifndef CONFIG_FASTBOOT
-		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
-#endif
-		ddr_writel(0,DDRC_LMR);
 
-		ddr_writel(0x111,DDRC_LMR);
-#ifndef CONFIG_FASTBOOT
-		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
-#endif
-		ddr_writel(0,DDRC_LMR);
 
-		reg = ((DDR_MR0_VALUE)<<12)|0x011;
-		ddr_writel(reg, DDRC_LMR);
-#ifndef CONFIG_FASTBOOT
-		printf("DDRC_LMR, MR0: %x\n", reg);
-#endif
-		ddr_writel(0,DDRC_LMR);
 
 	}
 }

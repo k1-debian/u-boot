@@ -83,6 +83,8 @@ struct ddr2_params {
 	uint32_t tCCD;
 	uint32_t tFAW;
 	uint32_t tMRD;
+	uint32_t tCL;
+	uint32_t tAL;
 };
 
 struct lpddr3_params {
@@ -158,10 +160,9 @@ union ddr_mr0 {
 		unsigned DR:1;
 		unsigned WR:3;
 		unsigned PD:1;
-		unsigned RSVD13_15:3;
 		unsigned BA:2;
 		unsigned RSVD_BA:1;
-		unsigned reserved19_31:13;
+		unsigned reserved16_31:17;
 	} ddr2; /* MR */
 };
 
@@ -197,10 +198,9 @@ union ddr_mr1 {
 		unsigned DQS:1;
 		unsigned RDQS:1;
 		unsigned QOFF:1;
-		unsigned RSVD13_15:3;
 		unsigned BA:2;
 		unsigned RSVD_BA:1;
-		unsigned reserved19_31:13;
+		unsigned reserved16_31:17;
 	} ddr2; /* EMR */
 	struct {
 		unsigned BL:3;

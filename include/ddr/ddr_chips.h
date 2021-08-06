@@ -165,4 +165,8 @@
 #include "./chips/LPDDR2_SCB4BL256160AFL19GI.h"
 #endif
 
+#ifdef CONFIG_DDR2_W975116NG18I
+#include "./chips/DDR2_W975116NG18I.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */

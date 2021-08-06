@@ -36,6 +36,8 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 	BETWEEN(tmp,2,9);  // debug, BETWEEN(tmp,2,6)
 	p->mr0.ddr2.WR = tmp - 1;
 
+	p->mr0.ddr2.BA = 0;
+
 #ifdef DDR2_CHIP_DRIVER_OUT_STRENGTH
 	p->mr1.ddr2.DIC = DDR2_CHIP_DRIVER_OUT_STRENGTH;
 #else
@@ -45,6 +47,8 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 #ifdef CONFIG_DDR_CHIP_ODT
 	p->mr1.ddr2.RTT2 = CONFIG_DDR_CHIP_ODT; /* Effective resistance of ODT RZQ/4 */
 #endif
+	p->mr1.ddr2.BA = 0x1;
+
 }
 #endif
 
@@ -60,11 +64,12 @@ static void fill_in_params_ddr2(struct ddr_params *ddr_params)
 	params->tXARD = DDR_tXARD;
 	params->tXARDS = DDR_tXARDS;
 	params->tXSRD = DDR_tXSRD;
-	ddr_params->cl = DDR_CL;
+	params->tCL = DDR_CL;
 	params->tCKESR = DDR_tCKESR;
 	params->tCCD = DDR_tCCD;
 	params->tFAW = DDR_tFAW;
 	params->tRTP = DDR_tRTP;
+	ddr_params->cl = DDR_CL;
 #ifdef CONFIG_X1XXX_INNOPHY
 	fill_mr_params_ddr2(ddr_params);
 #endif
@@ -231,7 +236,20 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 
 }
 #else
-static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p) {}
+static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p)
+{
+	struct ddr2_params *params = &p->private_params.ddr2_params;
+	int tmp;
+
+	tmp =ps2cycle_ceil(params->WL,1);
+	ASSERT_MASK(tmp,4);
+	ddrp->cwl = tmp;
+
+	tmp =ps2cycle_ceil(params->RL,1);
+	ASSERT_MASK(tmp,8);
+	ddrp->cl = tmp;
+
+}
 #endif
 
 static struct ddr_creator_ops ddr2_creator_ops = {
