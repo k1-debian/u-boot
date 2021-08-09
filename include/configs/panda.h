@@ -333,6 +333,8 @@
 #define CONFIG_CMD_ECHO		/* echo arguments		*/
 #define CONFIG_CMD_EXT4 	/* ext4 support			*/
 #define CONFIG_CMD_FAT		/* FAT support			*/
+#define CONFIG_USE_XYZMODEM	/* xyzModem 			*/
+#define CONFIG_CMD_LOAD		/* serial load support 		*/
 #define CONFIG_CMD_LOADB	/* loadb			*/
 #define CONFIG_CMD_LOADS	/* loads			*/
 #define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop mtest */
@@ -345,7 +347,11 @@
 #define CONFIG_CMD_SOURCE	/* "source" command support	*/
 #define CONFIG_CMD_GETTIME
 #define CONFIG_CMD_GPIO
+#define CONFIG_CMD_EXT2
+#define CONFIG_CMD_EXT4
+#define CONFIG_CMD_FAT
 #define CONFIG_CMD_SAVEENV	/* saveenv			*/
+#define CONFIG_EFI_PARTITION
 #define CONFIG_SOFT_BURNER
 
 /* USB */
