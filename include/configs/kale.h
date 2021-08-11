@@ -162,7 +162,11 @@
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 #define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
 
-#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0 "
+#ifdef CONFIG_BOOTARGS_AUTO_MODIFY
+	#define BOOTARGS_COMMON "console=ttyS2,115200 "
+#else
+	#define BOOTARGS_COMMON "console=ttyS2,115200 mem=64M@0x0 "
+#endif
 
 #if defined(CONFIG_JZ_MMC_MSC0)
 	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
