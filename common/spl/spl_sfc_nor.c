@@ -476,23 +476,24 @@ static void spl_sfc_nor_rtos_boot(void)
 	int size = 0;
 	sfc_read_data(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
 	size = rtos.img_end - rtos.img_start;
-
+	printf("size = %d tag = 0x%08x 0x%08x\n",size,rtos.tag,CONFIG_RTOS_OFFSET);
 	if(size > 0)
 	{
 #ifdef CONFIG_SPL_SCBOOT
 		int sec = is_security_boot();
 		int start = rtos.img_end + 4096; 
-		int load_ok = 0;
 		if(sec){
 			if(rtos.tag == 0x52544f53){
 				sfc_read_data(CONFIG_RTOS_OFFSET,size,start);
 				scboot_only(start + sizeof(rtos),rtos.img_start);
-				load_ok = 1;
+			}else {
+				printf("no security firmware...\n");
+				size = 0;
 			}
-		}
-		if(load_ok == 0) {
-			printf("no security firmware...\n");
-			size = 0;
+		}else{
+			if(rtos.tag == 0x534f5452){
+				sfc_read_data(CONFIG_RTOS_OFFSET,size,rtos.img_start);
+			}
 		}
 #else
 		if(rtos.tag == 0x534f5452){
