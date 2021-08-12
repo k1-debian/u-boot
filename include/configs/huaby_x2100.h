@@ -162,7 +162,12 @@
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 #define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
 
-#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0 "
+#if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
+	#define BOOTARGS_COMMON "console=ttyS2,115200 "
+#else
+	#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0 "
+#endif
+
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
