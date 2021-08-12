@@ -44,6 +44,7 @@
 #include <watchdog.h>
 
 #include <splash.h>
+#include <asm/jz_cache.h>
 
 #if defined(CONFIG_CPU_PXA25X) || defined(CONFIG_CPU_PXA27X) || \
 	defined(CONFIG_CPU_MONAHANS)

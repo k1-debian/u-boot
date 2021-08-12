@@ -131,7 +131,7 @@
 /* RW	32	0x0000_0000	slow time*/
 #define DC_SLCD_SLOW_TIME	        (0xA010)
 /* RW	32	0x0000_0000	SLCD command*/
-#define DC_SLCD_CMD			(0xA014)
+#define DC_SLCD_REG_IF			(0xA014)
 /* RW	32	0x0000_0000	SLCD status*/
 #define DC_SLCD_ST			(0xA018)
 
@@ -177,6 +177,8 @@
 #define DC_TFT_UNDR			BIT(8)
 /* Display channel general stop */
 #define DC_STOP_DISP_ACK		BIT(6)
+/*Write back channel is working.*/
+#define DC_ST_WRBK_WORKING		BIT(5)
 /* composer direct output channel is working. */
 #define DC_FRM_WORKING			BIT(4)
 /* one frame start reading. */
@@ -262,6 +264,26 @@
 #define LAYER0_YUVDMA_4K		BIT(20)
 #define LAYER1_CLKGATE_EN		BIT(17)
 #define LAYER0_CLKGATE_EN		BIT(16)
+
+/***add reg  clk_gate_en***/
+#define DC_BURST_LEN_WDMA_LBIT		(6)
+#define DC_BURST_LEN_WDMA_HBIT		(7)
+#define DC_BURST_LEN_WDMA_MASK	\
+	GENMASK(DC_BURST_LEN_WDMA_HBIT, DC_BURST_LEN_WDMA_LBIT)
+#define DC_BURST_LEN_WDMA_4		(0) << DC_BURST_LEN_WDMA_LBIT
+#define DC_BURST_LEN_WDMA_8		(1) << DC_BURST_LEN_WDMA_LBIT
+#define DC_BURST_LEN_WDMA_16		(2) << DC_BURST_LEN_WDMA_LBIT
+#define DC_BURST_LEN_WDMA_32		(3) << DC_BURST_LEN_WDMA_LBIT
+
+#define DC_BURST_LEN_RDMA_LBIT		(4)
+#define DC_BURST_LEN_RDMA_HBIT		(5)
+#define DC_BURST_LEN_RDMA_MASK	\
+	GENMASK(DC_BURST_LEN_RDMA_HBIT, DC_BURST_LEN_RDMA_LBIT)
+#define DC_BURST_LEN_RDMA_4		(0) << DC_BURST_LEN_RDMA_LBIT
+#define DC_BURST_LEN_RDMA_8		(1) << DC_BURST_LEN_RDMA_LBIT
+#define DC_BURST_LEN_RDMA_16		(2) << DC_BURST_LEN_RDMA_LBIT
+#define DC_BURST_LEN_RDMA_32		(3) << DC_BURST_LEN_RDMA_LBIT
+
 #define DC_BURST_LEN_BDMA_LBIT		(2)
 #define DC_BURST_LEN_BDMA_HBIT		(3)
 #define DC_BURST_LEN_BDMA_MASK	\
@@ -273,6 +295,8 @@
 
 /* keep default value */
 #define	DC_OUT_SEL			BIT(1)
+#define DC_OUT_SEL_RDMA                 BIT(1)
+#define DC_OUT_SEL_CMP                  ~BIT(1)
 
 /* PCFG_RD_CTRL register */
 
@@ -383,8 +407,11 @@
 #define DC_DP_DITHER_DW_MASK        \
 	GENMASK(DC_DP_DITHER_DW_HBIT, DC_DP_DITHER_DW_LBIT)
 #define DC_DP_DITHER_DW_BLUE_LBIT       (16)
+#define DC_DP_DITHER_DW_BLUE_HBIT       (17)
 #define DC_DP_DITHER_DW_GREEN_LBIT      (18)
+#define DC_DP_DITHER_DW_GREEN_HBIT      (19)
 #define DC_DP_DITHER_DW_RED_LBIT        (20)
+#define DC_DP_DITHER_DW_RED_HBIT        (21)
 #define DC_DP_DITHER_DROP_0_BITS	(0)
 #define DC_DP_DITHER_DROP_2_BITS	(1)
 #define DC_DP_DITHER_DROP_3_BITS	(2)
@@ -399,10 +426,17 @@
 #define DC_TFT_CLKGATE_EN			BIT(2)
 /* Dither enable. 1:dither enable 0:dither disable */
 #define DC_DP_DITHER_EN			BIT(4)
-/* Display interfaces select. 0:TFT 1:SLCD */
-#define DC_DP_IF_SEL			GENMASK(1, 0)
-#define	DC_DISP_COM_SLCD		BIT(1)
-#define DC_DISP_COM_TFT			BIT(0)
+
+/* Display interfaces select. 1:TFT 2:SLCD 3:MIPI_SLCD*/
+
+#define DC_DP_IF_SEL                    GENMASK(1, 0)
+#define DC_DP_IF_SEL_LBIT		(0)
+#define DC_DP_IF_SEL_HBIT		(1)
+#define DC_DP_IF_SEL_MASK		GENMASK(DC_DP_IF_SEL_HBIT, DC_DP_IF_SEL_LBIT)
+#define	DC_DISP_COM_NO_DISP		(0b00) << DC_DP_IF_SEL_LBIT
+#define	DC_DISP_COM_TFT			(0b01) << DC_DP_IF_SEL_LBIT
+#define	DC_DISP_COM_SLCD		(0b10) << DC_DP_IF_SEL_LBIT
+#define	DC_DISP_COM_MIPI_SLCD		(0b11) << DC_DP_IF_SEL_LBIT
 
 /* TIMING_HSYNC(TFT_TIMING_HSYNC) bit field define */
 
@@ -579,10 +613,9 @@
  * 0: drive at posedge, and sample at negedge;
  * 1: drive at negedge, and sample at posedge.(default) */
 #define	DC_WR_DP			BIT(8)
-/* SPI_CLK Polarity.
- * 0: Active edge is Falling(default)
- * 1: Active edge is Rising Used for serial transfer mode. */
-#define	DC_CLKPLY			BIT(7)
+/* 0: do not wait TE, send pix_data after SLCD_START;
+ * wait TE, and then send pix_data. */
+#define DC_TE_MIPI_SWITCH		BIT(7)
 /* The TE' default polarity
  * 0: the default(invalid) level is low;(default)
  * 1: the default(invalid) level is high; */
@@ -681,13 +714,13 @@
 
 /* It is used to decide the meanings of the DATA/CMD/PARAMETER.
  * 00: pix_data; 01: parameter; 1x: command(default). */
-#define DC_SLCD_CMD_FLAG_LBIT		(30)
-#define DC_SLCD_CMD_FLAG_HBIT		(31)
-#define DC_SLCD_CMD_FLAG_MASK       \
-	GENMASK(DC_SLCD_CMD_FLAG_HBIT, DC_SLCD_CMD_FLAG_LBIT)
-#define DC_SLCD_CMD_FLAG_DATA	        (0b00) << DC_SLCD_CMD_FLAG_LBIT
-#define DC_SLCD_CMD_FLAG_PRM            (0b01) << DC_SLCD_CMD_FLAG_LBIT
-#define DC_SLCD_CMD_FLAG_CMD	        (0b10) << DC_SLCD_CMD_FLAG_LBIT
+#define DC_SLCD_REG_IF_FLAG_LBIT		(30)
+#define DC_SLCD_REG_IF_FLAG_HBIT		(31)
+#define DC_SLCD_REG_IF_FLAG_MASK       \
+	GENMASK(DC_SLCD_REG_IF_FLAG_HBIT, DC_SLCD_REG_IF_FLAG_LBIT)
+#define DC_SLCD_REG_IF_FLAG_DATA		(0b00) << DC_SLCD_REG_IF_FLAG_LBIT
+#define DC_SLCD_REG_IF_FLAG_PRM			(0b01) << DC_SLCD_REG_IF_FLAG_LBIT
+#define DC_SLCD_REG_IF_FLAG_CMD			(0b10) << DC_SLCD_REG_IF_FLAG_LBIT
 /* Indicate this is the last content, the hardware will disable the CS */
 #define	DC_SLCD_CMD_END		        BIT(29)
 /* content */

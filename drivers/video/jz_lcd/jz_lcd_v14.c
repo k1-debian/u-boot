@@ -1,5 +1,5 @@
 /*
- * x1830 LCDC DRIVER
+ * x1830/X2000 LCDC DRIVER
  *
  * Copyright (c) 2014 Ingenic Semiconductor Co.,Ltd
  * Author: Huddy <hyli@ingenic.cn>
@@ -25,7 +25,7 @@
 #include <serial.h>
 #include <common.h>
 #include <lcd.h>
-#include <asm/arch/lcdc.h>
+/*#include <asm/arch/lcdc.h>*/
 #include <asm/arch/gpio.h>
 #include <asm/arch/clk.h>
 #include <jz_lcd/jz_lcd_v14.h>
@@ -34,6 +34,16 @@
 #include <asm/gpio.h>
 
 /* #define DEBUG */
+#ifdef CONFIG_JZ_MIPI_DSI
+#include <jz_lcd/jz_dsim.h>
+#include "./jz_mipi_dsi/jz_mipi_dsi_regs.h"
+#include "./jz_mipi_dsi/jz_mipi_dsih_hal.h"
+struct dsi_device *dsi;
+extern struct dsi_device jz_dsi;
+struct dsi_phy dsi_phy;
+void jz_dsi_init(struct dsi_device *dsi);
+int jz_dsi_video_cfg(struct dsi_device *dsi);
+#endif
 
 struct jzfb_config_info lcd_config_info;
 static int lcd_enable_state = 0;
@@ -46,6 +56,148 @@ void lcd_set_backlight_level(int num);
 #define fb_read(addr)				\
 	readl(DPU_BASE+addr)
 
+#ifdef DEBUG
+
+void dump_dsi_reg(struct dsi_device *dsi)
+{
+	printf( "-----------dump dsi reg------------\n");
+	printf( "VERSION------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VERSION));
+	printf( "PWR_UP:------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PWR_UP));
+	printf( "CLKMGR_CFG---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_CLKMGR_CFG));
+	printf( "DPI_VCID-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_VCID));
+	printf( "DPI_COLOR_CODING---:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_COLOR_CODING));
+	printf( "DPI_CFG_POL--------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_CFG_POL));
+	printf( "DPI_LP_CMD_TIM-----:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_LP_CMD_TIM));
+	printf( "DBI_VCID-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DBI_VCID));
+	printf( "DBI_CFG------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DBI_CFG));
+	printf( "DBI_PARTITIONING_EN:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DBI_PARTITIONING_EN));
+	printf( "DBI_CMDSIZE--------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DBI_CMDSIZE));
+	printf( "PCKHDL_CFG---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PCKHDL_CFG));
+	printf( "GEN_VCID-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_GEN_VCID));
+	printf( "MODE_CFG-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_MODE_CFG));
+	printf( "VID_MODE_CFG-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_MODE_CFG));
+	printf( "VID_PKT_SIZE-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_PKT_SIZE));
+	printf( "VID_NUM_CHUNKS-----:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_NUM_CHUNKS));
+	printf( "VID_NULL_SIZE------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_NULL_SIZE));
+	printf( "VID_HSA_TIME-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_HSA_TIME));
+	printf( "VID_HBP_TIME-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_HBP_TIME));
+	printf( "VID_HLINE_TIME-----:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_HLINE_TIME));
+	printf( "VID_VSA_LINES------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VSA_LINES));
+	printf( "VID_VBP_LINES------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VBP_LINES));
+	printf( "VID_VFP_LINES------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VFP_LINES));
+	printf( "VID_VACTIVE_LINES--:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VACTIVE_LINES));
+	printf( "EDPI_CMD_SIZE------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_EDPI_CMD_SIZE));
+	printf( "CMD_MODE_CFG-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_CMD_MODE_CFG));
+	printf( "GEN_HDR------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_GEN_HDR));
+	printf( "GEN_PLD_DATA-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_GEN_PLD_DATA));
+	printf( "CMD_PKT_STATUS-----:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_CMD_PKT_STATUS));
+	printf( "TO_CNT_CFG---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_TO_CNT_CFG));
+	printf( "HS_RD_TO_CNT-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_HS_RD_TO_CNT));
+	printf( "LP_RD_TO_CNT-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_LP_RD_TO_CNT));
+	printf( "HS_WR_TO_CNT-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_HS_WR_TO_CNT));
+	printf( "LP_WR_TO_CNT_CFG---:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_LP_WR_TO_CNT));
+	printf( "BTA_TO_CNT---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_BTA_TO_CNT));
+	printf( "SDF_3D-------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_SDF_3D));
+	printf( "LPCLK_CTRL---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_LPCLK_CTRL));
+	printf( "PHY_TMR_LPCLK_CFG--:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_TMR_LPCLK_CFG));
+	printf( "PHY_TMR_CFG--------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_TMR_CFG));
+	printf( "PHY_RSTZ-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_RSTZ));
+	printf( "PHY_IF_CFG---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_IF_CFG));
+	printf( "PHY_ULPS_CTRL------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_ULPS_CTRL));
+	printf( "PHY_TX_TRIGGERS----:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_TX_TRIGGERS));
+	printf( "PHY_STATUS---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_STATUS));
+	printf( "PHY_TST_CTRL0------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_TST_CTRL0));
+	printf( "PHY_TST_CTRL1------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_TST_CTRL1));
+	printf( "INT_ST0------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_INT_ST0));
+	printf( "INT_ST1------------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_INT_ST1));
+	printf( "INT_MSK0-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_INT_MSK0));
+	printf( "INT_MSK1-----------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_INT_MSK1));
+	printf( "INT_FORCE0---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_INT_FORCE0));
+	printf( "INT_FORCE1---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_INT_FORCE1));
+	printf( "VID_SHADOW_CTRL----:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_SHADOW_CTRL));
+	printf( "DPI_VCID_ACT-------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_VCID_ACT));
+	printf( "DPI_COLOR_CODING_AC:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_COLOR_CODING_ACT));
+	printf( "DPI_LP_CMD_TIM_ACT-:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_DPI_LP_CMD_TIM_ACT));
+	printf( "VID_MODE_CFG_ACT---:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_MODE_CFG_ACT));
+	printf( "VID_PKT_SIZE_ACT---:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_PKT_SIZE_ACT));
+	printf( "VID_NUM_CHUNKS_ACT-:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_NUM_CHUNKS_ACT));
+	printf( "VID_HSA_TIME_ACT---:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_HSA_TIME_ACT));
+	printf( "VID_HBP_TIME_ACT---:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_HBP_TIME_ACT));
+	printf( "VID_HLINE_TIME_ACT-:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_HLINE_TIME_ACT));
+	printf( "VID_VSA_LINES_ACT--:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VSA_LINES_ACT));
+	printf( "VID_VBP_LINES_ACT--:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VBP_LINES_ACT));
+	printf( "VID_VFP_LINES_ACT--:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VFP_LINES_ACT));
+	printf( "VID_VACTIVE_LINES_ACT:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_VID_VACTIVE_LINES_ACT));
+	printf( "SDF_3D_ACT---------:%08x\n",
+		 mipi_dsih_read_word(dsi, R_DSI_HOST_SDF_3D_ACT));
+}
 static void dump_dc_reg(void)
 {
 	printf("-----------------dc_reg------------------\n");
@@ -198,9 +350,12 @@ void dump_lay_cfg(struct jzfb_lay_cfg * lay_cfg, int index)
 	printf("stride:		   0x%x\n",lay_cfg->stride);
 	printf("------User disp set index[%d]------\n", index);
 }
+#endif
+
 
 static void dump_lcdc_registers(void)
 {
+	dump_dsi_reg();
 	dump_dc_reg();
 	dump_tft_reg();
 	dump_slcd_reg();
@@ -416,6 +571,7 @@ static int jzfb_check_frm_cfg(struct jzfb_config_info *info, struct jzfb_frm_cfg
 
 	return 0;
 }
+	/*unsigned int wb_buf[1024];*/
 
 static int jzfb_desc_init(struct jzfb_config_info *info, int frm_num)
 {
@@ -464,6 +620,8 @@ static int jzfb_desc_init(struct jzfb_config_info *info, int frm_num)
 		framedesc[i]->LayCfgEn.b.lay1_en = lay_cfg[1].lay_en;
 		framedesc[i]->LayCfgEn.b.lay0_z_order = lay_cfg[0].lay_z_order;
 		framedesc[i]->LayCfgEn.b.lay1_z_order = lay_cfg[1].lay_z_order;
+		/*framedesc[i]->WritebackAddr = wb_buf;
+		framedesc[i]->FrameCtrl.b.bit1_keep0 = 1;  writeback*/
 
 		framedesc[i]->FrameCtrl.b.stop = 0;
 		framedesc[i]->InterruptControl.d32 = DC_SOF_MSK;
@@ -902,42 +1060,19 @@ static void jzfb_tft_start(void)
 
 static int wait_dc_state(uint32_t state, uint32_t flag)
 {
-        unsigned long timeout = 20000;
-        while(((!(fb_read(DC_ST) & state)) == flag) && timeout) {
-	                timeout--;
-	                udelay(10);
-	        }
-
-        if(timeout <= 0) {
-	                printf("LCD wait state timeout! state = %d, DC_ST = 0x%x\n", state, DC_ST);
-	                return -1;
-	        }
-        return 0;
-}
-
-void lcd_enable(void)
-{
-	if (lcd_enable_state == 0) {
-		jzfb_cmp_start();
-		jzfb_tft_start();
+	unsigned long timeout = 20000;
+	while(((!(fb_read(DC_ST) & state)) == flag) && timeout) {
+		timeout--;
+		udelay(10);
 	}
 
-	lcd_enable_state = 1;
-	return;
-}
-
-static void lcd_disable(struct jzfb_config_info *info, stop_mode_t stop_md)
-{
-	if(stop_md == QCK_STOP) {
-		fb_write(DC_CTRL, DC_QCK_STP_CMP);
-		wait_dc_state(DC_WORKING, 0);
-	} else {
-		fb_write(DC_CTRL, DC_GEN_STP_CMP);
+	if(timeout <= 0) {
+		printf("LCD wait state timeout! state = %d, DC_ST = 0x%x\n", state, DC_ST);
+		return -1;
 	}
-
-	lcd_enable_state = 0;
-	return;
+	return 0;
 }
+
 
 static void tft_timing_init(struct fb_videomode *modes) {
 	uint32_t hps, hpe, vps, vpe;
@@ -1059,6 +1194,301 @@ static int jzfb_tft_set_par(struct jzfb_config_info *info)
 	return 0;
 }
 
+static void slcd_send_mcu_command(struct jzfb_config_info *info,unsigned long cmd)
+{
+	int count = 10000;
+	uint32_t slcd_cfg;
+
+	while ((fb_read(DC_SLCD_ST) & DC_SLCD_ST_BUSY) && count--) {
+		udelay(10);
+	}
+	if (count < 0) {
+		serial_puts("SLCDC wait busy state wrong\n");
+	}
+
+	slcd_cfg = fb_read(DC_SLCD_CFG);
+	fb_write(DC_SLCD_CFG, (slcd_cfg & ~DC_FMT_EN));
+	fb_write(DC_SLCD_REG_IF, DC_SLCD_REG_IF_FLAG_CMD | (cmd & ~DC_SLCD_REG_IF_FLAG_MASK));
+}
+
+static void slcd_send_mcu_data(struct jzfb_config_info *info,unsigned long data)
+{
+	int count = 10000;
+	uint32_t slcd_cfg;
+
+	while ((fb_read(DC_SLCD_ST) & DC_SLCD_ST_BUSY) && count--) {
+		udelay(10);
+	}
+	if (count < 0) {
+		serial_puts("SLCDC wait busy state wrong\n");
+	}
+
+	slcd_cfg = fb_read(DC_SLCD_CFG);
+	fb_write(DC_SLCD_CFG, (slcd_cfg | DC_FMT_EN));
+	fb_write(DC_SLCD_REG_IF, DC_SLCD_REG_IF_FLAG_DATA | (data & ~DC_SLCD_REG_IF_FLAG_MASK));
+}
+
+static void slcd_send_mcu_prm(struct jzfb_config_info *info,unsigned long data)
+{
+	int count = 10000;
+	uint32_t slcd_cfg;
+
+	while ((fb_read(DC_SLCD_ST) & DC_SLCD_ST_BUSY) && count--) {
+		udelay(10);
+	}
+	if (count < 0) {
+		serial_puts("SLCDC wait busy state wrong\n");
+	}
+
+	slcd_cfg = fb_read(DC_SLCD_CFG);
+	fb_write(DC_SLCD_CFG, (slcd_cfg & ~DC_FMT_EN));
+	fb_write(DC_SLCD_REG_IF, DC_SLCD_REG_IF_FLAG_PRM | (data & ~DC_SLCD_REG_IF_FLAG_MASK));
+}
+
+void lcd_enable(void)
+{
+	if (lcd_enable_state == 0) {
+		jzfb_cmp_start();
+		/*jzfb_tft_start();   tft_lcd*/
+	}
+
+	lcd_enable_state = 1;
+	return;
+}
+
+static void lcd_disable(struct jzfb_config_info *info, stop_mode_t stop_md)
+{
+	if(stop_md == QCK_STOP) {
+		fb_write(DC_CTRL, DC_QCK_STP_CMP);
+		wait_dc_state(DC_WORKING, 0);
+	} else {
+		fb_write(DC_CTRL, DC_GEN_STP_CMP);
+	}
+
+	lcd_enable_state = 0;
+	return;
+}
+
+
+static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
+{
+
+	unsigned int is_enabled, i;
+	unsigned long tmp;
+	struct jzfb_smart_config *smart_config;
+	struct smart_lcd_data_table *data_table;
+	uint32_t length_data_table;
+	stop_mode_t stop_md;
+
+	if (info->lcd_type != LCD_TYPE_SLCD)
+		return;
+
+	is_enabled = lcd_enable_state;
+	if (!is_enabled) {
+		lcd_enable();
+	}
+	smart_config = info->smart_config;
+	data_table = smart_config->data_table;
+	length_data_table = smart_config->length_data_table;
+
+	if (length_data_table &&data_table) {
+		for (i = 0; i < length_data_table; i++) {
+			switch (data_table[i].type) {
+				case SMART_CONFIG_DATA:
+					slcd_send_mcu_data(info,data_table[i].value);
+					break;
+				case SMART_CONFIG_PRM:
+					slcd_send_mcu_prm(info,data_table[i].value);
+					break;
+				case SMART_CONFIG_CMD:
+					slcd_send_mcu_command(info,data_table[i].value);
+					break;
+				case SMART_CONFIG_UDELAY:
+					udelay(data_table[i].value);
+					break;
+				default:
+					serial_puts("Unknow SLCD data type\n");
+					break;
+			}
+		}
+	}
+}
+
+static void wait_slcd_busy()
+{
+	int count = 100000;
+	while ((fb_read(DC_SLCD_ST) & DC_SLCD_ST_BUSY)
+			&& count--) {
+		udelay(10);
+	}
+	if (count < 0) {
+		serial_puts("SLCDC wait busy state wrong\n");
+	}
+}
+
+
+void slcd_set_mcu_register(struct jzfb_config_info *info,unsigned long cmd, unsigned long data)
+{
+	slcd_send_mcu_command(info, cmd);
+	slcd_send_mcu_data(info, data);
+}
+
+
+void slcd_cfg_init(struct jzfb_smart_config *smart_config)
+{
+	uint32_t slcd_cfg;
+	slcd_cfg = fb_read(DC_SLCD_CFG);
+	slcd_cfg &= ~DC_RDY_SWITCH;
+	slcd_cfg &= ~DC_CS_EN;
+
+	if(smart_config->te_mipi_switch){
+		slcd_cfg |= DC_TE_MIPI_SWITCH;
+	} else {
+		slcd_cfg &= ~DC_TE_MIPI_SWITCH;
+	}
+
+	if(smart_config->dc_md) {
+		slcd_cfg |= DC_DC_MD;
+	} else {
+		slcd_cfg &= ~DC_DC_MD;
+	}
+
+	if(smart_config->wr_md) {
+		slcd_cfg |= DC_WR_DP;
+	} else {
+		slcd_cfg &= ~DC_WR_DP;
+	}
+
+	slcd_cfg &= ~DC_DBI_TYPE_MASK;
+	switch(smart_config->smart_type){
+	case SMART_LCD_TYPE_8080:
+		slcd_cfg |= DC_DBI_TYPE_B_8080;
+		break;
+	case SMART_LCD_TYPE_6800:
+		slcd_cfg |= DC_DBI_TYPE_A_6800;
+		break;
+	case SMART_LCD_TYPE_SPI_3:
+		slcd_cfg |= DC_DBI_TYPE_C_SPI_3;
+		break;
+	case SMART_LCD_TYPE_SPI_4:
+		slcd_cfg |= DC_DBI_TYPE_C_SPI_4;
+		break;
+	default:
+		printf("err!\n");
+		break;
+	}
+
+	slcd_cfg &= ~DC_DATA_FMT_MASK;
+	switch(smart_config->pix_fmt) {
+	case SMART_LCD_FORMAT_888:
+		slcd_cfg |= DC_DATA_FMT_888;
+		break;
+	case SMART_LCD_FORMAT_666:
+		slcd_cfg |= DC_DATA_FMT_666;
+		break;
+	case SMART_LCD_FORMAT_565:
+		slcd_cfg |= DC_DATA_FMT_565;
+		break;
+	default:
+		printf("err!\n");
+		break;
+	}
+
+	slcd_cfg &= ~DC_DWIDTH_MASK;
+	switch(smart_config->dwidth) {
+	case SMART_LCD_DWIDTH_8_BIT:
+		slcd_cfg |= DC_DWIDTH_8BITS;
+		break;
+	case SMART_LCD_DWIDTH_9_BIT:
+		slcd_cfg |= DC_DWIDTH_9BITS;
+		break;
+	case SMART_LCD_DWIDTH_16_BIT:
+		slcd_cfg |= DC_DWIDTH_16BITS;
+		break;
+	case SMART_LCD_DWIDTH_18_BIT:
+		slcd_cfg |= DC_DWIDTH_18BITS;
+		break;
+	case SMART_LCD_DWIDTH_24_BIT:
+		slcd_cfg |= DC_DWIDTH_24BITS;
+		break;
+	default:
+		printf("err!\n");
+		break;
+	}
+
+	slcd_cfg &= ~DC_CWIDTH_MASK;
+	switch(smart_config->cwidth) {
+	case SMART_LCD_CWIDTH_8_BIT:
+		slcd_cfg |= DC_CWIDTH_8BITS;
+		break;
+	case SMART_LCD_CWIDTH_9_BIT:
+		slcd_cfg |= DC_CWIDTH_9BITS;
+		break;
+	case SMART_LCD_CWIDTH_16_BIT:
+		slcd_cfg |= DC_CWIDTH_16BITS;
+		break;
+	case SMART_LCD_CWIDTH_18_BIT:
+		slcd_cfg |= DC_CWIDTH_18BITS;
+		break;
+	case SMART_LCD_CWIDTH_24_BIT:
+		slcd_cfg |= DC_CWIDTH_24BITS;
+		break;
+	default:
+		printf("err!\n");
+		break;
+	}
+
+	fb_write(DC_SLCD_CFG, slcd_cfg);
+
+	return;
+}
+
+static int slcd_timing_init(struct fb_videomode *mode)
+{
+	uint32_t width = mode->xres;
+	uint32_t height = mode->yres;
+	uint32_t dhtime = 0;
+	uint32_t dltime = 0;
+	uint32_t chtime = 0;
+	uint32_t cltime = 0;
+	uint32_t tah = 0;
+	uint32_t tas = 0;
+	uint32_t slowtime = 0;
+
+	/*frm_size*/
+	fb_write(DC_SLCD_FRM_SIZE,
+		  ((width << DC_SLCD_FRM_H_SIZE_LBIT) |
+		   (height << DC_SLCD_FRM_V_SIZE_LBIT)));
+
+	/* wr duty */
+	fb_write(DC_SLCD_WR_DUTY,
+		  ((dhtime << DC_DSTIME_LBIT) |
+		   (dltime << DC_DDTIME_LBIT) |
+		   (chtime << DC_CSTIME_LBIT) |
+		   (cltime << DC_CDTIME_LBIT)));
+
+	/* slcd timing */
+	fb_write(DC_SLCD_TIMING,
+		  ((tah << DC_TAH_LBIT) |
+		  (tas << DC_TAS_LBIT)));
+
+	/* slow time */
+	fb_write(DC_SLCD_SLOW_TIME, slowtime);
+
+	return 0;
+
+}
+
+static int jzfb_slcd_set_par(struct jzfb_config_info *info)
+{
+	int i,j;
+	struct fb_videomode *mode = info->modes;
+
+	slcd_cfg_init(info->smart_config);
+	slcd_timing_init(mode);
+	return 0;
+}
+
 static void disp_common_init(struct jzfb_config_info *info)
 {
 	uint32_t disp_com;
@@ -1067,15 +1497,26 @@ static void disp_common_init(struct jzfb_config_info *info)
 	disp_com &= ~DC_DP_IF_SEL;
 	if(info->lcd_type == LCD_TYPE_SLCD) {
 		disp_com |= DC_DISP_COM_SLCD;
+	} else if(info->lcd_type == LCD_TYPE_MIPI_SLCD) {
+		disp_com |= DC_DISP_COM_MIPI_SLCD;
 	} else {
 		disp_com |= DC_DISP_COM_TFT;
 	}
 	if(info->dither_enable) {
 		disp_com |= DC_DP_DITHER_EN;
 		disp_com &= ~DC_DP_DITHER_DW_MASK;
-		disp_com |= info->dither.dither_red << DC_DP_DITHER_DW_RED_LBIT;
-		disp_com |= info->dither.dither_green << DC_DP_DITHER_DW_GREEN_LBIT;
-		disp_com |= info->dither.dither_blue << DC_DP_DITHER_DW_BLUE_LBIT;
+		disp_com |= info->dither.dither_red
+			     << DC_DP_DITHER_DW_RED_LBIT;
+		disp_com |= info->dither.dither_red
+			     << DC_DP_DITHER_DW_RED_HBIT;
+		disp_com |= info->dither.dither_green
+			    << DC_DP_DITHER_DW_GREEN_LBIT;
+		disp_com |= info->dither.dither_green
+			    << DC_DP_DITHER_DW_GREEN_HBIT;
+		disp_com |= info->dither.dither_blue
+			    << DC_DP_DITHER_DW_BLUE_LBIT;
+		disp_com |= info->dither.dither_blue
+			    << DC_DP_DITHER_DW_BLUE_HBIT;
 	} else {
 		disp_com &= ~DC_DP_DITHER_EN;
 	}
@@ -1149,41 +1590,41 @@ static int jzfb_check_colormode(struct fb_var_screeninfo *var, uint32_t *mode)
 
 static int jzfb_update_frm_mode(struct jzfb_config_info *info)
 {
-        struct fb_videomode *mode;
-        struct jzfb_frm_mode *frm_mode;
-        struct jzfb_frm_cfg *frm_cfg;
-        struct jzfb_lay_cfg *lay_cfg;
-        struct fb_var_screeninfo *var = &info->var;
-        int i;
+	struct fb_videomode *mode;
+	struct jzfb_frm_mode *frm_mode;
+	struct jzfb_frm_cfg *frm_cfg;
+	struct jzfb_lay_cfg *lay_cfg;
+	struct fb_var_screeninfo *var = &info->var;
+	int i;
 
-        mode = info->modes;
+	mode = info->modes;
 
-        frm_mode = &info->current_frm_mode;
-        frm_cfg = &frm_mode->frm_cfg;
-        lay_cfg = frm_cfg->lay_cfg;
+	frm_mode = &info->current_frm_mode;
+	frm_cfg = &frm_mode->frm_cfg;
+	lay_cfg = frm_cfg->lay_cfg;
 
-        /*Only set layer0 work*/
-        lay_cfg[0].lay_en = 1;
-        lay_cfg[0].lay_z_order = 1;
-        lay_cfg[1].lay_en = 0;
-        lay_cfg[1].lay_z_order = 0;
+	/*Only set layer0 work*/
+	lay_cfg[0].lay_en = 1;
+	lay_cfg[0].lay_z_order = 1;
+	lay_cfg[1].lay_en = 0;
+	lay_cfg[1].lay_z_order = 0;
 
-        for(i = 0; i < MAX_LAYER_NUM; i++) {
-	                lay_cfg[i].pic_width = mode->xres;
-	                lay_cfg[i].pic_height = mode->yres;
-	                lay_cfg[i].disp_pos_x = 0;
-	                lay_cfg[i].disp_pos_y = 0;
-	                lay_cfg[i].g_alpha_en = 0;
-	                lay_cfg[i].g_alpha_val = 0xff;
-	                lay_cfg[i].color = jzfb_colormodes[0].color;
-	                lay_cfg[i].format = jzfb_colormodes[0].mode;
-	                lay_cfg[i].domain_multi = 1;
-	                lay_cfg[i].stride = mode->xres;
-	        }
+	for(i = 0; i < MAX_LAYER_NUM; i++) {
+		lay_cfg[i].pic_width = mode->xres;
+		lay_cfg[i].pic_height = mode->yres;
+		lay_cfg[i].disp_pos_x = 0;
+		lay_cfg[i].disp_pos_y = 0;
+		lay_cfg[i].g_alpha_en = 0;
+		lay_cfg[i].g_alpha_val = 0xff;
+		lay_cfg[i].color = jzfb_colormodes[0].color;
+		lay_cfg[i].format = jzfb_colormodes[0].mode;
+		lay_cfg[i].domain_multi = 1;
+		lay_cfg[i].stride = mode->xres;
+	}
 
-        info->current_frm_desc = 0;
+	info->current_frm_desc = 0;
 
-        return 0;
+	return 0;
 }
 
 static int jz_lcd_init_mem(void *lcdbase, struct jzfb_config_info *info)
@@ -1199,7 +1640,7 @@ static int jz_lcd_init_mem(void *lcdbase, struct jzfb_config_info *info)
 static int slcd_pixel_refresh_times(struct jzfb_config_info *info)
 {
 
-	switch(info->smart_config.smart_type){
+	switch(info->smart_config->smart_type){
 	case SMART_LCD_TYPE_8080:
 	case SMART_LCD_TYPE_6800:
 		break;
@@ -1212,7 +1653,7 @@ static int slcd_pixel_refresh_times(struct jzfb_config_info *info)
 		break;
 	}
 
-	switch(info->smart_config.pix_fmt) {
+	switch(info->smart_config->pix_fmt) {
 	case SMART_LCD_FORMAT_888:
 		return 3;
 	case SMART_LCD_FORMAT_565:
@@ -1268,7 +1709,7 @@ static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 
 static int jzfb_set_fix_par(struct jzfb_config_info *info)
 {
-	unsigned int disp_com;
+	uint32_t disp_com;
 
 	disp_common_init(info);
 
@@ -1278,11 +1719,14 @@ static int jzfb_set_fix_par(struct jzfb_config_info *info)
 
 	disp_com = fb_read(DC_DISP_COM);
 	if (info->lcd_type == LCD_TYPE_SLCD) {
-	//	fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_SLCD);
-	//	jzfb_slcd_set_par(info);
+	//		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_SLCD);
+	//		jzfb_slcd_set_par(info);
+	}else if(info->lcd_type == LCD_TYPE_MIPI_SLCD){
+			fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_MIPI_SLCD);
+			jzfb_slcd_set_par(info);
 	} else {
 		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_TFT);
-		jzfb_tft_set_par(info);
+			jzfb_tft_set_par(info);
 	}
 
 	return 0;
@@ -1324,9 +1768,16 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 		return ret;
 	}
 
-	if(lcd_config_info.lcd_type == LCD_TYPE_TFT) {
+	if(lcd_config_info.lcd_type == LCD_TYPE_MIPI_SLCD || LCD_TYPE_TFT) {
 		fb_write(DC_FRM_CFG_ADDR, info->framedesc_phys[info->current_frm_desc]);
 	}
+
+#ifdef CONFIG_JZ_MIPI_DSI
+	mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG,0x1); //te
+	mipi_dsih_dphy_enable_hs_clk(dsi, 1);
+	mipi_dsih_hal_gen_set_mode(dsi, 1);
+	mipi_dsih_hal_dpi_color_coding(dsi,dsi->video_config->color_coding);
+#endif
 
 	return 0;
 }
@@ -1334,9 +1785,15 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 void lcd_ctrl_init(void *lcd_base)
 {
 	unsigned long pixel_clock_rate;
+
 	/* init registers base address */
-	lcd_config_info = jzfb1_init_data;
+	memcpy(&lcd_config_info , &jzfb1_init_data , sizeof(jzfb1_init_data));
 	lcd_config_info.lcdbaseoff = 0;
+
+#ifdef CONFIG_JZ_MIPI_DSI
+	dsi = &jz_dsi;
+	dsi->dsi_phy = &dsi_phy;
+#endif
 
 	lcd_set_flush_dcache(1);
 
@@ -1367,9 +1824,18 @@ void lcd_ctrl_init(void *lcd_base)
 #endif
 
 	panel_power_on();
+	open_backlight();
 
-
+#ifdef CONFIG_JZ_MIPI_DSI
+	dsi->bpp_info = lcd_config_info.bpp;
+	jz_dsi_init(dsi);
+	panel_init_sequence(dsi);
+#endif
 	jzfb_set_par(&lcd_config_info);
+
+	flush_cache_all();
+
+	return;
 }
 
 void lcd_show_board_info(void)
@@ -1381,3 +1847,4 @@ void lcd_setcolreg(ushort regno, ushort red, ushort green, ushort blue)
 {
 	return;
 }
+

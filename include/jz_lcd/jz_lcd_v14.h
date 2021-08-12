@@ -10,6 +10,8 @@
  *
  * the Free Software Foundation.
  */
+#ifndef __JZ_LCD_V14_H__
+#define __JZ_LCD_V14_H__
 
 #include <linux/list.h>
 #include <linux/fb.h>
@@ -28,6 +30,9 @@
 #define MAX_DESC_NUM 3
 #endif
 
+#define PICOS2KHZ(a) (1000000000/(a))
+#define KHZ2PICOS(a) (1000000000/(a))
+
 #define PIXEL_ALIGN 4
 #define DESC_ALIGN 8
 #define MAX_DESC_NUM 1
@@ -39,6 +44,22 @@
 #define FRAME_CTRL_DEFAULT_SET  (0x04)
 
 #define FRAME_CFG_ALL_UPDATE (0xFF)
+
+void panel_pin_init(void);
+void panel_power_on(void);
+void panel_power_off(void);
+void panel_init_set_sequence(struct dsi_device *dsi);
+void board_set_lcd_power_on(void);
+
+#if PWM_BACKLIGHT_CHIP
+void lcd_set_backlight_level(int num);
+void lcd_close_backlight(void);
+#else
+void lcd_init_backlight(int num);
+void send_low_pulse(int num);
+void lcd_set_backlight_level(int num);
+void lcd_close_backlight(void);
+#endif
 
 struct jz_fb_dma_descriptor {
         u_long fdadr;           /* Frame descriptor address register */
@@ -62,6 +83,7 @@ enum smart_lcd_type {
 enum jzfb_lcd_type {
         LCD_TYPE_TFT = 0,
         LCD_TYPE_SLCD =1,
+	LCD_TYPE_MIPI_SLCD =2,
 };
 
 
@@ -70,6 +92,22 @@ enum smart_lcd_format {
         SMART_LCD_FORMAT_565,
         SMART_LCD_FORMAT_666,
         SMART_LCD_FORMAT_888,
+};
+
+enum smart_lcd_dwidth {
+	SMART_LCD_DWIDTH_8_BIT,
+	SMART_LCD_DWIDTH_9_BIT,
+	SMART_LCD_DWIDTH_16_BIT,
+	SMART_LCD_DWIDTH_18_BIT,
+	SMART_LCD_DWIDTH_24_BIT,
+};
+
+enum smart_lcd_cwidth {
+	SMART_LCD_CWIDTH_8_BIT,
+	SMART_LCD_CWIDTH_9_BIT,
+	SMART_LCD_CWIDTH_16_BIT,
+	SMART_LCD_CWIDTH_18_BIT,
+	SMART_LCD_CWIDTH_24_BIT,
 };
 
 enum {
@@ -285,7 +323,7 @@ struct jzfb_frmdesc_msg {
 };
 
 enum tft_lcd_color_even {
-        TFT_LCD_COLOR_EVEN_RGB, 
+        TFT_LCD_COLOR_EVEN_RGB,
         TFT_LCD_COLOR_EVEN_RBG,
         TFT_LCD_COLOR_EVEN_BGR,
         TFT_LCD_COLOR_EVEN_BRG,
@@ -317,6 +355,18 @@ enum jzfb_copy_type {
     FB_COPY_TYPE_ERR,
 };
 
+enum smart_config_type {
+	SMART_CONFIG_CMD =  0,
+	SMART_CONFIG_DATA =  1,
+	SMART_CONFIG_UDELAY =  2,
+	SMART_CONFIG_PRM = 3,
+};
+
+struct smart_lcd_data_table {
+	enum smart_config_type type;
+	uint32_t value;
+};
+
 struct jzfb_tft_config {
         unsigned int pix_clk_inv:1;
         unsigned int de_dl:1;
@@ -326,14 +376,46 @@ struct jzfb_tft_config {
         enum tft_lcd_mode mode;
         enum jzfb_copy_type fb_copy_type;
 };
+struct jzfb_smart_config{
+		enum smart_lcd_type smart_type;	/* smart lcd transfer type, 0: parrallel, 1: serial */
+		enum smart_lcd_format pix_fmt;
+
+		unsigned clkply_active_rising:1;	/* smart lcd clock polarity:
+0: Active edge is Falling,1: Active edge is Rasing */
+		unsigned rsply_cmd_high:1;	/* smart lcd RS polarity.
+0: Command_RS=0, Data_RS=1; 1: Command_RS=1, Data_RS=0 */
+		unsigned csply_active_high:1;	/* smart lcd CS Polarity.
+0: Active level is low, 1: Active level is high */
+
+		unsigned newcfg_6800_md:1;
+		unsigned newcfg_fmt_conv:1;
+		unsigned newcfg_datatx_type:1;
+		unsigned newcfg_cmdtx_type:1;
+		unsigned newcfg_cmd_9bit:1;
+
+		size_t length_cmd;
+		unsigned long *write_gram_cmd;	/* write graphic ram command */
+		unsigned bus_width;	/* bus width in bit */
+		unsigned int length_data_table;	/* array size of data_table */
+		struct smart_lcd_data_table *data_table;	/* init data table */
+		int (*init) (void);
+		int (*gpio_for_slcd) (void);
+		unsigned int dc_md:1;
+		unsigned int wr_md:1;
+		unsigned int te_mipi_switch:1;
+		unsigned int te_switch:1;
+		enum smart_lcd_dwidth dwidth;
+		enum smart_lcd_cwidth cwidth;
+	} ;
 
 struct jzfb_config_info {
 	int num_modes;
-	struct fb_videomode *modes;	/* valid video modes */
+	struct fb_videomode *modes;	 /* valid video modes */
 	enum jzfb_format_order fmt_order;	/* frame buffer pixel format order */
 	struct fb_var_screeninfo var;   /* Current var */
 	struct jzfb_frm_mode current_frm_mode;
 	struct jzfb_tft_config *tft_config;
+	struct jzfb_smart_config *smart_config;
 	int lcdbaseoff;		/* lcd register base offset from LCD_BASE */
 
 	int current_frm_desc;
@@ -343,31 +425,6 @@ struct jzfb_config_info {
 
 	unsigned pixclk_falling_edge:1;	/* pixclk_falling_edge: pixel clock at falling edge */
 	unsigned date_enable_active_low:1;	/* data enable active low */
-	struct {
-		enum smart_lcd_type smart_type;	/* smart lcd transfer type, 0: parrallel, 1: serial */
-		enum smart_lcd_format pix_fmt;
-
-		unsigned clkply_active_rising:1;	/* smart lcd clock polarity:
-							   0: Active edge is Falling,1: Active edge is Rasing */
-		unsigned rsply_cmd_high:1;	/* smart lcd RS polarity.
-						   0: Command_RS=0, Data_RS=1; 1: Command_RS=1, Data_RS=0 */
-		unsigned csply_active_high:1;	/* smart lcd CS Polarity.
-						   0: Active level is low, 1: Active level is high */
-
-		unsigned newcfg_6800_md:1;
-		unsigned newcfg_fmt_conv:1;
-		unsigned newcfg_datatx_type:1;
-		unsigned newcfg_cmdtx_type:1;
-		unsigned newcfg_cmd_9bit:1;
-
-		size_t length_cmd;
-        unsigned long *write_gram_cmd;	/* write graphic ram command */
-        unsigned bus_width;	/* bus width in bit */
-        unsigned int length_data_table;	/* array size of data_table */
-		struct smart_lcd_data_table *data_table;	/* init data table */
-		int (*init) (void);
-		int (*gpio_for_slcd) (void);
-	} smart_config;
 
 	void *vidmem[MAX_DESC_NUM][MAX_LAYER_NUM];
 	dma_addr_t vidmem_phys[MAX_DESC_NUM][MAX_LAYER_NUM];
@@ -419,3 +476,7 @@ void jzfb_clk_disable(struct jzfb *jzfb);
 extern struct jzfb_config_info lcd_config_info;
 extern struct jzfb_config_info jzfb1_init_data;
 extern struct fb_videomode jzfb1_videomode;
+extern struct dsi_device jz_dsi;
+#endif /*__JZ_LCD_H__*/
+
+

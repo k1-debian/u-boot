@@ -8,8 +8,8 @@
 #define _JZ_MIPI_DSIM_H
 
 //#include <linux/fb.h>
+#include <asm/arch/base.h>
 
-#define DSI_BASE (0xb3014000)
 #define DATALANE_BYTECLOCK_KHZ (CONFIG_DATALANE_BPS_MHZ * 1000 / 8)
 
 #define REFERENCE_FREQ (24000)  //24MHZ, ext

@@ -2,7 +2,7 @@
 #include <config.h>
 #include <common.h>
 #include <jz_lcd/jz_dsim.h> /* extern struct dsi_device jz_dsi; */
-#include <jz_lcd/jz_lcd_v12.h>
+#include <jz_lcd/jz_lcd_v14.h>
 #include <lcd.h>
 
 extern void* lcd_get_fb_base(void);

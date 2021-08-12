@@ -1065,6 +1065,7 @@ dsih_error_t mipi_dsih_phy_lp2hs_config(struct dsi_device * dsi,
 		return ERR_DSI_OVERFLOW;
 	}
 
+
 	return OK;
 }
 
@@ -1092,19 +1093,23 @@ dsih_error_t mipi_dsih_phy_bta_time(struct dsi_device * dsi,
 void mipi_dsih_dphy_test_clock(struct dsi_device *dsi, int value)
 {
 	mipi_dsih_write_part(dsi, R_DSI_HOST_PHY_TST_CTRL0, value, 1, 1);
-} void mipi_dsih_dphy_test_clear(struct dsi_device *dsi, int value)
+}
+void mipi_dsih_dphy_test_clear(struct dsi_device *dsi, int value)
 {
 	mipi_dsih_write_part(dsi, R_DSI_HOST_PHY_TST_CTRL0, value, 0, 1);
-} void mipi_dsih_dphy_test_en(struct dsi_device *dsi,
+}
+void mipi_dsih_dphy_test_en(struct dsi_device *dsi,
 			      unsigned char on_falling_edge)
 {
 	mipi_dsih_write_part(dsi, R_DSI_HOST_PHY_TST_CTRL1, on_falling_edge,
 			     16, 1);
-} void mipi_dsih_dphy_test_data_in(struct dsi_device *dsi,
+}
+void mipi_dsih_dphy_test_data_in(struct dsi_device *dsi,
 				   unsigned char test_data)
 {
 	mipi_dsih_write_word(dsi, R_DSI_HOST_PHY_TST_CTRL1, test_data);
-} void mipi_dsih_dphy_write(struct dsi_device *dsi, unsigned char address,
+}
+void mipi_dsih_dphy_write(struct dsi_device *dsi, unsigned char address,
 			    unsigned char *data, unsigned char data_length)
 {
 	unsigned i = 0;
