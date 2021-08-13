@@ -295,7 +295,7 @@ static int jz_send(struct eth_device* dev, void *packet, int length)
 
 	memset(&tx_buff[next_tx * 2048], 0, 2048);
 	memcpy((void *)&tx_buff[next_tx * 2048], packet, length);
-	flush_dcache_all();
+	flush_cache_all();
 
 	/* prepare DMA data */
 	desc->length |= (((length <<DescSize1Shift) & DescSize1Mask)
@@ -360,7 +360,7 @@ static int jz_recv(struct eth_device* dev)
 			return -1;
 		}
 #endif
-                invalidate_dcache_range((ulong)NetRxPackets[next_rx], (ulong)NetRxPackets[next_rx] + length);
+		flush_cache(NetRxPackets[next_rx], length);
 
 		NetReceive(NetRxPackets[next_rx], length - 4);
 		/* after got data, make sure the dma owns desc to recv data from MII */
@@ -426,7 +426,7 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 
 	synopGMACWriteReg((u32 *)gmacdev->DmaBase,DmaTxBaseAddr, virt_to_phys(_tx_desc));
 
-	flush_dcache_all();
+	flush_cache_all();
 
 	/* setup rx_desc */
 	for (i = 0; i < NUM_RX_DESCS; i++) {

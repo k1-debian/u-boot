@@ -1481,6 +1481,9 @@ static int check_phy_negotiation_status(synopGMACdevice *gmacdev)
 	phy_id_hi = ((data >> 10) & 0x3f); /* OUI 19 to 24 bit */
 	phy_id = phy_id_hi << 16 | phy_id_low;
 
+	if (data == 0x10a)
+		phy_id = data;
+
 	printf("mac phy_id is: %x\n", phy_id);
 
 	for(i = 0; i < ARRAY_SIZE(phy_lists); i++) {
@@ -1488,6 +1491,10 @@ static int check_phy_negotiation_status(synopGMACdevice *gmacdev)
 		if(phy_list->oui_id == phy_id) {
 			break;
 		}
+	}
+
+	if(phy_list->oui_id != phy_id) {
+		phy_list = NULL;
 	}
 
 	if((phy_list != NULL) && (phy_list->check_init != NULL)) {

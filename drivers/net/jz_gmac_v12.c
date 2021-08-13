@@ -561,9 +561,8 @@ static void jz_gmac_phy_reset(void)
        udelay(100000);
 #endif
 }
-#endif
 
-#if defined(CONFIG_NET_X2000) || defined(CONFIG_NET_X2000_V12) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X1600)
+#else
 static void jz_gmac_phy_reset(void)
 {
 #ifndef CONFIG_FPGA
@@ -618,7 +617,7 @@ int jz_net_initialize(bd_t *bis)
 	gmacdev->MacBase =  JZ_GMAC_BASE + MACBASE;
 
 	u32 cpm_mphyc = 0;
-#if defined(CONFIG_NET_X2000_V12) || defined(GONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X1600)
+#ifndef CONFIG_NET_JZ4775
 	unsigned int rx_clk_delay = CONFIG_GMAC_RX_CLK_DELAY;
 	unsigned int tx_clk_delay = CONFIG_GMAC_TX_CLK_DELAY;
 	cpm_mphyc = read_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR);
@@ -630,7 +629,7 @@ int jz_net_initialize(bd_t *bis)
 	if(rx_clk_delay > 0 && rx_clk_delay <= 128)
 		cpm_mphyc = (cpm_mphyc & ~(0x7f << 4)) | ((rx_clk_delay-1) << 4) | (0x1 << 11);
 	write_cpm_mphyc(CONFIG_GAMAC_MODE_CTRL_ADDR, cpm_mphyc);
-#elif defined(CONFIG_NET_JZ4775)
+#else
 
 #define CONFIG_GAMAC_MODE_CTRL_ADDR (0xB00000E0)
 #if (CONFIG_NET_GMAC_PHY_MODE == GMAC_PHY_RMII)
