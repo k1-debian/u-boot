@@ -1461,7 +1461,7 @@ struct phy_list phy_lists[] = {
 		.oui_id = 0x30243,
 		.check_init = check_phy_init_ip101g,
 	},
-	[4] = {
+	[5] = {
 		.oui_id = 0x32001C,
 		.check_init = check_phy_init_rtl8021f,
 	},

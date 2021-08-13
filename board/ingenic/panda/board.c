@@ -90,10 +90,15 @@ int board_mmc_init(bd_t *bd)
 
 int board_eth_init(bd_t *bis)
 {
-#ifdef CONFIG_NET_JZ4775
-	return jz_net_initialize(bis);
+#ifdef CONFIG_NET_X1600
+	int rv;
+#ifndef  CONFIG_USB_ETHER
+	/* reset grus DM9000 */
+	rv = jz_net_initialize(bis);
 #else
-	return 0;
+	rv = usb_eth_initialize(bis);
+#endif
+	return rv;
 #endif
 }
 

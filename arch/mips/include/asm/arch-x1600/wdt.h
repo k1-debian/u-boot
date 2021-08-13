@@ -40,6 +40,8 @@
 
 #define TCSR_EXT_EN			(1 << 2)
 #define TCSR_RTC_EN			(1 << 1)
+#define TCSR_CLRZ			(1 << 10)
+
 #define TCSR_PCK_EN			(1 << 0)
 
 #define TCER_TCEN			(1 << 0)

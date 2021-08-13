@@ -32,44 +32,7 @@
 #include <asm/io.h>
 #include <asm/arch/wdt.h>
 
-#define cache_op(op, addr)		\
-	__asm__ __volatile__(		\
-		".set	push\n"		\
-		".set	noreorder\n"	\
-		".set	mips3\n"	\
-		"cache	%0, %1\n"	\
-		".set	pop\n"		\
-		:			\
-		: "i" (op), "R" (*(unsigned char *)(addr)))
-
-
-#define __sync()				\
-	__asm__ __volatile__(			\
-		".set	push\n\t"		\
-		".set	noreorder\n\t"		\
-		".set	mips2\n\t"		\
-		"sync\n\t"			\
-		".set	pop"			\
-		: /* no output */		\
-		: /* no input */		\
-		: "memory")
-
-#define __fast_iob()				\
-	__asm__ __volatile__(			\
-		".set	push\n\t"		\
-		".set	noreorder\n\t"		\
-		"lw	$0,%0\n\t"		\
-		"nop\n\t"			\
-		".set	pop"			\
-		: /* no output */		\
-		: "m" (*(int *)0xa0000000)	\
-		: "memory")
-
-#define fast_iob()				\
-	do {					\
-		__sync();			\
-		__fast_iob();			\
-	} while (0)
+#include <asm/jz_cache.h>
 
 void __attribute__((weak)) _machine_restart(void)
 {
@@ -80,9 +43,15 @@ void __attribute__((weak)) _machine_restart(void)
 
 	writel(TSCR_WDTSC, TCU_BASE + TCU_TSCR);
 
+#if (defined(CONFIG_X1600))
 	writel(0, WDT_BASE + WDT_TCNT);
+#endif
 	writel(time, WDT_BASE + WDT_TDR);
-	writel(TCSR_PRESCALE | TCSR_RTC_EN, WDT_BASE + WDT_TCSR);
+	writel(TCSR_PRESCALE | TCSR_RTC_EN
+#if (defined(CONFIG_X1600))
+			| TCSR_CLRZ
+#endif
+			, WDT_BASE + WDT_TCSR);
 	writel(0,WDT_BASE + WDT_TCER);
 
 	printf("reset in %dms", RESET_DELAY_MS);
@@ -100,73 +69,35 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 void flush_cache(ulong start_addr, ulong size)
 {
-	unsigned long lsize = CONFIG_SYS_CACHELINE_SIZE;
-	unsigned long addr = start_addr & ~(lsize - 1);
-	unsigned long aend = (start_addr + size - 1) & ~(lsize - 1);
-
-	for (; addr <= aend; addr += lsize) {
-		cache_op(HIT_WRITEBACK_INV_D, addr);
-		cache_op(HIT_INVALIDATE_I, addr);
-	}
-}
-
-void flush_dcache_range(ulong start_addr, ulong stop)
-{
-	unsigned long lsize = CONFIG_SYS_CACHELINE_SIZE;
-	unsigned long addr = start_addr & ~(lsize - 1);
-	unsigned long aend = (stop - 1) & ~(lsize - 1);
-	unsigned int writebuffer;
-	for (; addr <= aend; addr += lsize)
-		cache_op(HIT_WRITEBACK_INV_D, addr);
-	__asm__ __volatile__("sync");
-	writebuffer = *(volatile unsigned int *)0xa0000000;
-}
-
-void invalidate_dcache_range(ulong start_addr, ulong stop)
-{
-	unsigned long lsize = CONFIG_SYS_CACHELINE_SIZE;
-	unsigned long addr = start_addr & ~(lsize - 1);
-	unsigned long aend = (stop - 1) & ~(lsize - 1);
-
-	for (; addr <= aend; addr += lsize)
-		cache_op(HIT_INVALIDATE_D, addr);
-}
-
-void flush_icache_all(void)
-{
-	u32 addr, t = 0;
-
-	for (addr = CKSEG0; addr < CKSEG0 + CONFIG_SYS_ICACHE_SIZE;
-	     addr += CONFIG_SYS_CACHELINE_SIZE) {
-		cache_op(INDEX_INVALIDATE_I, addr);
+	if(size == 0) {
+		return;
 	}
 
-	/* invalidate btb */
-	__asm__ __volatile__(
-		".set mips32\n\t"
-		"mfc0 %0, $16, 7\n\t"
-		"nop\n\t"
-		"ori %0,2\n\t"
-		"mtc0 %0, $16, 7\n\t"
-		".set mips2\n\t"
-		:
-		: "r" (t));
-}
+	flush_dcache_range(start_addr, start_addr + size);
+	flush_scache_range(start_addr, start_addr + size);
 
-void flush_dcache_all(void)
-{
-	u32 addr;
-
-	for (addr = CKSEG0; addr < CKSEG0 + CONFIG_SYS_DCACHE_SIZE;
-	     addr += CONFIG_SYS_CACHELINE_SIZE) {
-		cache_op(INDEX_WRITEBACK_INV_D, addr);
-	}
-
-	fast_iob();
+	flush_icache_range(start_addr, start_addr + size);
 }
 
 void flush_cache_all(void)
 {
-	flush_dcache_all();
-	flush_icache_all();
+	flush_icache_all(); /* invalid icache */
+
+	flush_dcache_all(); /* writeback invalid dcache,  */
+	__asm__ volatile(
+		".set push     \n\t"
+		".set mips32r2 \n\t"
+		"sync          \n\t"
+		".set pop      \n\t"
+		);
+
+
+	flush_scache_all(); /* writeback invalid scache */
+	__asm__ volatile(
+		".set push     \n\t"
+		".set mips32r2 \n\t"
+		"lw $0,0(%0)   \n\t"
+		".set pop      \n\t"
+		::"r" (0xa0000000));
 }
+
