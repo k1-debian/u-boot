@@ -225,6 +225,10 @@
 #define DDRC_DDLP_TCTLUDP_BIT	24
 #define DDRC_DDLP_TCTLUDP_FF	(0xff << DDRC_DDLP_TCTLUDP_BIT)
 
+#define DDRC_DDLP_FSR		(1 << 2)
+#define DDRC_DDLP_FPD		(1 << 1)
+#define DDRC_DDLP_LPEN		(1 << 0)
+
 /* DDRC Load-Mode-Register */
 #define DDRC_LMR_DDR_ADDR_BIT	12 /* When performing a DDR command, DDRC_ADDR[13:0]
 					      corresponding to external DDR address Pin A[13:0] */

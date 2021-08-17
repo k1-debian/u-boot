@@ -616,7 +616,7 @@ void ddrp_hardware_calibration(void)
 		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
 	}
 
-	printf("ddr calib back door finish\n");
+	printf("ddr calib finish\n");
 
 }
 #endif
@@ -684,9 +684,19 @@ void sdram_init(void)
 	ddr_writel(CONFIG_DDR_AUTO_SELF_REFRESH_CNT ,DDRC_AUTOSR_CNT);
 #endif
 #endif
-#ifndef CONFIG_X1600
+
+#ifdef CONFIG_X1600
+	{
+		unsigned int dlp = 0;
+		dlp = ddr_readl(DDRC_DLP);
+		dlp |= DDRC_DDLP_FSR | DDRC_DDLP_FPD | DDRC_DDLP_LPEN;
+		ddr_writel(dlp, DDRC_DLP);
+	}
+#else
 	ddr_writel(0 , DDRC_DLP);
 #endif
+
+
 
 	dump_ddrc_register();
 	dwc_debug("sdram init finished\n");
