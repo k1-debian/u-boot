@@ -133,6 +133,9 @@ void board_init_f(ulong dummy)
 #endif
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
+#else
+	debug("run firmware finished\n");
+	return ;
 #endif
 }
 

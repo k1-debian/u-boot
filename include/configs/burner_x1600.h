@@ -37,22 +37,22 @@
 
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		600000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ		200000000	/*If EPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_EPLL_FREQ		400000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		800000000
-#define CONFIG_SYS_MEM_FREQ		200000000
+#define CONFIG_SYS_MEM_FREQ		400000000
 
 /**
  * CACHE
  **/
 #define CONFIG_SYS_DCACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_DCACHELINE_SIZE	(32)
-#define CONFIG_SYS_DCACHE_WAYS		(8)
+#define CONFIG_SYS_DCACHE_WAYS		(4)
 #define CONFIG_SYS_ICACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_ICACHELINE_SIZE	(32)
-#define CONFIG_SYS_ICACHE_WAYS		(8)
+#define CONFIG_SYS_ICACHE_WAYS		(4)
 #define CONFIG_SYS_CACHELINE_SIZE	(32)
 /* A switch to configure whether cpu has a 2nd level cache */
 #define CONFIG_BOARD_SCACHE
@@ -79,48 +79,8 @@
 /**
  * DDR
  **/
-
-/*
- *#define CONFIG_DDR_TEST_CPU
- *#define CONFIG_DDR_TEST
- */
-#define CONFIG_DDR_INNOPHY
-#define CONFIG_DDR_DLL_OFF
-#define CONFIG_DDR_PARAMS_CREATOR
-#define CONFIG_DDR_HOST_CC
-/*#define CONFIG_DDR_FORCE_SELECT_CS1*/
-
-#define CONFIG_DDR_TYPE_LPDDR2
-/*#define CONFIG_DDR_TYPE_LPDDR3*/
-
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-/*#define CONFIG_MCP_H9TP32A8JDMC_PRKGM_LPDDR2*/
-/*#define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA*/
-#define CONFIG_LPDDR2_M54D5121632A
-#endif
-
 #define CONFIG_X1XXX_INNOPHY
-#define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
-#define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32         0   /* 1-32bit-width, 0-16bit-width */
-
-#define CONFIG_DDR_PHY_IMPEDANCE 40
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE 120
-
-
-#define CONFIG_DDR_AUTO_SELF_REFRESH
-#define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
-
-
-/* #define CONFIG_DDR_DLL_OFF */
-/*
- * #define CONFIG_DDR_CHIP_ODT
- * #define CONFIG_DDR_PHY_ODT
- * #define CONFIG_DDR_PHY_DQ_ODT
- * #define CONFIG_DDR_PHY_DQS_ODT
- * #define CONFIG_DDR_PHY_IMPED_PULLUP		0xe
- * #define CONFIG_DDR_PHY_IMPED_PULLDOWN	0xe
- */
+#define CONFIG_DDR_TYPE_VARIABLE
 
 /**
  * Environment
@@ -149,7 +109,7 @@
 
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_SFC_NOR_INIT_RATE	100000000
-#define CONFIG_SFC_NOR_RATE		100000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_NOR_RATE		    200000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_MTD_SFCNOR
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
@@ -169,7 +129,7 @@
  */
 #ifdef CONFIG_MTD_SFCNAND
 #define CONFIG_SFC_NAND_INIT_RATE	100000000
-#define CONFIG_SFC_NAND_RATE		100000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_NAND_RATE		200000000	/* value <= 400000000(sfc 100Mhz)*/
 
 #define CONFIG_CMD_NAND
 #define CONFIG_SYS_NAND_SELF_INIT

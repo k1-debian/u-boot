@@ -34,7 +34,7 @@ COBJS-y += pll.o
 endif
 COBJS-y += clk.o
 COBJS-y += ddr_set_dll.o
-COBJS-y += ./ddr_innophy.o
+COBJS-y += ../ddr_innophy.o
 
 COBJS-$(CONFIG_MULT_DDR_PARAMS_CREATOR) += ddr_get_params.o
 

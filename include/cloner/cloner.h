@@ -176,9 +176,11 @@ struct policy_param{
 	uint32_t use_spi_nor;
 	uint32_t offsets[32];
 };
-struct debug_param{
+struct efuse_param{
 	uint32_t efuse_en_gpio;
 	uint32_t efuse_en_active;
+};
+struct debug_param{
 	uint32_t log_enabled;
 	uint32_t transfer_data_chk;
 	uint32_t write_back_chk;
@@ -208,6 +210,7 @@ struct ddr_param{
 };
 
 extern struct policy_param	*policy_args;
+extern struct efuse_param	*efuse_args;
 extern struct debug_param	*debug_args;
 extern struct spi_param		*spi_args;
 extern struct mmc_param		*mmc_args;

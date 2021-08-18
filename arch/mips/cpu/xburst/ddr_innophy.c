@@ -26,10 +26,22 @@
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
-#include <generated/ddr_reg_values.h>
 #include <asm/arch/clk.h>
 #include "ddr_innophy.h"
 #include "ddr_debug.h"
+#ifndef CONFIG_BURNER
+#include <generated/ddr_reg_values.h>
+#else
+#include "ddr_reg_data.h"
+#endif
+
+//#define CONFIG_DWC_DEBUG
+
+#define ddr_hang() do{                                  \
+	printf("%s %d\n",__FUNCTION__,__LINE__);        \
+	hang();                                         \
+}while(0)
+
 
 /*#define CONFIG_DDRP_SOFTWARE_TRAINING*/
 
@@ -46,6 +58,44 @@ extern void reset_dll(void);
 #define BYPASS_DISABLE      0
 #define IS_BYPASS_MODE(x)     (((x) & 1) == BYPASS_ENABLE)
 #define DDR_TYPE_MODE(x)     (((x) >> 1) & 0xf)
+
+static void dump_ddr_params(void)
+{
+#ifdef CONFIG_DWC_DEBUG
+	printf("DDRC_CFG_VALUE		    0x%x\n",DDRC_CFG_VALUE		    );
+	printf("DDRC_CTRL_VALUE	       	0x%x\n",DDRC_CTRL_VALUE	    	);
+	printf("DDRC_DLMR_VALUE	       	0x%x\n",DDRC_DLMR_VALUE	    	);
+	printf("DDRC_DDLP_VALUE	       	0x%x\n",DDRC_DDLP_VALUE	    	);
+	printf("DDRC_MMAP0_VALUE       	0x%x\n",DDRC_MMAP0_VALUE    	);
+	printf("DDRC_MMAP1_VALUE       	0x%x\n",DDRC_MMAP1_VALUE    	);
+	printf("DDRC_REFCNT_VALUE      	0x%x\n",DDRC_REFCNT_VALUE   	);
+	printf("DDRC_TIMING1_VALUE     	0x%x\n",DDRC_TIMING1_VALUE  	);
+	printf("DDRC_TIMING2_VALUE     	0x%x\n",DDRC_TIMING2_VALUE  	);
+	printf("DDRC_TIMING3_VALUE     	0x%x\n",DDRC_TIMING3_VALUE  	);
+	printf("DDRC_TIMING4_VALUE     	0x%x\n",DDRC_TIMING4_VALUE  	);
+	printf("DDRC_TIMING5_VALUE     	0x%x\n",DDRC_TIMING5_VALUE  	);
+	printf("DDRC_TIMING6_VALUE     	0x%x\n",DDRC_TIMING6_VALUE  	);
+	printf("DDRC_AUTOSR_EN_VALUE   	0x%x\n",DDRC_AUTOSR_EN_VALUE	);
+	printf("DDRP_MEMCFG_VALUE      	0x%x\n",DDRP_MEMCFG_VALUE   	);
+	printf("DDRP_CL_VALUE          	0x%x\n",DDRP_CL_VALUE       	);
+	printf("DDRP_CWL_VALUE	       	0x%x\n",DDRP_CWL_VALUE	    	);
+	printf("DDR_MR0_VALUE	       	0x%x\n",DDR_MR0_VALUE	    	);
+	printf("DDR_MR1_VALUE	       	0x%x\n",DDR_MR1_VALUE	    	);
+	printf("DDR_MR2_VALUE	       	0x%x\n",DDR_MR2_VALUE	    	);
+	printf("DDR_MR3_VALUE	       	0x%x\n",DDR_MR3_VALUE	    	);
+	printf("DDR_MR10_VALUE	       	0x%x\n",DDR_MR10_VALUE	    	);
+//	printf("DDR_MR11_VALUE	       	0x%x\n",DDR_MR11_VALUE	    	);
+	printf("DDR_MR63_VALUE	       	0x%x\n",DDR_MR63_VALUE	    	);
+	printf("DDR_CHIP_0_SIZE	       	0x%x\n",DDR_CHIP_0_SIZE	    	);
+	printf("DDR_CHIP_1_SIZE	       	0x%x\n",DDR_CHIP_1_SIZE	    	);
+	printf("REMMAP_ARRAY0          	0x%x\n",REMMAP_ARRAY[0]     	);
+	printf("REMMAP_ARRAY1          	0x%x\n",REMMAP_ARRAY[1]     	);
+	printf("REMMAP_ARRAY2          	0x%x\n",REMMAP_ARRAY[2]     	);
+	printf("REMMAP_ARRAY3          	0x%x\n",REMMAP_ARRAY[3]     	);
+	printf("REMMAP_ARRAY4          	0x%x\n",REMMAP_ARRAY[4]     	);
+#endif
+}
+
 
 static void dump_ddrc_register(void)
 {
@@ -134,12 +184,12 @@ void ddr_inno_phy_init(void)
 
 	val = ddr_readl(DDRP_INNOPHY_CL);
 	val &= ~(0xf);
-	val |= RL;
+	val |= DDRP_CL_VALUE;
 	ddr_writel(val, DDRP_INNOPHY_CL);
 
 	val = ddr_readl(DDRP_INNOPHY_CWL);
 	val &= ~(0xf);
-	val |= WL;
+	val |= DDRP_CWL_VALUE;
 	ddr_writel(val, DDRP_INNOPHY_CWL);
 
 	val = ddr_readl(DDRP_INNOPHY_AL);
@@ -298,6 +348,7 @@ void ddrc_dfi_init(void)
 #undef DDRC_LMR_MR
 	} else {
 		/*DDR2*/
+#ifdef CONFIG_X1600
 #define DDRC_LMR_MR(n)										\
 		DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
 			(((DDR_MR##n##_VALUE  >> 13) & 0x3) << 8) |						\
@@ -310,9 +361,32 @@ void ddrc_dfi_init(void)
 		printf("mr0 = 0x%x\n", DDRC_LMR_MR(0));
 		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
 #undef DDRC_LMR_MR
+#else
+		ddr_writel(0x211,DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
+		printf("DDRC_LMR: %x\n",ddr_readl(DDRC_LMR));
+#endif
+		ddr_writel(0,DDRC_LMR);
 
+		ddr_writel(0x311,DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
+		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
+#endif
+		ddr_writel(0,DDRC_LMR);
 
+		ddr_writel(0x111,DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
+		printf("DDRC_LMR: %x\n", ddr_readl(DDRC_LMR));
+#endif
+		ddr_writel(0,DDRC_LMR);
 
+		reg = ((DDR_MR0_VALUE)<<12)|0x011;
+		ddr_writel(reg, DDRC_LMR);
+#ifndef CONFIG_FASTBOOT
+		printf("DDRC_LMR, MR0: %x\n", reg);
+#endif
+		ddr_writel(0,DDRC_LMR);
+#endif
 
 	}
 }
@@ -363,7 +437,7 @@ void phy_calibration(void)
 	printf("INNO_TRAINING_CTRL 3: %x\n", phy_readl(INNO_TRAINING_CTRL));
 #endif
 }
-#ifdef CONFIG_X1600
+#if defined(CONFIG_BURNER) || defined(CONFIG_X1600)
 static enum ddr_type get_ddr_type(void)
 {
 	int type;
@@ -635,6 +709,7 @@ void sdram_init(void)
 	dwc_debug("sdram init start\n");
 
 	current_ddr_type = get_ddr_type();
+//	dump_ddr_params();
 
 	clk_set_rate(DDR, CONFIG_SYS_MEM_FREQ);
 	reset_dll();

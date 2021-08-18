@@ -36,10 +36,12 @@ struct global_info ginfo __attribute__ ((section(".data")));
 extern struct jz_uart *uart;
 #endif
 
+#ifdef CONFIG_SYS_NAND_SELF_INIT
 void board_nand_init(void)
 {
 	    return 0;
 }
+#endif
 
 int board_early_init_f(void)
 {
@@ -67,6 +69,7 @@ int misc_init_r(void)
 }
 
 #ifdef CONFIG_MMC
+extern void jz_mmc_init(void);
 int board_mmc_init(bd_t *bd)
 {
 	jz_mmc_init();

@@ -30,11 +30,11 @@ LIB	:= $(obj)libcloner_module_mg.o
 COBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += extend_policy_manager.o
 SUBOBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += expy/libexpy.o
 
-COBJS-$(CONFIG_JZ_EFUSE) += cloner_efuse.o
 COBJS-$(if $(CONFIG_MTD_SFCNOR)$(CONFIG_MTD_SFCNAND)$(CONFIG_MTD_SPINAND)$(CONFIG_JZ_SPI),y,n) += cloner_module_spisfc.o
 COBJS-$(if $(CONFIG_JZ_SPINAND_SN)$(CONFIG_JZ_SPINAND_MAC),y,n) += cloner_spinand_firmware.o
 COBJS-$(if $(CONFIG_JZ_NAND_MGR)$(CONFIG_MTD_NAND_JZ),y,n) += cloner_module_nand.o
 COBJS-$(if $(CONFIG_JZ_MMC)$(CONFIG_JZ_SDHCI),y,n) += cloner_module_mmc.o
+COBJS-$(CONFIG_JZ_EFUSE) += cloner_module_efuse.o
 
 
 COBJS	:= $(COBJS-y)

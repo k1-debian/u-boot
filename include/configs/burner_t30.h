@@ -37,11 +37,11 @@
 /**
  * PLL
  **/
-#define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_MNOD		((100 << 20) | (1 << 14) | (2 << 11) | (1<<8))
+#define CONFIG_SYS_MPLL_FREQ            864000000       /*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD            ((71 << 20) | (1 << 14) | (1 << 11) | (2<<5))
 
 #define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_MPLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 3)
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
 
 #define CONFIG_SYS_CPCCR_SEL		(1 << 30) | (2 << 28) | (2 << 26) | (2 << 24) \
                                     | ((10 - 1) << 16) | ((5 - 1) << 12) | ((5 - 1) << 8) \
@@ -54,7 +54,11 @@
  * CACHE
  **/
 #define CONFIG_SYS_DCACHE_SIZE		32768
+#define CONFIG_SYS_DCACHELINE_SIZE	(32)
+#define CONFIG_SYS_DCACHE_WAYS		(8)
 #define CONFIG_SYS_ICACHE_SIZE		32768
+#define CONFIG_SYS_ICACHELINE_SIZE	(32)
+#define CONFIG_SYS_ICACHE_WAYS		(8)
 #define CONFIG_SYS_CACHELINE_SIZE	32
 
 /**
@@ -67,47 +71,10 @@
 /**
  * DDR
  **/
-
-#define CONFIG_DDR_INNOPHY
-#define CONFIG_MULT_DDR_PARAMS_CREATOR
-
-#ifndef CONFIG_MULT_DDR_PARAMS_CREATOR
-
 #define CONFIG_X1XXX_INNOPHY
-#define CONFIG_DDR_TYPE_DDR3
-#define CONFIG_DDR_PARAMS_CREATOR
-#define CONFIG_DDR_HOST_CC
-#define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-#define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_DDR3_M15T1G1664A_2C
-#define CONFIG_DDR_CHIP_ODT_VAL 1
-#define CONFIG_DDR_PHY_IMPEDANCE        40000
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE    50000
-
-#else
-
-#define CONFIG_DDR_HOST_CC
-#define CONFIG_DDR_TYPE_DDR2
-#define CONFIG_DDR_TYPE_DDR3
-#define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-#define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_X1XXX_INNOPHY
-#define CONFIG_DDR_CHIP_ODT_VAL 1
-#define CONFIG_DDR_PHY_IMPEDANCE 40000
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
-
-#define CONFIG_DDR3_DFLAGS 	"-DCONFIG_DDR3_M15T1G1664A_2C"
-#define CONFIG_DDR2_DFLAGS	"-DCONFIG_DDR2_M14D1G1664A"
-#define CONFIG_LPDDR2_DFLAGS	""
-#define CONFIG_LPDDR3_DFLAGS	""
-#define CONFIG_LPDDR_DFLAGS	""
+#define CONFIG_DDR_TYPE_VARIABLE
 
 
-#endif
 /**
  * Environment
  **/
@@ -134,7 +101,7 @@
 #define CONFIG_MTD_SFCNAND
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
-#define CONFIG_SFC_NOR_RATE    		150000000
+#define CONFIG_SFC_NOR_RATE    		    100000000
 #define CONFIG_SFC_NAND_RATE	        100000000
 #define CONFIG_SPL_VERSION_OFFSET	16
 #define CONFIG_SPIFLASH_PART_OFFSET	(0x6400)

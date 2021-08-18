@@ -51,10 +51,10 @@
 
 #define CONFIG_SYS_DCACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_DCACHELINE_SIZE	(32)
-#define CONFIG_SYS_DCACHE_WAYS		(8)
+#define CONFIG_SYS_DCACHE_WAYS		(4)
 #define CONFIG_SYS_ICACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_ICACHELINE_SIZE	(32)
-#define CONFIG_SYS_ICACHE_WAYS		(8)
+#define CONFIG_SYS_ICACHE_WAYS		(4)
 #define CONFIG_SYS_CACHELINE_SIZE	(32)
 /* A switch to configure whether cpu has a 2nd level cache */
 #define CONFIG_BOARD_SCACHE

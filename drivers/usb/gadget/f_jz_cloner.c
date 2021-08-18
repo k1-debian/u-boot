@@ -229,6 +229,7 @@ int i2c_program(struct cloner *cloner)
 
 struct ParameterInfo	*global_args;
 struct policy_param	*policy_args;
+struct efuse_param	*efuse_args;
 struct debug_param	*debug_args;
 struct ddr_param	*ddr_args;
 struct ParameterInfo	*m = NULL;
@@ -255,6 +256,9 @@ void handle_args(struct usb_ep *ep,struct usb_request *req)
 		{
 			case MAGIC_POLICY:
 				policy_args = p->data;
+				break;
+			case MAGIC_EFUSE:
+				efuse_args = p->data;
 				break;
 			case MAGIC_DEBUG:
 				debug_args = p->data;

@@ -44,28 +44,21 @@
 #define CONFIG_SYS_HZ			1000 /* incrementer freq */
 
 #define CONFIG_SYS_DCACHE_SIZE		16384
+#define CONFIG_SYS_DCACHELINE_SIZE	(32)
+#define CONFIG_SYS_DCACHE_WAYS		(4)
 #define CONFIG_SYS_ICACHE_SIZE		16384
+#define CONFIG_SYS_ICACHELINE_SIZE	(32)
+#define CONFIG_SYS_ICACHE_WAYS		(4)
 #define CONFIG_SYS_CACHELINE_SIZE	32
 
 #define CONFIG_SYS_UART_INDEX          0
 #define CONFIG_BAUDRATE                        115200
 
 #define CONFIG_DDR_TYPE_VARIABLE
-/*#define CONFIG_DWC_DEBUG*/
-/*#define CONFIG_DWC_DEBUG*/
-/* #define CONFIG_DDR_TEST_CPU */
-/* #define CONFIG_DDR_TEST */
-/* #define CONFIG_DDR_TEST_DATALINE */
-/* #define CONFIG_DDR_TEST_ADDRLINE */
 
 #define CONFIG_ENV_IS_NOWHERE
 #define CONFIG_ENV_SIZE 512
-/**
- * Boot arguments definitions.
- */
-/*#define BOOTARGS_COMMON "console=ttyS3,115200 mem=256M@0x0 mem=256M@0x30000000"*/
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=8M@0x0 loglevel=7 "
-#define	CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+
 
 #define CONFIG_BOOTDELAY 0
 #define CONFIG_BOOTCOMMAND "burn"
@@ -78,7 +71,7 @@
 
 /* SPI */
 #define CONFIG_SFC_NAND_RATE	        100000000
-#define CONFIG_SFC_NOR_RATE		150000000
+#define CONFIG_SFC_NOR_RATE		        100000000
 #define CONFIG_CMD_SFC_NOR
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC

@@ -384,6 +384,7 @@ extern unsigned int __ps_per_tck;
 #define DDR__ps(ps)   (ps)
 #define DDR__tck(tck) (tck * __ps_per_tck)
 
+#ifndef CONFIG_X1XXX_INNOPHY
 struct ddr_reg_header {
 	unsigned char name[32];
 	unsigned int id;	/*DDR ID: */
@@ -426,6 +427,7 @@ struct ddr_reg_value {
 };
 
 extern struct ddr_reg_value *g_ddr_param;
+#endif
 
 struct jzsoc_ddr_hook
 {
