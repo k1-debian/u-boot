@@ -12,7 +12,7 @@
 #include "ndmath.h"
 #include "NandAlloc.h"
 #include "nand_api.h"
-
+#include <asm/jz_cache.h>
 
 extern int printf(const char *fmt, ...);
 

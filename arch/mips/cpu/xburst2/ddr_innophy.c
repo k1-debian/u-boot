@@ -367,6 +367,31 @@ void ddrc_dfi_init(enum ddr_type type)
 #undef DDRC_LMR_MR
 		break;
 
+	case DDR2:
+#define DDRC_LMR_MR(n)											\
+		global_reg_value->DDRC_DLMR_VALUE | 1 << 1 | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
+			((global_reg_value->DDR_MR##n##_VALUE & 0x1fff) << DDRC_LMR_DDR_ADDR_BIT) |		\
+			(((global_reg_value->DDR_MR##n##_VALUE >> 13) & 0x3) << DDRC_LMR_BA_BIT)
+
+		while (ddr_readl(DDRC_LMR) & (1 << 0));
+		ddr_writel(0x400003, DDRC_LMR);
+		udelay(100);
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR1
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
+		udelay(5 * 1000);
+		ddr_writel(0x400003, DDRC_LMR);
+		udelay(100);
+		ddr_writel(0x43, DDRC_LMR);
+		udelay(5);
+		ddr_writel(0x43, DDRC_LMR);
+		udelay(5 * 1000);
+#undef DDRC_LMR_MR
+		break;
 
 	default:
 		ddr_hang();

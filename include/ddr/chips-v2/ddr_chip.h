@@ -62,6 +62,7 @@ enum {
 	TYPE_LPDDR2 = 0x0,
 	TYPE_LPDDR3 = 0x1,
 	TYPE_DDR3 = 0x2,
+	TYPE_DDR2 = 0x3,
 };
 enum {
 	MEM_256M	= 0x0,

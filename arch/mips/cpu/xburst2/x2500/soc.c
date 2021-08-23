@@ -93,8 +93,10 @@ void board_init_f(ulong dummy)
 	debug("Timer init\n");
 	timer_init();
 
+#ifndef CONFIG_BURNER
 	debug("CLK stop\n");
 	clk_prepare();
+#endif
 
 	debug("PLL init\n");
 	pll_init();
