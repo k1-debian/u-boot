@@ -27,35 +27,27 @@
 #define CONFIG_MIPS32		/* MIPS32 CPU core */
 #define CONFIG_CPU_XBURST2
 #define CONFIG_SYS_LITTLE_ENDIAN
-/*#define CONFIG_X2000_FPGA*/        /* If defined x2000 FPGA, It will be used for FPGA burning*/
 #define CONFIG_X2000_V12	/* x2000 SoC */
 
 
-#if defined(CONFIG_FPGA)
-#define CONFIG_SYS_APLL_FREQ		24000000	/*If APLL not use mast be set 0*/
-/* #define CONFIG_SYS_MPLL_FREQ		-1		/\*If MPLL not use mast be set 0*\ */
-#define CONFIG_CPU_SEL_PLL		APLL
-#define CONFIG_DDR_SEL_PLL		APLL
-#define CONFIG_SYS_CPU_FREQ		24000000
-#define CONFIG_SYS_MEM_FREQ		24000000
-#else
-#define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
-#define CONFIG_SYS_CPU_FREQ		1200000000
-#define CONFIG_SYS_MEM_FREQ		750000000
-/* #define CONFIG_SYS_MEM_FREQ		100000000 */
-#endif
+#define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
+
+#define CONFIG_SYS_AHB0_FREQ		200000000
+#define CONFIG_SYS_AHB2_FREQ		200000000	/*APB = AHB2/2*/
+
 
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
-		{LCD, MPLL},			\
 		{MSC0, MPLL},			\
+		{MSC1, MPLL},			\
 		{MSC2, MPLL},			\
 		{SFC, MPLL},			\
-		{CIM, MPLL},			\
 		{RSA, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
@@ -92,11 +84,6 @@
 #define CONFIG_DDR_TYPE_VARIABLE
 
 
-#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
-#define CONFIG_SPL_SFC_SUPPORT
-#define CONFIG_SPL_VERSION	1
-#endif
-
 /**
  * Boot command definitions.
  */
@@ -109,7 +96,7 @@
  * Drivers configuration.
  */
 /*pmu slp pin*/
-#define CONFIG_REGULATOR
+/*#define CONFIG_REGULATOR*/
 #ifdef  CONFIG_REGULATOR
 #define CONFIG_JZ_PMU_SLP_OUTPUT1
 #define CONFIG_INGENIC_SOFT_I2C
@@ -120,67 +107,28 @@
 #endif
 
 /* MMC */
-#ifdef CONFIG_JZ_MMC_MSC0
+#define CONFIG_JZ_MMC_MSC0
+#define CONFIG_JZ_MMC_MSC1
+#define CONFIG_JZ_MMC_MSC2
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
-#define CONFIG_MMC_SDMA
-/*#define CONFIG_MMC_SPL_PARAMS*/
-
-/* MSC Command configuration */
 #define CONFIG_CMD_MMC
-
-#define CONFIG_JZ_MMC_MSC0_PD   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
-
-#ifdef CONFIG_JZ_MMC_MSC1
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-#define CONFIG_SDHCI
-#define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-/*#define CONFIG_MMC_SPL_PARAMS*/
-
-/* MSC Command configuration */
-#define CONFIG_CMD_MMC
-
-#define CONFIG_JZ_MMC_MSC1_PD   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
-
-#ifdef CONFIG_JZ_MMC_MSC2
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-#define CONFIG_SDHCI
-#define CONFIG_JZ_SDHCI
-#define CONFIG_MMC_SDMA
-/*#define CONFIG_MMC_SPL_PARAMS*/
-
-/* MSC Command configuration */
-#define CONFIG_CMD_MMC
-
-#define CONFIG_JZ_MMC_MSC2_PE   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
 
 /* SFC */
-
+#define CONFIG_CMD_SFC_NOR
+#define CONFIG_MTD_SFCNAND
 #define CONFIG_SFC_RATE			48000000
 #define CONFIG_SFC_V20
 
-/*#define CONFIG_JZ_SFC_PE*/
 
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_SFC_NOR_RATE    200000000
 #define CONFIG_MTD_SFCNOR
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
-#define CONFIG_SFC_QUAD
+/*#define CONFIG_SFC_QUAD*/
 #define CONFIG_SPIFLASH_PART_OFFSET         0x5800
 #define CONFIG_SPI_NORFLASH_PART_OFFSET     0x5874
 #define CONFIG_NOR_MAJOR_VERSION_NUMBER     1
@@ -190,27 +138,26 @@
 #define CONFIG_SPL_VERSION_OFFSET   16
 #endif
 
-
 /*
  *MTD
  */
 #ifdef CONFIG_MTD_SFCNAND
-#define CONFIG_SFC_NAND_RATE	    200000000
+#define CONFIG_SFC_NAND_RATE               200000000
 
 #define CONFIG_CMD_NAND
 #define CONFIG_SYS_NAND_SELF_INIT
 
-#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
+#define CONFIG_SPIFLASH_PART_OFFSET        0x5800
 
-#define CONFIG_SPI_NAND_BPP                     (2048 +64)              /*Bytes Per Page*/
-#define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
+#define CONFIG_SPI_NAND_BPP                (2048 +64)              /*Bytes Per Page*/
+#define CONFIG_SPI_NAND_PPB                (64)            /*Page Per Block*/
 
 #define CONFIG_JZ_SFC
 /*#define CONFIG_CMD_SFCNAND*/
-#define CONFIG_SYS_MAX_NAND_DEVICE      1
-#define CONFIG_SYS_NAND_BASE    0xb3441000
-#define CONFIG_SYS_MAXARGS      16
-#define CONFIG_SYS_MAX_NAND_DEVICE  1
+#define CONFIG_SYS_MAX_NAND_DEVICE         1
+#define CONFIG_SYS_NAND_BASE               0xb3441000
+#define CONFIG_SYS_MAXARGS                 16
+#define CONFIG_SYS_MAX_NAND_DEVICE         1
 
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS
@@ -224,11 +171,11 @@
  *  SPINAND MAC SN : the product of customer add partition of sequence code.
  */
 #define CONFIG_JZ_SPINAND_MAC
-#define CONFIG_MAC_SIZE	    (1 * 1024 * 1024)
+#define CONFIG_MAC_SIZE	                 (1 * 1024 * 1024)
 #define CONFIG_JZ_SPINAND_SN
-#define CONFIG_SN_SIZE	    (1 * 1024 * 1024)
+#define CONFIG_SN_SIZE	                 (1 * 1024 * 1024)
 #define CONFIG_JZ_SPINAND_LICENSE
-#define CONFIG_LICENSE_SIZE (1 * 1024 * 1024)
+#define CONFIG_LICENSE_SIZE              (1 * 1024 * 1024)
 
 
 #endif
@@ -237,6 +184,7 @@
 /* end of sfc */
 
 /*burner*/
+#define CONFIG_CMD_BURN
 #ifdef CONFIG_CMD_BURN
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_SOFT_BURNER
@@ -267,8 +215,6 @@
 #define CONFIG_CMD_CONSOLE	/* coninfo			*/
 #define CONFIG_CMD_DHCP 	/* DHCP support			*/
 #define CONFIG_CMD_ECHO		/* echo arguments		*/
-#define CONFIG_CMD_EXT4 	/* ext4 support			*/
-#define CONFIG_CMD_FAT		/* FAT support			*/
 #define CONFIG_USE_XYZMODEM	/* xyzModem 			*/
 #define CONFIG_CMD_LOAD		/* serial load support 		*/
 #define CONFIG_CMD_LOADB	/* loadb			*/
@@ -335,7 +281,6 @@
 #define CONFIG_SYS_TEXT_BASE		0x80100000
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
 
-/*#define CONFIG_UBOOT_OFFSET             0x6000*/
 
 /**
  * Environment
@@ -359,9 +304,6 @@
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_GPIO_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT
-/* #define CONFIG_SPL_I2C_SUPPORT */
-/* #define CONFIG_SPL_REGULATOR_SUPPORT */
-/* #define CONFIG_SPL_CORE_VOLTAGE		1300 */
 
 
 #define CONFIG_SPL_GINFO_BASE		0xb2401000

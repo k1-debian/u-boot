@@ -70,6 +70,8 @@
 #define CONFIG_INGENIC_SOFT_I2C
 
 /* SPI */
+#define CONFIG_MTD_SFCNAND
+#define CONFIG_MTD_SFCNOR
 #define CONFIG_SFC_NAND_RATE	       100000000
 #define CONFIG_SFC_NOR_RATE            100000000
 #define CONFIG_CMD_SFC_NOR
@@ -85,6 +87,7 @@
 #define CONFIG_MMC			1
 #define CONFIG_JZ_MMC 1
 #define CONFIG_JZ_MMC_MSC0 1
+#define CONFIG_JZ_MMC_MSC1 1
 
 /* PMU */
 #define CONFIG_REGULATOR

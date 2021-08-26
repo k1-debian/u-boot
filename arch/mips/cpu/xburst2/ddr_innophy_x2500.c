@@ -552,10 +552,13 @@ void ddrp_pll_init(void)
 	}
 //	mdelay(20);
 }
-void ddr_phy_cfg_drive(void)
+void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
 {
 	FUNC_ENTER();
 
+	int type = 0;
+	int i = 0;
+	u32 value = 0;
 	u32 idx;
 	u32  val;
 #if 0
@@ -584,77 +587,86 @@ void ddr_phy_cfg_drive(void)
 	writel(0x1, 0xb3011000 + (0x85)*4);//default 0x0  byte2 dqs dll
 	writel(0x1, 0xb3011000 + (0x95)*4);//default 0x0  byte3 dqs dll
 
-#ifdef CONFIG_DDR_TYPE_DDR3
+	type = global_reg_value->h.type;
+	switch(global_reg_value->h.type) {
+	case DDR3:
 
-	//ddr_phy_cfg_vref()
-	unsigned int i = 0;
-	u32 value = 8;
-	/* write leveling dq delay time config */
-	//cmd
-	for (i = 0; i <= 0x1e;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x100+i)*4);///cmd
+		//ddr_phy_cfg_vref()
+		i = 0;
+		value = 8;
+		/* write leveling dq delay time config */
+		//cmd
+		for (i = 0; i <= 0x1e;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x100+i)*4);///cmd
+		}
+		ddr_writel(value, DDR_PHY_OFFSET + (0x100+0x16)*4);///ck
+		ddr_writel(value, DDR_PHY_OFFSET + (0x100+0x17)*4);///ckb
+		//tx DQ
+		for (i = 0; i <= 0x8;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
+			ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
+		}
+
+		for (i = 0xb; i <= 0x13;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
+			ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
+		}
+
+		//addr
+		for (i = 0; i <= 0xf;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x100+i)*4);//addr
+		}
+		/* CK Pre bit skew */
+		for (idx = 0x16; idx <= 0x17; idx++) {
+			writel(value, 0xb3011000+((0x100+idx)*4));//CK Pre bit skew
+		}
+
+
+		//enable bypass write leveling
+		//open manual per bit de-skew
+		//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+		writel((readl(0xb3011008))|(0x8), 0xb3011008);
+		//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+
+		break;
+	case DDR2:
+
+		i = 0;
+		value = 5;
+		/* write leveling dq delay time config */
+		//cmd
+		for (i = 0; i <= 0x1e;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x100+i)*4);///cmd
+		}
+		//tx DQ
+		for (i = 0; i <= 0x8;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
+			ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
+		}
+		//tx DQ
+		for (i = 0xb; i <= 0x13;i++) {
+			ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
+			ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
+		}
+		ddr_writel(2, DDR_PHY_OFFSET + (0x120+0x9)*4);//DQS0-A
+		ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x9)*4);//DQS0-B
+		ddr_writel(2, DDR_PHY_OFFSET + (0x120+0xa)*4);//DQS0B-A
+		ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0xa)*4);//DQS0B-B
+		ddr_writel(2, DDR_PHY_OFFSET + (0x120+0x14)*4);//DQS1-A
+		ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x14)*4);//DQS1-B
+		ddr_writel(2, DDR_PHY_OFFSET + (0x120+0x15)*4);//DQS1B-A
+		ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x15)*4);//DQS1B-B
+
+		writel((readl(0xb3011008))|(0x8), 0xb3011008);
+		//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+
+		break;
+
+	default:
+		type = UNKOWN;
+		printf("unsupport ddr type!\n");
+		ddr_hang();
 	}
-	ddr_writel(value, DDR_PHY_OFFSET + (0x100+0x16)*4);///ck
-	ddr_writel(value, DDR_PHY_OFFSET + (0x100+0x17)*4);///ckb
-	//tx DQ
-	for (i = 0; i <= 0x8;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
-		ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
-	}
-
-	for (i = 0xb; i <= 0x13;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
-		ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
-	}
-
-	//addr
-	for (i = 0; i <= 0xf;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x100+i)*4);//addr
-	}
-	/* CK Pre bit skew */
-	for (idx = 0x16; idx <= 0x17; idx++) {
-		writel(value, 0xb3011000+((0x100+idx)*4));//CK Pre bit skew
-	}
-
-
-	//enable bypass write leveling
-	//open manual per bit de-skew
-	//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
-	writel((readl(0xb3011008))|(0x8), 0xb3011008);
-	//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
-
-#elif defined(CONFIG_DDR_TYPE_DDR2)
-
-	unsigned int i = 0;
-	u32 value = 5;
-	/* write leveling dq delay time config */
-	//cmd
-	for (i = 0; i <= 0x1e;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x100+i)*4);///cmd
-	}
-	//tx DQ
-	for (i = 0; i <= 0x8;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
-		ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
-	}
-	//tx DQ
-	for (i = 0xb; i <= 0x13;i++) {
-		ddr_writel(value, DDR_PHY_OFFSET + (0x120+i)*4);//DQ0-DQ15
-		ddr_writel(value, DDR_PHY_OFFSET + (0x1a0+i)*4);//DQ15-DQ31
-	}
-	ddr_writel(2, DDR_PHY_OFFSET + (0x120+0x9)*4);//DQS0-A
-	ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x9)*4);//DQS0-B
-	ddr_writel(2, DDR_PHY_OFFSET + (0x120+0xa)*4);//DQS0B-A
-	ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0xa)*4);//DQS0B-B
-	ddr_writel(2, DDR_PHY_OFFSET + (0x120+0x14)*4);//DQS1-A
-	ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x14)*4);//DQS1-B
-	ddr_writel(2, DDR_PHY_OFFSET + (0x120+0x15)*4);//DQS1B-A
-	ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x15)*4);//DQS1B-B
-
-	writel((readl(0xb3011008))|(0x8), 0xb3011008);
-	//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
-
-#endif
 
 	FUNC_EXIT();
 }

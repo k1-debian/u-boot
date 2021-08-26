@@ -104,6 +104,8 @@
 /* SFC */
 #define CONFIG_SPL_SFC_SUPPORT
 #define CONFIG_SFC_V20
+#define CONFIG_CMD_SFC_NOR
+#define CONFIG_MTD_SFCNAND
 
 /*#define CONFIG_JZ_SFC_PE*/
 
@@ -159,15 +161,8 @@
 #define CONFIG_MMC			1
 #define CONFIG_JZ_MMC 			1
 #define CONFIG_CMD_MMC			/* MMC/SD support*/
-
-#ifdef CONFIG_JZ_MMC_MSC0
-#define CONFIG_JZ_MMC_SPLMSC 0
-#define CONFIG_JZ_MMC_MSC0_PC_4BIT 1
-#endif
-#ifdef CONFIG_JZ_MMC_MSC1
-#define CONFIG_JZ_MMC_SPLMSC 1
-#define CONFIG_JZ_MMC_MSC1_PD 1
-#endif
+#define CONFIG_JZ_MMC_MSC0
+#define CONFIG_JZ_MMC_MSC1
 
 /* GPIO */
 #define CONFIG_JZ_GPIO
@@ -232,7 +227,6 @@
  */
 #define CONFIG_CMD_NAND
 #define CONFIG_SYS_MAX_NAND_DEVICE      1
-#define CONFIG_SYS_NAND_BASE            0
 #define CONFIG_SYS_NAND_SELF_INIT
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS

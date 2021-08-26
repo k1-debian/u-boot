@@ -30,31 +30,23 @@
 #define CONFIG_X2500	/* x2500 SoC */
 
 
-#define CONFIG_SYS_APLL_FREQ		900000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_VPLL_FREQ		1080000000	/*If VPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ		891000000	/*If EPLL not use mast be set 0*/
+#define CONFIG_SYS_VPLL_FREQ            300000000       /*If VPLL not use mast be set 0*/
+#define CONFIG_SYS_EPLL_FREQ            300000000       /*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
 #define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
 
-#define CONFIG_SYS_AHB0_FREQ		234000000
-#define CONFIG_SYS_AHB2_FREQ		234000000	/*APB = AHB2/2*/
-
-
-/* Device Tree Configuration*/
-/*#define CONFIG_OF_LIBFDT 1*/
-#ifdef CONFIG_OF_LIBFDT
-#define IMAGE_ENABLE_OF_LIBFDT	1
-#define CONFIG_LMB
-#endif
+#define CONFIG_SYS_AHB0_FREQ		200000000
+#define CONFIG_SYS_AHB2_FREQ		200000000	/*APB = AHB2/2*/
 
 
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
-		{LCD, MPLL},			\
 		{MSC0, MPLL},			\
+		{MSC1, MPLL},			\
 		{SFC, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
@@ -85,18 +77,14 @@
 #define CONFIG_SYS_UART_INDEX		1
 #define CONFIG_BAUDRATE			115200
 
-/*
+
+/**
  * DDR
 */
 #define CONFIG_DDR_TYPE_VARIABLE
 #define CONFIG_DDR_DW32			1	/* 1-32bit-width, 0-16bit-width */
 
 
-
-#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
-#define CONFIG_SPL_SFC_SUPPORT
-#define CONFIG_SPL_VERSION	1
-#endif
 /**
  * Boot command definitions.
  */
@@ -111,52 +99,27 @@
  */
 
 /* MMC */
-#ifdef CONFIG_JZ_MMC_MSC0
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-/*#define CONFIG_MMC_SPL_PARAMS*/
-#define CONFIG_SDHCI
-#define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-
-/* MSC Command configuration */
-#define CONFIG_CMD_MMC
-
-/*#define CONFIG_JZ_MMC_MSC0_PB_4BIT   //set gpio*/
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
-
-#ifdef CONFIG_JZ_MMC_MSC1
+#define CONFIG_JZ_MMC_MSC0
+#define CONFIG_JZ_MMC_MSC1
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
-/*#define CONFIG_MMC_SPL_PARAMS*/
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-
-/* MSC Command configuration */
 #define CONFIG_CMD_MMC
-
-/*#define CONFIG_JZ_MMC_MSC1_PC   //set gpio*/
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
 
 
 /* SFC */
-
+#define CONFIG_CMD_SFC_NOR
+#define CONFIG_MTD_SFCNAND
 #define CONFIG_SFC_RATE			48000000
 #define CONFIG_SFC_V20
-
-/*#define CONFIG_JZ_SFC_PA*/
 
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_SFC_NOR_RATE    200000000
 #define CONFIG_MTD_SFCNOR
 #define CONFIG_JZ_SFC
 #define CONFIG_JZ_SFC_NOR
-#define CONFIG_SFC_QUAD
+/*#define CONFIG_SFC_QUAD*/
 #define CONFIG_SPIFLASH_PART_OFFSET         0x5800
 #define CONFIG_SPI_NORFLASH_PART_OFFSET     0x5874
 #define CONFIG_NOR_MAJOR_VERSION_NUMBER     1
@@ -171,21 +134,22 @@
  *MTD
  */
 #ifdef CONFIG_MTD_SFCNAND
-#define CONFIG_SFC_NAND_RATE	    200000000
+#define CONFIG_SFC_NAND_RATE               200000000
+
 #define CONFIG_CMD_NAND
 #define CONFIG_SYS_NAND_SELF_INIT
 
-#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
+#define CONFIG_SPIFLASH_PART_OFFSET        0x5800
 
-#define CONFIG_SPI_NAND_BPP                     (2048 +64)              /*Bytes Per Page*/
-#define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
+#define CONFIG_SPI_NAND_BPP                (2048 +64)              /*Bytes Per Page*/
+#define CONFIG_SPI_NAND_PPB                (64)            /*Page Per Block*/
 
 #define CONFIG_JZ_SFC
 /*#define CONFIG_CMD_SFCNAND*/
-#define CONFIG_SYS_MAX_NAND_DEVICE      1
-#define CONFIG_SYS_NAND_BASE    0xb3441000
-#define CONFIG_SYS_MAXARGS      16
-#define CONFIG_SYS_MAX_NAND_DEVICE  1
+#define CONFIG_SYS_MAX_NAND_DEVICE         1
+#define CONFIG_SYS_NAND_BASE               0xb3441000
+#define CONFIG_SYS_MAXARGS                 16
+#define CONFIG_SYS_MAX_NAND_DEVICE         1
 
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS
@@ -209,6 +173,7 @@
 /* end of sfc */
 
 /*burner*/
+#define CONFIG_CMD_BURN
 #ifdef CONFIG_CMD_BURN
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_BURNER

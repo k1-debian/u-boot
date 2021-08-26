@@ -51,18 +51,20 @@ static char * cgu_name(int clk) {
 
 struct cgu cgu_clk_sel[CGU_CNT] = {
 	[DDR] = {1, CPM_DDRCDR, 30, CONFIG_DDR_SEL_PLL, {0, APLL, MPLL, -1}, 29, 28, 27},
+#ifdef CONFIG_BURNER
+	[MSC] = {1, CPM_MSC0CDR, 31, MPLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
+	[MSC1] = {0, CPM_MSC1CDR, 0, 0, {-1, -1, -1, -1}, 29, 28, 27},
+	[SSI] = {1, CPM_SSICDR, 31, MPLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
+#else
 	[MACPHY] = {0, CPM_MACCDR, 31, CONFIG_MACPHY_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
 	[VPU] = {0, CPM_VPUCDR, 31, CONFIG_VPU_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
 	[I2S] = {1, CPM_I2SCDR, 31, CONFIG_I2S_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
 	[MSC] = {1, CPM_MSC0CDR, 31, CONFIG_MSC_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
 	[MSC1] = {0, CPM_MSC1CDR, 0, 0, {-1, -1, -1, -1}, 29, 28, 27},
-#ifdef CONFIG_BURNER
-	[SSI] = {1, CPM_SSICDR, 31, CONFIG_SSI_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27}, /* TODO */
-#else
 	[SSI] = {1, CPM_SSICDR, 31, CONFIG_SSI_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
-#endif
 	[CIM] = {0, CPM_CIMCDR, 31, CONFIG_CIM_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
 	[ISP] = {0, CPM_ISPCDR, 31, CONFIG_ISP_SEL_PLL, {APLL, MPLL, -1, -1}, 29, 28, 27},
+#endif
 };
 
 void clk_prepare(void)

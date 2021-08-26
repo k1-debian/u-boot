@@ -26,6 +26,9 @@
  * Define the module base addresses
  */
 
+/*DSI Base*/
+#define DSI_BASE (0xb0075000)
+
 /* AHB0 BUS Devices Base */
 #define DDRC_BASE	0xb34f0000
 #define DDRC_APB_OFFSET (-0x4e0000 + 0x2000)
@@ -63,4 +66,5 @@
 
 #define SFC_BASE        0xb3440000
 
+#define EFUSE_BASE      0xb3540000
 #endif /* __BASE_H__ */
