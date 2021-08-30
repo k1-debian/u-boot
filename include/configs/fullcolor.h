@@ -118,7 +118,7 @@
 	/* #define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA*/
 	/* #define CONFIG_LPDDR3_AD310032C_AB_FPGA */
 	#define CONFIG_LPDDR3_W63AH6NKB_BI
-	#define CONFIG_LPDDR3_W63AH6NKB_BI_MEM_FREQ	750000000
+	#define CONFIG_LPDDR3_NK6CL256M16DKX_H1
 #endif
 
 #define CONFIG_DDR_PHY_IMPEDANCE 40
@@ -128,6 +128,8 @@
 
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
+/*#define CONFIG_DDRP_SOFTWARE_TRAINING   1*/
+
 /*
  * #define CONFIG_DDR_CHIP_ODT
  * #define CONFIG_DDR_PHY_ODT
@@ -159,11 +161,12 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
-#define CONFIG_BOOTARGS_MEM_INDEX	2	/*start from 1, position of the args mem=xxx@0x0*/
+/*#define CONFIG_BOOTARGS_MEM_INDEX	2*/	/*start from 1, position of the args mem=xxx@0x0*/
 #define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
 #define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 #define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
+#define CONFIG_BOOTARGS_MEM_512M		"mem=256M@0x0 mem=256M@0x30000000"
 
 #if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
 	#define BOOTARGS_COMMON "console=ttyS1,115200 "
@@ -171,6 +174,12 @@
 	#define BOOTARGS_COMMON "console=ttyS1,115200 mem=128M@0x0 "
 #endif
 
+
+#if defined(CONFIG_JZ_MMC_MSC0)
+	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+#elif defined(CONFIG_JZ_MMC_MSC2)
+	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
+#endif
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
@@ -180,15 +189,15 @@
   #endif
 #else
   #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON MSC_BOOTARGS
   #elif defined(CONFIG_SPL_NOR_SUPPORT)
   /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=192.168.10.210:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw" */
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.207:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/pzqi/rootfs-tst rw"
   #elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw flashtype=nor"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw flashtype=nor"
   #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw flashtype=nand"
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw flashtype=nand"
 	/*#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=3 root=ubi0:rootfs ubi.mtd=4 rootfstype=ubifs rw"*/ /*dtb support*/
   #else
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 root=ubi0:root rootfstype=ubifs rw"
@@ -221,12 +230,12 @@
     #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/pzqi/uImage; bootm 0x80600000"
     /*#define CONFIG_BOOTCOMMAND "loady 0x80600000; bootm 0x80600000"*/
   #elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2800; bootm 0x80600000"
+    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80a00000 0x1800 0x3000; bootm 0x80a00000"
     /*#define CONFIG_BOOTCOMMAND "set dtb 0x83000000; set uImage 0x80600000; mmc dev 0;mmc read ${uImage} 0x1800 0x2800; mmc read ${dtb} 0x5800 0x100; bootm ${uImage} - ${dtb}"*/ /*dtb support*/
   #elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x480000 0x80800000 ;bootm 0x80800000"
+	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x600000 0x80a00000 ;bootm 0x80a00000"
   #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x500000 0x80600000 ;bootm 0x80600000"
+	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x600000 0x80a00000 ;bootm 0x80a00000"
 	/*#define CONFIG_BOOTCOMMAND "set uImage 0x80600000; set dtb 0x83000000; sfcnand read 0x100000 0x500000 $(uImage); sfcnand read 0x900000 0x20000 $(dtb); bootm $(uImage) - ${dtb}"*/  /*dtb support*/
   #else
     #define CONFIG_BOOTCOMMAND						\
@@ -239,8 +248,14 @@
 #ifdef CONFIG_SPL_OS_BOOT
     #ifdef  CONFIG_SPL_SFC_NOR
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
-    #else
+    #elif defined (CONFIG_SPL_SFC_NAND)
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+    #else
+	#if defined(CONFIG_JZ_MMC_MSC0)
+		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#elif defined(CONFIG_JZ_MMC_MSC2)
+		#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
+	#endif
     #endif
     #ifdef CONFIG_OTA_VERSION30
 		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
@@ -262,9 +277,6 @@
 		#endif /* CONFIG_BOOT_VMLINUX */
 
         #define CONFIG_SOFT_BURNER
-        #define CONFIG_AUDIO_CAL_DIV
-        #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
-        #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
     #endif /*CONFIG_OTA_VERSION30*/
 
      #ifdef CONFIG_BOOT_VMLINUX
@@ -272,7 +284,12 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
      #endif /* CONFIG_BOOT_VMLINUX */
 
-     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #if defined(CONFIG_JZ_MMC_MSC0) ||defined(CONFIG_JZ_MMC_MSC2)
+	#define CONFIG_SPL_OS_NAME        "boot" /* sd offset of xImage being loaded */
+    #else
+	#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #endif
+
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
      #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
@@ -540,7 +557,7 @@
 #define CONFIG_SYS_CBSIZE 1024 /* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 
-#define CONFIG_SYS_MONITOR_LEN		(384 * 1024)
+#define CONFIG_SYS_MONITOR_LEN		(512 * 1024)
 #define CONFIG_SYS_MALLOC_LEN		(16 * 1024 * 1024)
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 
@@ -581,6 +598,49 @@
 #define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
+
+/*#define CONFIG_LCD*/
+
+#ifdef CONFIG_LCD
+#define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
+#define CONFIG_LCD_LOGO
+/*
+#define CONFIG_CMD_LOGO_RLE*/
+/*#define CONFIG_RLE_LCD_LOGO*/
+/*#define CONFIG_LOGO_EXTEND*/
+/*#define CONFIG_LCD_INFO_BELOW_LOGO*/
+
+#define CONFIG_SYS_PWM_PERIOD       10000 /* Pwm period in ns */
+#define CONFIG_SYS_PWM_CHN      3  /* Pwm channel ok*/
+#define CONFIG_SYS_PWM_FULL 256
+#define CONFIG_SYS_BACKLIGHT_LEVEL 80 /* Backlight brightness is (80 / 256) */
+
+#define CONFIG_JZ_LCD_V14
+#define CONFIG_JZ_PWM
+#define CONFIG_VIDEO_MA0060
+
+#ifdef  CONFIG_VIDEO_MA0060
+#define CONFIG_JZ_MIPI_DSI
+#endif
+
+/*#define CONFIG_JZ_PWM*/
+#define CONFIG_SYS_CONSOLE_INFO_QUIET
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+
+/*#define CONFIG_LCD_GPIO_FUNC1_SLCD*/
+
+#ifdef CONFIG_VIDEO_MA0060
+#define CONFIG_GPIO_LCD_VDD	GPIO_PC(3)
+#define CONFIG_GPIO_LCD_RST	GPIO_PC(4)
+#define CONFIG_GPIO_LCD_OLED	GPIO_PC(5)
+#define CONFIG_GPIO_LCD_BL	GPIO_PC(6)
+#define CONFIG_GPIO_LCD_PWM	GPIO_PC(1)
+#define CONFIG_GPIO_LCD_SWIRE	GPIO_PC(7)
+#endif
+
+#endif /* CONFIG_LCD */
+
+
 /**
  * SPL configuration
  */
@@ -609,8 +669,6 @@
 #define CONFIG_SPL_TEXT_BASE		0xb2401000
 #endif	/*CONFIG_SPL_NOR_SUPPORT*/
 #define CONFIG_SPL_MAX_SIZE		(18 * 1024)
-
-
 
 
 #ifdef CONFIG_SPL_NOR_SUPPORT
