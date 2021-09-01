@@ -91,7 +91,6 @@ static void dump_ddrc_register(void)
 #define FUNC_EXIT()
 
 #define dump_ddrc_register()
-#define dump_ddrp_register()
 #endif
 
 #define DDR_CHOOSE_PARAMS	0
@@ -486,7 +485,7 @@ void get_ddr_params_normal(void)
 	int found = 0;
 	int size = 0;
 	int i;
-	unsigned int burned_ddr_id = *(volatile unsigned int *)(0xb2401000 + 128);
+	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
 		printf("invalid burned ddr id\n");
@@ -565,7 +564,6 @@ void sdram_init(void)
 
 	ddrc_dfi_init(type);
 
-	dump_ddrp_register();
 	/* DDR Controller init*/
 	ddrc_prev_init();
 
@@ -577,7 +575,7 @@ void sdram_init(void)
 #else
 	ddrp_auto_calibration();
 #endif
-	dump_ddrp_register();
+
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);
 
