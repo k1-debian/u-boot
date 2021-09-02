@@ -1,29 +1,9 @@
 /*
  * Ingenic X1600 configuration
- *
- * Copyright (c) 2015 Ingenic Semiconductor Co.,Ltd
- * Author: Matthew <xu.guo@ingenic.com>
- * Based on: include/configs/urboard.h
- *           Written by Paul Burton <paul.burton@imgtec.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
  */
 
-#ifndef __CONFIG_X1600_H__
-#define __CONFIG_X1600_H__
+#ifndef __X1600_BASE_COMMON_H__
+#define __X1600_BASE_COMMON_H__
 
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
@@ -46,8 +26,16 @@
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 48 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 
+/*
+ * uart setting
+ */
+#ifndef CONFIG_SYS_UART_INDEX
 #define CONFIG_SYS_UART_INDEX		2
-#define CONFIG_BAUDRATE			115200
+#endif
+
+#ifndef CONFIG_BAUDRATE
+#define CONFIG_BAUDRATE			3000000
+#endif
 
 #define CONFIG_SYS_DCACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_DCACHELINE_SIZE	(32)
@@ -125,42 +113,6 @@
  * #define CONFIG_DDR_PHY_IMPED_PULLDOWN	0xe
  */
 
-/**
- * Boot arguments definitions.
- */
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 "
-
-/**
- * Boot command definitions.
- */
-#define CONFIG_BOOTDELAY 1
-
-#if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
-#elif defined(CONFIG_SPL_NOR_SUPPORT)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.207:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/pzqi/rootfs-tst rw"
-#elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw flashtype=nor"
-#elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw flashtype=nand"
-#else
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 root=ubi0:root rootfstype=ubifs rw"
-#endif
-
-#if defined(CONFIG_SPL_NOR_SUPPORT)
-	#define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/pzqi/uImage; bootm 0x80600000"
-/*#define CONFIG_BOOTCOMMAND "loady 0x80600000; bootm 0x80600000"*/
-#elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-	#define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2000; bootm 0x80600000"
-#elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x600000 0x80a00000 ;bootm 0x80a00000"
-#elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x600000 0x80a00000 ;bootm 0x80a00000"
-#else
-	#define CONFIG_BOOTCOMMAND						\
-	"mtdparts default; ubi part system; ubifsmount ubi:boot; "	\
-	"ubifsload 0x80f00000 vmlinux.ub; bootm 0x80f00000"
-#endif
 
 #define CONFIG_SPL_MAX_SIZE		26624	/* 18KB */
 #define CONFIG_SPL_PAD_TO		26624  /* equal to spl max size in x1600 */
@@ -261,33 +213,6 @@
 #define CONFIG_JZ_MMC_SPLMSC 1
 #define CONFIG_JZ_MMC_MSC1_PD 1
 #endif
-
-/*
-#define CONFIG_NET_JZ4775
-
-#define GMAC_PHY_MII    0
-#define GMAC_PHY_RMII   4
-#define GMAC_PHY_GMII   0
-#define GMAC_PHY_RGMII  1
-
-#define CONFIG_SYS_RX_ETH_BUFFER 64
-#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RMII
-#define CONFIG_GAMAC_MODE_CTRL_ADDR 0xb00000e4
-#define JZ_GMAC_BASE 0xb34b0000
-#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_B
-#define CONFIG_GMAC_CRLT_PORT_PINS (0x3ff << 19)
-#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_1
-#define CONFIG_GMAC_PHY_RESET	GPIO_PB(30)
-#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_OUTPUT1
-#define CONFIG_GMAC_PHY_RESET_ENLEVEL	0
-*/
-
-/* DEBUG ETHERNET */
-#define CONFIG_SERVERIP		192.168.4.13
-#define CONFIG_IPADDR		192.168.10.206
-#define CONFIG_GATEWAYIP        192.168.10.1
-#define CONFIG_NETMASK          255.255.255.0
-#define CONFIG_ETHADDR          00:11:22:33:44:55
 
 /* GPIO */
 #define CONFIG_JZ_GPIO
@@ -482,13 +407,177 @@
 #define CONFIG_MBR_P3_TYPE 	fat
 #endif
 
-/**
- * Keys.
- */
-#define CONFIG_GPIO_USB_DETECT		GPIO_PA(14)
-#define CONFIG_GPIO_USB_DETECT_ENLEVEL	1
 
-#define CONFIG_GPIO_PWR_WAKE		GPIO_PA(30)
-#define CONFIG_GPIO_PWR_WAKE_ENLEVEL	0
+
+/*
+ * boot args console tty
+ */
+#if CONFIG_SYS_UART_INDEX == 0
+#define ARG_CONSOLE_TTY "console=ttyS0,"
+#elif CONFIG_SYS_UART_INDEX == 1
+#define ARG_CONSOLE_TTY "console=ttyS1,"
+#elif CONFIG_SYS_UART_INDEX == 2
+#define ARG_CONSOLE_TTY "console=ttyS2,"
+#elif CONFIG_SYS_UART_INDEX == 3
+#define ARG_CONSOLE_TTY "console=ttyS3,"
+#else
+#error "please add more define here"
+#endif
+
+/*
+ * boot args uart rate
+ */
+#if CONFIG_BAUDRATE == 115200
+#define ARG_CONSOLE_RATE "115200n8"
+#elif CONFIG_BAUDRATE == 3000000
+#define ARG_CONSOLE_RATE "3000000n8"
+#else
+#error "please add more define here"
+#endif
+
+/*
+ * boot args console
+ */
+#define ARGS_CONSOLE ARG_CONSOLE_TTY ARG_CONSOLE_RATE
+
+#ifndef CONFIG_SPL_SERIAL_SUPPORT
+#define ARGS_CONSOLE "no_console"
+#endif
+
+#ifdef CONFIG_ARG_NO_CONSOLE
+#undef ARGS_CONSOLE
+#define ARGS_CONSOLE "no_console"
+#endif
+
+#ifdef CONFIG_ARG_QUIET
+#define ARGS_QUIET "quiet"
+#else
+#define ARGS_QUIET ""
+#endif
+
+
+/*
+ * boot args mem define
+ */
+/* #define CONFIG_SPL_AUTO_PROBE_ARGS_MEM */
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+#define ARGS_MEM_RESERVED "[this string is reserved for probe mem size. NOTE: Don't cut.]"
+#else
+#define ARGS_MEM_RESERVED "mem=64M@0x0 "
+#endif
+
+#ifndef CONFIG_RMEM_MB
+#define CONFIG_RMEM_MB 0
+#endif
+
+#ifndef CONFIG_RTOS_SIZE_MB
+#define CONFIG_RTOS_SIZE_MB 0
+#endif
+
+/*
+ * boot args init program
+ */
+#ifndef CONFIG_ROOTFS_INITRC
+#define CONFIG_ROOTFS_INITRC "init=/linuxrc"
+#endif
+
+#ifndef CONFIG_ROOTFS2_INITRC
+#define CONFIG_ROOTFS2_INITRC CONFIG_ROOTFS_INITRC
+#endif
+
+/*
+ * boot args rootfs
+ */
+#if defined(CONFIG_ROOTFS_UBI)
+#define ARG_ROOTFS_TYPE "rootfstype=ubifs ro"
+#elif defined(CONFIG_ROOTFS_SQUASHFS)
+#define ARG_ROOTFS_TYPE "rootfstype=squashfs ro"
+#elif defined(CONFIG_ROOTFS_RAMDISK)
+#define ARG_ROOTFS_TYPE "rw"
+#else
+#error "please add more define here"
+#endif
+
+#ifndef CONFIG_ROOTFS_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
+#else
+#define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
+#endif
+#endif
+
+#define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_DEV" "ARG_ROOTFS_TYPE
+
+/* boot args rootfs2
+ */
+#ifndef CONFIG_ROOTFS2_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
+#else
+#define CONFIG_ROOTFS2_DEV "root=/dev/mtdblock_bbt_ro4"
+#endif
+#endif
+
+#ifdef CONFIG_ROOTFS2_DEV
+#if defined(CONFIG_ROOTFS2_UBI)
+#define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
+#elif defined(CONFIG_ROOTFS2_SQUASHFS)
+#define ARG_ROOTFS2_TYPE "rootfstype=squashfs ro"
+#elif defined(CONFIG_ROOTFS2_RAMDISK)
+#define ARG_ROOTFS2_TYPE "rw"
+#else
+#error "please add more define here"
+#endif
+
+#define ARGS_ROOTFS2 CONFIG_ROOTFS2_INITRC " " CONFIG_ROOTFS2_DEV " " ARG_ROOTFS2_TYPE
+#endif
+
+#ifndef CONFIG_ARGS_EXTRA
+#define CONFIG_ARGS_EXTRA ""
+#endif
+
+#define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " ARGS_MEM_RESERVED " " CONFIG_ARGS_EXTRA
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_RTOS_OFFSET              (17 * 1024 + CONFIG_SPL_PAD_TO)
+#define CONFIG_RTOS_OFFSET_SECTOR       (CONFIG_RTOS_OFFSET / 512)
+#else
+#define CONFIG_RTOS_OFFSET              CONFIG_SPL_PAD_TO
+#define CONFIG_SPL_RTOS_NAME            "rtos"
+#endif
 
 #endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+#define CONFIG_SPL_OS_BOOT
+#endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+#ifndef CONFIG_SPL_RTOS_NAME2
+    #define CONFIG_SPL_RTOS_NAME2       "rtos"
+#endif
+    #define CONFIG_SPL_OTA_NAME         "ota"
+    #define CONFIG_SPL_OS_NAME2         "kernel2"
+    #define CONFIG_SPL_BOOTARGS2        BOOTARGS_COMMON " " ARGS_ROOTFS2
+    #define CONFIG_SYS_SPL_ARGS_ADDR2   CONFIG_SPL_BOOTARGS2
+#endif
+
+#ifdef CONFIG_SPL_OS_BOOT
+    #define CONFIG_SPL_RTOS_NAME        "rtos"
+    #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " " ARGS_ROOTFS
+    #define CONFIG_SPL_OS_NAME          "kernel" /* spi offset of xImage being loaded */
+    #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+    #define CONFIG_BOOTX_BOOTARGS       ""
+    #undef  CONFIG_BOOTCOMMAND
+    #define CONFIG_BOOTCOMMAND          ""
+    #define CONFIG_LOAD_ADDR            0x80001000
+#endif  /* CONFIG_SPL_OS_BOOT */
+
+#define CONFIG_BOOTARGS                 ""
+
+#define PARTITION_NUM                   10
+
+
+#endif /* __X1600_BASE_COMMON_H__ */
