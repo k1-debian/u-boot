@@ -870,8 +870,8 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 
 #define THOLD   5
 #define TSETUP  5
-#define TSHSL_R     20
-#define TSHSL_W     50
+#define TSHSL_R     100
+#define TSHSL_W     100
 
 	set_flash_timing(flash->sfc, THOLD, TSETUP, TSHSL_R, TSHSL_W);
 

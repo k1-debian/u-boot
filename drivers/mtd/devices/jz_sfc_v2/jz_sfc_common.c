@@ -27,6 +27,7 @@
 
 //#define	SFC_REG_DEBUG
 
+#define clamp(x, low, high) (min(max(low, x), high))
 
 static void sfc_writel(struct sfc *sfc, unsigned short offset, u32 value)
 {
@@ -332,34 +333,105 @@ void sfc_interval_delay(struct sfc *sfc, int value)
 	sfc_writel(sfc, SFC_DEV_CONF, tmp);
 }
 
+static int timing_is_valid(uint32_t *p_thold, uint32_t *p_tsetup, uint32_t *p_tsh)
+{
+	int ret = 0;
+
+#define THOLD_LO_VAL 0x0
+#define THOLD_HI_VAL 0x3
+#define TSETUP_LO_VAL 0x0
+#define TSETUP_HI_VAL 0x3
+#define TSH_LO_VAL 0x0
+#define TSH_HI_VAL 0xf
+
+	if ((*p_thold > THOLD_HI_VAL) || (*p_thold < THOLD_LO_VAL)) {
+		pr_err("ERROR: Check that the SFC timing parameter is invalid, thold:%d !\n", *p_thold);
+		*p_thold = clamp((uint32_t)*p_thold, (uint32_t)THOLD_LO_VAL, (uint32_t)THOLD_HI_VAL);
+		ret = -EINVAL;
+	}
+
+	if ((*p_tsetup > TSETUP_HI_VAL) || (p_thold < TSETUP_LO_VAL)) {
+		pr_err("ERROR: Check that the SFC timing parameter is invalid, tsetup:%d !\n", *p_tsetup);
+		*p_tsetup = clamp((uint32_t)*p_tsetup, (uint32_t)TSETUP_LO_VAL, (uint32_t)TSETUP_HI_VAL);
+		ret = -EINVAL;
+	}
+
+	if ((*p_tsh > TSH_HI_VAL) || (*p_tsh < TSH_LO_VAL)){
+		pr_err("ERROR: Check that the SFC timing parameter is invalid, tsh:%d !\n", *p_tsh);
+		*p_tsh = clamp((uint32_t)*p_tsh, (uint32_t)TSH_LO_VAL, (uint32_t)TSH_HI_VAL);
+		ret = -EINVAL;
+	}
+
+	return ret;
+}
+
 int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup, unsigned int t_shslrd, unsigned int t_shslwr)
 {
-	unsigned int c_hold;
-	unsigned int c_setup;
-	unsigned int t_in, c_in, val;
+	uint32_t c_hold, c_setup, t_in, c_in;
+	uint32_t c_half_hold, c_half_setup, c_half_in;
+	uint32_t thold, tsetup, tsh;
+	uint32_t tmp;
 	unsigned long cycle;
-	unsigned int rate;
+	unsigned long half_cycle;
+	unsigned long long ns;
 
-	rate = sfc->src_clk / 1000000;
-	cycle = 1000 / rate;
-	val = 0;
+	/* NOTE: 4 frequency division. */
+	sfc->src_clk /= 4;
 
+	ns = 1000000000ULL;
+	do_div(ns, sfc->src_clk);
+	cycle = ns;
+	half_cycle = cycle / 2;
+
+	/* Calculate the number of cycle */
 	c_hold = t_hold / cycle;
-	if(c_hold > 0)
-		val = c_hold - 1;
-	sfc_hold_delay(sfc, val);
+	c_half_hold = t_hold % cycle;
+	if(c_half_hold > half_cycle) {
+		c_half_hold = 0;
+		c_hold += 1;
+	}
 
 	c_setup = t_setup / cycle;
-	if(c_setup > 0)
-		val = c_setup - 1;
-	sfc_setup_delay(sfc, val);
+	c_half_setup = t_setup % cycle;
+	if(c_half_setup > half_cycle) {
+		c_half_setup = 0;
+		c_setup += 1;
+	}
 
 	t_in = max(t_shslrd, t_shslwr);
 	c_in = t_in / cycle;
-	if(c_in > 0)
-		val = c_in - 1;
-	sfc_interval_delay(sfc, val);
+	c_half_in = t_in % cycle;
+	if(c_half_in > half_cycle) {
+		c_half_in = 0;
+		c_in += 1;
+	}
 
+	/* Calculate timing parameters */
+	if(!c_hold && !c_half_hold)
+		thold = 0;
+	else
+		thold = (2 * c_hold) - 1 + (!!c_half_hold);
+
+	if(!c_setup && !c_half_setup)
+		tsetup = 0;
+	else
+		tsetup = (2 * c_setup) - 1 + (!!c_half_setup);
+
+	if(!c_in && !c_half_in)
+		tsh = 0;
+	else
+		tsh = (2 * c_in) - 1 + (!!c_half_in);
+
+	/* Verify parameters validity */
+	timing_is_valid(&thold, &tsetup, &tsh);
+
+	tmp = sfc_readl(sfc, SFC_DEV_CONF);
+	tmp &= ~(DEV_CONF_THOLD_MSK | DEV_CONF_TSETUP_MSK | DEV_CONF_TSH_MSK);
+	tmp |= (thold << DEV_CONF_THOLD_OFFSET) | \
+		  (tsetup << DEV_CONF_TSETUP_OFFSET) | \
+		  (tsh << DEV_CONF_TSH_OFFSET);
+
+	sfc_writel(sfc, SFC_DEV_CONF, tmp);
 	return 0;
 }
 
