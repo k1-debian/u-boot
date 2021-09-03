@@ -45,6 +45,8 @@ extern struct ddr_reg_value supported_ddr_reg_values[];
 DECLARE_GLOBAL_DATA_PTR;
 extern struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
+static void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value);
+
 #ifdef  CONFIG_DWC_DEBUG
 #define FUNC_ENTER() debug("%s enter.\n",__FUNCTION__);
 #define FUNC_EXIT() debug("%s exit.\n",__FUNCTION__);
@@ -493,7 +495,7 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 	ddr_writel(val, DDRP_INNOPHY_AL);
 
 
-	ddr_phy_cfg_drive();
+	ddr_phy_cfg_drive(global_reg_value);
 }
 
 
@@ -552,7 +554,8 @@ void ddrp_pll_init(void)
 	}
 //	mdelay(20);
 }
-void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
+
+static void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
 {
 	FUNC_ENTER();
 
@@ -588,7 +591,7 @@ void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
 	writel(0x1, 0xb3011000 + (0x95)*4);//default 0x0  byte3 dqs dll
 
 	type = global_reg_value->h.type;
-	switch(global_reg_value->h.type) {
+	switch(type) {
 	case DDR3:
 
 		//ddr_phy_cfg_vref()
@@ -666,6 +669,7 @@ void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
 		type = UNKOWN;
 		printf("unsupport ddr type!\n");
 		ddr_hang();
+		break;
 	}
 
 	FUNC_EXIT();
