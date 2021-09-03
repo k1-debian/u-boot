@@ -485,8 +485,19 @@ static void boot_second_cpu(void)
 
 static void start_second_cpu(void)
 {
+	unsigned long value;
+	volatile unsigned long *rtos_start = (unsigned long *)rtos_header.img_start;
+
+	value = *rtos_start;
+
 	writel((unsigned long)boot_second_cpu, CCU_IO_BASE+CCU_RER);
 	writel(0, CCU_IO_BASE+CCU_CSRR);
+
+	if (rtos_header.version & (1 << 0)) {
+		while(*rtos_start == value) {
+			mdelay(1);
+		}
+	}
 }
 #endif
 
@@ -508,7 +519,6 @@ static void spl_sfc_rtos_boot(void)
 	sfc_init();
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
-	int is_kernel2 = 0;
 	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
 	struct jz_sfcnand_partition_param *partitions = get_partitions();
 
@@ -518,7 +528,6 @@ static void spl_sfc_rtos_boot(void)
 		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
 		sfc_nand_load(rtos_offset, sizeof(buf), (unsigned int)buf);
 		if (!strncmp(kernel2, buf, strlen(kernel2))) {
-			is_kernel2 = 1;
 			rtos_name = CONFIG_SPL_RTOS_NAME2;
 		}
 	}
@@ -536,7 +545,8 @@ static void spl_sfc_rtos_boot(void)
 	rtos_offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_NAME);
 	if (rtos_offset == -1) {
 		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		hang();
+		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		rtos_offset = CONFIG_RTOS_OFFSET;
 	}
 #endif
 

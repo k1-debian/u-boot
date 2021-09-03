@@ -530,6 +530,32 @@ static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 #endif
 }
 
+unsigned int get_part_offset_by_name(struct norflash_partitions partition, char *name)
+{
+	int i = 0;
+
+	for (i = 0; i < partition.num_partition_info; i++) {
+		if (!strncmp(partition.nor_partition[i].name, name, sizeof(name))) {
+			return partition.nor_partition[i].offset;
+		}
+	}
+
+	return -1;
+}
+
+unsigned int get_part_size_by_name(struct norflash_partitions partition, char *name)
+{
+	int i = 0;
+
+	for (i = 0; i < partition.num_partition_info; i++) {
+		if (!strncmp(partition.nor_partition[i].name, name, sizeof(name))) {
+			return partition.nor_partition[i].size;
+		}
+	}
+
+	return -1;
+}
+
 void spl_load_kernel(long offset)
 {
 	struct image_header *header;
@@ -684,82 +710,288 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 #endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
-static void spl_sfc_nor_rtos_boot(void)
+
+struct rtos_header rtos_header;
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+#include <asm/arch/ccu.h>
+
+unsigned char second_cpu_little_stack[128] __attribute__((aligned(8)));
+
+__attribute__ ((noreturn)) void do_boot_second_cpu(void)
 {
-	struct rtos_header rtos;
+	rtos_raw_start(&rtos_header);
+	while (1);
+}
 
-	sfc_read_data(CONFIG_RTOS_OFFSET, sizeof(rtos), (unsigned int)&rtos);
-	if (rtos_check_header(&rtos))
-		hang();
-	sfc_read_data(CONFIG_RTOS_OFFSET, rtos.img_end - rtos.img_start, rtos.img_start);
+static void boot_second_cpu(void)
+{
+  asm volatile (
+    "    .set    push                        \n"
+    "    .set    reorder                     \n"
+    "    .set    noat                        \n"
+    "    la    $29, (second_cpu_little_stack+128)   \n"
+    "    j do_boot_second_cpu   \n"
+    "    nop                    \n"
+    "    .set    pop                         \n"
+    :
+    :
+    : "memory"
+    );
+}
 
-	rtos_start(&rtos);
+static void start_second_cpu(void)
+{
+	unsigned long value;
+	volatile unsigned long *rtos_start = (unsigned long *)rtos_header.img_start;
+
+	value = *rtos_start;
+
+	writel((unsigned long)boot_second_cpu, CCU_IO_BASE+CCU_RER);
+	writel(0, CCU_IO_BASE+CCU_CSRR);
+
+	if (rtos_header.version & (1 << 0)) {
+		while(*rtos_start == value) {
+			mdelay(1);
+		}
+	}
 }
 #endif
 
-char* spl_sfc_nor_load_image(void)
+static int spl_sfc_nor_rtos_load(struct rtos_header *rtos, unsigned int offset)
+{
+	sfc_read_data(offset, sizeof(*rtos), (unsigned char *)rtos);
+	if (rtos_check_header(rtos))
+		return -1;
+
+	sfc_read_data(offset, rtos->img_end - rtos->img_start, (unsigned char *)rtos->img_start);
+
+	return 0;
+}
+
+static void spl_sfc_nor_rtos_boot(void)
+{
+	unsigned int rtos_addr = CONFIG_RTOS_OFFSET;
+	struct norflash_partitions partition;
+
+	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
+
+	rtos_addr = get_part_offset_by_name(partition, CONFIG_SPL_OTA_NAME);
+	if (rtos_addr != -1) {
+		char buf[128];
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_read_data(rtos_addr, sizeof(buf), (unsigned char *)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			rtos_name = CONFIG_SPL_RTOS_NAME2;
+		}
+	}
+
+	rtos_addr = get_part_offset_by_name(partition, rtos_name);
+	if (rtos_addr == -1) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		hang();
+	}
+
+	debug("rtos:%s %x\n", rtos_name, rtos_addr);
+#else
+	rtos_addr = get_part_offset_by_name(partition, CONFIG_SPL_RTOS_NAME);
+	if (rtos_addr == -1) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		rtos_addr = CONFIG_RTOS_OFFSET;
+	}
+#endif
+
+	if (spl_sfc_nor_rtos_load(&rtos_header, rtos_addr))
+		hang();
+
+	flush_cache_all();
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+	start_second_cpu();
+#else
+	/* NOTE: not return */
+	rtos_raw_start(&rtos_header);
+#endif
+}
+#endif
+
+#ifdef CONFIG_SPL_OS_BOOT
+void spl_sfc_nor_os_load(void)
+{
+	struct norflash_partitions partition;
+	unsigned int bootimg_addr = 0;
+
+	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
+	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
+	if (bootimg_addr == -1){
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	spl_load_kernel(bootimg_addr);
+}
+#endif
+
+#ifdef CONFIG_OTA_VERSION20
+void spl_ota_load_image(void)
 {
 	struct image_header *header;
-#ifdef CONFIG_SPL_OS_BOOT
+
 	unsigned int bootimg_addr = 0;
 	unsigned int bootimg_size = 0;
 	struct norflash_partitions partition;
 	int i;
-#ifdef CONFIG_OTA_VERSION20
+
 	unsigned int nv_rw_addr;
 	unsigned int nv_rw_size;
 	unsigned int src_addr, updata_flag;
 	unsigned nv_buf[2];
 	int count = 8;
-#endif
-#endif
+
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 	//memset(header, 0, sizeof(struct image_header));
-	sfc_init();
-#ifdef CONFIG_SPL_OS_BOOT
+
 	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
-	for (i = 0 ; i < partition.num_partition_info; i ++) {
-		if (!strncmp(partition.nor_partition[i].name, CONFIG_SPL_OS_NAME, sizeof(CONFIG_SPL_OS_NAME))) {
-			bootimg_addr = partition.nor_partition[i].offset;
-			bootimg_size = partition.nor_partition[i].size;
-		}
-#ifdef CONFIG_OTA_VERSION20
-		if (!strncmp(partition.nor_partition[i].name, CONFIG_PAR_NV_NAME, sizeof(CONFIG_PAR_NV_NAME))) {
-			nv_rw_addr = partition.nor_partition[i].offset;
-			nv_rw_size = partition.nor_partition[i].size;
-		}
-#endif
+
+	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
+	if (bootimg_addr == -1){
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
 	}
-#ifdef CONFIG_BOOT_VMLINUX
-		spl_image.os = IH_OS_LINUX;
-		spl_image.entry_point = CONFIG_LOAD_ADDR;
-		sfc_read_data(bootimg_addr, bootimg_size, (unsigned char *)CONFIG_LOAD_ADDR);
-		return NULL;
-#endif
-#ifndef CONFIG_OTA_VERSION20 /* norflash spl boot kernel */
-	spl_load_kernel(bootimg_addr);
-	return NULL;
-#else //not defined CONFIG_NOR_SPL_BOOT_OS
+
+	bootimg_size = get_part_size_by_name(partition, CONFIG_SPL_OS_NAME);
+	if (bootimg_size == -1){
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	nv_rw_addr = get_part_offset_by_name(partition, CONFIG_PAR_NV_NAME);
+	if (nv_rw_addr == -1){
+		printf("nv_rw not found: "CONFIG_PAR_NV_NAME"\n");
+		hang();
+	}
+
+	nv_rw_size = get_part_size_by_name(partition, CONFIG_PAR_NV_NAME);
+	if (nv_rw_size == -1){
+		printf("nv_rw not found: "CONFIG_PAR_NV_NAME"\n");
+		hang();
+	}
+
 	nv_map_area((unsigned int)&src_addr, nv_rw_addr, nv_rw_size);
 	sfc_read_data(src_addr, count, (unsigned char *)nv_buf);
 	updata_flag = nv_buf[1];
 	if((updata_flag & 0x3) != 0x3)
 	{
 		spl_load_kernel(bootimg_addr);
-	} else
-#endif	/* CONFIG_OTA_VERSION20 */
-#endif	/* CONFIG_SPL_OS_BOOT */
+	} else {
+		header->ih_name[IH_NMLEN - 1] = 0;
+		spl_parse_image_header(header);
+		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned char *)CONFIG_SYS_TEXT_BASE);
+	}
+}
+#endif
+
+#ifdef CONFIG_BOOT_VMLINUX
+void spl_vmlinux_load(void)
+{
+	unsigned int bootimg_addr = 0;
+	unsigned int bootimg_size = 0;
+	struct norflash_partitions partition;
+
+	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+
+	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
+	if (bootimg_addr == -1) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	bootimg_size = get_part_size_by_name(partition, CONFIG_SPL_OS_NAME);
+	if (bootimg_size == -1) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	spl_image.os = IH_OS_LINUX;
+	spl_image.entry_point = CONFIG_LOAD_ADDR;
+	sfc_read_data(bootimg_addr, bootimg_size, (unsigned char *)CONFIG_LOAD_ADDR);
+}
+#endif
+
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+static char *spl_sfc_nand_os_ota_load(void)
+{
+	struct norflash_partitions partition;
+	unsigned int img_addr = 0;
+	int is_kernel2=0;
+	const char *kernel_name=CONFIG_SPL_OS_NAME;
+
+	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+	img_addr = get_part_offset_by_name(partition, CONFIG_SPL_OTA_NAME);
+	if (img_addr != -1) {
+		char buf[128];
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_read_data(img_addr, sizeof(buf), (unsigned char *)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			is_kernel2 = 1;
+			kernel_name=CONFIG_SPL_OS_NAME2;
+		}
+	}
+
+	img_addr = get_part_offset_by_name(partition, kernel_name);
+	if (img_addr == -1) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+
+	debug("kernel:%s %x\n", kernel_name, img_addr);
+
+	spl_load_kernel(img_addr);
+
+	if (is_kernel2)
+		return CONFIG_SYS_SPL_ARGS_ADDR2;
+	else
+		return CONFIG_SYS_SPL_ARGS_ADDR;
+}
+#endif
+
+char* spl_sfc_nor_load_image(void)
+{
+	sfc_init();
 
 #ifdef CONFIG_SPL_RTOS_BOOT
 	spl_sfc_nor_rtos_boot();
-	return NULL;
 #endif
 
+#ifdef CONFIG_BOOT_VMLINUX
+	spl_vmlinux_load();
+	return NULL;
+#elif defined(CONFIG_OTA_VERSION20)
+	return spl_ota_load_image();
+	return NULL;
+#elif defined(CONFIG_SPL_OS_OTA_BOOT)
+	return spl_sfc_nor_os_ota_load();
+#elif defined(CONFIG_SPL_OS_BOOT)
+	spl_sfc_nor_os_load();
+	return NULL;
+#elif defined(CONFIG_SPL_RTOS_BOOT)
+	hang();
+	return NULL;
+#else
 	{
+		struct image_header *header;
+		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
 		header->ih_name[IH_NMLEN - 1] = 0;
 		spl_parse_image_header(header);
 		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned char *)CONFIG_SYS_TEXT_BASE);
 	}
 	return NULL;
-
+#endif
 }
+
