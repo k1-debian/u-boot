@@ -684,7 +684,7 @@ static int mmc_ota_load_img_from_partition(const char *name)
 
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OTA_NAME, &start_sector, NULL);
 	if (!ret) {
-		const char *buf= (const char *)(CONFIG_SYS_TEXT_BASE);
+		const char *buf = (const char *)(CONFIG_SYS_TEXT_BASE);
 		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
 
 		mmc_block_read(start_sector, 1, (u32 *)buf);
@@ -720,31 +720,126 @@ static struct jzsd_ota_ops jzsd_ota_ops = {
 #endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
-static void mmc_load_rtos_boot(unsigned long sector)
+
+struct rtos_header rtos_header;
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+#include <asm/arch/ccu.h>
+
+unsigned char second_cpu_little_stack[128] __attribute__((aligned(8)));
+
+__attribute__ ((noreturn)) void do_boot_second_cpu(void)
+{
+	rtos_raw_start(&rtos_header);
+	while (1);
+}
+
+static void boot_second_cpu(void)
+{
+  asm volatile (
+    "    .set    push                        \n"
+    "    .set    reorder                     \n"
+    "    .set    noat                        \n"
+    "    la    $29, (second_cpu_little_stack+128)   \n"
+    "    j do_boot_second_cpu   \n"
+    "    nop                    \n"
+    "    .set    pop                         \n"
+    :
+    :
+    : "memory"
+    );
+}
+
+static void start_second_cpu(void)
+{
+	unsigned long value;
+	volatile unsigned long *rtos_start = (unsigned long *)rtos_header.img_start;
+
+	value = *rtos_start;
+
+	writel((unsigned long)boot_second_cpu, CCU_IO_BASE+CCU_RER);
+	writel(0, CCU_IO_BASE+CCU_CSRR);
+
+	if (rtos_header.version & (1 << 0)) {
+		while(*rtos_start == value) {
+			mdelay(1);
+		}
+	}
+}
+#endif
+
+static int mmc_rtos_load(struct rtos_header *rtos, unsigned int sector_offset)
 {
 	int err = 0;
 	u32 rtos_size_sectors;
-	struct rtos_header rtos;
 
-	/* read rtos a sector size */
-	err = mmc_block_read(sector, 1, &rtos);
+	err = mmc_block_read(sector_offset, 1, rtos);
 	if (err == 0)
 		goto end;
 
-	rtos_check_header(&rtos);
+	if (rtos_check_header(rtos))
+		return -1;
 
-	rtos_size_sectors = (rtos.img_end - rtos.img_start + 512 - 1) / 512;
+	rtos_size_sectors = (rtos->img_end - rtos->img_start + 512 - 1) / 512;
 
 	/* load rtos */
-	err = mmc_block_read(sector, rtos_size_sectors, rtos.img_start);
+	err = mmc_block_read(sector_offset, rtos_size_sectors, rtos->img_start);
+
 	if (err == 0)
 		goto end;
 
-	rtos_start(&rtos);
-
+	return 0;
 end:
 	printf("spl: [rtos] mmc blk read err , %d\n", err);
-	hang();
+	return -1;
+}
+
+static void mmc_load_rtos_boot(void)
+{
+	int ret;
+	unsigned int rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
+
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OTA_NAME, &rtos_offset, NULL);
+	if (!ret) {
+		const char *buf = (const char *)(CONFIG_SYS_TEXT_BASE);
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+
+		mmc_block_read(rtos_offset, 1, (u32 *)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			rtos_name = CONFIG_SPL_RTOS_NAME2;
+		}
+	}
+
+	ret = spl_get_built_in_gpt_partition(rtos_name, &rtos_offset, NULL);
+	if (ret) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		hang();
+	}
+
+	debug("rtos:%s %x\n", rtos_name, rtos_offset);
+#else
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_NAME, &rtos_offset, NULL);
+	if (ret) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
+		rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
+	}
+#endif
+
+	if (mmc_rtos_load(&rtos_header, rtos_offset))
+		hang();
+
+	flush_cache_all();
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+	start_second_cpu();
+#else
+/* NOTE: not return */
+	rtos_raw_start(&rtos_header);
+#endif
 }
 #endif
 
@@ -763,8 +858,10 @@ char *spl_mmc_load_image(void)
 	jzmmc_init();
 
 #ifdef CONFIG_SPL_RTOS_BOOT
-	mmc_load_rtos_boot(CONFIG_RTOS_OFFSET_SECTOR);
-#elif defined CONFIG_SPL_OS_OTA_BOOT
+	mmc_load_rtos_boot();
+#endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
 	return mmc_ota_load_img_from_partition(CONFIG_SPL_OS_NAME);
 #elif defined(CONFIG_SPL_OS_BOOT)
 #ifdef CONFIG_JZSD_OTA_VERSION20
