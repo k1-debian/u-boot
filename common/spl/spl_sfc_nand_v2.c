@@ -497,6 +497,7 @@ static void start_second_cpu(void)
 		while(*rtos_start == value) {
 			mdelay(1);
 		}
+		writel(1 << 1, CCU_IO_BASE+CCU_CSRR);
 	}
 }
 #endif
