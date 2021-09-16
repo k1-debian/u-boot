@@ -256,7 +256,7 @@
 	#if defined(CONFIG_JZ_MMC_MSC0)
 		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
 	#elif defined(CONFIG_JZ_MMC_MSC2)
-		#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
+		#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw flashtype=nand"
 	#endif
     #endif
     #ifdef CONFIG_OTA_VERSION30
