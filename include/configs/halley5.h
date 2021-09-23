@@ -606,8 +606,8 @@
 #ifdef CONFIG_LCD
 #define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
 #define CONFIG_LCD_LOGO
-/*
-#define CONFIG_CMD_LOGO_RLE*/
+
+/*#define CONFIG_CMD_LOGO_RLE*/
 /*#define CONFIG_RLE_LCD_LOGO*/
 /*#define CONFIG_LOGO_EXTEND*/
 /*#define CONFIG_LCD_INFO_BELOW_LOGO*/
@@ -632,12 +632,7 @@
 /*#define CONFIG_LCD_GPIO_FUNC1_SLCD*/
 
 #ifdef CONFIG_VIDEO_MA0060
-#define CONFIG_GPIO_LCD_VDD	GPIO_PC(3)
-#define CONFIG_GPIO_LCD_RST	GPIO_PC(4)
-#define CONFIG_GPIO_LCD_OLED	GPIO_PC(5)
-#define CONFIG_GPIO_LCD_BL	GPIO_PC(6)
 #define CONFIG_GPIO_LCD_PWM	GPIO_PC(1)
-#define CONFIG_GPIO_LCD_SWIRE	GPIO_PC(7)
 #endif
 
 #endif /* CONFIG_LCD */

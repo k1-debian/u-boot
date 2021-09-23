@@ -13,7 +13,7 @@
 #include <common.h>
 
 #include <jz_lcd/jz_dsim.h>
-#include <jz_lcd/jz_lcd_v12.h>
+#include <jz_lcd/jz_lcd_v14.h>
 #include "jz_mipi_dsi_lowlevel.h"
 #include "jz_mipi_dsih_hal.h"
 #include "jz_mipi_dsi_regs.h"
@@ -234,6 +234,43 @@ void set_base_dir_tx(struct dsi_device *dsi, void *param)
 	}
 }
 
+int jz_dsi_mode_cfg(struct dsi_device *dsi, int mode)
+{
+	struct video_config *video_config;
+	struct dsi_config *dsi_config;
+	video_config = dsi->video_config;
+	dsi_config = dsi->dsi_config;
+
+	if(mode == 1) {
+		/* video mode */
+		jz_dsih_hal_power(dsi, 0);
+		jz_dsi_video_cfg(dsi);
+		jz_dsih_hal_power(dsi, 1);
+	} else {
+		mipi_dsih_write_word(dsi, R_DSI_HOST_EDPI_CMD_SIZE, 1024); /* 当设置太小时, 对于M31传输数据会有卡死的现象??, 这里设置成1024。*/
+		mipi_dsih_dphy_enable_hs_clk(dsi, 1);
+		mipi_dsih_dphy_auto_clklane_ctrl(dsi, 1);
+		mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG, 1);
+
+		/* cmd mode */
+		/* color coding fix to 24bit ???? */
+		mipi_dsih_hal_dpi_frame_ack_en(dsi, video_config->receive_ack_packets);
+		if (video_config->receive_ack_packets) {	/* if ACK is requested, enable BTA, otherwise leave as is */
+			mipi_dsih_hal_bta_en(dsi, 1);
+		}
+
+		if(dsi_config->te_mipi_en) {
+			mipi_dsih_hal_tear_effect_ack_en(dsi, 1);
+		} else {
+			mipi_dsih_hal_tear_effect_ack_en(dsi, 0);
+		}
+		mipi_dsih_hal_gen_set_mode(dsi, 1);
+		mipi_dsih_hal_dpi_color_coding(dsi, dsi->video_config->color_coding);
+	}
+
+	return 0;
+}
+
 void jz_dsi_init(struct dsi_device *dsi)
 {
 	int retry = 500;
@@ -242,7 +279,8 @@ void jz_dsi_init(struct dsi_device *dsi)
 	debug("entry jz_dsi_init()\n");
 
 	dsi->state = NOT_INITIALIZED;
-	dsi->address = dsi->dsi_phy->address = DSI_BASE;
+	dsi->address = DSI_BASE;
+	dsi->dsi_phy->address = DSI_PHY_BASE;
 	dsi->max_bps =  dsi->max_bps ? dsi->max_bps : 950;
 	dsi->dsi_phy->bsp_pre_config = set_base_dir_tx;
 	dsi->dsi_phy->reference_freq = REFERENCE_FREQ;
@@ -259,8 +297,36 @@ void jz_dsi_init(struct dsi_device *dsi)
 	dsi->video_config->v_sync_lines = jzfb1_videomode.vsync_len;
 	dsi->video_config->v_back_porch_lines = jzfb1_videomode.upper_margin;
 	dsi->video_config->v_total_lines = jzfb1_videomode.yres + jzfb1_videomode.upper_margin + jzfb1_videomode.lower_margin + jzfb1_videomode.vsync_len;
+
+	if(!dsi->video_config->byte_clock) {
 	dsi->video_config->byte_clock = dsi->video_config->h_total_pixels * dsi->video_config->v_total_lines * jzfb1_videomode.refresh / 1000 * dsi->bpp_info / dsi->video_config->no_of_lanes / 8;
-	dsi->video_config->byte_clock = dsi->video_config->byte_clock + dsi->video_config->byte_clock / 2;
+	/*dsi->video_config->byte_clock = dsi->video_config->byte_clock + dsi->video_config->byte_clock / 2;*/
+		switch(dsi->video_config->byte_clock_coef) {
+		case MIPI_PHY_BYTE_CLK_COEF_MUL1:
+			break;
+		case MIPI_PHY_BYTE_CLK_COEF_MUL3:
+			dsi->video_config->byte_clock = dsi->video_config->byte_clock*3;
+			break;
+		case MIPI_PHY_BYTE_CLK_COEF_MUL4:
+			dsi->video_config->byte_clock = dsi->video_config->byte_clock*4;
+			break;
+		case MIPI_PHY_BYTE_CLK_COEF_MUL3_DIV2:
+			dsi->video_config->byte_clock = dsi->video_config->byte_clock * 3 / 2;
+			break;
+		case MIPI_PHY_BYTE_CLK_COEF_MUL4_DIV3:
+			dsi->video_config->byte_clock = dsi->video_config->byte_clock * 4 / 3;
+			break;
+		case MIPI_PHY_BYTE_CLK_COEF_MUL5_DIV4:
+			dsi->video_config->byte_clock = dsi->video_config->byte_clock * 5 / 4;
+			break;
+		case MIPI_PHY_BYTE_CLK_COEF_MUL6_DIV5:
+			dsi->video_config->byte_clock = dsi->video_config->byte_clock * 6 / 5;
+			break;
+		default:
+			break;
+		}
+	}
+
 	debug("dsi->video_config->h_total_pixels = %d,\
 			dsi->video_config->v_total_lines = %d,\
 			jzfb1_videomode.refresh = %d,\
@@ -271,6 +337,8 @@ void jz_dsi_init(struct dsi_device *dsi)
 			jzfb1_videomode.refresh, \
 			dsi->bpp_info, \
 			dsi->video_config->no_of_lanes);
+
+
 	if(dsi->video_config->byte_clock * 8 > dsi->max_bps * 1000){
 		dsi->video_config->byte_clock = dsi->max_bps * 1000 / 8;
 	}
@@ -282,6 +350,9 @@ void jz_dsi_init(struct dsi_device *dsi)
 	/*select mipi dsi */
 	*((volatile unsigned int *)0xb30500a4) = 1 << 7;	//MCTRL
 	jz_dsi_phy_open(dsi);
+
+	mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG,
+				                     0xffffff0);
 
 	/*set command mode */
 	mipi_dsih_write_word(dsi, R_DSI_HOST_MODE_CFG, 0x1);
@@ -311,8 +382,6 @@ void jz_dsi_init(struct dsi_device *dsi)
 		return -1;
 	}
 
-    mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG,
-				                     0xffffff0);
 
 
 	dsi->state = INITIALIZED;
@@ -320,7 +389,7 @@ void jz_dsi_init(struct dsi_device *dsi)
 
 #ifdef DPI_DEBUG
 	mipi_dsih_write_word(dsi, R_DSI_HOST_DPI_CFG_POL, 0x0);
-	panel_init_set_sequence(dsi);
+	panel_init_sequence(dsi);
 
 	mipi_dsih_dphy_enable_hs_clk(dsi, 1);
 	mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG, 1);

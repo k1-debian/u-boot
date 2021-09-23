@@ -1150,6 +1150,12 @@ void mipi_dsih_dphy_enable_hs_clk(struct dsi_device *dsi, int enable)
 {
 	mipi_dsih_write_part(dsi, R_DSI_HOST_LPCLK_CTRL, enable, 0, 1);
 }
+
+void mipi_dsih_dphy_auto_clklane_ctrl(struct dsi_device *dsi, int enable)
+{
+	mipi_dsih_write_part(dsi, R_DSI_HOST_LPCLK_CTRL, enable, 1, 1);
+}
+
 void mipi_dsih_cmd_mode(struct dsi_device *dsi, int en)
 {
 	if ((!mipi_dsih_hal_gen_get_mode(dsi)) && en) {	/* disable video mode first */

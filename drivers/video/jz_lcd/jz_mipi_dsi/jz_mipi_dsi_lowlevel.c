@@ -8,6 +8,7 @@
 */
 
 #include <common.h>
+#include <asm/io.h>
 #include <jz_lcd/jz_dsim.h>
 #include "jz_mipi_dsi_regs.h"
 #include "jz_mipi_dsih_hal.h"
@@ -360,6 +361,7 @@ void jz_dsih_hal_tx_escape_division(struct dsi_device *dsi,
 			     8);
 }
 
+#if 0
 void jz_dsih_dphy_configure(struct dsi_device *dsi,
 			    unsigned char no_of_lanes, unsigned int output_freq)
 {
@@ -493,10 +495,57 @@ void jz_dsih_dphy_configure(struct dsi_device *dsi,
 	jz_dsih_dphy_reset(dsi, 1);
 	debug("configure master-phy is ok\n");
 }
+#endif
+
+struct dphy_pll_range {
+	unsigned int start_clk_sel;
+	unsigned int output_freq0;	/*start freq in same resolution*/
+	unsigned int output_freq1;	/*end freq in same resolution*/
+	unsigned int resolution;
+};
+
+struct dphy_pll_range dphy_pll_table[] = {
+	{0,   63750000,  93125000,   312500},
+	{95,  93750000,  186250000,  625000},
+	{244, 187500000, 372500000,  1250000},
+	{393, 375000000, 745000000,  2500000},
+	{542, 750000000, 2750000000UL, 5000000},
+};
+
+dsih_error_t jz_dsih_dphy_configure_x2000(struct dsi_device *dsi,
+				    unsigned char no_of_lanes,
+				    unsigned int output_freq)
+{
+	int i;
+	struct dphy_pll_range *pll;
+	unsigned int pll_clk_sel = 0xffffffff;
+	for(i = 0; i < ARRAY_SIZE(dphy_pll_table); i++) {
+		pll = &dphy_pll_table[i];
+		if(output_freq >= pll->output_freq0 && output_freq <= pll->output_freq1) {
+			pll_clk_sel = pll->start_clk_sel + (output_freq - pll->output_freq0) / pll->resolution;
+			break;
+		}
+	}
+	if(pll_clk_sel == 0xffffffff) {
+		printf("can not find appropriate pll freq set for dsi phy! output_freq: %d\n", output_freq);
+		return ERR_DSI_PHY_FREQ_OUT_OF_BOUND;
+	}
+
+	debug("before setting dsi phy: pll_clk_sel: %x\n", readl(dsi->dsi_phy->address + 0x64));
+	writel(pll_clk_sel, (unsigned int *)(dsi->dsi_phy->address + 0x64));		/* pll_clk_sel */
+	debug("after setting dsi phy: pll_clk_sel: %x, output_freq: %d\n", readl(dsi->dsi_phy->address + 0x64), output_freq);
+
+	return OK;
+}
 
 void jz_dsi_set_clock(struct dsi_device *dsi)
 {
-	jz_dsih_dphy_configure(dsi, dsi->video_config->no_of_lanes,
-			       dsi->video_config->byte_clock * 8);
+	jz_dsih_dphy_configure_x2000(dsi, dsi->video_config->no_of_lanes,
+			       dsi->video_config->byte_clock * 8 * 1000);
+	jz_dsih_dphy_stop_wait_time(dsi, 0x1C);
+	jz_dsih_dphy_clock_en(dsi, 1);
+	jz_dsih_dphy_shutdown(dsi, 1);
+	jz_dsih_dphy_reset(dsi, 1);
 	jz_dsih_hal_tx_escape_division(dsi, 7);
+	return OK;
 }

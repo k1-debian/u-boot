@@ -38,8 +38,6 @@
 
 vidinfo_t panel_info = { 720 , 1280, LCD_BPP, };
 extern struct jzfb_config_info lcd_config_info;
-struct lcd_ma0060_data lcd_ma0060_pdata;
-
 
 struct fb_videomode jzfb1_videomode = {
 	.name = "visionox_ma0060-lcd",
@@ -54,7 +52,6 @@ struct fb_videomode jzfb1_videomode = {
 	.vsync_len = 0,
 	.vmode = FB_VMODE_NONINTERLACED,
 	.flag = 0,
-	.pixclock = 18084,
 };
 
 struct jzfb_smart_config ma0060_cfg = {
@@ -99,7 +96,8 @@ struct video_config jz_dsi_video_config={
 	.receive_ack_packets = 0,
 	.is_18_loosely = 0,
 	.data_en_polarity = 1,
-	.byte_clock = 0
+	.byte_clock = 0,
+	.byte_clock_coef = MIPI_PHY_BYTE_CLK_COEF_MUL6_DIV5,
 };
 
 struct dsi_device jz_dsi = {
@@ -108,15 +106,6 @@ struct dsi_device jz_dsi = {
 	.data_lane = 2,
 	.bpp_info = 24,
 	.max_bps =2750,
-};
-
-struct lcd_ma0060_data lcd_ma0060_pdata = {
-	.gpio_lcd_vdd  = CONFIG_GPIO_LCD_VDD,
-	.gpio_lcd_rst = CONFIG_GPIO_LCD_RST,
-	.gpio_lcd_oled  = CONFIG_GPIO_LCD_OLED,
-	.gpio_lcd_pwm  = CONFIG_GPIO_LCD_PWM,
-	.gpio_lcd_swire = CONFIG_GPIO_LCD_SWIRE,
-	.gpio_lcd_bl = CONFIG_GPIO_LCD_BL,
 };
 
 static struct dsi_cmd_packet visionox_ma0060_720p_cmd_list1[] =
@@ -677,75 +666,15 @@ static struct dsi_cmd_packet visionox_ma0060_1080p_cmd_list2[] =
 
 void panel_pin_init(void)
 {
-	int ret = 0;
-	ret = gpio_request(lcd_ma0060_pdata.gpio_lcd_vdd,"lcd_vdd");
-	if(ret){
-	 	/*printf("cannot request gpoi lcd_vdd\n");*/
-	}
-	ret = gpio_request(lcd_ma0060_pdata.gpio_lcd_rst,"lcd_rst");
-	if(ret){
-		/*printf("cannot request gpoi lcd_rst\n");*/
-	}
-
-	ret = gpio_request(lcd_ma0060_pdata.gpio_lcd_oled,"lcd_oled");
-	if(ret){
-		/*printf("cannot request gpoi lcd_oled\n");*/
-	}
-
-	ret = gpio_request(lcd_ma0060_pdata.gpio_lcd_pwm,"lcd_pwm");
-	if(ret){
-		/*printf("cannot request gpoi lcd_pwm\n");*/
-	}
-
-	ret = gpio_request(lcd_ma0060_pdata.gpio_lcd_swire,"lcd_swire");
-	if(ret){
-		/*printf("cannot request gpoi lcd_swire\n");*/
-	}
-
-	ret = gpio_request(lcd_ma0060_pdata.gpio_lcd_bl,"lcd_bl");
-	if(ret){
-		/*printf("cannot request gpoi lcd_swire\n");*/
-	}
-
-	serial_puts("lcd_ma0060 panel display pin init\n");
-}
-
-void open_backlight(void)
-{
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_bl,1);
-	printf("bl = %d\n",lcd_ma0060_pdata.gpio_lcd_bl);
-
 }
 
 void panel_power_on(void)
 {
-
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_vdd,1);
-	gpio_direction_input(lcd_ma0060_pdata.gpio_lcd_swire);
-	gpio_direction_input(lcd_ma0060_pdata.gpio_lcd_oled);
-	mdelay(100);
-
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_rst,1);
-	mdelay(100);
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_rst,0);
-	mdelay(150);
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_rst,1);
-	mdelay(100);
-
-        serial_puts("lcd_ma0060 panel display on\n");
 }
 
 void panel_power_off(void)
 {
-
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_vdd,0);
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_rst,0);
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_oled,0);
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_pwm,0);
-	gpio_direction_output(lcd_ma0060_pdata.gpio_lcd_rst,0);
-	serial_puts("lcd_ma0060 panel display off\n");
 }
-
 
 void ma0060_sleep_in(struct dsi_device *dsi)
 {
@@ -811,6 +740,5 @@ void panel_init_sequence(struct dsi_device *dsi)
 	ma0060_display_on(dsi);
 	mdelay(80);
 }
-
 
 

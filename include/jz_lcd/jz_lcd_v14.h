@@ -18,6 +18,10 @@
 #include <common.h>
 #include <linux/types.h>
 
+#define __round_mask(x, y) ((__typeof__(x))((y)-1))
+#define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
+#define round_down(x, y) ((x) & ~__round_mask(x, y))
+
 #ifdef CONFIG_ONE_FRAME_BUFFERS
 #define MAX_DESC_NUM 1
 #endif
@@ -32,6 +36,19 @@
 
 #define PICOS2KHZ(a) (1000000000/(a))
 #define KHZ2PICOS(a) (1000000000/(a))
+#define FB_SYNC_HOR_HIGH_ACT    1	/* horizontal sync high active  */
+#define FB_SYNC_VERT_HIGH_ACT   2	/* vertical sync high active    */
+#define FB_SYNC_EXT		4	/* external sync        */
+#define FB_SYNC_COMP_HIGH_ACT   8	/* composite sync high active   */
+#define FB_SYNC_BROADCAST	16	/* broadcast video timings      */
+/* vtotal = 144d/288n/576i => PAL  */
+/* vtotal = 121d/242n/484i => NTSC */
+#define FB_SYNC_ON_GREEN	32	/* sync on green */
+
+#define FB_VMODE_NONINTERLACED  0	/* non interlaced */
+#define FB_VMODE_INTERLACED	1	/* interlaced       */
+#define FB_VMODE_DOUBLE		2	/* double scan */
+#define FB_VMODE_ODD_FLD_FIRST	4	/* interlaced: top line first */
 
 #define PIXEL_ALIGN 4
 #define DESC_ALIGN 8
@@ -84,6 +101,7 @@ enum jzfb_lcd_type {
         LCD_TYPE_TFT = 0,
         LCD_TYPE_SLCD =1,
 	LCD_TYPE_MIPI_SLCD =2,
+	LCD_TYPE_MIPI_TFT =3,
 };
 
 
@@ -259,6 +277,7 @@ struct jzfb_layerdesc {
 
 struct jzfb_lay_cfg {
 	unsigned int lay_en;
+	unsigned int tlb_en;
 	unsigned int lay_z_order;
 	unsigned int pic_width;
 	unsigned int pic_height;
@@ -344,6 +363,9 @@ enum tft_lcd_mode {
         TFT_LCD_MODE_PARALLEL_24B,
         TFT_LCD_MODE_SERIAL_RGB,
         TFT_LCD_MODE_SERIAL_RGBD,
+	TFT_LCD_MODE_PARALLEL_888,
+	TFT_LCD_MODE_PARALLEL_666,
+	TFT_LCD_MODE_PARALLEL_565,
 };
 
 enum jzfb_copy_type {
@@ -371,6 +393,7 @@ struct jzfb_tft_config {
         unsigned int pix_clk_inv:1;
         unsigned int de_dl:1;
         unsigned int sync_dl:1;
+        unsigned int vsync_dl:1;
         enum tft_lcd_color_even color_even;
         enum tft_lcd_color_odd color_odd;
         enum tft_lcd_mode mode;
@@ -417,6 +440,7 @@ struct jzfb_config_info {
 	struct jzfb_tft_config *tft_config;
 	struct jzfb_smart_config *smart_config;
 	int lcdbaseoff;		/* lcd register base offset from LCD_BASE */
+	int tlb_disable_ch;
 
 	int current_frm_desc;
 	enum jzfb_lcd_type lcd_type;	/* lcd type */

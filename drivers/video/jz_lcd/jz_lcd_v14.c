@@ -608,7 +608,6 @@ static int jzfb_desc_init(struct jzfb_config_info *info, int frm_num)
 		frm_num_ma = frm_num + 1;
 	}
 
-
 	for(i = frm_num_mi; i < frm_num_ma; i++) {
 		framedesc[i]->FrameNextCfgAddr = info->framedesc_phys[i];
 		framedesc[i]->FrameSize.b.width = mode->xres;
@@ -624,7 +623,7 @@ static int jzfb_desc_init(struct jzfb_config_info *info, int frm_num)
 		framedesc[i]->FrameCtrl.b.bit1_keep0 = 1;  writeback*/
 
 		framedesc[i]->FrameCtrl.b.stop = 0;
-		framedesc[i]->InterruptControl.d32 = DC_SOF_MSK;
+		framedesc[i]->InterruptControl.d32 = DC_SOS_MSK;
 	}
 
 	frm_size = mode->xres * mode->yres;
@@ -1096,6 +1095,15 @@ static void tft_timing_init(struct fb_videomode *modes) {
 
 void tft_cfg_init(struct jzfb_tft_config *tft_config) {
 	uint32_t tft_cfg;
+	uint32_t lcd_cgu;
+
+	lcd_cgu = *(volatile unsigned int *)(0xb0000064);
+	if(tft_config->pix_clk_inv) {
+		lcd_cgu |= (0x1 << 26);
+	} else {
+		lcd_cgu &= ~(0x1 << 26);
+	}
+	*(volatile unsigned int *)(0xb0000064) = lcd_cgu;
 
 	tft_cfg = fb_read(DC_TFT_CFG);
 	if(tft_config->pix_clk_inv) {
@@ -1114,6 +1122,11 @@ void tft_cfg_init(struct jzfb_tft_config *tft_config) {
 		tft_cfg |= DC_SYNC_DL;
 	} else {
 		tft_cfg &= ~DC_SYNC_DL;
+	}
+	if(tft_config->vsync_dl) {
+		tft_cfg |= DC_VSYNC_DL;
+	} else {
+		tft_cfg &= ~DC_VSYNC_DL;
 	}
 
 	tft_cfg &= ~DC_COLOR_EVEN_MASK;
@@ -1168,8 +1181,14 @@ void tft_cfg_init(struct jzfb_tft_config *tft_config) {
 
 	tft_cfg &= ~DC_MODE_MASK;
 	switch(tft_config->mode) {
-		case TFT_LCD_MODE_PARALLEL_24B:
-			tft_cfg |= DC_MODE_PARALLEL_24BIT;
+		case TFT_LCD_MODE_PARALLEL_888:
+			tft_cfg |= DC_MODE_PARALLEL_888;
+			break;
+		case TFT_LCD_MODE_PARALLEL_666:
+			tft_cfg |= DC_MODE_PARALLEL_666;
+			break;
+		case TFT_LCD_MODE_PARALLEL_565:
+			tft_cfg |= DC_MODE_PARALLEL_565;
 			break;
 		case TFT_LCD_MODE_SERIAL_RGB:
 			tft_cfg |= DC_MODE_SERIAL_8BIT_RGB;
@@ -1249,7 +1268,7 @@ void lcd_enable(void)
 {
 	if (lcd_enable_state == 0) {
 		jzfb_cmp_start();
-		/*jzfb_tft_start();   tft_lcd*/
+		/*jzfb_tft_start();*/
 	}
 
 	lcd_enable_state = 1;
@@ -1507,16 +1526,16 @@ static void disp_common_init(struct jzfb_config_info *info)
 		disp_com &= ~DC_DP_DITHER_DW_MASK;
 		disp_com |= info->dither.dither_red
 			     << DC_DP_DITHER_DW_RED_LBIT;
-		disp_com |= info->dither.dither_red
-			     << DC_DP_DITHER_DW_RED_HBIT;
+		/*disp_com |= info->dither.dither_red
+			     << DC_DP_DITHER_DW_RED_HBIT;*/
 		disp_com |= info->dither.dither_green
 			    << DC_DP_DITHER_DW_GREEN_LBIT;
-		disp_com |= info->dither.dither_green
-			    << DC_DP_DITHER_DW_GREEN_HBIT;
+		/*disp_com |= info->dither.dither_green
+			    << DC_DP_DITHER_DW_GREEN_HBIT;*/
 		disp_com |= info->dither.dither_blue
 			    << DC_DP_DITHER_DW_BLUE_LBIT;
-		disp_com |= info->dither.dither_blue
-			    << DC_DP_DITHER_DW_BLUE_HBIT;
+		/*disp_com |= info->dither.dither_blue
+			    << DC_DP_DITHER_DW_BLUE_HBIT;*/
 	} else {
 		disp_com &= ~DC_DP_DITHER_EN;
 	}
@@ -1666,6 +1685,43 @@ static int slcd_pixel_refresh_times(struct jzfb_config_info *info)
 	return 1;
 }
 
+static int calc_refresh_ratio(struct jzfb_config_info *info)
+{
+	struct jzfb_smart_config *smart_config;
+	smart_config = info->smart_config;
+
+	switch(smart_config->smart_type){
+	case SMART_LCD_TYPE_8080:
+	case SMART_LCD_TYPE_6800:
+		break;
+	case SMART_LCD_TYPE_SPI_3:
+		return 9;
+	case SMART_LCD_TYPE_SPI_4:
+		return 8;
+	default:
+		printf("%s %d err!\n",__func__,__LINE__);
+		break;
+	}
+
+	switch(smart_config->pix_fmt) {
+	case SMART_LCD_FORMAT_888:
+		if(smart_config->dwidth == SMART_LCD_DWIDTH_8_BIT)
+			return 3;
+		if(smart_config->dwidth == SMART_LCD_DWIDTH_24_BIT)
+			return 1;
+	case SMART_LCD_FORMAT_565:
+		if(smart_config->dwidth == SMART_LCD_DWIDTH_8_BIT)
+			return 2;
+		if(smart_config->dwidth == SMART_LCD_DWIDTH_16_BIT)
+			return 1;
+	default:
+		printf("%s %d err!\n",__func__,__LINE__);
+		break;
+	}
+
+	return 1;
+}
+
 static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 {
 	struct fb_videomode *mode;
@@ -1674,6 +1730,7 @@ static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 	uint16_t ht, vt;
 	struct fb_var_screeninfo *var = &info->var;
 	unsigned long rate;
+	unsigned int refresh_ratio = 1;
 
 	mode = info->modes;
 	if (mode == NULL) {
@@ -1688,23 +1745,31 @@ static void refresh_pixclock_auto_adapt(struct jzfb_config_info *info)
 	vde = vds + mode->yres;
 	vt = vde + mode->lower_margin;
 
-	if (mode->refresh==0)
-		mode->refresh = 60;
-
-	if(mode->pixclock){
-		rate = PICOS2KHZ(mode->pixclock) * 1000;
-		mode->refresh = rate / vt / ht;
-	}else if(mode->refresh){
-		if (info->lcd_type == LCD_TYPE_SLCD) {
-			rate = rate * 5 / 2;
-			rate *= slcd_pixel_refresh_times(info);
-		}
-		mode->pixclock = KHZ2PICOS(rate / 1000);
-		var->pixclock = mode->pixclock;
-	}else{
-		printf("%s error:lcd important config info is absenced, mode->pixclock=%d\n",__func__, mode->pixclock);
+	if (info->lcd_type == LCD_TYPE_SLCD) {
+		refresh_ratio = calc_refresh_ratio(info);
 	}
 
+	hds = mode->hsync_len + mode->left_margin;
+	hde = hds + mode->xres;
+	ht = hde + mode->right_margin;
+
+	vds = mode->vsync_len + mode->upper_margin;
+	vde = vds + mode->yres;
+	vt = vde + mode->lower_margin;
+
+	if(mode->refresh){
+		rate = mode->refresh * vt * ht * refresh_ratio;
+
+		mode->pixclock = KHZ2PICOS(round_up(rate, 1000)/1000);
+		var->pixclock = mode->pixclock;
+	}else if(mode->pixclock){
+		rate = PICOS2KHZ(mode->pixclock) * 1000;
+		mode->refresh = rate / vt / ht / refresh_ratio;
+	}else{
+		printf("%s error:lcd important config info is absenced\n",__func__);
+	}
+
+	debug("mode->refresh: %d, mode->pixclock: %d, rate: %ld, modex->pixclock: %d\n", mode->refresh, mode->pixclock, rate, mode->pixclock);
 }
 
 static int jzfb_set_fix_par(struct jzfb_config_info *info)
@@ -1715,7 +1780,7 @@ static int jzfb_set_fix_par(struct jzfb_config_info *info)
 
 	common_cfg_init();
 
-	fb_write(DC_CLR_ST, 0x80FFFFFE);
+	fb_write(DC_CLR_ST, 0x01FFFFFE);
 
 	disp_com = fb_read(DC_DISP_COM);
 	if (info->lcd_type == LCD_TYPE_SLCD) {
@@ -1724,12 +1789,77 @@ static int jzfb_set_fix_par(struct jzfb_config_info *info)
 	}else if(info->lcd_type == LCD_TYPE_MIPI_SLCD){
 			fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_MIPI_SLCD);
 			jzfb_slcd_set_par(info);
+	}else if(info->lcd_type == LCD_TYPE_MIPI_TFT){
+			fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_TFT);
+			jzfb_tft_set_par(info);
 	} else {
 		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_TFT);
 			jzfb_tft_set_par(info);
 	}
 
 	return 0;
+}
+
+static void dctrl_tlb_invalidate_ch(struct jzfb_config_info *info , int ch)
+{
+	int val;
+	val = ch & 0xF;
+	/*Invalid for ch layers.*/
+	fb_write(DC_TLB_TLBC, val);
+}
+
+static void dctrl_tlb_enable(struct jzfb_config_info *info)
+{
+	struct jzfb_frm_mode *frm_mode;
+	struct jzfb_frm_cfg *frm_cfg;
+	struct jzfb_lay_cfg *lay_cfg;
+	unsigned int glbc, val;
+	int i;
+
+	frm_mode = &info->current_frm_mode;
+	frm_cfg = &frm_mode->frm_cfg;
+	lay_cfg = frm_cfg->lay_cfg;
+
+	val = fb_read(DC_TLB_GLBC);
+	glbc = val;
+
+	 for(i = 0; i < MAX_LAYER_NUM; i++) {
+		 if(lay_cfg[i].lay_en) {
+			 if(lay_cfg[i].tlb_en != (glbc>>i & 0x1)) {
+				 glbc = lay_cfg[i].tlb_en ?
+					 (glbc | (0x1 << i)) : (glbc & ~(0x1 << i));
+			 }
+		} else {
+			glbc &= ~(0x1 << i);
+		}
+	}
+	if(val != glbc) {
+		dctrl_tlb_invalidate_ch(info, glbc);
+		if(val > glbc) {
+			info->tlb_disable_ch = glbc;
+		} else {
+			fb_write(DC_TLB_GLBC, glbc);
+		}
+	}
+
+}
+
+static void dctrl_tlb_configure(struct jzfb_config_info *info)
+{
+	unsigned int tlbv = 0;
+
+	tlbv |= (1 << DC_CNM_LBIT);
+	tlbv |= (1 << DC_GCN_LBIT);
+
+	fb_write(DC_TLB_TLBV, tlbv);
+}
+
+static void dctrl_tlb_disable(struct jzfb_config_info *info)
+{
+	/*Invalid and disable for all layers.*/
+	fb_write(DC_TLB_TLBC, DC_CH0_INVLD | DC_CH1_INVLD |
+			DC_CH2_INVLD | DC_CH3_INVLD);
+	fb_write(DC_TLB_GLBC, 0);
 }
 
 static int jzfb_set_par(struct jzfb_config_info *info)
@@ -1739,6 +1869,7 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 	uint32_t colormode;
 	int ret;
 	int i;
+	unsigned int intc = 0;
 
 	jzfb_set_fix_par(info);
 
@@ -1768,16 +1899,15 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 		return ret;
 	}
 
-	if(lcd_config_info.lcd_type == LCD_TYPE_MIPI_SLCD || LCD_TYPE_TFT) {
+	if(lcd_config_info.lcd_type == LCD_TYPE_MIPI_SLCD || LCD_TYPE_TFT || LCD_TYPE_MIPI_TFT) {
 		fb_write(DC_FRM_CFG_ADDR, info->framedesc_phys[info->current_frm_desc]);
 	}
 
 #ifdef CONFIG_JZ_MIPI_DSI
-	mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG,0x1); //te
-	mipi_dsih_dphy_enable_hs_clk(dsi, 1);
-	mipi_dsih_hal_gen_set_mode(dsi, 1);
-	mipi_dsih_hal_dpi_color_coding(dsi,dsi->video_config->color_coding);
+	jz_dsi_mode_cfg(dsi,0);
 #endif
+	intc = DC_EOD_MSK | DC_SDA_MSK | DC_UOT_MSK | DC_SOC_MSK | DC_OOW_MSK | DC_EOW_MSK | DC_SOS_MSK | DC_STOP_SRD_ACK;
+	fb_write(DC_INTC,intc);
 
 	return 0;
 }
@@ -1805,7 +1935,7 @@ void lcd_ctrl_init(void *lcd_base)
 		pixel_clock_rate *= 2;
 	}
 
-	printf("pixel_clock = %d\n",pixel_clock_rate);
+	debug("pixel_clock = %d\n",pixel_clock_rate);
 	clk_set_rate(LCD, pixel_clock_rate);
 
 	/*lcd_close_backlight();*/
@@ -1824,7 +1954,6 @@ void lcd_ctrl_init(void *lcd_base)
 #endif
 
 	panel_power_on();
-	open_backlight();
 
 #ifdef CONFIG_JZ_MIPI_DSI
 	dsi->bpp_info = lcd_config_info.bpp;
@@ -1832,8 +1961,6 @@ void lcd_ctrl_init(void *lcd_base)
 	panel_init_sequence(dsi);
 #endif
 	jzfb_set_par(&lcd_config_info);
-
-	flush_cache_all();
 
 	return;
 }

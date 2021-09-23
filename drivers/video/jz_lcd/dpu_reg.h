@@ -175,6 +175,8 @@
 #define DC_BDMA_END			BIT(9)
 /* TFT jump into under-run mode. */
 #define DC_TFT_UNDR			BIT(8)
+/* writeback channel is general stop */
+#define DC_STOP_SRD_ACK         BIT(7)
 /* Display channel general stop */
 #define DC_STOP_DISP_ACK		BIT(6)
 /*Write back channel is working.*/
@@ -219,6 +221,11 @@
 #define DC_EOC_MSK			BIT(23)
 /* mask of DISP_END */
 #define DC_EOD_MSK			BIT(17)
+/* mask of WDMA_OVER */
+#define DC_OOW_MSK                      BIT(16)
+/* mask of WDMA_END */
+#define DC_EOW_MSK                      BIT(15)
+#define DC_SOC_MSK                      BIT(14)
 /* mask of BDMA1_END */
 #define DC_EOB1_MSK			BIT(11)
 /* mask of BDMA0_END */
@@ -230,9 +237,9 @@
 /* mask of STOP_DISP_ACK */
 #define DC_SDA_MSK			BIT(6)
 /* mask of FRM_START. */
-#define DC_SOF_MSK			BIT(2)
+#define DC_SOS_MSK			BIT(2)
 /* mask of FRM_END */
-#define DC_EOF_MSK			BIT(1)
+#define DC_EOS_MSK			BIT(1)
 
 /* DC interrupt flag(DC_INT_FLAG) */
 
@@ -327,6 +334,117 @@
 #define DC_PCFG2_HBIT			(26)
 #define DC_PCFG2_MASK	       \
 	GENMASK(DC_PCFG2_HBIT, DC_PCFG2_LBIT)
+
+/* TLB enable */
+#define DC_TLBE_LBIT			(0)
+#define DC_TLBE_HBIT			(3)
+#define DC_TLBE_MASK        \
+	GENMASK(DC_TLBE_HBIT, DC_TLBE_LBIT)
+/* TLB channel 0 enable */
+#define DC_CH0_TLBE 			BIT(0)
+/* TLB channel 1 enable */
+#define DC_CH1_TLBE 			BIT(1)
+/* TLB channel 2 enable */
+#define DC_CH2_TLBE 			BIT(2)
+/* TLB channel 3 enable */
+#define DC_CH3_TLBE 			BIT(3)
+
+/* Interrupt enable */
+#define DC_INTE_LBIT			(4)
+#define DC_INTE_HBIT			(7)
+#define DC_INTE_MASK        \
+	GENMASK(DC_INTE_HBIT, DC_INTE_LBIT)
+/* TLB channel 0 interrupt enable */
+#define DC_CH0_INTE			BIT(4)
+/* TLB channel 1 interrupt enable */
+#define DC_CH1_INTE			BIT(5)
+/* TLB channel 2 interrupt enable */
+#define DC_CH2_INTE			BIT(6)
+/* TLB channel 3 interrupt enable */
+#define DC_CH3_INTE			BIT(7)
+
+/* TLB fetch mode, for STB miss */
+#define DC_FMODE_LBIT			(8)
+#define DC_FMODE_HBIT			(11)
+#define DC_FMODE_MASK        \
+	GENMASK(DC_FMODE_HBIT, DC_FMODE_LBIT)
+#define DC_CH0_FMODE			BIT(8)
+#define DC_CH1_FMODE			BIT(9)
+#define DC_CH2_FMODE			BIT(10)
+#define DC_CH3_FMODE			BIT(11)
+
+/* TLB table address(GLBA) bit field define */
+
+/* TLB table address,Its only used and must \
+ *  be initialized when GLBC.TLBEn was set */
+#define DC_TLBA_LBIT			(12)
+#define DC_TLBA_HBIT			(31)
+#define DC_TLBA_MASK        \
+	GENMASK(DC_TLBA_HBIT, DC_TLBA_LBIT)
+
+/* TLB control Trigger(TLBC) bit field define */
+
+/*  When TLB table entry un-usable case occurs, SW set this bit to \
+ *  inform to retry reading the TLB table entry again.*/
+#define DC_RETRY_LBIT			(4)
+#define DC_RETRY_HBIT			(7)
+#define DC_RETRY_MASK        \
+	GENMASK(DC_RETRY_HBIT, DC_RETRY_LBIT)
+#define DC_CH0_RETRY                    BIT(4)
+#define DC_CH1_RETRY		        BIT(5)
+#define DC_CH2_RETRY                    BIT(6)
+#define DC_CH3_RETRY                    BIT(7)
+
+/*  Write 1 to invalidate all TLB caches. */
+#define DC_INVLD_LBIT	                (0)
+#define DC_INVLD_HBIT		        (3)
+#define DC_INVLD_MASK        \
+	GENMASK(DC_INVLD_HBIT, DC_INVLD_LBIT)
+#define DC_CH0_INVLD         	        BIT(0)
+#define DC_CH1_INVLD		        BIT(1)
+#define DC_CH2_INVLD                    BIT(2)
+#define DC_CH3_INVLD		  	BIT(3)
+#define DC_ALL_INVLD		  	(0xF)
+
+/* TLB VPNX Status(VPNX) bit field define */
+
+/* When working in TLB enable case, if the relative TLB table
+ * entry in the external DDR is un-useable, VPU will record its
+ * virtual address bit31:12 into VPN. SW can read-out VPN for
+ * TLB table entry,s rebuilding.*/
+#define	DC_VPNX_LBIT			(12)
+#define DC_VPNX_HBIT			(31)
+#define DC_VPNX_MASK		\
+	GENMASK(DC_VPNX_HBIT, DC_VPNX_LBIT)
+
+/* TLB table entry verification(TLBV) bit field define */
+
+/* Check bit ignored(ignore the vld bit for PEntry, SEntry in memory*/
+#define DC_RCI				BIT(31)
+/* Check number mask */
+#define DC_CNM_LBIT	                (16)
+#define DC_CNM_HBIT                     (27)
+#define DC_CNM_MASK		\
+	GENMASK(DC_CNM_HBIT, DC_CNM_LBIT)
+/* Golden Check number,
+ * VPU will check its secondary table entry to judge whether it is valid.
+ * If (GCN & CNM) == (TLB entry data readed by TLB [11:0] &CNM)
+ * indicates current entry is valid, otherwise it is unusable.*/
+#define DC_GCN_LBIT                     (0)
+#define DC_GCN_HBIT                     (11)
+#define DC_GCN_MASK          \
+	GENMASK(DC_GCN_HBIT, DC_GCN_LBIT)
+
+/* SCH status(STAT) bit field define */
+
+/* CH3 TLB error occurs. Write 0 to cleared */
+#define DC_CH3_TLB_ERR			BIT(3)
+/* CH2 TLB error occurs. Write 0 to cleared */
+#define DC_CH2_TLB_ERR			BIT(2)
+/* CH1 TLB error occurs. Write 0 to cleared */
+#define DC_CH1_TLB_ERR			BIT(1)
+/* CH0 TLB error occurs. Write 0 to cleared */
+#define DC_CH0_TLB_ERR			BIT(0)
 
 /* CscMultYRv */
 
@@ -506,9 +624,10 @@
 #define	DC_DE_DL			BIT(9)
 /* Default level of HSYNC and VSYNC(invalid level) */
 #define DC_SYNC_DL			BIT(8)
+#define DC_VSYNC_DL			BIT(7)
 /* Output color mode of even lines(2,4,6...) */
-#define DC_COLOR_EVEN_LBIT		(5)
-#define DC_COLOR_EVEN_HBIT		(7)
+#define DC_COLOR_EVEN_LBIT		(19)
+#define DC_COLOR_EVEN_HBIT		(21)
 #define DC_COLOR_EVEN_MASK        \
 	GENMASK(DC_COLOR_EVEN_HBIT, DC_COLOR_EVEN_LBIT)
 #define DC_EVEN_RGB             	(0b000) << DC_COLOR_EVEN_LBIT
@@ -518,8 +637,8 @@
 #define DC_EVEN_GBR             	(0b100) << DC_COLOR_EVEN_LBIT
 #define DC_EVEN_GRB             	(0b101) << DC_COLOR_EVEN_LBIT
 /* Output color mode of odd lines(1, 3, 5...) */
-#define DC_COLOR_ODD_LBIT		(2)
-#define DC_COLOR_ODD_HBIT		(4)
+#define DC_COLOR_ODD_LBIT		(16)
+#define DC_COLOR_ODD_HBIT		(18)
 #define DC_COLOR_ODD_MASK          \
 	GENMASK(DC_COLOR_ODD_HBIT, DC_COLOR_ODD_LBIT)
 #define DC_ODD_RGB			(0b000) << DC_COLOR_ODD_LBIT
@@ -532,12 +651,14 @@
  * 10: 8bits serial mode without dummy(RGB)
  * 11: 8bits serial mode with dummy(RGBD)*/
 #define DC_MODE_LBIT			(0)
-#define DC_MODE_HBIT		        (1)
+#define DC_MODE_HBIT		        (2)
 #define DC_MODE_MASK               \
 	GENMASK(DC_MODE_HBIT, DC_MODE_LBIT)
-#define DC_MODE_PARALLEL_24BIT		(0b00) << DC_MODE_LBIT
-#define DC_MODE_SERIAL_8BIT_RGB	        (0b10) << DC_MODE_LBIT
-#define DC_MODE_SERIAL_8BIT_RGBD	(0b11) << DC_MODE_LBIT
+#define DC_MODE_PARALLEL_888		(0b000) << DC_MODE_LBIT
+#define DC_MODE_PARALLEL_666		(0b001) << DC_MODE_LBIT
+#define DC_MODE_PARALLEL_565		(0b010) << DC_MODE_LBIT
+#define DC_MODE_SERIAL_8BIT_RGB	        (0b100) << DC_MODE_LBIT
+#define DC_MODE_SERIAL_8BIT_RGBD	(0b101) << DC_MODE_LBIT
 
 /* STATUS(TFT_ST) bit field define */
 

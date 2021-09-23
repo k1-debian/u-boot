@@ -65,6 +65,9 @@ struct dsi_config {
 	int color_mode_polarity;
 	int shut_down_polarity;
 	int auto_clklane_ctrl;
+	int te_gpio;
+	int te_irq_level;
+	int te_mipi_en;
 };
 
 typedef enum {
@@ -108,12 +111,27 @@ typedef enum {
 	COLOR_CODE_24BIT
 } dsih_color_coding_t;
 
+typedef enum {
+	MIPI_PHY_BYTE_CLK_COEF_MUL1 = 0,
+	MIPI_PHY_BYTE_CLK_COEF_MUL3_DIV2 = 1,
+	MIPI_PHY_BYTE_CLK_COEF_MUL4_DIV3 = 2,
+	MIPI_PHY_BYTE_CLK_COEF_MUL5_DIV4 = 3,
+	MIPI_PHY_BYTE_CLK_COEF_MUL6_DIV5 = 4,
+	MIPI_PHY_BYTE_CLK_COEF_MUL2,
+	MIPI_PHY_BYTE_CLK_COEF_MUL3,
+	MIPI_PHY_BYTE_CLK_COEF_MUL4,
+	MIPI_PHY_BYTE_CLK_COEF_MUL5_DIV2,
+	MIPI_PHY_BYTE_CLK_COEF_MUL7_DIV2,
+	MIPI_PHY_BYTE_CLK_COEF_MUL9_DIV2,
+} byte_clock_coef_t;
+
 struct video_config {
 	unsigned char no_of_lanes;
 	unsigned char virtual_channel;
 	dsih_video_mode_t video_mode;
 	int receive_ack_packets;
 	unsigned int byte_clock;
+	byte_clock_coef_t byte_clock_coef;
 	unsigned int pixel_clock;
 	dsih_color_coding_t color_coding;
 	int is_18_loosely;

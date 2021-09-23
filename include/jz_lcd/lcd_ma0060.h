@@ -24,17 +24,6 @@
 #define _LCD_MA0060_H__
 #include <jz_lcd/jz_dsim.h>
 
-
-struct lcd_ma0060_data {
-	unsigned gpio_lcd_vdd;
-	unsigned gpio_lcd_rst;
-	unsigned gpio_lcd_oled;
-	unsigned gpio_lcd_pwm;
-	unsigned gpio_lcd_swire;
-	unsigned gpio_lcd_bl;
-};
-
-extern struct lcd_ma0060_data lcd_ma0060_pdata;
 extern void panel_pin_init(void);
 extern void open_backlight(void);
 extern void panel_power_on(void);
