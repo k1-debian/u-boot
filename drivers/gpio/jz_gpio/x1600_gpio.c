@@ -42,4 +42,6 @@ static struct jz_gpio_func_def gpio_func[] = {
 	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x1 << 31},
 #endif
 #endif
+#if defined(CONFIG_HALLEY6_MAC_POWER_EN)
+	{ .port = GPIO_PORT_B, .func = GPIO_OUTPUT1, .pins = 0x1 << 30},
 };
