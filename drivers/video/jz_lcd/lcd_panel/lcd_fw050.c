@@ -26,7 +26,6 @@
 #include <linux/list.h>
 #include <linux/fb.h>
 #include <asm/types.h>
-#include <config.h>
 #include <asm/arch/tcu.h>
 #include <asm/arch/gpio.h>
 #include <regulator.h>
