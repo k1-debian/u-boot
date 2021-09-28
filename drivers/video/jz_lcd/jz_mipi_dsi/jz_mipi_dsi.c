@@ -207,10 +207,17 @@ void jz_dsi_phy_open(struct dsi_device *dsi)
 	debug("entry %s()\n", __func__);
 	jz_dsih_dphy_reset(dsi, 0);
 	jz_dsih_dphy_stop_wait_time(dsi, 0x1c);	/* 0x1c: */
+
+	if (video_config->no_of_lanes > 4 || video_config->no_of_lanes < 1)
+			return ERR_DSI_OUT_OF_BOUND;
 	jz_dsih_dphy_no_of_lanes(dsi, video_config->no_of_lanes);
+
 	jz_dsih_dphy_clock_en(dsi, 1);
 	jz_dsih_dphy_shutdown(dsi, 1);
 	jz_dsih_dphy_reset(dsi, 1);
+
+	dsi->dsi_phy->status = INITIALIZED;
+	return OK;
 }
 
 void set_base_dir_tx(struct dsi_device *dsi, void *param)
@@ -299,7 +306,8 @@ void jz_dsi_init(struct dsi_device *dsi)
 	dsi->video_config->v_total_lines = jzfb1_videomode.yres + jzfb1_videomode.upper_margin + jzfb1_videomode.lower_margin + jzfb1_videomode.vsync_len;
 
 	if(!dsi->video_config->byte_clock) {
-	dsi->video_config->byte_clock = dsi->video_config->h_total_pixels * dsi->video_config->v_total_lines * jzfb1_videomode.refresh / 1000 * dsi->bpp_info / dsi->video_config->no_of_lanes / 8;
+	dsi->video_config->byte_clock = dsi->video_config->h_total_pixels * dsi->video_config->v_total_lines * jzfb1_videomode.refresh * dsi->bpp_info / dsi->video_config->no_of_lanes /8 /1000 ;
+	dsi->real_mipiclk =  dsi->video_config->h_total_pixels * dsi->video_config->v_total_lines * jzfb1_videomode.refresh * dsi->bpp_info / dsi->video_config->no_of_lanes / 2;
 	/*dsi->video_config->byte_clock = dsi->video_config->byte_clock + dsi->video_config->byte_clock / 2;*/
 		switch(dsi->video_config->byte_clock_coef) {
 		case MIPI_PHY_BYTE_CLK_COEF_MUL1:
@@ -343,12 +351,8 @@ void jz_dsi_init(struct dsi_device *dsi)
 		dsi->video_config->byte_clock = dsi->max_bps * 1000 / 8;
 	}
 
-	debug("GATE0: 0x10000020 = %x\n", *(volatile unsigned int *)0xb0000020);
-	*(volatile unsigned int *)0xb0000020 &= ~(1<<26); //open gate for clk
-	debug("GATE0: 0x10000020 = %x\n", *(volatile unsigned int *)0xb0000020);
+	*(volatile unsigned int *)0xb0000028 &= ~(1<<7); //open gate for clk
 
-	/*select mipi dsi */
-	*((volatile unsigned int *)0xb30500a4) = 1 << 7;	//MCTRL
 	jz_dsi_phy_open(dsi);
 
 	mipi_dsih_write_word(dsi, R_DSI_HOST_CMD_MODE_CFG,
@@ -370,6 +374,7 @@ void jz_dsi_init(struct dsi_device *dsi)
 	else {
 		st_mask = 0x15;
 	}
+
 	/*checkout phy clk lock and  clklane, datalane stopstate  */
 	while ((mipi_dsih_read_word(dsi, R_DSI_HOST_PHY_STATUS) & st_mask) !=
 	       st_mask && retry) {

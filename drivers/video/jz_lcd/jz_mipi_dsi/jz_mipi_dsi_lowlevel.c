@@ -538,10 +538,116 @@ dsih_error_t jz_dsih_dphy_configure_x2000(struct dsi_device *dsi,
 	return OK;
 }
 
+
+static unsigned char calc_x2500_dphy_fbdiv(struct dsi_device* dsi)
+{
+	unsigned int real_mipi_clk = 0;
+	real_mipi_clk = dsi->real_mipiclk / 1000000;	//  hz --- Mhz
+	unsigned char fbdiv = 0;
+	debug("%s   real_mipiclk = %d >>>>>>>>>>>>>>>>>>>>>>>>>>> \n",__func__,real_mipi_clk);
+	fbdiv =  (real_mipi_clk + 20) * 4 / 12 + 1;
+	return (fbdiv < 70)?70 : fbdiv;
+}
+
+static void init_dsi_phy_x2500(struct dsi_device *dsi)
+{
+	unsigned int temp = 0xffffffff;
+
+	//power on ,reset, set pin_enable_ck/0/1/* of lanes to be used to high level and others to low
+	debug("%s,%d  step0 do nothing now.\n", __func__, __LINE__);
+
+	//step1
+	temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x0C);
+	temp &= ~0xff;
+	temp |= 0x01;	//prediv
+	writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x0C));
+	if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x0C) & 0xff) != 0x01) {
+		printf("%s,%d reg write error. Step1\n", __func__, __LINE__);
+	}
+	debug("reg:0x03, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x0C));
+	//step2
+	temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x10);
+	temp &= ~0xff;
+	temp |= calc_x2500_dphy_fbdiv(dsi);	//fbdiv
+	writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x10));
+	debug("reg:0x04, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x10));
+	mdelay(20);
+	//step3
+	temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x04);
+	temp &= ~0xff;
+	temp |= 0xe4;		//PLL LDO
+	writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x04));
+	if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x04) & 0xff) != 0xe4) {
+		printf("%s,%d reg write error. Step3\n", __func__, __LINE__);
+	}
+	debug("reg:0x01, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x04));
+	//step4
+	if (dsi->video_config->no_of_lanes == 4) {
+		temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x00);
+		temp &= ~0xff;
+		temp |= 0x7d;     //4lane
+		writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x00));
+		if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x00) & 0xff) != 0x7d) {
+			printf("%s,%d reg write error. Step4\n", __func__, __LINE__);
+		}
+		/* printf("%s>>>>>>>>>>>>>>>>>>>>>>>> config as 4 lane \n",__func__); */
+	}
+	else if (dsi->video_config->no_of_lanes == 2){
+		temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x00);
+		temp &= ~0xff;
+		temp |= 0x4d;     //2lane
+		writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x00));
+		if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x00) & 0xff) != 0x4d) {
+			printf("%s,%d reg write error. Step4\n", __func__, __LINE__);
+		}
+	}
+	debug("reg:0x00, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x00));
+	//step5
+	temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x04);
+	temp &= ~0xff;
+	temp |= 0xe0;
+	writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x04));
+	if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x04) & 0xff) != 0xe0) {
+		printf("%s,%d reg write error. Step5\n", __func__, __LINE__);
+	}
+	debug("reg:0x01, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x04));
+
+	//step6
+	mdelay(20);   //at lease 20ms, shortening need validation
+
+	//step7
+	temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x80);
+	temp &= ~0xff;
+	temp |= 0x1e;
+	writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x80));
+	if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x80) & 0xff) != 0x1e) {
+		printf("%s,%d reg write error. Step7\n", __func__, __LINE__);
+	}
+	debug("reg:0x20, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x80));
+	mdelay(5);
+	//step8
+	temp = *(volatile unsigned int*)(dsi->dsi_phy->address+0x80);
+	temp &= ~0xff;
+	temp |= 0x1f;
+	writel(temp, (volatile unsigned int*)(dsi->dsi_phy->address+0x80));
+	if ((*(volatile unsigned int*)(dsi->dsi_phy->address+0x80) & 0xff) != 0x1f) {
+		printf("%s,%d reg write error. Step8\n", __func__, __LINE__);
+	}
+	debug("reg:0x20, value:0x%x\n", *(volatile unsigned int*)(dsi->dsi_phy->address+0x80));
+	//step9
+	mdelay(10);
+
+	debug("%s,%d  dsi phy init over now...\n", __func__, __LINE__);
+}
+
 void jz_dsi_set_clock(struct dsi_device *dsi)
 {
+#ifdef CONFIG_X2000_V12 || CONFIG_M300
 	jz_dsih_dphy_configure_x2000(dsi, dsi->video_config->no_of_lanes,
 			       dsi->video_config->byte_clock * 8 * 1000);
+#else
+	init_dsi_phy_x2500(dsi);
+#endif
 	jz_dsih_dphy_stop_wait_time(dsi, 0x1C);
 	jz_dsih_dphy_clock_en(dsi, 1);
 	jz_dsih_dphy_shutdown(dsi, 1);

@@ -26,6 +26,10 @@
  * Define the module base addresses
  */
 
+/*DSI Base*/
+#define DSI_BASE (0xb0003000)
+#define DSI_PHY_BASE (0xb0004000)
+
 /* AHB0 BUS Devices Base */
 #define G_OST_BASE	0xb2000000
 #define N_OST_BASE	0xb2100000

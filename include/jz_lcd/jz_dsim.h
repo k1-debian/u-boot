@@ -159,11 +159,13 @@ struct dsi_device {
 	unsigned int data_lane;
 	unsigned int bpp_info;
 	unsigned int max_bps;
+	unsigned int real_mipiclk;
 
 };
 
 struct dsi_phy {
 	unsigned int reference_freq;
+	dsih_state_t status;
 	unsigned int address;
 	void (*bsp_pre_config) (struct dsi_device * dsi, void *param);
 

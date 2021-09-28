@@ -1268,7 +1268,6 @@ void lcd_enable(void)
 {
 	if (lcd_enable_state == 0) {
 		jzfb_cmp_start();
-		/*jzfb_tft_start();*/
 	}
 
 	lcd_enable_state = 1;
@@ -1784,17 +1783,17 @@ static int jzfb_set_fix_par(struct jzfb_config_info *info)
 
 	disp_com = fb_read(DC_DISP_COM);
 	if (info->lcd_type == LCD_TYPE_SLCD) {
-	//		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_SLCD);
-	//		jzfb_slcd_set_par(info);
+		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_SLCD);
+		jzfb_slcd_set_par(info);
 	}else if(info->lcd_type == LCD_TYPE_MIPI_SLCD){
-			fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_MIPI_SLCD);
-			jzfb_slcd_set_par(info);
+		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_MIPI_SLCD);
+		jzfb_slcd_set_par(info);
 	}else if(info->lcd_type == LCD_TYPE_MIPI_TFT){
-			fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_TFT);
-			jzfb_tft_set_par(info);
+		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_TFT);
+		jzfb_tft_set_par(info);
 	} else {
 		fb_write(DC_DISP_COM, disp_com | DC_DISP_COM_TFT);
-			jzfb_tft_set_par(info);
+		jzfb_tft_set_par(info);
 	}
 
 	return 0;
@@ -1904,7 +1903,15 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 	}
 
 #ifdef CONFIG_JZ_MIPI_DSI
-	jz_dsi_mode_cfg(dsi,0);
+	switch (lcd_config_info.lcd_type) {
+		case LCD_TYPE_MIPI_TFT:
+			jz_dsi_mode_cfg(dsi,1);
+			break;
+		case LCD_TYPE_MIPI_SLCD:
+			jz_dsi_mode_cfg(dsi,0);
+			break;
+	}
+
 #endif
 	intc = DC_EOD_MSK | DC_SDA_MSK | DC_UOT_MSK | DC_SOC_MSK | DC_OOW_MSK | DC_EOW_MSK | DC_SOS_MSK | DC_STOP_SRD_ACK;
 	fb_write(DC_INTC,intc);
@@ -1935,7 +1942,7 @@ void lcd_ctrl_init(void *lcd_base)
 		pixel_clock_rate *= 2;
 	}
 
-	debug("pixel_clock = %d\n",pixel_clock_rate);
+	debug("pixel_clock_rate = %d\n",pixel_clock_rate);
 	clk_set_rate(LCD, pixel_clock_rate);
 
 	/*lcd_close_backlight();*/
@@ -1948,10 +1955,6 @@ void lcd_ctrl_init(void *lcd_base)
 #endif
 
 	jz_lcd_init_mem(lcd_base, &lcd_config_info);
-
-#ifdef  CONFIG_REGULATOR
-	board_set_lcd_power_on();
-#endif
 
 	panel_power_on();
 
