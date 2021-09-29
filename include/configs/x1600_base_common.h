@@ -461,7 +461,7 @@
  */
 /* #define CONFIG_SPL_AUTO_PROBE_ARGS_MEM */
 #ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
-#define ARGS_MEM_RESERVED "[this string is reserved for probe mem size. NOTE: Don't cut.]"
+#define ARGS_MEM_RESERVED "[mem-start------------------------------------------------------------mem-end]"
 #else
 #define ARGS_MEM_RESERVED "mem=64M@0x0 "
 #endif

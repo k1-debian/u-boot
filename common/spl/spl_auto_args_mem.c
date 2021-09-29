@@ -41,6 +41,18 @@ static unsigned int string_copy(char *dest, char *src, unsigned int size)
 	return size;
 }
 
+static char *add_mem(char *str, char *tag,
+	unsigned int start, unsigned int size)
+{
+	if (start != 0)
+		str += string_copy(str, " ", 1);
+	str += string_copy(str, tag, strlen(tag));
+	str += int_to_string(str, size, 10);
+	str += string_copy(str, "M@0x", 4);
+	str += int_to_string(str, start*1024*1024, 16);
+
+	return str;
+}
 
 static char* process_mem_bootargs(char *cmdargs, int ram_size)
 {
@@ -49,39 +61,28 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 	unsigned int mem_start;
 	unsigned int rmem_start;
 	unsigned int rtos_start;
+	unsigned int real_size = ram_size;
 
-	args_mem = strstr(cmdargs, ARGS_MEM_RESERVED);
+	args_mem = strstr(cmdargs, "[mem-start");
 
-	args_mem_end = args_mem + strlen(ARGS_MEM_RESERVED);
+	args_mem_end = strstr(cmdargs, "mem-end]") + strlen("mem-end]");
+
+	if (ram_size >= 256)
+		ram_size = 256;
 
 	ram_size = ram_size - CONFIG_RMEM_MB - CONFIG_RTOS_SIZE_MB;
 
 	/* mem=xxxM@0x0*/
-	mem_start = 0;
-	args_mem += string_copy(args_mem, "mem=", 4);
-	args_mem += int_to_string(args_mem, ram_size, 10);
-	args_mem += string_copy(args_mem, "M@0x", 4);
-	args_mem += int_to_string(args_mem, mem_start, 16);
+	args_mem = add_mem(args_mem, "mem=", 0, ram_size);
 
-	if (CONFIG_RMEM_MB) {
-		args_mem += string_copy(args_mem, " ", 1);
+	if (CONFIG_RMEM_MB)
+		args_mem = add_mem(args_mem, "rmem=", ram_size, CONFIG_RMEM_MB);
 
-		/* rmem=xxxM@0xxxx */
-		rmem_start = ram_size * 1024 * 1024;
-		args_mem += string_copy(args_mem, "rmem=", 5);
-		args_mem += int_to_string(args_mem, CONFIG_RMEM_MB, 10);
-		args_mem += string_copy(args_mem, "M@0x", 4);
-		args_mem += int_to_string(args_mem, rmem_start, 16);
-	}
+	if (CONFIG_RTOS_SIZE_MB)
+		args_mem = add_mem(args_mem, "rtos_size=", ram_size+CONFIG_RMEM_MB, CONFIG_RMEM_MB);
 
-	if (CONFIG_RTOS_SIZE_MB) {
-		rtos_start = (ram_size + CONFIG_RMEM_MB) * 1024 * 1024;
-		args_mem += string_copy(args_mem, " ", 1);
-		args_mem += string_copy(args_mem, "rtos_size=", 10);
-		args_mem += int_to_string(args_mem, CONFIG_RTOS_SIZE_MB, 10);
-		args_mem += string_copy(args_mem, "M@0x", 4);
-		args_mem += int_to_string(args_mem, rtos_start, 16);
-	}
+	if (real_size >= 256)
+		args_mem = add_mem(args_mem, "mem=", 768, real_size-256);
 
 	memmove(args_mem, args_mem_end, strlen(args_mem_end) + 1);
 

@@ -99,6 +99,7 @@
 	/* #define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA*/
 	/* #define CONFIG_LPDDR3_AD310032C_AB_FPGA */
 	#define CONFIG_LPDDR3_W63AH6NKB_BI
+	#define CONFIG_LPDDR3_NK6CL256M16DKX_H1
 #endif
 
 #define CONFIG_DDR_PHY_IMPEDANCE 40
@@ -108,6 +109,8 @@
 
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
+/*#define CONFIG_DDRP_SOFTWARE_TRAINING   1*/
+
 /*
  * #define CONFIG_DDR_CHIP_ODT
  * #define CONFIG_DDR_PHY_ODT
@@ -485,8 +488,7 @@
 /* boot args mem define
  */
 #define CONFIG_SPL_AUTO_PROBE_ARGS_MEM
-#define ARGS_MEM_RESERVED "[this string is reserved for probe mem size. NOTE: Don't cut.]"
-
+#define ARGS_MEM_RESERVED "[mem-start------------------------------------------------------------mem-end]"
 #ifndef CONFIG_RMEM_MB
 #define CONFIG_RMEM_MB 0
 #endif
