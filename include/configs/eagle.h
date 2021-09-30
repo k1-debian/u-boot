@@ -68,7 +68,8 @@
 #define CONFIG_DDR_DRIVER_STRENGTH             4
 
 /*#define CONFIG_MDDR_JSD12164PAI_KGD*/     /*DDR 64M param file*/
-#define CONFIG_MDDR_PMD606416ATR_5IN
+/* #define CONFIG_MDDR_PMD606416ATR_5IN */ /* ddr 8MB */
+#define CONFIG_LVDDR_W9464L6KH-5I /* winbond ddr 8MB */
 
 /*pmu slp pin*/
 /* #define CONFIG_REGULATOR */
@@ -104,7 +105,7 @@
 #define CONFIG_DDR_64M      64	    /*DDR size 64M*/
 #define CONFIG_DDR_32M      32	    /*DDR size 32M*/
 
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=8M@0x0 loglevel=7 "
+#define BOOTARGS_COMMON "console=ttyS0,115200n8 mem=8M@0x0 loglevel=7 "
 
 #if defined(CONFIG_SPL_NOR_SUPPORT) || defined(CONFIG_SPL_SFC_SUPPORT)
 	#if defined(CONFIG_SPL_SFC_SUPPORT)
