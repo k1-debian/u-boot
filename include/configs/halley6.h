@@ -91,6 +91,7 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR2
 #define CONFIG_DDR2_W975116NG18I
+/*#define CONFIG_DDR2_W971GV6NG*/
 #endif
 
 
@@ -121,6 +122,7 @@
  * Boot arguments definitions.
  */
 #define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 "
+/*#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=128M@0x0 "*/
 
 /**
  * Boot command definitions.

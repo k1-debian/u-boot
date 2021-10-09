@@ -169,4 +169,8 @@
 #include "./chips/DDR2_W975116NG18I.h"
 #endif
 
+#ifdef CONFIG_DDR2_W971GV6NG
+#include "./chips/DDR2_W971GV6NG.h"
+#endif
+
 #endif /* __DDR_CHIPS_H__ */
