@@ -261,8 +261,9 @@ static void jz_mmc_set_ios(struct mmc *mmc)
 
 	jz_mmc_writel(clk_div, priv, MSC_CLKRT);
 
+    /* SD-Nand: low temperature sample immediately at clk rising edge */
 	if (real_rate > 25000000)
-		lpm |= (0x2 << LPM_DRV_SEL_SHF) | LPM_SMP_SEL;
+		lpm |= (0x2 << LPM_DRV_SEL_SHF);
 
 	jz_mmc_writel(lpm, priv, MSC_LPM);
 #else
