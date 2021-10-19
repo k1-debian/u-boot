@@ -20,6 +20,6 @@ static struct nand_desc yhy_c9_nand = {
 	.device = device,
 };
 
-int yhy_midc9_nand_register_func(void) {
+int yhy_nand_register_func(void) {
 	return nand_register(&yhy_c9_nand);
 }
