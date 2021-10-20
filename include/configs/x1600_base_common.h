@@ -73,10 +73,13 @@
 /*#define CONFIG_DDR_TYPE_LPDDR3*/
 
 #ifdef CONFIG_DDR_TYPE_LPDDR2
+#ifdef CONFIG_X1660_DDR
+#define CONFIG_LPDDR2_SCB4BL256160AFL19GI  /* 1660 ddr */
+#else
+#define CONFIG_LPDDR2_M54D5121632A
 /*#define CONFIG_MCP_H9TP32A8JDMC_PRKGM_LPDDR2*/
 /*#define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA*/
-#define CONFIG_LPDDR2_M54D5121632A
-/*#define CONFIG_LPDDR2_SCB4BL256160AFL19GI*/  /* 1660 ddr */
+#endif
 #endif
 
 #ifdef CONFIG_DDR_TYPE_LPDDR
@@ -464,7 +467,11 @@
 #ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
 #define ARGS_MEM_RESERVED "[mem-start------------------------------------------------------------mem-end]"
 #else
+#ifdef CONFIG_X1660_DDR
+#define ARGS_MEM_RESERVED "mem=32M@0x0 "
+#else
 #define ARGS_MEM_RESERVED "mem=64M@0x0 "
+#endif
 #endif
 
 #ifndef CONFIG_RMEM_MB
