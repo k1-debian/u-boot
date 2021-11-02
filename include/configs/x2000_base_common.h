@@ -72,7 +72,10 @@
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
 /* #define CONFIG_DDR_TYPE_DDR3 */
-#define CONFIG_DDR_TYPE_LPDDR3
+#ifndef CONFIG_X2100
+  #define CONFIG_DDR_TYPE_LPDDR3
+#endif
+
 #define CONFIG_DDR_TYPE_LPDDR2
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
