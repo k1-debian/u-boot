@@ -11,6 +11,7 @@ int winbond_nand_register_func(void);
 int xtx_mid0b_nand_register_func(void);
 int xtx_mid2c_nand_register_func(void);
 int xtx_nand_register_func(void);
+int yhy_nand_register_func(void);
 int zetta_nand_register_func(void);
 static void *nand_param[] = {
 /*##################*/
@@ -45,6 +46,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)xtx_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)yhy_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)zetta_nand_register_func,

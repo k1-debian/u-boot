@@ -18,7 +18,7 @@ unsigned int DDRC_TIMING4_VALUE;
 unsigned int DDRC_TIMING5_VALUE;
 unsigned int DDRC_TIMING6_VALUE;
 unsigned int DDRC_AUTOSR_EN_VALUE;
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 unsigned int DDRP_DCR_VALUE;
 unsigned int DDRP_MR0_VALUE;
 unsigned int DDRP_MR1_VALUE;
@@ -73,7 +73,7 @@ unsigned int REMMAP_ARRAY[5];
 #define _DDRC_TIMING6_VALUE(type)	DDRC_TIMING6_VALUE_##type
 #define _DDRC_AUTOSR_EN_VALUE(type)	DDRC_AUTOSR_EN_VALUE_##type
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 
 #define _DDRP_DCR_VALUE(type)		DDRP_DCR_VALUE_##type
 #define _DDRP_MR0_VALUE(type)		DDRP_MR0_VALUE_##type
@@ -199,7 +199,7 @@ unsigned int REMMAP_ARRAY[5];
 void get_ddr_params(int type)
 {
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 
 #error "unsupported DWC phy"
 

@@ -7,20 +7,19 @@
 #include <ddr/ddr_chips.h>
 #include <ddr/ddrc.h>
 
-#ifdef CONFIG_X1600
-#include <ddr/ddrp_inno.h>
-#include <asm/ddr_innophy.h>
+#if defined(CONFIG_X1600)
+	#include <ddr/ddrp_inno.h>
+	#include <asm/ddr_innophy.h>
 #else
-
-#include <asm/ddr_dwc.h>
-#ifdef CONFIG_X1XXX_INNOPHY
-#include <ddr/ddrp_inno.h>
-#else
-#include <ddr/ddrp_dwc.h>
+	#include <asm/ddr_dwc.h>
+	#if defined(CONFIG_DDR_INNOPHY) && !defined(CONFIG_X1521)
+		#include <ddr/ddrp_inno.h>
+	#else
+		#include <ddr/ddrp_dwc.h>
+	#endif
 #endif
 
-#endif
-#endif
+#endif /*CONFIG_CPU_XBURST*/
 
 
 #if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500)

@@ -66,9 +66,11 @@
 #define CONFIG_BAUDRATE_STR         "115200"
 
 
-
+/**
+ * DDR
+ **/
+/*#define CONFIG_LVDDR_INNOPHY*/
 #define CONFIG_DDR_INNOPHY
-/*#define CONFIG_X1XXX_INNOPHY*/
 #define CONFIG_DDR_TYPE_LPDDR
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC

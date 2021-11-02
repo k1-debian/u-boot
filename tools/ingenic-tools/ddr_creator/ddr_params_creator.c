@@ -256,9 +256,9 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	}
 
 	/* CTRL  */
-#ifdef CONFIG_X1600
+#if defined(CONFIG_X1600) || defined(CONFIG_X1521)
 	ddrc->ctrl =  DDRC_CTRL_CKE;
-#elif defined(CONFIG_X1XXX_INNOPHY)
+#elif defined(CONFIG_DDR_INNOPHY)
 	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
 		| 0 << 6 | DDRC_CTRL_CKE;
 
@@ -314,7 +314,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->mmap[1] = mem_base1 << DDRC_MMAP_BASE_BIT | mem_mask1;
 }
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#if !defined(CONFIG_DDR_INNOPHY) || defined(CONFIG_X1521)
 static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp = 0;
@@ -413,7 +413,7 @@ void init_ddr_params_common(struct ddr_params *ddr_params,int type)
 
 
 /* #define CONFIG_DDR_CHIP_IMPEDANCE */
-#ifndef CONFIG_X1XXX_INNOPHY
+#if !defined(CONFIG_DDR_INNOPHY) || defined(CONFIG_X1521)
 static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int i;
@@ -491,7 +491,7 @@ static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 	printf("#define DDRC_TIMING6_VALUE		0x%08x\n", ddrc->timing6.d32);
 	printf("#define DDRC_AUTOSR_EN_VALUE		0x%08x\n", ddrc->autosr_en);
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#if !defined(CONFIG_DDR_INNOPHY) || defined(CONFIG_X1521)
 	/* DDRP registers print */
 	printf("#define DDRP_DCR_VALUE			0x%08x\n", ddrp->dcr);
 	printf("#define	DDRP_MR0_VALUE			0x%08x\n", ddrp->mr0.d32);
@@ -524,7 +524,7 @@ static void params_print(struct ddrc_reg *ddrc, struct ddrp_reg *ddrp)
 #endif
 }
 
-#ifdef CONFIG_X1XXX_INNOPHY
+#if defined(CONFIG_DDR_INNOPHY) && !defined(CONFIG_X1521)
 static void ddr_mr_print(struct ddr_params *p)
 {
 	printf("#define	DDR_MR0_VALUE			0x%08x\n", p->mr0.d32);
@@ -673,7 +673,7 @@ int main(int argc, char *argv[])
 	ddrp_config_creator(&ddrp,&ddr_params);
 	file_head_print();
 	params_print(&ddrc, &ddrp);
-#ifdef CONFIG_X1XXX_INNOPHY
+#if defined(CONFIG_DDR_INNOPHY) && !defined(CONFIG_X1521)
 	ddr_mr_print(&ddr_params);
 #endif
 	printf("#define tRAS		%d\n", ps2cycle_ceil(ddr_params.private_params.ddr_base_params.tRAS, 1));

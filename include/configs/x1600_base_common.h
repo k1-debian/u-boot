@@ -63,7 +63,7 @@
  *#define CONFIG_DDR_TEST_CPU
  *#define CONFIG_DDR_TEST
  */
-#define CONFIG_DDR_INNOPHY
+
 #define CONFIG_DDR_DLL_OFF
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
@@ -94,7 +94,7 @@
 	#define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA
 #endif
 
-#define CONFIG_X1XXX_INNOPHY
+#define CONFIG_DDR_INNOPHY
 #define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32         0   /* 1-32bit-width, 0-16bit-width */

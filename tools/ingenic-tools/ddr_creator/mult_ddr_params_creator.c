@@ -257,7 +257,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	}
 
 	/* CTRL  */
-#ifdef CONFIG_X1XXX_INNOPHY
+#ifdef CONFIG_DDR_INNOPHY
 	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_64 | DDRC_CTRL_ACTSTP
 		| 0 << 6 | DDRC_CTRL_CKE;
 #else
@@ -312,7 +312,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->mmap[1] = mem_base1 << DDRC_MMAP_BASE_BIT | mem_mask1;
 }
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 static void ddrp_base_params_creator_common(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int tmp = 0;
@@ -411,7 +411,7 @@ void init_ddr_params_common(struct ddr_params *ddr_params,int type)
 
 
 /* #define CONFIG_DDR_CHIP_IMPEDANCE */
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	int i;
@@ -489,7 +489,7 @@ static void params_print(FILE *fp, int type, struct ddrc_reg *ddrc, struct ddrp_
 	fprintf(fp, "#define DDRC_TIMING6_VALUE_%d		0x%08x\n", type, ddrc->timing6.d32);
 	fprintf(fp, "#define DDRC_AUTOSR_EN_VALUE_%d		0x%08x\n", type, ddrc->autosr_en);
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 	/* DDRP registers print */
 	fprintf(fp, "#define DDRP_DCR_VALUE_%d			0x%08x\n", type, ddrp->dcr);
 	fprintf(fp, "#define	DDRP_MR0_VALUE_%d		0x%08x\n", type, ddrp->mr0.d32);
@@ -522,7 +522,7 @@ static void params_print(FILE *fp, int type, struct ddrc_reg *ddrc, struct ddrp_
 #endif
 }
 
-#ifdef CONFIG_X1XXX_INNOPHY
+#ifdef CONFIG_DDR_INNOPHY
 static void ddr_mr_print(FILE *fp, int type, struct ddr_params *p)
 {
 	fprintf(fp, "#define	DDR_MR0_VALUE_%d			0x%08x\n", type, p->mr0.d32);
@@ -678,7 +678,7 @@ void create_one_params(struct ddr_creator_ops *ops, char *file)
 
 	file_head_print(fp, p_ddr_creator->type);
 	params_print(fp, p_ddr_creator->type, &ddrc, &ddrp);
-#ifdef CONFIG_X1XXX_INNOPHY
+#ifdef CONFIG_DDR_INNOPHY
 	ddr_mr_print(fp, p_ddr_creator->type, &ddr_params);
 #endif
 	sdram_size_print(fp, p_ddr_creator->type, &ddr_params);

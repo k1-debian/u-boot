@@ -8,7 +8,7 @@ static struct ddr_out_impedance odt_out_impedance[]={
 	{50000,6},
 };
 
-#ifdef CONFIG_X1XXX_INNOPHY
+#ifdef CONFIG_DDR_INNOPHY
 static void fill_mr_params_ddr2(struct ddr_params *p)
 {
 	unsigned int tmp = 0;
@@ -70,7 +70,7 @@ static void fill_in_params_ddr2(struct ddr_params *ddr_params)
 	params->tFAW = DDR_tFAW;
 	params->tRTP = DDR_tRTP;
 	ddr_params->cl = DDR_CL;
-#ifdef CONFIG_X1XXX_INNOPHY
+#ifdef CONFIG_DDR_INNOPHY
 	fill_mr_params_ddr2(ddr_params);
 #endif
 }
@@ -104,7 +104,7 @@ static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p
 		assert(1);
 	}
 	if(ddrc->timing2.b.tRL > 1)
-#ifdef CONFIG_X1XXX_INNOPHY
+#ifdef CONFIG_DDR_INNOPHY
 		ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 3;
 #else
 		ddrc->timing5.b.tRDLAT = ddrc->timing2.b.tRL - 2;
@@ -141,7 +141,7 @@ static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p
 	ddrc->timing6.b.tFAW = tmp;
 }
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 	unsigned int tmp = 0;

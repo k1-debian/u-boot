@@ -965,10 +965,6 @@ char* spl_sfc_nor_load_image(void)
 {
 	sfc_init();
 
-#ifdef CONFIG_SPL_RTOS_BOOT
-	spl_sfc_nor_rtos_boot();
-#endif
-
 #ifdef CONFIG_BOOT_VMLINUX
 	spl_vmlinux_load();
 	return NULL;
@@ -981,7 +977,7 @@ char* spl_sfc_nor_load_image(void)
 	spl_sfc_nor_os_load();
 	return NULL;
 #elif defined(CONFIG_SPL_RTOS_BOOT)
-	hang();
+	spl_sfc_nor_rtos_boot();
 	return NULL;
 #else
 	{

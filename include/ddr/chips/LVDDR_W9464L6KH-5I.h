@@ -46,7 +46,24 @@
  *   */
 #define DDR_tREFI           DDR__ns(3900)   /* Refresh period: 4096 refresh cycles/64ms */
 
+#ifdef CONFIG_LVDDR_INNOPHY
+#define DDR_tRTP	DDR__ns(8)   /* 7.5ns READ to PRECHARGE command period. */
+#define DDR_tCCD	DDR__tck(2)      /* CAS# to CAS# command delay , tCK*/
+#define DDR_tRTW	(((DDR_BL > 4) ? 6 : 4) + 1) /* 4 in case of BL=4, 6 in case of BL=8 */
+#define DDR_tFAW	DDR__ns(45)     /* Four bank activate period, ns */
 
+#define DDR_tXARD	DDR__tck(2)     /* DDR2 only: Exit active power down to read command , tCK*/
+#define DDR_tXARDS	DDR__tck(7)	/* DDR2 only: Exit active power down to read command (slow exit/low power mode), tCK */
+#define DDR_tXSNR	(DDR_tRFC + DDR__ns(10))   /*DDR2 only: Exit self-refresh to a non-read command , ns */
+#define DDR_tXSRD       DDR__tck(200)	/* DDR2 only : Exit self-refresh to a read command , tCK */
+
+#define DDR_tCKESR	DDR__tck(3)      /* CKE minimum pulse width, tCK */
+#define DDR_tCKSRE	DDR__ns(10000)   /* DDR2 no:Valid Clock Requirement after Self Refresh Entry or Power-Down Entry */
+
+/*#define DDR_tREFI       DDR__ns(15600)	* Refresh period: 4096 refresh cycles/64ms */
+
+#define DDR_CLK_DIV     1    /* Clock Divider. auto refresh*/
+#endif
 #endif /* __MDDR_CONFIG_H */
 
 

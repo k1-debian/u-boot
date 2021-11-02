@@ -122,7 +122,7 @@
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_X1XXX_INNOPHY
+#define CONFIG_DDR_INNOPHY
 #define CONFIG_DDR3_M15T1G1664A_2C
 #define CONFIG_DDR_CHIP_ODT_VAL 1
 #define CONFIG_DDR_PHY_IMPEDANCE 40000
@@ -137,7 +137,7 @@
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_X1XXX_INNOPHY
+#define CONFIG_DDR_INNOPHY
 #define CONFIG_DDR_CHIP_ODT_VAL 1
 #define CONFIG_DDR_PHY_IMPEDANCE 40000
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000

@@ -1,7 +1,7 @@
 #ifndef DDR_REG_DATA_H
 #define DDR_REG_DATA_H
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 struct ddr_registers
 {
 	uint32_t ddrc_cfg;

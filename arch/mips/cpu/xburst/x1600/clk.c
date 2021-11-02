@@ -333,6 +333,7 @@ void enable_uart_clk(void)
 		_CASE0(0, CPM_CLKGR_UART0);
 		_CASE0(1, CPM_CLKGR_UART1);
 		_CASE0(2, CPM_CLKGR_UART2);
+		_CASE1(3, CPM_CLKGR_UART3);
 	default:
 		break;
 	}

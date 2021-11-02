@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	fprintf(fp, "extern unsigned int DDRC_TIMING6_VALUE;	\n");
 	fprintf(fp, "extern unsigned int DDRC_AUTOSR_EN_VALUE;	\n");
 
-#ifndef CONFIG_X1XXX_INNOPHY
+#ifndef CONFIG_DDR_INNOPHY
 	fprintf(fp, "extern unsigned int DDRP_DCR_VALUE;	\n");
 	fprintf(fp, "extern unsigned int DDRP_MR0_VALUE;	\n");
 	fprintf(fp, "extern unsigned int DDRP_MR1_VALUE;	\n");
