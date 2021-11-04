@@ -118,6 +118,11 @@ static int jz_serial_init(void)
 	writeb(UART_FCR_UUE | UART_FCR_FE | UART_FCR_TFLS | UART_FCR_RFLS,
 	       &uart->iir_fcr);
 
+	/*
+	 * write tag for kernel uart detect
+	 */
+	writeb(0xa9, &uart->spr);
+
 	return 0;
 }
 
