@@ -83,7 +83,7 @@
 */
 #define CONFIG_DDR_TYPE_VARIABLE
 #define CONFIG_DDR_DW32			1	/* 1-32bit-width, 0-16bit-width */
-
+#define CONFIG_DDR_INNOPHY
 
 /**
  * Boot command definitions.

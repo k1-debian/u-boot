@@ -82,6 +82,7 @@
  * DDR
  */
 #define CONFIG_DDR_TYPE_VARIABLE
+#define CONFIG_DDR_INNOPHY
 
 
 /**
