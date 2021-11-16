@@ -70,6 +70,7 @@
 
 #define  CGU_CLK_SRC {				\
 		{LCD, MPLL},			\
+		{MSC0, MPLL},			\
 		{MSC1, MPLL},			\
 		{SFC, MPLL},			\
 		{CIM, MPLL},			\
