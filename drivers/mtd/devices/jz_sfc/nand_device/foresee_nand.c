@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define FS_DEVICES_NUM         4
+#define FS_DEVICES_NUM         5
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -93,6 +93,25 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[4] = {
+		/*FS35SQA001G*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 60,
+		.tPP = 700,
+		.tBE = 10,
+
+		.ecc_max = 0x1,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[FS_DEVICES_NUM] = {
@@ -100,6 +119,7 @@ static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xB1, "FS35ND01G-V2", &fs_param[1]),
 	DEVICE_ID_STRUCT(0xEB, "FS35ND02G",    &fs_param[2]),
 	DEVICE_ID_STRUCT(0xEA, "FS35ND01G-S1", &fs_param[3]),
+	DEVICE_ID_STRUCT(0x71, "F35SQA001G",   &fs_param[4]),
 };
 
 static int32_t fs_get_read_feature(struct flash_operation_message *op_info) {
@@ -131,7 +151,7 @@ retry:
 	transfer.ops_mode = CPU_OPS;
 
 	if(sfc_sync(flash->sfc, &transfer)) {
-	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
@@ -142,10 +162,10 @@ retry:
 		case 0xA1:
 		case 0xB1:
 			switch((ret = ((ecc_status >> 4) & 0x7))) {
-			    case 0x0 ... 0x4:
-				    break;
-			    default:
-				    ret = -EBADMSG;
+				case 0x0 ... 0x4:
+					break;
+				default:
+					ret = -EBADMSG;
 			}
 			break;
 
@@ -153,10 +173,18 @@ retry:
 		case 0xEA:
 			switch((ret = ((ecc_status >> 4) & 0x3))) {
 				case 0x2:
-				    ret = -EBADMSG;
-				    break;
-			    default:
-				    ret = 0;
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+			}
+			break;
+		case 0x71:
+			switch((ret = ((ecc_status >> 4) & 0x3))) {
+				case 0x0 ... 0x1:
+					break;
+				default:
+					ret = -EBADMSG;
 			}
 			break;
 		default:
