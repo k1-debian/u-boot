@@ -183,7 +183,11 @@
   #endif
 #else
   #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#if defined(CONFIG_JZ_MMC_MSC0)
+		#define CONFIG_BOOTARGS BOOTARGS_COMMON "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#elif defined(CONFIG_JZ_MMC_MSC1)
+		#define CONFIG_BOOTARGS BOOTARGS_COMMON "rootfstype=ext4 root=/dev/mmcblk1p7 rootdelay=3 rw"
+	#endif
   #elif defined(CONFIG_SPL_NOR_SUPPORT)
   /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=192.168.10.210:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw" */
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
