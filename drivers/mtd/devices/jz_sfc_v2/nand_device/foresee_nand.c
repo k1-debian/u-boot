@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define FS_DEVICES_NUM         1
+#define FS_DEVICES_NUM         2
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -39,10 +39,31 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 
+	[1] = {
+		/*FS35SQA001G*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 60,
+		.tPP = 700,
+		.tBE = 10,
+
+		.plane_select = 0,
+		.ecc_max = 0x1,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xA1, "FS35ND01G", &fs_param[0]),
+	DEVICE_ID_STRUCT(0x71, "F35SQA001G", &fs_param[1]),
 };
 
 
@@ -51,11 +72,13 @@ static cdt_params_t *fs_get_cdt_params(struct sfc_flash *flash, uint8_t device_i
 	CDT_PARAMS_INIT(fs_nand->cdt_params);
 
 	switch(device_id) {
-	    case 0xA1:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+		case 0xA1:
+			break;
+		case 0x71:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &fs_nand->cdt_params;
@@ -69,10 +92,17 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 	switch(device_id) {
 		case 0xA1:
 			switch((ret = ((ecc_status >> 4) & 0x7))) {
-			    case 0x0 ... 0x4:
-				    break;
-			    default:
-				    ret = -EBADMSG;
+				case 0x0 ... 0x4:
+					break;
+				default:
+					ret = -EBADMSG;
+			}
+		case 0x71:
+			switch((ret = ((ecc_status >> 4) & 0x3))) {
+				case 0x0 ... 0x1:
+					break;
+				default:
+					ret = -EBADMSG;
 			}
 			break;
 		default:
