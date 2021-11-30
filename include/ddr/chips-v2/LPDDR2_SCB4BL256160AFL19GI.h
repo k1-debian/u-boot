@@ -63,7 +63,7 @@ static inline void LPDDR2_SCB4BL256160AFL19GI_init(void *data)
 
 #define LPDDR2_SCB4BL256160AFL19GI {					\
 	.name 	= "SCB4BL256160AFL19GI",					\
-	.id	= DDR_CHIP_ID(VENDOR_ESMT, TYPE_LPDDR2, MEM_32M),	\
+	.id	= DDR_CHIP_ID(VENDOR_UNILC, TYPE_LPDDR2, MEM_32M),	\
 	.type	= LPDDR2,						\
 	.freq	= CONFIG_LPDDR2_SCB4BL256160AFL19GI_MEM_FREQ,			\
 	.size	= 32,						\
