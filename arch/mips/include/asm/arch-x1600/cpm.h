@@ -119,6 +119,8 @@
 #define CPM_CLKGR_HASH		(1 << 6)
 #define CPM_CLKGR_PWM		(1 << 5)
 
+#define CPM_SLBC_OTG_SR		(1 << 12)
+
 #define cpm_inl(off)		readl(CPM_BASE + (off))
 #define cpm_outl(val,off)	writel(val,CPM_BASE + (off))
 #define cpm_clear_bit(val,off)	do{cpm_outl((cpm_inl(off) & ~(1<<(val))),off);}while(0)

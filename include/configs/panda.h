@@ -176,6 +176,7 @@
 #define CONFIG_SPL_SERIAL_SUPPORT
 /* sfc gpio */
 #define CONFIG_SPL_SFC_SUPPORT
+#define CONFIG_JZ_SFC_CE_PB31
 /* spl version */
 #define CONFIG_SPL_VERSION	1
 #endif

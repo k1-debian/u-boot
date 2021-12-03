@@ -59,6 +59,13 @@ volatile noinline void hello_word(void)
 }
 #endif
 
+void release_soft_reset(void)
+{
+	cpm_outl(cpm_inl(CPM_CLKGR0) | CPM_CLKGR_OTG, CPM_CLKGR0);
+	cpm_outl(cpm_inl(CPM_SRBC) & (~CPM_SLBC_OTG_SR), CPM_SRBC);
+	cpm_outl(cpm_inl(CPM_CLKGR0) & (~CPM_CLKGR_OTG), CPM_CLKGR0);
+}
+
 void board_init_f(ulong dummy)
 {
 	/* Set global data pointer */
@@ -119,6 +126,9 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
 #endif
+
+	/* Release otg soft reset. */
+	release_soft_reset();
 
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */
