@@ -137,14 +137,22 @@
  * Drivers configuration.
  */
 
-/* MMC */
+/* MMC0 */
 #ifdef CONFIG_JZ_MMC_MSC0
+
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
+
+#ifdef CONFIG_BOOT_FAST_FIXED
+#define MSC_INIT_CLK                    (1 * 1000 * 1000)  /* 1M */
+#define MSC_WORKING_CLK                 (200 * 1000000)    /* 200M */
+#define CONFIG_MMC_SDMA
+#define CONFIG_SPL_JZ_MSC_BUS_8BIT
+#define CONFIG_SPL_RTOS_CARD_PARAMS_BASE  (0x80000A00)     /* CONFIG_PARAM_BASE + 512 */
+#endif
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
@@ -154,13 +162,18 @@
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
 
+/* MMC1 */
 #ifdef CONFIG_JZ_MMC_MSC1
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
 #define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
+
+#ifdef CONFIG_BOOT_FAST_FIXED
+#define CONFIG_MMC_SDMA
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT
+#endif
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC
@@ -170,13 +183,18 @@
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
 
+/* MMC2 */
 #ifdef CONFIG_JZ_MMC_MSC2
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
 #define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
+
+#ifdef CONFIG_BOOT_FAST_FIXED
+#define CONFIG_MMC_SDMA
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT
+#endif
 
 /* MSC Command configuration */
 #define CONFIG_CMD_MMC

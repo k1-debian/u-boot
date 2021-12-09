@@ -6,6 +6,7 @@
 #include <mmc.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/mmc.h>
+#include <asm/arch/cpm.h>
 #include <asm/io.h>
 #include "spl_gpt_partition.h"
 #include "spl_rtos.h"
@@ -21,6 +22,25 @@
 #else
 #define msc_debug(fmt, args...) do { }while(0)
 #endif
+
+struct card_info_params {
+	unsigned int magic;         /* "RTOS" */
+	unsigned int version;       /* 结构体版本 */
+	int type;                   /* =0 mmc, =1 SD, =2 SDIO, =3 SD_COMBO  */
+	int highcap;                /* =0 <2GB, =1 >2GB */
+	int rca;                    /* address << 16 */
+	int bus_width;              /* =0 1bit,
+                                 * =2 4bit
+                                 * =3 8bit
+                                 */
+	unsigned int max_speed;
+	unsigned int reserved;
+	unsigned int raw_cid[4];
+	unsigned int raw_csd[4];
+	unsigned char ext_csd[512]; /* 64字节 cache line对齐读取速度更块 */
+};
+
+static struct card_info_params *card_params = NULL;
 
 /* global variables */
 static uint32_t io_base = MSC0_BASE;
@@ -84,11 +104,11 @@ static void dump_error_status(void) {}
 
 static void msc_reset(u8 mask)
 {
-	u32 timeout = 0xffff;
+	u32 timeout = 0xfffff;
 
 	msc_writeb(MSC_SW_RST_R, mask);
 	while((msc_readb(MSC_SW_RST_R) & mask) && --timeout) {
-		udelay(10);
+		udelay(1);
 	}
 
 	if(!timeout)
@@ -131,10 +151,15 @@ static void msc_clk_switch(int high_frq)
 		val &= ~MSC_CLK_H_FREQ;
 	writel(val, CPM_MSC_CLK_R);
 #else //CONFIG_FPGA
+
+#ifndef MSC_INIT_CLK
 #define MSC_INIT_CLK    200000
+#endif
+
 #ifndef MSC_WORKING_CLK
 #define MSC_WORKING_CLK 50000000
 #endif
+
   #ifdef CONFIG_JZ_MMC_MSC0
 	#define CPM_MSC MSC0
   #endif
@@ -147,14 +172,13 @@ static void msc_clk_switch(int high_frq)
 	/* TODO: set clk */
 	msc_writew(MSC_CLK_CTRL_R, MSC_SD_CLK_EN_BIT | MSC_INTERNAL_CLK_EN_BIT);
 	/* set clk */
-	if (!high_frq) {
+	if (!high_frq)
 		clk_set_rate(CPM_MSC, MSC_INIT_CLK);
-	}
 	else
 		clk_set_rate(CPM_MSC, MSC_WORKING_CLK);
 
-	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d\n", __func__,
-			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC));
+	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__,   \
+			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC), 1 << bus_width);
 #endif
 
 }
@@ -189,17 +213,23 @@ static u32 xfer_err_stat_check(void)
 }
 #endif
 
-static u32 wait_cmd_complete(void)
+static u32 wait_cmd_complete(int index)
 {
-	u32 timeout = 100000;
+	u32 timeout = 1000000;
+	int mask;
+
+	mask = MSC_CMD_COMPLETE_STAT_BIT ;
+	if (index == 21) {
+		mask = MSC_CMD_COMPLETE_STAT_BIT | MSC_BUF_RD_READY_STAT_BIT;
+	}
 
 	while(!(msc_readw(MSC_NORMAL_INT_STAT_R) \
-				& MSC_CMD_COMPLETE_STAT_BIT) && --timeout){
-		udelay(10);
+				& mask ) && --timeout){
+		udelay(1);
 	}
 
 	if(!timeout) {
-		printf("[ERROR]: MSC_ERROR_INT_STAT_R : %x, cmd timeout...\n", msc_readw(MSC_ERROR_INT_STAT_R));
+		printf("[ERROR]: MSC_ERROR_INT_STAT_R : %x, INT_STAT=%x cmd timeout...\n", msc_readw(MSC_ERROR_INT_STAT_R), msc_readw(MSC_NORMAL_INT_STAT_R));
 		return -1;
 	}
 
@@ -210,11 +240,11 @@ static u32 wait_cmd_complete(void)
 
 static u32 wait_xfer_complete(void)
 {
-	u32 timeout = 0xffff;
+	u32 timeout = 0xfffff;
 
 	while(!(msc_readw(MSC_NORMAL_INT_STAT_R) \
 				& MSC_XFER_COMPLETE_STAT_BIT) && --timeout){
-		udelay(10);
+		udelay(1);
 	}
 
 	if(!timeout) {
@@ -229,11 +259,11 @@ static u32 wait_xfer_complete(void)
 
 static u32 wait_buf_rb(void)
 {
-	unsigned int timeout = 0xffff;
+	unsigned int timeout = 0xfffff;
 
 	while(!(msc_readw(MSC_NORMAL_INT_STAT_R) \
 				& MSC_BUF_RD_READY_STAT_BIT) && --timeout){
-		udelay(10);  //1 block read time
+		udelay(1);  //1 block read time
 	}
 
 	if(!timeout) {
@@ -319,7 +349,7 @@ static  u8* msc_get_resp(void)
 static u32 msc_check_cmd_data_line(u32 cmdidx)
 {
 	unsigned int mask = 0;
-	unsigned int timeout = 100;
+	unsigned int timeout = 100000;
 
 	mask = MSC_CMD_INHIBIT_BIT | MSC_CMD_INHIBIT_DAT_BIT;
 
@@ -334,7 +364,7 @@ static u32 msc_check_cmd_data_line(u32 cmdidx)
 			return -1;
 		}
 		timeout--;
-		udelay(1000);
+		udelay(1);
 	}
 
 	return 0;
@@ -356,7 +386,7 @@ static u8* mmc_cmd(u32 cmdidx, u32 arg, u32 cmdat, u32 rtype)
 
 	msc_debug("cmdidx=%d, cmd_args=0x%x, arg=0x%x, response=R%d\n", cmdidx, cmd_args, arg, rtype);
 
-	if(wait_cmd_complete())
+	if(wait_cmd_complete(cmdidx))
 		goto exit;
 
 #ifdef DEBUG_MSC
@@ -400,7 +430,22 @@ static void msc_set_xfer_bus_width(unsigned int buswidth)
 	msc_writeb(MSC_HOST_CTRL1_R, val);
 }
 
-static u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst)
+static void msc_set_high_speed_enable(int enable)
+{
+	u32 val;
+
+	/* bus width */
+	val = msc_readb(MSC_HOST_CTRL1_R);
+
+	if (enable)
+		val |= MSC_HIGH_SPEED_EN_BIT;
+	else
+		val &= ~MSC_HIGH_SPEED_EN_BIT;
+
+	msc_writeb(MSC_HOST_CTRL1_R, val);
+}
+
+static u32 mmc_block_read_poll(u32 start, u32 blkcnt, u32 *dst)
 {
 	u32 cnt, nob;
 	u32 cmd_args = 0;
@@ -467,6 +512,347 @@ err:
 	return blkcnt - nob;
 }
 
+static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
+{
+#define MSC_DMA_ALIGN_SIZE              (64)
+#define MSC_BLOCK_SIZE                  (512)
+#define MSC_DEFAULT_BOUNDARY_SIZE       (512*1024)
+
+    u32 cnt, nob;
+    u32 cmd_args = 0;
+    u32 xfer_data = 0;
+
+    if(blkcnt <= 0)
+        return -1;
+
+    if(highcap == 0) {
+        /* standard capacity : Bytes addressed */
+        cmd_args = start * 512;
+    } else {
+        /* high capacity: sector addressed */
+        cmd_args = start;
+    }
+
+    msc_debug("%s-->start: %d \n", __func__, start);
+    msc_debug("%s-->blkcnt: %d \n", __func__, blkcnt);
+    msc_debug("%s-->dst: 0x%x\n", __func__, dst);
+    msc_debug("%s-->bus_width: %d\n", __func__, bus_width);
+
+    nob = blkcnt;
+    msc_writew(MSC_BLOCKCOUNT_R, nob);
+
+    msc_set_xfer_bus_width(bus_width);
+    msc_debug("HOST_CTRL1_R         = %x\n", msc_readb(MSC_HOST_CTRL1_R));
+
+    xfer_data = msc_readw(MSC_XFER_MODE_R);
+    xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
+                | MSC_AUTO_CMD12_ENABLE);
+    if (1 != blkcnt)
+        xfer_data |= MSC_MULTI_BLK_SEL_BIT;
+
+    msc_writew(MSC_XFER_MODE_R, xfer_data);
+
+    /* 命令:设置块大小 */
+    mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
+
+    /* 命令:发送数据data */
+    /* data:设置DMA边界 */
+    msc_writew(MSC_BLOCKSIZE_R, MSC_BLOCK_SIZE | MSC_SDMA_BUF_BDARY_BYTES_512K);
+
+    /* data:使能DMA传输数据 */
+    xfer_data |= MSC_DMA_ENABLE_BIT;
+    msc_writew(MSC_XFER_MODE_R, xfer_data);
+
+    u32 host_ctrl = msc_readb(MSC_HOST_CTRL1_R);
+    host_ctrl &= ~MSC_DMA_SEL_MASK;
+    host_ctrl |= MSC_DMA_SEL_SDMA;
+    msc_writeb(MSC_HOST_CTRL1_R, host_ctrl);
+    msc_debug("HOST_CTRL1_R         = %x\n", msc_readb(MSC_HOST_CTRL1_R));
+
+    /* data:设置DMA地址 */
+    u32 flush_addr_start = (u32)dst;
+    if ( flush_addr_start & (MSC_DMA_ALIGN_SIZE - 1) ) {
+        u32 buffer_size = blkcnt * MSC_BLOCK_SIZE;
+
+        /* cache line 非对齐的部分也写回内存, 其他设置为无效 */
+        flush_addr_start = flush_addr_start & ~(MSC_DMA_ALIGN_SIZE - 1);
+        flush_cache(flush_addr_start, MSC_DMA_ALIGN_SIZE);
+        flush_cache(flush_addr_start + buffer_size, MSC_DMA_ALIGN_SIZE);
+        //flush_invalid_cache(flush_addr_start + MSC_DMA_ALIGN_SIZE, buffer_size);
+    } else {
+        u32 buffer_size = blkcnt * MSC_BLOCK_SIZE;
+        //flush_invalid_cache(flush_addr_start, buffer_size);
+    }
+    msc_writel(MSC_SDMASA_R, virt_to_phys(dst));
+
+
+    if(1 == blkcnt)
+        mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+    else
+        mmc_cmd(MMC_CMD_READ_MULTIPLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+
+    /* 清除中断标志 */
+    u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
+    msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
+    msc_writew(MSC_ERROR_INT_STAT_R, error_status);
+
+    /* data:等待数据传输完成 */
+    u32 timeout = 0xffffffff;
+    u32 status;
+    u32 dma_addr = (u32)dst;
+    do {
+        status = msc_readw(MSC_NORMAL_INT_STAT_R);
+        if (status & MSC_ERR_INTERRUPT_STAT_BIT) {
+            u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
+            msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
+            msc_writew(MSC_ERROR_INT_STAT_R, error_status);
+            printf("[DATA]: Error detected in status(0x%X) error_status(0x%X)!\n", status, error_status);
+            goto err;
+        }
+
+        if (status & MSC_DMA_INTERRUPT_STAT_BIT) {
+            /* 更新DMA地址 */
+            msc_writew(MSC_NORMAL_INT_STAT_R, MSC_DMA_INTERRUPT_STAT_BIT);
+            dma_addr &= ~(MSC_DEFAULT_BOUNDARY_SIZE - 1);
+            dma_addr += MSC_DEFAULT_BOUNDARY_SIZE;
+            msc_writel(MSC_SDMASA_R, virt_to_phys(dma_addr));
+        }
+
+        if (timeout-- > 0) {
+            udelay(1);
+        } else {
+            printf("Transfer data timeout\n");
+            return -1;
+        }
+    } while (!(status & MSC_XFER_COMPLETE_STAT_BIT));
+    nob = 0;
+
+    if(wait_xfer_complete())
+        goto err;
+#ifdef DEBUG_MSC
+    if(xfer_err_stat_check())
+        goto err;
+#endif
+
+err:
+    msc_reset(MSC_SW_RST_CMD_BIT);
+    msc_reset(MSC_SW_RST_DAT_BIT);
+    return blkcnt - nob;
+}
+
+static u32 mmc_get_ext_csd_poll(u32 *buffer)
+{
+	u32 cnt, nob;
+	u32 cmd_args = 0;
+	u32 xfer_data = 0;
+	u32 blkcnt = 1;
+	u32 *dst = (u32 *)buffer;
+
+	msc_debug("%s-->blkcnt: %d \n", __func__, blkcnt);
+	msc_debug("%s-->dst: 0x%x\n", __func__, dst);
+	msc_debug("%s-->bus_width: %d\n", __func__, bus_width);
+
+	nob = blkcnt;
+	msc_writew(MSC_BLOCKSIZE_R, 0x200);
+	msc_writew(MSC_BLOCKCOUNT_R, nob);
+
+	msc_set_xfer_bus_width(bus_width);
+	msc_debug("HOST_CTRL1_R			= %x\n", msc_readb(MSC_HOST_CTRL1_R));
+
+	xfer_data = msc_readw(MSC_XFER_MODE_R);
+	xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
+				| MSC_AUTO_CMD12_ENABLE);
+	if (1 != blkcnt)
+		xfer_data |= MSC_MULTI_BLK_SEL_BIT;
+
+	msc_writew(MSC_XFER_MODE_R, xfer_data);
+
+	mmc_cmd(8, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+
+	for(; nob > 0; nob--) {
+		cnt = 512 / 4;
+		if(wait_buf_rb())
+			goto err;
+
+		while(cnt--) {
+			*dst = msc_readl(MSC_BUF_DATA_R);
+			dst++;
+		}
+	}
+
+	if(wait_xfer_complete())
+		goto err;
+#ifdef DEBUG_MSC
+	if(xfer_err_stat_check())
+		goto err;
+#endif
+
+#if 0
+	/* DUMP EXT CSD */
+	int i = 0;
+	unsigned int *tmp_buf = (unsigned int *)buffer;
+	for (i = 0; i < 512 / 4; i++) {
+		if ( (i != 0) && (i % 4 == 0) ) {
+			printf("\n");
+		}
+		printf("%x:", tmp_buf[i]);
+	}
+	printf("\n");
+#endif
+
+err:
+	msc_reset(MSC_SW_RST_CMD_BIT);
+	msc_reset(MSC_SW_RST_DAT_BIT);
+	return blkcnt - nob;
+}
+
+
+
+static int mmc_get_ext_csd_sdma(unsigned char *buffer)
+{
+#define MSC_DMA_ALIGN_SIZE              (64)
+#define MSC_BLOCK_SIZE                  (512)
+#define MSC_DEFAULT_BOUNDARY_SIZE       (512*1024)
+	u32 blkcnt = 1;
+    u32 cnt, nob;
+    u32 cmd_args = 0;
+    u32 xfer_data = 0;
+
+    msc_debug("%s-->blkcnt: %d \n", __func__, blkcnt);
+    msc_debug("%s-->dst: 0x%x\n", __func__, buffer);
+    msc_debug("%s-->bus_width: %d\n", __func__, bus_width);
+
+    nob = blkcnt;
+    msc_writew(MSC_BLOCKCOUNT_R, nob);
+
+    msc_set_xfer_bus_width(bus_width);
+    msc_debug("HOST_CTRL1_R         = %x\n", msc_readb(MSC_HOST_CTRL1_R));
+
+    xfer_data = msc_readw(MSC_XFER_MODE_R);
+    xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
+                | MSC_AUTO_CMD12_ENABLE);
+    if (1 != blkcnt)
+        xfer_data |= MSC_MULTI_BLK_SEL_BIT;
+
+    msc_writew(MSC_XFER_MODE_R, xfer_data);
+
+
+    /* 命令:发送数据data */
+    /* data:设置DMA边界 */
+    msc_writew(MSC_BLOCKSIZE_R, MSC_BLOCK_SIZE | MSC_SDMA_BUF_BDARY_BYTES_512K);
+
+    /* data:使能DMA传输数据 */
+    xfer_data |= MSC_DMA_ENABLE_BIT;
+    msc_writew(MSC_XFER_MODE_R, xfer_data);
+
+    u32 host_ctrl = msc_readb(MSC_HOST_CTRL1_R);
+    host_ctrl &= ~MSC_DMA_SEL_MASK;
+    host_ctrl |= MSC_DMA_SEL_SDMA;
+    msc_writeb(MSC_HOST_CTRL1_R, host_ctrl);
+    msc_debug("HOST_CTRL1_R         = %x\n", msc_readb(MSC_HOST_CTRL1_R));
+
+    /* data:设置DMA地址 */
+    u32 flush_addr_start = (u32)buffer;
+    if ( flush_addr_start & (MSC_DMA_ALIGN_SIZE - 1) ) {
+        u32 buffer_size = blkcnt * MSC_BLOCK_SIZE;
+
+        /* cache line 非对齐的部分也写回内存, 其他设置为无效 */
+        flush_addr_start = flush_addr_start & ~(MSC_DMA_ALIGN_SIZE - 1);
+        flush_cache(flush_addr_start, MSC_DMA_ALIGN_SIZE);
+        flush_cache(flush_addr_start + buffer_size, MSC_DMA_ALIGN_SIZE);
+        flush_invalid_cache(flush_addr_start + MSC_DMA_ALIGN_SIZE, buffer_size);
+    } else {
+        u32 buffer_size = blkcnt * MSC_BLOCK_SIZE;
+        flush_invalid_cache(flush_addr_start, buffer_size);
+    }
+    msc_writel(MSC_SDMASA_R, virt_to_phys(buffer));
+
+
+	mmc_cmd(8, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+
+    /* 清除中断标志 */
+    u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
+    msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
+    msc_writew(MSC_ERROR_INT_STAT_R, error_status);
+
+    /* data:等待数据传输完成 */
+    u32 timeout = 0xffffffff;
+    u32 status;
+    u32 dma_addr = (u32)buffer;
+    do {
+        status = msc_readw(MSC_NORMAL_INT_STAT_R);
+        if (status & MSC_ERR_INTERRUPT_STAT_BIT) {
+            u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
+            msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
+            msc_writew(MSC_ERROR_INT_STAT_R, error_status);
+            printf("[DATA]: Error detected in status(0x%X) error_status(0x%X)!\n", status, error_status);
+            goto err;
+        }
+
+        if (status & MSC_DMA_INTERRUPT_STAT_BIT) {
+            /* 更新DMA地址 */
+            msc_writew(MSC_NORMAL_INT_STAT_R, MSC_DMA_INTERRUPT_STAT_BIT);
+            dma_addr &= ~(MSC_DEFAULT_BOUNDARY_SIZE - 1);
+            dma_addr += MSC_DEFAULT_BOUNDARY_SIZE;
+            msc_writel(MSC_SDMASA_R, virt_to_phys(dma_addr));
+        }
+
+        if (timeout-- > 0) {
+            udelay(1);
+        } else {
+            printf("Transfer data timeout\n");
+            return -1;
+        }
+    } while (!(status & MSC_XFER_COMPLETE_STAT_BIT));
+    nob = 0;
+
+    if(wait_xfer_complete()) {
+		printf("wait xfer complete error\n");
+        goto err;
+	}
+#ifdef DEBUG_MSC
+    if(xfer_err_stat_check())
+        goto err;
+#endif
+
+#if 0
+	/* DUMP EXT CSD */
+	int i = 0;
+	unsigned int *tmp_buf = (unsigned int *)buffer;
+	for (i = 0; i < 512 / 4; i++) {
+		if ( (i != 0) && (i % 4 == 0) ) {
+			printf("\n");
+		}
+		printf("%x:", tmp_buf[i]);
+	}
+	printf("\n");
+#endif
+err:
+    msc_reset(MSC_SW_RST_CMD_BIT);
+    msc_reset(MSC_SW_RST_DAT_BIT);
+	return blkcnt - nob;
+}
+
+
+static u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst)
+{
+#ifdef CONFIG_MMC_SDMA
+    return mmc_block_read_sdma(start, blkcnt, dst);
+#else
+    return mmc_block_read_poll(start, blkcnt, dst);
+#endif
+}
+
+
+static u32 mmc_get_ext_csd(u32 *buffer)
+{
+#ifdef CONFIG_MMC_SDMA
+	return mmc_get_ext_csd_sdma(buffer);
+#else
+	return mmc_get_ext_csd_poll(buffer);
+#endif
+}
+
 static void msc_sync_abort(void)
 {
 	msc_writeb(MSC_BGAP_CTRL_R, MSC_STOP_BG_REQ_BIT);
@@ -520,6 +906,120 @@ static int sd_found(void)
 	return 0;
 }
 
+
+
+static void soc_mmc_set_rx_phase(void)
+{
+    unsigned int offset;
+    unsigned int value;
+
+#ifdef CONFIG_JZ_MMC_MSC0
+	offset = CPM_MSC0CDR;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC1
+	offset = CPM_MSC1CDR;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC2
+	offset = CPM_MSC2CDR;
+#endif
+
+    value = cpm_inl(offset);
+    value &= ~(0x7 << 17);
+    value |= (0x0 << 17);   /* sample clock: 0x7 is 325-degree for RX phase */
+                            /* sample clock: 0x2 is  90-degree for RX phase */
+                            /* sample clock: 0x0 is   0-degree for RX phase */
+    cpm_outl(value, offset);
+}
+
+static void soc_mmc_set_tx_phase(void)
+{
+    unsigned int offset;
+    unsigned int value;
+
+#ifdef CONFIG_JZ_MMC_MSC0
+	offset = CPM_MSC0CDR;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC1
+	offset = CPM_MSC1CDR;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC2
+	offset = CPM_MSC2CDR;
+#endif
+
+    value = cpm_inl(offset);
+    value &= ~(0x3 << 15);
+    value |= (0x3 << 15);  /* sample clock: 0x3 is 270-degree for TX phase
+                            *               0x2 is 180-degree for TX phase
+                            *               0x1 is 135-degree for TX phase
+                            *               0x0 is 90-degree for TX phase
+                            */
+    cpm_outl(value, offset);
+}
+
+
+
+/*
+ * enable: =1: msc enable tuning
+ *         =0: msc disable tuning
+ */
+static void soc_mmc_enable_tuning(int enable)
+{
+    unsigned int offset;
+    unsigned int value;
+
+#ifdef CONFIG_JZ_MMC_MSC0
+	offset = CPM_MSC0CDR;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC1
+	offset = CPM_MSC1CDR;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC2
+	offset = CPM_MSC2CDR;
+#endif
+
+    enable = !enable;
+    value = cpm_inl(offset);
+    value &= ~(0x1 << 20);     /* enable tuning */
+    value |= (enable << 20);   /* bit[20] =1:disable, =0:enable  */
+	cpm_outl(value, offset);
+}
+
+
+static int mmc_hal_get_exec_tuning(void)
+{
+    int ret = msc_readw(MSC_HOST_CTRL2_R);
+	//printf("tuning ret = 0x%x\n", ret);
+	return ret & MSC_EXEC_TUNING_BIT;
+}
+
+void soc_mmc_execute_tuning(void)
+{
+	u32 rca, status;
+	u8 *resp;
+
+	msc_writew(MSC_BLOCKSIZE_R, 128 | MSC_SDMA_BUF_BDARY_BYTES_512K);
+
+	int reg_value = msc_readw(MSC_HOST_CTRL2_R);
+	reg_value |= MSC_EXEC_TUNING_BIT;
+	msc_writew(MSC_HOST_CTRL2_R, reg_value);
+
+	uint32_t xfer_data = 0;
+    xfer_data |= (MSC_DATA_XFER_DIR_BIT );
+    msc_writew(MSC_XFER_MODE_R, xfer_data);
+	int count = 32;
+	do {
+		resp = mmc_cmd(21, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	} while (mmc_hal_get_exec_tuning() && count--);
+}
+
+static inline void response_convert_to_rtos(unsigned int *src, unsigned int *dst)
+{
+	dst[0] = src[3];
+	dst[1] = src[2];
+	dst[2] = src[1];
+	dst[3] = src[0];
+}
+
 static int mmc_found(void)
 {
 	u8 *resp;
@@ -527,14 +1027,17 @@ static int mmc_found(void)
 	u32 buswidth_arg, buswidth, timeout = 100;
 
 	msc_debug("mmc_found\n");
-
+#ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
+	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
+	printf("==card params address=0x%p\n", card_params);
+#endif
 	msc_sync_abort();
 
 	resp = mmc_cmd(0, 0, 0, MSC_CMDAT_RESPONSE_NONE);
 	resp = mmc_cmd(1, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
 
 	while (timeout-- && !(resp[4] & 0x80)) {
-		mdelay(1);
+		udelay(1);
 		resp = mmc_cmd(1, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
 	}
 
@@ -548,27 +1051,92 @@ static int mmc_found(void)
 	else
 		highcap =0;
 
+	/* CID */
 	resp = mmc_cmd(2, 0, 0, MSC_CMDAT_RESPONSE_R2);
+	if (card_params)
+		response_convert_to_rtos(resp, card_params->raw_cid);
 
 	rca = 0x10 << 16;
 	resp = mmc_cmd(3, rca, 0, MSC_CMDAT_RESPONSE_R1);
 
+	/* CSD */
+	resp = mmc_cmd(9, rca, 0, MSC_CMDAT_RESPONSE_R2);
+	if (card_params)
+		response_convert_to_rtos(resp, card_params->raw_csd);
+
 	resp = mmc_cmd(7, rca, 0, MSC_CMDAT_RESPONSE_R1);
 
+	/* 设置位宽 */
 	buswidth = (bus_width - 1) < 0 ? 0 : (bus_width - 1);
 	buswidth_arg = 0x3 << 24 | 183 << 16 | buswidth << 8 | 0x1;
 	resp = mmc_cmd(6, buswidth_arg, 0, MSC_CMDAT_RESPONSE_R1b); /* set buswidth*/
 
-	timeout = 1000;
-	do{
+	timeout = 100000;
+	do {
 		resp = mmc_cmd(13, rca, 0, MSC_CMDAT_RESPONSE_R1);
 		status = resp[1] | (resp[2] << 8) | (resp[3] << 16) | (resp[4] << 24);
 		if((status & (0xf << 9)) != (7 << 9))
 			break;
-		udelay(100);
+		udelay(1);
+	} while(--timeout);
+
+	/* 正常启动 不记录Card 信息 */
+	if (!card_params) {
+		msc_clk_switch(1);
+		return 0;
+	}
+
+
+
+	/* 切换高速加快load速度 获取Card 信息,下一阶段无需再次初始化 */
+	msc_set_xfer_bus_width(bus_width);
+
+	mmc_get_ext_csd(card_params->ext_csd);
+
+	/* 控制器 HS200模式下相关配置 */
+	soc_mmc_enable_tuning(0);
+	soc_mmc_set_rx_phase();
+	soc_mmc_set_tx_phase();
+	msc_set_high_speed_enable(1);
+
+	/* 设置为HS200 */
+	int reg_value = msc_readw(MSC_HOST_CTRL2_R);
+	reg_value &= ~MSC_UHS_MODE_SEL_MASK;
+	reg_value &= ~MSC_SIGNALING_EN_BIT;
+	reg_value |= MSC_UHS_MODE_SEL_SDR104;
+	reg_value |= MSC_SIGNALING_EN_BIT;
+	msc_writew(MSC_HOST_CTRL2_R, reg_value);
+
+	/* 设置频率 HS200 */
+	int value = 2;  /* =2: 200M HS200
+	                 * =1: 52M  High Speed
+					 * =0: 26M  Default
+				     */
+	int timing_arg = 0x3 << 24 | 185 << 16 | value << 8 | 0x1;
+	resp = mmc_cmd(6, timing_arg, 0, MSC_CMDAT_RESPONSE_R1b); /* set buswidth*/
+
+	timeout = 100000;
+	do {
+		resp = mmc_cmd(13, rca, 0, MSC_CMDAT_RESPONSE_R1);
+		status = resp[1] | (resp[2] << 8) | (resp[3] << 16) | (resp[4] << 24);
+		if((status & (0xf << 9)) != (7 << 9))
+			break;
+		udelay(1);
 	}while(--timeout);
 
 	msc_clk_switch(1);
+
+	soc_mmc_execute_tuning();
+
+	/* 必要的Card信息 */
+	card_params->magic      = 0x534f5452;  /* RTOS */
+	card_params->version    = 0x0001;
+	card_params->type       = 0, /* MMC */
+	card_params->rca        = rca >> 16;
+	card_params->highcap    = highcap;
+	card_params->bus_width  = bus_width;
+	card_params->max_speed  = MSC_WORKING_CLK;
+
 
 	return 0;
 }
@@ -774,9 +1342,13 @@ static int mmc_rtos_load(struct rtos_header *rtos, unsigned int sector_offset)
 	int err = 0;
 	u32 rtos_size_sectors;
 
-	err = mmc_block_read(sector_offset, 1, rtos);
+	/* SDMA模式下使用DDR地址 */
+	const char *buf = (const char *)(CONFIG_SYS_TEXT_BASE);
+	err = mmc_block_read(sector_offset, 1, buf);
 	if (err == 0)
 		goto end;
+
+	memcpy(rtos, buf, 512);
 
 	if (rtos_check_header(rtos))
 		return -1;
@@ -822,12 +1394,16 @@ static void mmc_load_rtos_boot(void)
 
 	debug("rtos:%s %x\n", rtos_name, rtos_offset);
 #else
+	#ifdef CONFIG_SPL_RTOS_NAME
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_NAME, &rtos_offset, NULL);
 	if (ret) {
 		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
 		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
 		rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
 	}
+	#else
+	rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
+	#endif
 #endif
 
 	if (mmc_rtos_load(&rtos_header, rtos_offset))

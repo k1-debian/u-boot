@@ -67,6 +67,12 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 
+void flush_invalid_cache(ulong start_addr, ulong size)
+{
+    invalid_dcache_range(start_addr, start_addr + size);
+    invalid_scache_range(start_addr, start_addr + size);
+}
+
 void flush_cache(ulong start_addr, ulong size)
 {
 	if(size == 0) {
