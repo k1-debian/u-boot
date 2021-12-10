@@ -177,7 +177,7 @@ static void msc_clk_switch(int high_frq)
 	else
 		clk_set_rate(CPM_MSC, MSC_WORKING_CLK);
 
-	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__,   \
+	//printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__,   \
 			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC), 1 << bus_width);
 #endif
 
@@ -853,6 +853,14 @@ static u32 mmc_get_ext_csd(u32 *buffer)
 #endif
 }
 
+static inline void response_convert_to_rtos(unsigned int *src, unsigned int *dst)
+{
+	dst[0] = src[3];
+	dst[1] = src[2];
+	dst[2] = src[1];
+	dst[3] = src[0];
+}
+
 static void msc_sync_abort(void)
 {
 	msc_writeb(MSC_BGAP_CTRL_R, MSC_STOP_BG_REQ_BIT);
@@ -873,6 +881,11 @@ static int sd_found(void)
 	int rca;
 
 	msc_debug("sd_found\n");
+#ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
+	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
+	printf("==card params address=0x%p\n", card_params);
+#endif
+
 	resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
 
 	resp = mmc_cmd(41, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
@@ -894,15 +907,31 @@ static int sd_found(void)
 		highcap =0;
 
 	resp = mmc_cmd(2, 0, 0, MSC_CMDAT_RESPONSE_R2);
+	if (card_params)
+		response_convert_to_rtos(resp, card_params->raw_cid);
+
 	resp = mmc_cmd(3, 0, 0, MSC_CMDAT_RESPONSE_R6);
 	cardaddr = (resp[4] << 8) | resp[3];
 	rca = cardaddr << 16;
 	resp = mmc_cmd(9, rca, 0, MSC_CMDAT_RESPONSE_R2);
+	if (card_params)
+		response_convert_to_rtos(resp, card_params->raw_csd);
 
 	resp = mmc_cmd(7, rca, 0, MSC_CMDAT_RESPONSE_R1);
 	resp = mmc_cmd(55, rca, 0, MSC_CMDAT_RESPONSE_R1);
 	resp = mmc_cmd(6, bus_width, 0, MSC_CMDAT_RESPONSE_R1);
 	msc_clk_switch(1);
+
+
+	/* 必要的Card信息 */
+	card_params->magic      = 0x534f5452;  /* RTOS */
+	card_params->version    = 0x0001;
+	card_params->type       = 1, /* MMC */
+	card_params->rca        = rca >> 16;
+	card_params->highcap    = highcap;
+	card_params->bus_width  = bus_width;
+	card_params->max_speed  = MSC_WORKING_CLK;
+
 	return 0;
 }
 
@@ -988,7 +1017,7 @@ static void soc_mmc_enable_tuning(int enable)
 static int mmc_hal_get_exec_tuning(void)
 {
     int ret = msc_readw(MSC_HOST_CTRL2_R);
-	//printf("tuning ret = 0x%x\n", ret);
+
 	return ret & MSC_EXEC_TUNING_BIT;
 }
 
@@ -1010,14 +1039,6 @@ void soc_mmc_execute_tuning(void)
 	do {
 		resp = mmc_cmd(21, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
 	} while (mmc_hal_get_exec_tuning() && count--);
-}
-
-static inline void response_convert_to_rtos(unsigned int *src, unsigned int *dst)
-{
-	dst[0] = src[3];
-	dst[1] = src[2];
-	dst[2] = src[1];
-	dst[3] = src[0];
 }
 
 static int mmc_found(void)
