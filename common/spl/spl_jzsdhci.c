@@ -924,13 +924,15 @@ static int sd_found(void)
 
 
 	/* 必要的Card信息 */
-	card_params->magic      = 0x534f5452;  /* RTOS */
-	card_params->version    = 0x0001;
-	card_params->type       = 1, /* MMC */
-	card_params->rca        = rca >> 16;
-	card_params->highcap    = highcap;
-	card_params->bus_width  = bus_width;
-	card_params->max_speed  = MSC_WORKING_CLK;
+	if (card_params) {
+		card_params->magic      = 0x534f5452;  /* RTOS */
+		card_params->version    = 0x0001;
+		card_params->type       = 1, /* MMC */
+		card_params->rca        = rca >> 16;
+		card_params->highcap    = highcap;
+		card_params->bus_width  = bus_width;
+		card_params->max_speed  = MSC_WORKING_CLK;
+	}
 
 	return 0;
 }
