@@ -50,6 +50,19 @@ struct ddr_chip_info {
 	unsigned int DDR_tCKSRE;
 	unsigned int DDR_CL;
 	unsigned int DDR_CWL;
+
+	/*DDR2 need.*/
+	unsigned int DDR_tXSNR;
+	unsigned int DDR_tXSRD;
+	unsigned int DDR_tRDLAT;
+	unsigned int DDR_tWDLAT;
+	unsigned int DDR_tRTW;
+	unsigned int DDR_tMRD;
+	unsigned int DDR_tMINSR;
+	unsigned int DDR_CLK_DIV;
+	unsigned int DDR_tXARD;
+	unsigned int DDR_tXARDS;
+	unsigned int DDR_AL;
 };
 
 enum {
@@ -57,20 +70,31 @@ enum {
 	VENDOR_ESMT    = 0x1,
 	VENDOR_NANYA   = 0x2,
 	VENDOR_UNILC   = 0x3,
+	VENDOR_ZENTEL  = 0x4,
+	VENDOR_PMD     = 0x5,
 };
+#ifdef CONFIG_X1600
+enum {
+	TYPE_LPDDR2 = 0x0,
+	TYPE_DDR2 = 0x1,
+};
+#else
 enum {
 	TYPE_LPDDR2 = 0x0,
 	TYPE_LPDDR3 = 0x1,
 	TYPE_DDR3 = 0x2,
 	TYPE_DDR2 = 0x3,
 };
+#endif
 enum {
 	MEM_256M	= 0x0,
 	MEM_128M	= 0x1,
 	MEM_64M		= 0x2,
 	MEM_32M		= 0x3,
 	MEM_512M	= 0x4,
-	MEM_1G		= 0x5,
+	MEM_16M		= 0x5,
+	MEM_8M		= 0x6,
+	MEM_1G		= 0x7,
 };
 
 #define DDR_CHIP_ID(vendor, type, capacity)	(type << 6 | vendor << 3 | capacity)

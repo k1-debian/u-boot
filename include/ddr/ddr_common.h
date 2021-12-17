@@ -4,13 +4,14 @@
 #include <ddr/ddr_params.h>
 
 #ifdef CONFIG_CPU_XBURST
-#include <ddr/ddr_chips.h>
 #include <ddr/ddrc.h>
 
 #if defined(CONFIG_X1600)
 	#include <ddr/ddrp_inno.h>
 	#include <asm/ddr_innophy.h>
+	#include <ddr/ddr_chips_v2.h>
 #else
+	#include <ddr/ddr_chips.h>
 	#include <asm/ddr_dwc.h>
 	#if defined(CONFIG_DDR_INNOPHY) && !defined(CONFIG_X1521)
 		#include <ddr/ddrp_inno.h>

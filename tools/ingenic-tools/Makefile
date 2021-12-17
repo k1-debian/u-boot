@@ -78,6 +78,8 @@ endif
 DDR_CREATOR_DIR := ddr_creator
 ifeq ($(if $(CONFIG_X2000)$(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)$(CONFIG_X2500),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x2000
+else ifeq ($(if $(CONFIG_X1600),y,n),y)
+DDR_CREATOR_DIR := ddr_creator_x1600
 endif
 
 ifdef CONFIG_MULT_DDR_PARAMS_CREATOR
@@ -142,6 +144,8 @@ DDR-TYPE-$(CONFIG_DDR_TYPE_DDR2) += $(DDR_CREATOR_DIR)/ddr2_params.o
 DDR-TYPE-$(CONFIG_DDR_TYPE_DDR3) += $(DDR_CREATOR_DIR)/ddr3_params.o
 
 ifeq ($(DDR_CREATOR_DIR), ddr_creator_x2000)
+DDR-TYPE-y	+= $(DDR_CREATOR_DIR)/supported_ddr_chips.o
+else ifeq ($(DDR_CREATOR_DIR), ddr_creator_x1600)
 DDR-TYPE-y	+= $(DDR_CREATOR_DIR)/supported_ddr_chips.o
 endif
 

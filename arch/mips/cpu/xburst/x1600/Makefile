@@ -31,7 +31,7 @@ COBJS-y += clk.o
 COBJS-y += pllsetting.o
 endif
 COBJS-y += ddr_set_dll.o
-COBJS-y += ../ddr_innophy.o
+COBJS-y += ../ddr_innophy_x1600.o
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
 COBJS-$(CONFIG_SPL_DDR_SOFT_TRAINING) += ../ddr_dqs_training.o
 
