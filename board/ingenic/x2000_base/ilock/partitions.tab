@@ -8,6 +8,7 @@ partition:
 	xboot     =     0m,     1m,
 	kernel    =     1m,     8m, EMPTY
 	rootfs    =     9m,     50m, LINUX_FS
-	userdata  =     59m,    58m, LINUX_FS
+	userdata  =     59m,    41m, LINUX_FS
+	rtos    =       100m,   17m, EMPTY
 
 #fstype could be: LINUX_FS, FAT_FS, EMPTY
