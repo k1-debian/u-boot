@@ -49,6 +49,8 @@ COBJS-$(CONFIG_GPT_TAB_BUILT_IN) += spl_gpt_partition.o
 
 COBJS-$(CONFIG_SPL_AUTO_PROBE_ARGS_MEM) += spl_auto_args_mem.o
 
+COBJS-$(CONFIG_SPL_RISCV) += spl_riscv.o
+
 endif
 
 COBJS	:= $(sort $(COBJS-y))

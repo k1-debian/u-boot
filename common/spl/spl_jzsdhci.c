@@ -13,6 +13,7 @@
 #ifdef CONFIG_JZSD_OTA_VERSION20
 #include "spl_ota_jzsd.h"
 #endif
+#include "spl_riscv.h"
 
 //#define DEBUG_MSC
 //#define DEBUG_DDR_CONTENT
@@ -834,7 +835,7 @@ err:
 }
 
 
-static u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst)
+u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst)
 {
 #ifdef CONFIG_MMC_SDMA
     return mmc_block_read_sdma(start, blkcnt, dst);
@@ -1459,6 +1460,9 @@ char *spl_mmc_load_image(void)
 
 #ifdef CONFIG_SPL_RTOS_BOOT
 	mmc_load_rtos_boot();
+#endif
+#ifdef CONFIG_SPL_RISCV
+	spl_mmc_load_and_start_riscv();
 #endif
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT

@@ -69,7 +69,7 @@
 #define EFUSE_BASE	0xb3540000
 
 
-#define	RISCV_BASE	0xb2210000
+#define	RISCV_BASE	0xb2a00000
 
 /* APB BUS Devices Base */
 #define	CPM_BASE	0xb0000000
