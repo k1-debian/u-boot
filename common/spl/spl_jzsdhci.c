@@ -113,7 +113,7 @@ static void msc_reset(u8 mask)
 	}
 
 	if(!timeout)
-		printf("mshc host reset=0x%x fail!\n", mask);
+		printf("host reset=0x%x fail!\n", mask);
 }
 
 static void mmc_init_host(void)
@@ -230,7 +230,7 @@ static u32 wait_cmd_complete(int index)
 	}
 
 	if(!timeout) {
-		printf("[ERROR]: MSC_ERROR_INT_STAT_R : %x, INT_STAT=%x cmd timeout...\n", msc_readw(MSC_ERROR_INT_STAT_R), msc_readw(MSC_NORMAL_INT_STAT_R));
+		printf("[ERROR]:ERROR_INT_STAT:%x,INT_STAT=%x cmd timeout\n", msc_readw(MSC_ERROR_INT_STAT_R), msc_readw(MSC_NORMAL_INT_STAT_R));
 		return -1;
 	}
 
@@ -249,7 +249,7 @@ static u32 wait_xfer_complete(void)
 	}
 
 	if(!timeout) {
-		printf("[ERROR]: MSC_ERROR_INT_STAT_R : %x, xfer timeout...\n", msc_readw(MSC_ERROR_INT_STAT_R));
+		printf("[ERROR]:ERROR_INT_STAT:%x,xfer timeout\n", msc_readw(MSC_ERROR_INT_STAT_R));
 		return -1;
 	}
 
@@ -268,7 +268,7 @@ static u32 wait_buf_rb(void)
 	}
 
 	if(!timeout) {
-		printf("[ERROR]: MSC_ERROR_INT_STAT_R: %x, buf read timeout err ...\n", msc_readw(MSC_ERROR_INT_STAT_R));
+		printf("[ERROR]:ERROR_INT_STAT:%x,buf read timeout\n", msc_readw(MSC_ERROR_INT_STAT_R));
 		dump_error_status();
 		return -1;
 	}
@@ -361,7 +361,7 @@ static u32 msc_check_cmd_data_line(u32 cmdidx)
 
 	while (msc_readl(MSC_PSTATE_REG) & mask) {
 		if (timeout == 0) {
-			printf("Controller never released inhibit bit(s).\n");
+			printf("Ctrl never released inhibit bit(s).\n");
 			return -1;
 		}
 		timeout--;
@@ -431,6 +431,18 @@ static void msc_set_xfer_bus_width(unsigned int buswidth)
 	msc_writeb(MSC_HOST_CTRL1_R, val);
 }
 
+static void msc_sync_abort(void)
+{
+	msc_writeb(MSC_BGAP_CTRL_R, MSC_STOP_BG_REQ_BIT);
+
+	wait_xfer_complete();
+
+	mmc_cmd(12, 0, MSC_CMD_TYPE_ABORT_CMD, MSC_CMDAT_RESPONSE_R1b);
+
+	msc_reset(MSC_SW_RST_CMD_BIT);
+	msc_reset(MSC_SW_RST_DAT_BIT);
+}
+
 static void msc_set_high_speed_enable(int enable)
 {
 	u32 val;
@@ -476,6 +488,8 @@ static u32 mmc_block_read_poll(u32 start, u32 blkcnt, u32 *dst)
 	msc_debug("HOST_CTRL1_R			= %x\n", msc_readb(MSC_HOST_CTRL1_R));
 
 	xfer_data = msc_readw(MSC_XFER_MODE_R);
+	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
+	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;
 	xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
 				| MSC_AUTO_CMD12_ENABLE);
 	if (1 != blkcnt)
@@ -484,6 +498,7 @@ static u32 mmc_block_read_poll(u32 start, u32 blkcnt, u32 *dst)
 	msc_writew(MSC_XFER_MODE_R, xfer_data);
 
 	mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
+
 	if(1 == blkcnt)
 		mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
 	else
@@ -508,6 +523,7 @@ static u32 mmc_block_read_poll(u32 start, u32 blkcnt, u32 *dst)
 #endif
 
 err:
+	msc_sync_abort();
 	msc_reset(MSC_SW_RST_CMD_BIT);
 	msc_reset(MSC_SW_RST_DAT_BIT);
 	return blkcnt - nob;
@@ -546,6 +562,8 @@ static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
     msc_debug("HOST_CTRL1_R         = %x\n", msc_readb(MSC_HOST_CTRL1_R));
 
     xfer_data = msc_readw(MSC_XFER_MODE_R);
+	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
+	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;
     xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
                 | MSC_AUTO_CMD12_ENABLE);
     if (1 != blkcnt)
@@ -607,7 +625,7 @@ static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
             u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
             msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
             msc_writew(MSC_ERROR_INT_STAT_R, error_status);
-            printf("[DATA]: Error detected in status(0x%X) error_status(0x%X)!\n", status, error_status);
+            printf("[DATA]:Error detected in status(0x%X) error_status(0x%X)\n", status, error_status);
             goto err;
         }
 
@@ -636,6 +654,7 @@ static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
 #endif
 
 err:
+	msc_sync_abort();
     msc_reset(MSC_SW_RST_CMD_BIT);
     msc_reset(MSC_SW_RST_DAT_BIT);
     return blkcnt - nob;
@@ -661,6 +680,8 @@ static u32 mmc_get_ext_csd_poll(u32 *buffer)
 	msc_debug("HOST_CTRL1_R			= %x\n", msc_readb(MSC_HOST_CTRL1_R));
 
 	xfer_data = msc_readw(MSC_XFER_MODE_R);
+	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
+	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;
 	xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
 				| MSC_AUTO_CMD12_ENABLE);
 	if (1 != blkcnt)
@@ -702,11 +723,11 @@ static u32 mmc_get_ext_csd_poll(u32 *buffer)
 #endif
 
 err:
+	msc_sync_abort();
 	msc_reset(MSC_SW_RST_CMD_BIT);
 	msc_reset(MSC_SW_RST_DAT_BIT);
 	return blkcnt - nob;
 }
-
 
 
 static int mmc_get_ext_csd_sdma(unsigned char *buffer)
@@ -730,6 +751,8 @@ static int mmc_get_ext_csd_sdma(unsigned char *buffer)
     msc_debug("HOST_CTRL1_R         = %x\n", msc_readb(MSC_HOST_CTRL1_R));
 
     xfer_data = msc_readw(MSC_XFER_MODE_R);
+	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
+	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;
     xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
                 | MSC_AUTO_CMD12_ENABLE);
     if (1 != blkcnt)
@@ -786,7 +809,7 @@ static int mmc_get_ext_csd_sdma(unsigned char *buffer)
             u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
             msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
             msc_writew(MSC_ERROR_INT_STAT_R, error_status);
-            printf("[DATA]: Error detected in status(0x%X) error_status(0x%X)!\n", status, error_status);
+            printf("[DATA]:Error detected in status(0x%X) error_status(0x%X)\n", status, error_status);
             goto err;
         }
 
@@ -829,6 +852,7 @@ static int mmc_get_ext_csd_sdma(unsigned char *buffer)
 	printf("\n");
 #endif
 err:
+	msc_sync_abort();
     msc_reset(MSC_SW_RST_CMD_BIT);
     msc_reset(MSC_SW_RST_DAT_BIT);
 	return blkcnt - nob;
@@ -854,91 +878,13 @@ static u32 mmc_get_ext_csd(u32 *buffer)
 #endif
 }
 
-static inline void response_convert_to_rtos(unsigned int *src, unsigned int *dst)
+static void response_convert_to_rtos(unsigned int *src, unsigned int *dst)
 {
 	dst[0] = src[3];
 	dst[1] = src[2];
 	dst[2] = src[1];
 	dst[3] = src[0];
 }
-
-static void msc_sync_abort(void)
-{
-	msc_writeb(MSC_BGAP_CTRL_R, MSC_STOP_BG_REQ_BIT);
-
-	wait_xfer_complete();
-
-	mmc_cmd(12, 0, MSC_CMD_TYPE_ABORT_CMD, MSC_CMDAT_RESPONSE_R1b);
-
-	msc_reset(MSC_SW_RST_CMD_BIT);
-	msc_reset(MSC_SW_RST_DAT_BIT);
-}
-
-
-static int sd_found(void)
-{
-	u8 *resp;
-	u32 cardaddr, timeout = 0xffff;
-	int rca;
-
-	msc_debug("sd_found\n");
-#ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
-	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
-	printf("==card params address=0x%p\n", card_params);
-#endif
-
-	resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
-
-	resp = mmc_cmd(41, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
-
-	while (timeout-- && !(resp[4] & 0x80)) {
-		mdelay(1);
-		resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
-		resp = mmc_cmd(41, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
-	}
-
-	if (!(resp[4] & 0x80)) {
-		printf("sd init fail!\n");
-		return -1;
-	}
-
-	if((resp[4] & 0x60 ) == 0x40)
-		highcap = 1;
-	else
-		highcap =0;
-
-	resp = mmc_cmd(2, 0, 0, MSC_CMDAT_RESPONSE_R2);
-	if (card_params)
-		response_convert_to_rtos(resp, card_params->raw_cid);
-
-	resp = mmc_cmd(3, 0, 0, MSC_CMDAT_RESPONSE_R6);
-	cardaddr = (resp[4] << 8) | resp[3];
-	rca = cardaddr << 16;
-	resp = mmc_cmd(9, rca, 0, MSC_CMDAT_RESPONSE_R2);
-	if (card_params)
-		response_convert_to_rtos(resp, card_params->raw_csd);
-
-	resp = mmc_cmd(7, rca, 0, MSC_CMDAT_RESPONSE_R1);
-	resp = mmc_cmd(55, rca, 0, MSC_CMDAT_RESPONSE_R1);
-	resp = mmc_cmd(6, bus_width, 0, MSC_CMDAT_RESPONSE_R1);
-	msc_clk_switch(1);
-
-
-	/* 必要的Card信息 */
-	if (card_params) {
-		card_params->magic      = 0x534f5452;  /* RTOS */
-		card_params->version    = 0x0001;
-		card_params->type       = 1, /* MMC */
-		card_params->rca        = rca >> 16;
-		card_params->highcap    = highcap;
-		card_params->bus_width  = bus_width;
-		card_params->max_speed  = MSC_WORKING_CLK;
-	}
-
-	return 0;
-}
-
-
 
 static void soc_mmc_set_rx_phase(void)
 {
@@ -988,8 +934,6 @@ static void soc_mmc_set_tx_phase(void)
     cpm_outl(value, offset);
 }
 
-
-
 /*
  * enable: =1: msc enable tuning
  *         =0: msc disable tuning
@@ -1014,6 +958,143 @@ static void soc_mmc_enable_tuning(int enable)
     value &= ~(0x1 << 20);     /* enable tuning */
     value |= (enable << 20);   /* bit[20] =1:disable, =0:enable  */
 	cpm_outl(value, offset);
+}
+
+static int msc_sd_switch_high_speed_mode(void)
+{
+	u32 nob;
+	u32 blk_size;
+	u32 xfer_data = 0;
+	u32 dst;
+	u32 cnt;
+	int ret;
+
+	nob = 1;
+	blk_size = 64;
+
+	msc_writew(MSC_BLOCKSIZE_R, blk_size);
+	msc_writew(MSC_BLOCKCOUNT_R, nob);
+
+	xfer_data = msc_readw(MSC_XFER_MODE_R);
+
+	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;     /* single */
+	xfer_data &= ~MSC_DMA_ENABLE_BIT;        /* disable DMA */
+	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
+	xfer_data |= MSC_BLOCK_COUNT_ENABLE_BIT;
+
+	xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
+				| MSC_AUTO_CMD_DISABLE);
+
+	msc_writew(MSC_XFER_MODE_R, xfer_data);
+
+	msc_set_xfer_bus_width(bus_width);
+
+	/* group0 切换为High Speed模式 */
+	int timing_arg = 1 << 31 | 0x00FFFFF0 | (1 << 0);
+	mmc_cmd(6, timing_arg, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1); /* set high speed*/
+
+	/* get response 64Byte(512bit) */
+	if(wait_buf_rb()) {
+		ret = -1;
+		goto err;
+	}
+
+	cnt = blk_size / 4;
+	while(cnt--)
+		dst = msc_readl(MSC_BUF_DATA_R);
+
+	if(wait_xfer_complete()) {
+		ret = -1;
+		goto err;
+	}
+
+	ret = 0;
+
+err:
+	msc_sync_abort();
+	msc_reset(MSC_SW_RST_CMD_BIT);
+	msc_reset(MSC_SW_RST_DAT_BIT);
+	return ret;
+}
+
+static int sd_found(void)
+{
+	u8 *resp;
+	u32 cardaddr, timeout = 0xffff;
+	int rca;
+
+	msc_debug("sd_found\n");
+#ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
+	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
+	printf("card params address=0x%p\n", card_params);
+#endif
+
+	resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
+
+	resp = mmc_cmd(41, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
+
+	while (timeout-- && !(resp[4] & 0x80)) {
+		mdelay(1);
+		resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
+		resp = mmc_cmd(41, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
+	}
+
+	if (!(resp[4] & 0x80)) {
+		printf("sd init fail\n");
+		return -1;
+	}
+
+	if((resp[4] & 0x60 ) == 0x40)
+		highcap = 1;
+	else
+		highcap =0;
+
+	resp = mmc_cmd(2, 0, 0, MSC_CMDAT_RESPONSE_R2);
+	if (card_params)
+		response_convert_to_rtos(resp, card_params->raw_cid);
+
+	resp = mmc_cmd(3, 0, 0, MSC_CMDAT_RESPONSE_R6);
+	cardaddr = (resp[4] << 8) | resp[3];
+	rca = cardaddr << 16;
+	resp = mmc_cmd(9, rca, 0, MSC_CMDAT_RESPONSE_R2);
+	if (card_params)
+		response_convert_to_rtos(resp, card_params->raw_csd);
+
+	resp = mmc_cmd(7, rca, 0, MSC_CMDAT_RESPONSE_R1);
+	resp = mmc_cmd(55, rca, 0, MSC_CMDAT_RESPONSE_R1);
+	resp = mmc_cmd(6, bus_width, 0, MSC_CMDAT_RESPONSE_R1);
+
+	msc_sd_switch_high_speed_mode();
+
+	/* 控制器 HS下相关配置 */
+	soc_mmc_enable_tuning(0);
+	soc_mmc_set_rx_phase();
+	soc_mmc_set_tx_phase();
+	msc_set_high_speed_enable(1);
+
+	/* 默认切换为high speed 50MHz */
+	int reg_value = msc_readw(MSC_HOST_CTRL2_R);
+	reg_value &= ~MSC_UHS_MODE_SEL_MASK;
+	reg_value &= ~MSC_SIGNALING_EN_BIT;
+	reg_value |= MSC_UHS_MODE_SEL_SDR50;
+	reg_value |= MSC_SIGNALING_EN_BIT;
+	msc_writew(MSC_HOST_CTRL2_R, reg_value);
+
+	msc_clk_switch(1);
+
+
+	/* 必要的Card信息 */
+	if (card_params) {
+		card_params->magic      = 0x534f5452;  /* RTOS */
+		card_params->version    = 0x0001;
+		card_params->type       = 1, /* MMC */
+		card_params->rca        = rca >> 16;
+		card_params->highcap    = highcap;
+		card_params->bus_width  = bus_width;
+		card_params->max_speed  = MSC_WORKING_CLK;
+	}
+
+	return 0;
 }
 
 
@@ -1053,7 +1134,7 @@ static int mmc_found(void)
 	msc_debug("mmc_found\n");
 #ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
 	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
-	printf("==card params address=0x%p\n", card_params);
+	printf("card params address=0x%p\n", card_params);
 #endif
 	msc_sync_abort();
 
@@ -1066,7 +1147,7 @@ static int mmc_found(void)
 	}
 
 	if (!timeout) {
-		printf("emmc card init err ...\n");
+		printf("emmc card init err\n");
 		return -1;
 	}
 
@@ -1109,8 +1190,6 @@ static int mmc_found(void)
 		msc_clk_switch(1);
 		return 0;
 	}
-
-
 
 	/* 切换高速加快load速度 获取Card 信息,下一阶段无需再次初始化 */
 	msc_set_xfer_bus_width(bus_width);
@@ -1160,7 +1239,6 @@ static int mmc_found(void)
 	card_params->highcap    = highcap;
 	card_params->bus_width  = bus_width;
 	card_params->max_speed  = MSC_WORKING_CLK;
-
 
 	return 0;
 }
@@ -1257,7 +1335,7 @@ static int mmc_load_img_from_partition(const char *name)
 
 	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
 	if (ret) {
-		printf("mmc: failed to get partition: %s\n", name);
+		printf("mmc:failed get part %s\n", name);
 		return ret;
 	}
 
@@ -1387,7 +1465,7 @@ static int mmc_rtos_load(struct rtos_header *rtos, unsigned int sector_offset)
 
 	return 0;
 end:
-	printf("spl: [rtos] mmc blk read err , %d\n", err);
+	printf("read rtos image err\n");
 	return -1;
 }
 
@@ -1422,7 +1500,7 @@ static void mmc_load_rtos_boot(void)
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_NAME, &rtos_offset, NULL);
 	if (ret) {
 		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
+		printf("rtos use default offset sector:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
 		rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
 	}
 	#else

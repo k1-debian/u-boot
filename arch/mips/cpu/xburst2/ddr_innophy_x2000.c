@@ -21,7 +21,7 @@
  * MA 02111-1307 USA
  */
 
-#define DEBUG
+//#define DEBUG
 /* #define DEBUG_READ_WRITE */
 #include <config.h>
 #include <common.h>
