@@ -10,6 +10,7 @@
 #include "chips-v2/DDR3_W631GU6NG.h"
 #include "chips-v2/LPDDR3_NK6CL256M16DKX-H1.h"
 #include "chips-v2/DDR3_NK5CC128M8HKX.h"
+#include "chips-v2/DDR3_PMF512816FBR-MBDN.h"
 #include "chips-v2/DDR2_M14D1G1664A.h"
 #include "chips-v2/DDR2_M14D2561616A.h"
 #include "chips-v2/DDR2_W971GV6NG.h"

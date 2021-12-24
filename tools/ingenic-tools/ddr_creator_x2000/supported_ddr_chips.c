@@ -22,6 +22,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef	CONFIG_DDR3_NK5CC128M8HKX
 	DDR3_NK5CC128M8HKX,
 #endif
+#ifdef	CONFIG_DDR3_PMF512816FBR_MBDN
+	DDR3_PMF512816FBR_MBDN,
+#endif
 #ifdef CONFIG_DDR3L_W634GU6QB_11
 	DDR3L_W634GU6QB_11,
 #endif
