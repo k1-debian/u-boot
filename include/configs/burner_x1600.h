@@ -195,6 +195,11 @@
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_SFC_NOR
 
+#define CONFIG_JZ_EFUSE
+#define CONFIG_X1600_EFUSE
+#define CONFIG_EFUSE_LEVEL      0
+#define CONFIG_CMD_EFUSE
+
 /**
  * Miscellaneous configurable options
  */

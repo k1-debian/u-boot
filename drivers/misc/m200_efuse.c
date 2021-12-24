@@ -498,7 +498,7 @@ int efuse_read_id(void *buf, int length, int id)
 		return ret;
 	}
 
-	return ret;
+	return ret * 4;
 }
 int efuse_init(int gpio_pin, int active)
 {

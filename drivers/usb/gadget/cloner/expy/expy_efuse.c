@@ -79,7 +79,7 @@ int expy_efuse_write(void *buf, int length, void *data)
 			return r;
 		}
 	}
-	priv->trans_len = r * 4;
+	priv->trans_len = r;
 	return 0;
 }
 

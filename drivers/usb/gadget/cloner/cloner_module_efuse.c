@@ -11,12 +11,8 @@ static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_da
 	ret = efuse_read_id(addr, length, id);
 	if (ret < 0)
 		printf("efuse read error\n");
-#ifdef CONFIG_CMD_EFUSE
-	return ret * 4;
-#endif
-#ifdef CONFIG_X2000_EFUSE
+
 	return ret;
-#endif
 }
 
 static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_data)
