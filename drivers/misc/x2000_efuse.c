@@ -1,44 +1,34 @@
-/*
- * linux/drivers/misc/ingenic_efuse_x2000.c - Ingenic efuse driver
- *
- * Copyright (C) 2012 Ingenic Semiconductor Co., Ltd.
- * Author: <chongji.wang@ingenic.com>.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- */
-
-
 #include <common.h>
 #include <exports.h>
 #include <malloc.h>
 #include <linux/types.h>
 #include <linux/string.h>
+#include <linux/err.h>
 #include <asm/io.h>
 #include <asm/gpio.h>
 #include <asm/errno.h>
 #include <asm/arch/base.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/efuse.h>
-#include "hamming.c"
+#include <efuse.h>
+#include "hamming.h"
 
 static int efuse_gpio = -1;
 static int efuse_en_active = 0;
 
-struct seg_info info;
+static struct seg_info info;
 
-uint32_t efuse_readl(uint32_t reg_off)
+static uint32_t efuse_readl(uint32_t reg_off)
 {
 	return readl(EFUSE_BASE + reg_off);
 }
 
-void efuse_writel(uint32_t val, uint32_t reg_off)
+static void efuse_writel(uint32_t val, uint32_t reg_off)
 {
 	writel(val, EFUSE_BASE + reg_off);
 }
 
-void boost_vddq(int gpio)
+static void boost_vddq(int gpio)
 {
 	int val;
 	printf("boost vddq\n");
@@ -50,7 +40,7 @@ void boost_vddq(int gpio)
 	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 }
 
-void reduce_vddq(int gpio)
+static void reduce_vddq(int gpio)
 {
 	int val;
 	printf("reduce vddq\n");
@@ -63,7 +53,7 @@ void reduce_vddq(int gpio)
 }
 
 
-void otp_r_efuse(uint32_t addr, uint32_t wlen)
+static void otp_r_efuse(uint32_t addr, uint32_t wlen)
 {
 	unsigned int val;
 	int n;
@@ -87,7 +77,6 @@ void otp_r_efuse(uint32_t addr, uint32_t wlen)
 	efuse_writel(val, EFUSE_CTRL);
 
 	//printf("efuse ctrl regval=0x%x\n",val);
-	printf("#############read efuse ctrl regval : 0x%x\n",efuse_readl(EFUSE_CTRL));
 	/* wait read done status */
 	while(!(efuse_readl(EFUSE_STATE) & EFUSE_STA_RD_DONE));
 
@@ -95,7 +84,7 @@ void otp_r_efuse(uint32_t addr, uint32_t wlen)
 	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 }
 
-void rir_w(uint32_t addr, uint32_t value)
+static void rir_w(uint32_t addr, uint32_t value)
 {
 	unsigned int val;
 
@@ -132,7 +121,7 @@ void rir_w(uint32_t addr, uint32_t value)
 	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 }
 
-void rir_r(void)
+static void rir_r(void)
 {
 	unsigned int val;
 
@@ -170,7 +159,7 @@ void rir_r(void)
 	printf("RIR1=0x%08x\n", efuse_readl(EFUSE_DATA(1)));
 }
 
-int rir_op(uint32_t value, uint32_t flag)
+static int rir_op(uint32_t value, uint32_t flag)
 {
 	unsigned int addr = 0, rf_addr = 0;
 	unsigned int fb_disable = 0;
@@ -240,7 +229,7 @@ int rir_op(uint32_t value, uint32_t flag)
 	return 0;
 }
 
-int rir_check(struct seg_info *info, uint32_t woffs, uint32_t val)
+static int rir_check(struct seg_info *info, uint32_t woffs, uint32_t val)
 {
 	unsigned int rval, errbits;
 
@@ -259,7 +248,7 @@ int rir_check(struct seg_info *info, uint32_t woffs, uint32_t val)
 	return errbits;
 }
 
-int rir_repair(struct seg_info *info, uint32_t *buf)
+static int rir_repair(struct seg_info *info, uint32_t *buf)
 {
 	unsigned int errbits, rir_data, repair_result, repair_fail;
 	int ret, n, ebit;
@@ -298,7 +287,7 @@ int rir_repair(struct seg_info *info, uint32_t *buf)
 	return 0;
 }
 
-void rir_disable_all(void)
+static void rir_disable_all(void)
 {
 	rir_r();
 	rir_w(0x0, (1 << 15));
@@ -307,7 +296,7 @@ void rir_disable_all(void)
 	rir_w(0x20, (1 << 31));
 }
 
-int jz_efuse_read(struct seg_info *info, uint32_t *buf)
+static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 {
 	uint32_t val;
 	uint32_t rbuf[8] = {0};
@@ -390,7 +379,7 @@ int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 }
 
 
-void otp_w(uint32_t addr, uint32_t wlen)
+static void otp_w(uint32_t addr, uint32_t wlen)
 {
 	unsigned int val;
 
@@ -421,7 +410,6 @@ void otp_w(uint32_t addr, uint32_t wlen)
 	val |= EFUSE_CTRL_WREN;
 	efuse_writel(val, EFUSE_CTRL);
 
-	printf("#############write efuse ctrl regval : 0x%x",efuse_readl(EFUSE_CTRL));
 	/* wait write done status */
 	while(!(efuse_readl(EFUSE_STATE) & EFUSE_STA_WR_DONE));
 
@@ -432,7 +420,7 @@ void otp_w(uint32_t addr, uint32_t wlen)
 	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 }
 
-int jz_efuse_write(struct seg_info *info, uint32_t *buf)
+static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 {
 	unsigned int val[8] = {0};
 	unsigned int pbuf[8] = {0};
@@ -507,7 +495,7 @@ int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 }
 
 
-int adjust_efuse()
+static int adjust_efuse()
 {
 
 	uint32_t val, ns;
@@ -575,7 +563,7 @@ int efuse_read_id(void *buf, int length, int seg_id)
 	int ret = -EPERM;
 	char *last = NULL;
 	uint32_t val[8] = {0};
-	info = seg_info_array[seg_id - 1];
+	info = seg_info_array[seg_id];
 	last = (char *)val + info.bit_num / 8 - 1;
 	ret = jz_efuse_read(&info,val);
 	if(ret < 0) {
@@ -589,64 +577,59 @@ int efuse_read_id(void *buf, int length, int seg_id)
 	printf("read efuse data: %s\n",buf);
 	return info.bit_num / 4;
 }
-int efuse_write(void *buf, int length, int seg_id)
+int efuse_write(void *buf, int length, off_t seg_id)
 {
 	int ret = -EPERM;
-	int i = 0;
-	uint32_t val[8] = {0};
-	uint32_t tmpval = 0;
-	char tmp[9] = {'\0'};
-	int true_length = 0;
-	char *last = NULL;
-	int bit_num = 0;
+	int byte_num = 0;
 	int word_num = 0;
-	int remain_num = 0;
+	int left_num = 0;
+	struct seg_info info;
+	unsigned int prtbit = 0;
+	unsigned int val[8] = {0};
+	char tmp[9] = {'\0'};
+	char *last = (char *)buf + length;
+	int i = 0;
 
-	unsigned long long longlong_buf[8] = {0};
-	uint32_t int_buf[8] = {0};
-	info = seg_info_array[seg_id - 1];
-
-	//printf("last_char : %x  ********************* last_value : %c\n",(*((char *)buf + length - 1)),(*((char *)buf + length - 1)));
-	if((*((char *)buf + length - 1) == 0x0a) || (*((char *)buf + length - 1) == 0x0d)) {
-		true_length = length - 1;
-	}else {
-		true_length = length;
+	if (IS_ERR(buf)) {
+		printf("%s %d: buffer error!\n",__func__,__LINE__);
+		return ret;
 	}
 
-	last = (char *)buf + true_length;
-	bit_num = true_length * 4;
-	word_num = true_length / 8;
-	remain_num = true_length % 8;
-
-	//printf("%s %s %d ############## bit_num : %d buf : %p, true_length : %d, seg_id : %d\n",__FILE__,__func__,__LINE__,bit_num, buf, true_length, seg_id);
-	printf("input efuse data: %s",buf);
-	if(bit_num == info.bit_num) {
-		for(i = 0; i < word_num; i++) {
-			memcpy(tmp, last - ((i + 1) * 8), 8);
-			//printf("tmp[%d] : %s\n",i, tmp);
-			longlong_buf[i] = simple_strtoull(tmp, NULL, 16);
-			//printf("data_buf[%d] : %x\n", i, longlong_buf[i]);
-			val[i] = longlong_buf[i];
-			printf("val[%d] : %08x\n", i, val[i]);
-		}
-		if (remain_num > 0)  {
-			memcpy(tmp, (char *)buf, remain_num);
-			longlong_buf[i] = simple_strtoull(tmp, NULL, 16);
-			tmpval = longlong_buf[i];
-			tmpval &= (0xffffffff << (8 - remain_num) * 4);
-			tmpval >>= ((8 - remain_num) * 4);
-			val[i] = tmpval;
-			printf("val[%d] : %08x\n", i, val[i]);
-		}
-
-		ret = jz_efuse_write(&info,val);
-		if(ret < 0) {
-			printf("efuse_write_id: write id error\n");
-			return ret;
-		}
-	}else{
-		printf("%s segment size is %d bits!\n", info.seg_name, info.bit_num);
+	if (seg_id < 0 || seg_id > NKU) {
+		printf("%s %d: segment id error!\n",__func__,__LINE__);
+		return ret;
 	}
+
+	info = seg_info_array[seg_id];
+	byte_num = length / 2;
+	word_num = byte_num / 4;
+	left_num = byte_num % 4;
+
+	if (byte_num > info.bit_num / 8) {
+		printf("%s %d: %s segment size error! %d %d\n",
+				__func__,__LINE__,info.seg_name,info.bit_num,byte_num);
+		return ret;
+	}
+
+
+	for (i = 0; i < word_num; i++) {
+		memcpy(tmp, last - ((i + 1) * 8), 8);
+		val[i] = (unsigned int)simple_strtoul(tmp, NULL, 16);
+	}
+
+	if (left_num > 0)  {
+		memcpy(tmp, (char *)buf, left_num);
+		val[i] = (unsigned int)simple_strtoull(tmp, NULL, 16);
+		val[i] &= (0xffffffff << (4 - left_num) * 8);
+		val[i] >>= ((4 - left_num) * 8);
+	}
+
+	ret = jz_efuse_write(&info, val);
+	if (ret != 0) {
+		printf("%s %d: write error!\n",__func__,__LINE__);
+		return ret;
+	}
+
 	return ret;
 }
 

@@ -32,8 +32,6 @@
 #include "ddr_debug.h"
 #ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
-#else
-#include "ddr_reg_data.h"
 #endif
 
 #define ddr_hang() do{						\

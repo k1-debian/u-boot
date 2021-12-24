@@ -267,7 +267,7 @@ static int cal_xor_ge32(const unsigned int *d,int dsz,int index,int xor)
 	return xor;
 }
 
-int encode(unsigned int *s,int bits,unsigned int *d)
+static int encode(unsigned int *s,int bits,unsigned int *d)
 {
 	int k = cal_k(bits);
 	int i,j,p;
@@ -323,7 +323,7 @@ int encode(unsigned int *s,int bits,unsigned int *d)
 	return bits;
 }
 
-int decode(unsigned int *s,int bits,unsigned int *d)
+static int decode(unsigned int *s,int bits,unsigned int *d)
 {
 	int i,p,j;
 	int xor = 0;
