@@ -270,6 +270,9 @@ void clk_init(void)
 #ifdef CONFIG_NET_GMAC
 		| CPM_CLKGR_MAC
 #endif
+#ifdef CONFIG_JZ_EFUSE
+		| CPM_CLKGR_EFUSE
+#endif
 		;
 
 	reg_clkgr &=  ~gate;

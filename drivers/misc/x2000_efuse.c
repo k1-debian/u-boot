@@ -36,7 +36,7 @@ static void boost_vddq(int gpio)
 	do {
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
-	} while (val);
+	} while (val != efuse_en_active);
 	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 }
 
@@ -48,7 +48,7 @@ static void reduce_vddq(int gpio)
 	do {
 		val = gpio_get_value(gpio);
 		printf("gpio %d level %d\n",gpio,val);
-	} while (!val);
+	} while (val == efuse_en_active);
 	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
 }
 
@@ -612,16 +612,15 @@ int efuse_write(void *buf, int length, off_t seg_id)
 	}
 
 
+	printf("%s %d: input %s\n",__func__,__LINE__,buf);
 	for (i = 0; i < word_num; i++) {
 		memcpy(tmp, last - ((i + 1) * 8), 8);
 		val[i] = (unsigned int)simple_strtoul(tmp, NULL, 16);
 	}
 
 	if (left_num > 0)  {
-		memcpy(tmp, (char *)buf, left_num);
+		memcpy(tmp, (char *)buf, left_num * 2);
 		val[i] = (unsigned int)simple_strtoull(tmp, NULL, 16);
-		val[i] &= (0xffffffff << (4 - left_num) * 8);
-		val[i] >>= ((4 - left_num) * 8);
 	}
 
 	ret = jz_efuse_write(&info, val);
