@@ -811,11 +811,12 @@ static inline int32_t spinand_moudle_init(void)
 	return ret;
 }
 
-int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param)
+int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz_sfcnand_burner_param *param)
 {
 	struct nand_chip *chip;
 	struct mtd_info *mtd;
 	struct jz_sfcnand_flashinfo *flash_info;
+	uint32_t sfc_rate = 100000000;
 	int32_t ret = 0;
 
 	if(!flash) {
@@ -825,7 +826,22 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 			return -1;
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
-		flash->sfc = sfc_res_init(CONFIG_SFC_NAND_RATE);
+
+#ifdef CONFIG_SFC_NAND_RATE
+		sfc_rate = CONFIG_SFC_NAND_RATE;
+#endif
+
+#ifdef CONFIG_BURNER
+		if(sfc_frequency) {
+			sfc_rate = sfc_frequency;
+			printf("cloner set sfc frequency:%d\n",sfc_frequency);
+		}
+		else {
+			printf("cloner set sfc frequency fail\n");
+		}
+#endif
+		flash->sfc = sfc_res_init(sfc_rate);
+
 	}
 	mtd = &nand_info[0];
 	flash_info = calloc(sizeof(struct jz_sfcnand_flashinfo), sizeof(uint8_t));
@@ -994,7 +1010,7 @@ struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, int read_back, struct jz_sfcnand_burner_param *param)
+int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, int read_back,uint32_t sfc_frequency, struct jz_sfcnand_burner_param *param)
 {
 	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
@@ -1002,7 +1018,7 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, i
 #ifdef CONFIG_BURNER
 	burn_readback = read_back;
 #endif
-	if(jz_sfc_nand_init(sfc_quad_mode, param)) {
+	if(jz_sfc_nand_init(sfc_quad_mode, sfc_frequency, param)) {
 		printf("ERR: jz_sfc_nand_init error!\n");
 		return -EIO;
 	}

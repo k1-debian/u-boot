@@ -833,12 +833,13 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 	//dump_cdt(flash->sfc);
 }
 
-int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param)
+int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz_sfcnand_burner_param *param)
 {
 	struct nand_chip *chip;
 	struct mtd_info *mtd;
 	struct jz_sfcnand_flashinfo *flash_info;
 	int32_t ret = 0;
+	uint32_t sfc_rate = 200000000;
 
 	if(!flash) {
 		flash = malloc(sizeof(struct sfc_flash));
@@ -847,12 +848,21 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 			return -1;
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
+
 #ifdef CONFIG_SFC_NAND_INIT_RATE
-		flash->sfc = sfc_res_init(CONFIG_SFC_NAND_INIT_RATE);
-#else
-		/* default: sfc rate 50MHz */
-		flash->sfc = sfc_res_init(200000000);
+		sfc_rate = CONFIG_SFC_NAND_INIT_RATE;
 #endif
+#ifdef CONFIG_BURNER
+		if(sfc_frequency) {
+			sfc_rate = sfc_frequency;
+			printf("cloner set sfc frequency:%d\n",sfc_frequency);
+		}
+		else {
+			printf("cloner set sfc frequency fail\n");
+		}
+#endif
+		flash->sfc = sfc_res_init(sfc_rate);
+
 	}
 	mtd = &nand_info[0];
 	flash_info = calloc(sizeof(struct jz_sfcnand_flashinfo), sizeof(uint8_t));
@@ -891,9 +901,10 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param 
 	/* Update to private CDT table */
 	create_cdt_table(flash, UPDATE_CDT);
 
+#ifndef CONFIG_BURNER
 	/* update sfc rate */
 	sfc_clk_set(flash->sfc, CONFIG_SFC_NAND_RATE);
-
+#endif
 	set_flash_timing(flash->sfc, flash_info->param.tHOLD, flash_info->param.tSETUP, flash_info->param.tSHSL_R, flash_info->param.tSHSL_W);
 
 	if((ret = sfc_nand_dev_init(flash))) {
@@ -1031,7 +1042,7 @@ struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, int read_back, struct jz_sfcnand_burner_param *param)
+int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode,uint32_t sfc_frequency, int read_back, struct jz_sfcnand_burner_param *param)
 {
 	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
@@ -1039,7 +1050,7 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, i
 #ifdef CONFIG_BURNER
 	burn_readback = read_back;
 #endif
-	if(jz_sfc_nand_init(sfc_quad_mode, param)) {
+	if(jz_sfc_nand_init(sfc_quad_mode, sfc_frequency, param)) {
 		printf("ERR: jz_sfc_nand_init error!\n");
 		return -EIO;
 	}

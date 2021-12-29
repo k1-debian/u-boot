@@ -4,6 +4,7 @@
 #include <asm/io.h>
 #include <asm/arch/spinor.h>
 #include "jz_sfc_common.h"
+#include <asm/arch/clk.h>
 
 struct sfc_flash *flash = NULL;
 struct burner_params params;
@@ -636,12 +637,13 @@ int32_t sfc_nor_do_special_func()
 }
 
 
-int32_t sfc_nor_flash_init()
+int32_t sfc_nor_flash_init(void)
 {
 	struct spi_nor_info *spi_nor_info;
 	struct spinor_flashinfo *nor_info;
 	int32_t ret = 0, i;
 	int32_t chip_id = 0;
+	uint32_t sfc_rate = 100000000;
 
 	flash = malloc(sizeof(struct sfc_flash));
 	if (!flash) {
@@ -657,7 +659,11 @@ int32_t sfc_nor_flash_init()
 	}
 	flash->flash_info = nor_info;
 
-	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_RATE);
+#ifdef CONFIG_SFC_NOR_RATE
+	sfc_rate = CONFIG_SFC_NOR_RATE;
+#endif
+
+	flash->sfc = sfc_res_init(sfc_rate);
 
 	sfc_nor_reset();
 
@@ -920,7 +926,7 @@ static void dump_mini_cloner_params()
 }
 #endif
 
-int norflash_get_params_from_burner(unsigned char *addr)
+int norflash_get_params_from_burner(uint32_t sfc_frequency,unsigned char *addr)
 {
 	struct spinor_flashinfo *nor_info = flash->flash_info;
 	unsigned int chip_id ,chipnum,i;
@@ -931,7 +937,6 @@ int norflash_get_params_from_burner(unsigned char *addr)
 	unsigned int id_addr_len = 0;
 	unsigned int dummy = 0;
 	struct spiflash_info *spiflash_info;
-
 
 	spiflash_info = (struct spiflash_info *)addr;
 
@@ -952,6 +957,17 @@ int norflash_get_params_from_burner(unsigned char *addr)
 
 	memcpy(nor_info->nor_flash_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
 	memcpy(nor_info->norflash_partitions, &params.norflash_partitions, sizeof(struct norflash_partitions));
+
+	/* update sfc rate */
+#ifdef CONFIG_BURNER
+	if(sfc_frequency) {
+		clk_set_rate(SFC,sfc_frequency);
+		printf("cloner set sfc frequency:%d\n",sfc_frequency);
+	}
+	else {
+		printf("cloner set sfc frequency fail\n");
+	}
+#endif
 
 #if 0
 	set_status(flash, SPINOR_OP_WRSR, 1, 0);

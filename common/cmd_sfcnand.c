@@ -41,7 +41,7 @@ static int do_sfcnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return CMD_RET_SUCCESS;
 }
 
-extern int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode, struct jz_sfcnand_burner_param *param);
+extern int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz_sfcnand_burner_param *param);
 void sfc_nand_init(void)
 {
 	struct nand_chip *chip;
@@ -49,7 +49,7 @@ void sfc_nand_init(void)
 	mtd = &nand_info[0];
 	int ret = 0;
 
-	ret = jz_sfc_nand_init(0,NULL);
+	ret = jz_sfc_nand_init(0,0,NULL);
 	if(ret < 0) {
 		printf("sfc nand init failed!\n");
 		return;
