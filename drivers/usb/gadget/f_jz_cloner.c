@@ -39,7 +39,12 @@
 #include "cloner/burn_printf.h"
 
 #ifdef CONFIG_JZ_SCBOOT
-#ifdef CONFIG_X2000_V12
+#ifdef CONFIG_X1600
+#include "../../scboot/jz_sec_v3/otp.h"
+#include "../../scboot/jz_sec_v3/secure.h"
+#include "../../scboot/jz_sec_v3/aes.h"
+#include "../../scboot/jz_sec_v3/spi_checksum.h"
+#elif defined(CONFIG_X2000_V12)
 #include "../../scboot/jz_sec_v2/otp.h"
 #include "../../scboot/jz_sec_v2/secure.h"
 #include "../../scboot/jz_sec_v2/aes.h"
