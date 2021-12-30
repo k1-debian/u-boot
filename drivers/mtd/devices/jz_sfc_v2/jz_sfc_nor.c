@@ -667,18 +667,19 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 
 int sfc_nor_flash_init(void)
 {
+	uint32_t sfc_rate = 200000000;
 	flash = malloc(sizeof(struct sfc_flash));
 	if (!flash) {
 		printf("ERROR: %s %d kzalloc() error !\n",__func__,__LINE__);
 		return -1;
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
+
 #ifdef CONFIG_SFC_NOR_INIT_RATE
-	flash->sfc = sfc_res_init(CONFIG_SFC_NOR_INIT_RATE);
-#else
-	/* default: sfc rate 50MHz */
-	flash->sfc = sfc_res_init(200000000);
+	sfc_rate = CONFIG_SFC_NOR_INIT_RATE;
 #endif
+
+	flash->sfc = sfc_res_init(sfc_rate);
 
 	/* try creating default CDT table */
 	create_cdt_table(flash, DEFAULT_CDT);
@@ -956,7 +957,7 @@ static void dump_mini_cloner_params()
 #endif
 
 
-int norflash_get_params_from_burner(unsigned char *addr)
+int norflash_get_params_from_burner(uint32_t sfc_frequency, unsigned char *addr)
 {
 	unsigned int chip_id ,chipnum,i;
 	struct spi_nor_info *spi_nor_info;
@@ -991,7 +992,16 @@ int norflash_get_params_from_burner(unsigned char *addr)
 	create_cdt_table(flash, UPDATE_CDT);
 
 	/* update sfc rate */
-	sfc_clk_set(flash->sfc, CONFIG_SFC_NOR_RATE);
+#ifdef CONFIG_BURNER
+	if(sfc_frequency) {
+		sfc_clk_set(flash->sfc, sfc_frequency);
+		printf("cloner set sfc frequency:%d\n",sfc_frequency);
+	}
+	else {
+		sfc_clk_set(flash->sfc, CONFIG_SFC_NOR_RATE);
+		printf("cloner set sfc frequency fail\n");
+	}
+#endif
 
 	sfc_nor_do_special_func();
 

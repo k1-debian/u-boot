@@ -162,6 +162,7 @@ struct spi_param {
 	uint32_t sfc_quad_mode;
 	uint32_t spi_erase_block_size;
 	uint32_t spi_erase;
+	uint32_t sfc_frequency;
 	char* flash_info[0];
 };
 struct policy_param{
