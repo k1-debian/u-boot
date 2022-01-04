@@ -1540,7 +1540,8 @@ char *spl_mmc_load_image(void)
 	mmc_load_rtos_boot();
 #endif
 #ifdef CONFIG_SPL_RISCV
-	spl_mmc_load_and_start_riscv();
+	spl_mmc_load_riscv();
+	spl_start_riscv();
 #endif
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT

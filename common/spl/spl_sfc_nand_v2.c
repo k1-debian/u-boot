@@ -8,6 +8,7 @@
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
 #include "spl_rtos.h"
+#include "spl_riscv.h"
 
 #ifdef CONFIG_OTA_VERSION30
 #include "spl_ota_kunpeng.h"
@@ -650,6 +651,10 @@ char* spl_sfc_nand_load_image(void)
 	return spl_sfc_nand_os_ota_load();
 #elif defined(CONFIG_SPL_OS_BOOT)
 	spl_sfc_nand_os_load();
+#ifdef CONFIG_SPL_RISCV
+	spl_nand_load_riscv();
+	spl_start_riscv();
+#endif
 	return NULL;
 #elif defined(CONFIG_SPL_RTOS_BOOT)
 	hang();

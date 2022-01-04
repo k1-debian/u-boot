@@ -28,6 +28,8 @@
 #define CCU_PMA_CFG3                (0x1b * 4)
 
 
-void spl_mmc_load_and_start_riscv(void);
+void spl_mmc_load_riscv(void);
+void spl_nand_load_riscv(void);
+void spl_start_riscv(void);
 
 #endif

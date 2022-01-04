@@ -4,8 +4,11 @@
 
 #define RISCV_BIN_LOAD_ADDR 0x0c600000
 #define RISCV_BIN_MMC_ADDR 0xbb800000
+#define RISCV_BIN_NAND_ADDR 0x06800000
+
 #define SENSOR_BIN_LOAD_ADDR 0x0c680000
 #define SENSOR_BIN_MMC_ADDR 0xbb880000
+#define SENSOR_BIN_NAND_ADDR 0x06900000
 #define LEP_RISCV_RESET_ENTRY       (RISCV_BIN_LOAD_ADDR + 0x80)
 
 static uint32_t ccu_readl(uint32_t off)
@@ -29,10 +32,29 @@ static void riscv_writel(uint32_t value, uint32_t off)
 }
 
 extern u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst);
-void spl_mmc_load_and_start_riscv(void)
+extern int sfc_nand_load(unsigned int src_addr, unsigned int count, unsigned int dst_addr);
+
+void spl_nand_load_riscv(void)
+{
+	sfc_nand_load(RISCV_BIN_NAND_ADDR, 132*1024, RISCV_BIN_LOAD_ADDR);
+	sfc_nand_load(SENSOR_BIN_NAND_ADDR, 201*1024, SENSOR_BIN_LOAD_ADDR);
+}
+
+void spl_mmc_load_riscv(void)
+{
+	int i = 0;
+	for(i=0; i < 132 ;i++){ /*1024*512 = 512k*/
+		mmc_block_read(RISCV_BIN_MMC_ADDR/512+i, 1, RISCV_BIN_LOAD_ADDR+i*512);
+	}
+	for(i=0; i < 401 ;i++){ /*1024*512 = 512k*/
+		mmc_block_read(SENSOR_BIN_MMC_ADDR/512+i, 1, SENSOR_BIN_LOAD_ADDR+i*0x200);
+	}
+}
+
+void spl_start_riscv(void)
 {
 	unsigned int val = 0;
-	int i = 0;
+
 	val = riscv_readl(CCU_CCSR);
 	val &= ~(1 << 1);
 	riscv_writel(val, CCU_CCSR);
@@ -61,14 +83,6 @@ void spl_mmc_load_and_start_riscv(void)
 	riscv_writel(0x05ffffff, CCU_PMA_ADR1    );
 	riscv_writel(0x1fffffff, CCU_PMA_ADR2    );
 	riscv_writel(0x00000000, CCU_PMA_ADR3    );
-
-
-	for(i=0; i < 1024 ;i++){ /*1024*512 = 512k*/
-		mmc_block_read(RISCV_BIN_MMC_ADDR/512+i, 1, RISCV_BIN_LOAD_ADDR+i*512);
-	}
-	for(i=0; i < 1024 ;i++){ /*1024*512 = 512k*/
-		mmc_block_read(SENSOR_BIN_MMC_ADDR/512+i, 1, SENSOR_BIN_LOAD_ADDR+i*0x200);
-	}
 
 	/*XBURST2_LEP_RUN*/
 	val = ccu_readl(XBURST2_CCU_CFCR);
