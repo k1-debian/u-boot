@@ -1420,6 +1420,26 @@ static void boot_second_cpu(void)
     );
 }
 
+static stop_second_cpu(void)
+{
+	unsigned long flags;
+	unsigned long status;
+
+	local_irq_save(flags);
+	while (1) {
+		status = readl(CCU_IO_BASE+CCU_CSSR);
+		if (status & (1 << 1))
+			break;
+	}
+
+	udelay(1);
+
+	writel(1 << 1, CCU_IO_BASE+CCU_CSRR);
+	wmb();
+
+	local_irq_restore(flags);
+}
+
 static void start_second_cpu(void)
 {
 	unsigned long value;
@@ -1434,7 +1454,8 @@ static void start_second_cpu(void)
 		while(*rtos_start == value) {
 			mdelay(1);
 		}
-		writel(1 << 1, CCU_IO_BASE+CCU_CSRR);
+
+		stop_second_cpu();
 	}
 }
 #endif
