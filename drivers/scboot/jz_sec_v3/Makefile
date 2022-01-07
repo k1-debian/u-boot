@@ -2,7 +2,7 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libscboot.o
 
-COBJS-$(CONFIG_JZ_SCBOOT) += aes.o spi_checksum.o
+COBJS-$(CONFIG_JZ_SCBOOT) += aes.o spi_checksum.o rsa1.o bignum.o
 COBJS-$(CONFIG_JZ_SECURE_SUPPORT) += scboot.o
 COBJS-$(CONFIG_JZ_CKEYAES) += ckey_aes.o flash.o
 COBJS-$(CONFIG_BURNER) += secure.o otp.o

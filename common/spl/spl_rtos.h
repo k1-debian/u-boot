@@ -15,10 +15,23 @@ extern void flush_cache_all(void);
 
 static inline int rtos_check_header(struct rtos_header *rtos)
 {
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+		int sec = is_security_boot();
+		if(sec){
+			if(rtos->tag != 0x52544f53){
+				printf("sec rtos bad tag: %x\n", rtos->tag);
+				return -1;
+			}
+		}else if(rtos->tag != 0x534f5452){
+			printf("rtos bad tag: %x\n", rtos->tag);
+			return -1;
+		}
+#else
 	if (rtos->tag != 0x534f5452) {
 		printf("rtos bad tag: %x\n", rtos->tag);
 		return -1;
 	}
+#endif
 
 	if (rtos->img_start >= rtos->img_end) {
 		printf("rtos bad off: %lx %lx\n", rtos->img_start, rtos->img_end);

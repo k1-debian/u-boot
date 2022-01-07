@@ -765,7 +765,19 @@ static int spl_sfc_nor_rtos_load(struct rtos_header *rtos, unsigned int offset)
 	if (rtos_check_header(rtos))
 		return -1;
 
-	sfc_read_data(offset, rtos->img_end - rtos->img_start, (unsigned char *)rtos->img_start);
+	int size = rtos->img_end - rtos->img_start;
+	printf("size = %d tag = 0x%x 0x%x\n",size,rtos->tag,offset);
+#ifdef CONFIG_JZ_SCBOOT
+	int start = rtos->img_end + 4096;
+	sfc_read_data(offset, size, start);
+	int ret = secure_scboot((void *)(start + sizeof(struct rtos_header)), (void*)rtos->img_start);
+	if(ret) {
+		printf("Error spl secure load freertos.\n");
+		return -1;
+	}
+#else
+	sfc_read_data(offset, size, (unsigned char *)rtos->img_start);
+#endif
 
 	return 0;
 }

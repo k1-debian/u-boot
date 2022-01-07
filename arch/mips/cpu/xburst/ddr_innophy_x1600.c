@@ -465,7 +465,7 @@ int get_ddr_type(void)
 
 	return type;
 }
-
+#ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 struct ddrp_calib {
 	union{
 		uint8_t u8;
@@ -577,6 +577,7 @@ static void ddrp_software_calibration(void)
 
 	}
 }
+#endif
 
 #ifndef CONFIG_BURNER
 void get_ddr_params_normal(void)

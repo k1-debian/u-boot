@@ -2,6 +2,7 @@
 #include <asm/io.h>
 #include <asm/arch/cpm.h>
 
+#include "rsa1.h"
 #include "secall.h"
 #include "pdma.h"
 #include "otp.h"
@@ -32,6 +33,23 @@
 
 #define SECURE_SCBOOT_MAGIC		0x54424353
 
+/* rsa key */
+#define NKU_NKEY_WORD_OFF 2
+#define NKU_KUKEY_WORD_OFF (2+64)
+#define NKU_KEY_LEN (64)
+
+/* sc key */
+#define SC_KEY_WORD_SIZE	(64 * 4)
+
+#define SC_KEY_INFO_WORD_SIZE	(64)
+#define SC_KEY_N_WORD_SIZE	(64)
+#define SC_KEY_KU_WORD_SIZE	(64)
+#define SC_KEY_CODESIG_WORD_SIZE	(64)
+
+#define SC_KEY_INFO_WORD_OFF	(0)
+#define SC_KEY_N_WORD_OFF	(SC_KEY_INFO_WORD_OFF + SC_KEY_INFO_WORD_SIZE)
+#define SC_KEY_KU_WORD_OFF	(SC_KEY_N_WORD_OFF + SC_KEY_N_WORD_SIZE)
+#define SC_KEY_CODESIG_WORD_OFF	(SC_KEY_KU_WORD_OFF + SC_KEY_KU_WORD_SIZE)
 /*
       ____________  0
       | head info  |
@@ -70,10 +88,68 @@ static void secure_check(void *addr, int *issig)
 
 static int setup_sckeys(void *addr, unsigned int *len)
 {
+	volatile struct sc_args *args = (volatile struct sc_args *)(MCU_TCSM_SECALL_MSG);
 	volatile unsigned int *tcsmptr = (volatile unsigned int *)(TCSM_SC_KEY_ADDR);
-	int iLoop = 0;
+	unsigned int *rsa_key = (unsigned int *)(TCSM_SC_KEY_ADDR + 1024);
 	int *ddrptr = (int *)(addr + SC_MAGIC_SIZE);
+	int iLoop = 0;
+	unsigned int ret;
 
+#ifdef CONFIG_X1600
+	/* parsing sc_key: info */
+	for (iLoop = 0; iLoop < SC_KEY_INFO_WORD_SIZE; iLoop++)
+		tcsmptr[SC_KEY_INFO_WORD_OFF + iLoop]
+			= ddrptr[SC_KEY_INFO_WORD_OFF + iLoop];
+
+	/* parsing sc_key: codesig; (Note:Soft RSA needs to switch word between big and small end !) */
+	for (iLoop = 0; iLoop < SC_KEY_CODESIG_WORD_SIZE; iLoop++)
+		tcsmptr[SC_KEY_CODESIG_WORD_OFF + iLoop]
+			= ddrptr[SC_KEY_CODESIG_WORD_OFF + (SC_KEY_CODESIG_WORD_SIZE - 1) - iLoop];
+
+	/* parsing sc_key: n + ku */
+	rsa_key[0] = tcsmptr[2];
+	rsa_key[1] = tcsmptr[3];
+
+	for (iLoop = 0; iLoop < SC_KEY_N_WORD_SIZE; iLoop++)
+		rsa_key[NKU_NKEY_WORD_OFF + iLoop] = ddrptr[SC_KEY_N_WORD_OFF + iLoop];
+	for (iLoop = 0; iLoop < SC_KEY_KU_WORD_SIZE; iLoop++)
+		rsa_key[NKU_KUKEY_WORD_OFF + iLoop] = ddrptr[SC_KEY_KU_WORD_OFF + iLoop];
+
+	*len = tcsmptr[0]; /* len in spl structure */
+
+	/* len must 4 wrod align */
+	if((*len) == 0 || (*len) % 16)
+		return -1;
+
+	/*
+	 * security init:
+	 * 1.clear scram KEYDONE segment
+	 * 2.nku verify
+	 */
+	args->arg[0] = tcsmptr[4];
+	args->arg[1] = MCU_TCSM_PADDR(rsa_key);
+
+	ret = secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
+	/* rsa public decrtpt codesig: */
+	{
+		/* for rsa n; (Note:Soft RSA needs to switch word between big and small end !) */
+		for (iLoop = 0; iLoop < SC_KEY_N_WORD_SIZE; iLoop++) {
+			tcsmptr[SC_KEY_N_WORD_OFF + iLoop]
+				= rsa_key[NKU_NKEY_WORD_OFF + (NKU_KEY_LEN - 1) - iLoop];
+		}
+
+		/* for rsa ku; (Note:Soft RSA needs to switch word between big and small end !) */
+		tcsmptr[SC_KEY_KU_WORD_OFF]
+			= rsa_key[NKU_KUKEY_WORD_OFF + (NKU_KEY_LEN - 1)];
+
+		f_rsa_public_decrypt(tcsmptr + SC_KEY_CODESIG_WORD_OFF,
+				tcsmptr + SC_KEY_CODESIG_WORD_OFF,
+				SC_KEY_CODESIG_WORD_SIZE,
+				tcsmptr + SC_KEY_N_WORD_OFF,
+				tcsmptr + SC_KEY_KU_WORD_OFF,
+				SC_KEY_N_WORD_SIZE);
+	}
+#else
 	/* 384 * 4 = 1536, sc_key */
 	for (iLoop = 0; iLoop < SC_KEY_SIZE/4; iLoop++)
 		tcsmptr[iLoop] = ddrptr[iLoop];
@@ -84,6 +160,7 @@ static int setup_sckeys(void *addr, unsigned int *len)
 	if((*len) == 0 || (*len) % 16)
 		return -1;
 
+#endif
 	return 0;
 }
 
@@ -97,7 +174,7 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 	int *srcptr = (int *)(input + SC_MAGIC_SIZE + SC_KEY_SIZE);
 	int *dstptr = (int *)(output);
 
-#if 0
+#ifdef CONFIG_X1600
 	int newround = 1;
 	int endround = 0;
 	int pos = 0;
@@ -128,7 +205,7 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 //				return ret;
 #else
 
-	args->arg[0] = 1 | 1 << 1 | 1 << 2;
+	args->arg[0] = 1 | (1 << 1) | (1 << 2); //bit 0:newround bit 1:endround bit 2:dmamode
 	args->arg[2] = virt_to_phys(srcptr);
 
 	flush_cache_all();
@@ -212,3 +289,9 @@ int secure_scboot(void *input, void *output)
 	return ret;
 }
 
+int is_security_boot()
+{
+#define EFUSE_REG_STAT 0xb3540008
+#define EFUSTATE_SECBOOT_EN_SFT (0x1 << 8)
+	return *(volatile unsigned int *)(EFUSE_REG_STAT) & EFUSTATE_SECBOOT_EN_SFT;
+}
