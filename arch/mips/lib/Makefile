@@ -40,6 +40,7 @@ ifeq ($(CONFIG_QEMU_MIPS),y)
 COBJS-$(CONFIG_CMD_BOOTM) += bootm_qemu_mips.o
 else
 COBJS-$(CONFIG_CMD_BOOTM) += bootm.o
+COBJS-$(CONFIG_CMD_GO) += boot.o
 endif
 SOBJS-$(CONFIG_USE_ARCH_MEMSET) += memset.o
 SOBJS-$(CONFIG_USE_ARCH_MEMCPY) += memcpy.o
