@@ -41,17 +41,17 @@ static inline int rtos_check_header(struct rtos_header *rtos)
 	return 0;
 }
 
-static inline void rtos_raw_start(struct rtos_header *rtos)
+static inline void rtos_raw_start(struct rtos_header *rtos, void *arg)
 {
-	__attribute__ ((noreturn)) void (*func)(void) = (void *)rtos->img_start;
-	func();
+	__attribute__ ((noreturn)) void (*func)(void *arg) = (void *)rtos->img_start;
+	func(arg);
 }
 
-static inline void rtos_start(struct rtos_header *rtos)
+static inline void rtos_start(struct rtos_header *rtos, void *arg)
 {
-	void (*func)(void) = (void *)rtos->img_start;
+	void (*func)(void *arg) = (void *)rtos->img_start;
 	flush_cache_all();
-	func();
+	func(arg);
 }
 
 struct rtos_ota_header {

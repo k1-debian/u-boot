@@ -151,7 +151,7 @@
 #define CONFIG_SPL_JZ_MSC_BUS_8BIT
 #define MSC_INIT_CLK                      (1 * 1000 * 1000)  /* 1M */
 #define MSC_WORKING_CLK                   (200 * 1000000)    /* 200M */
-#define CONFIG_SPL_RTOS_CARD_PARAMS_BASE  (0x80000A00)     /* CONFIG_PARAM_BASE + 512 */
+#define CONFIG_SPL_RTOS_CARD_PARAMS_BASE  (0x80000A00)     /* 起始地址:CONFIG_PARAM_BASE + 512      大小:1024 */
 #endif
 
 /* MSC Command configuration */

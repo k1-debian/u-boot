@@ -180,7 +180,7 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 			pll_rate = pll_get_rate(MPLL);
 			break;
 		default:
-			printf("DDR clk src err!!!\n");
+			printf("DDR clk src err\n");
 			break;
 		}
 	}
@@ -199,7 +199,7 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 			pll_rate = pll_get_rate(EPLL);
 		break;
 	default:
-		printf(" clk src err!!!\n");
+		printf("clk src err\n");
 		break;
 	}
 

@@ -170,7 +170,7 @@ static int mmc_rtos_load(struct mmc *mmc, unsigned long sector)
 		goto end;
 
 	flush_cache_all();
-	rtos_raw_start(header);
+	rtos_raw_start(header, NULL);
 	return 0;
 end:
 	printf("spl: [rtos] mmc blk read err, %d\n", err);
@@ -191,6 +191,11 @@ static void mmc_load_rtos_boot(struct mmc *mmc)
 
 	if (mmc_rtos_load(mmc, rtos_offset))
 		hang();
+}
+
+void *spl_rtos_get_spl_image_info(void)
+{
+	return NULL;
 }
 
 #endif /* CONFIG_SPL_RTOS_BOOT */

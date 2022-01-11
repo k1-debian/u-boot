@@ -720,7 +720,7 @@ unsigned char second_cpu_little_stack[128] __attribute__((aligned(8)));
 
 __attribute__ ((noreturn)) void do_boot_second_cpu(void)
 {
-	rtos_raw_start(&rtos_header);
+	rtos_raw_start(&rtos_header, NULL);
 	while (1);
 }
 
@@ -827,8 +827,13 @@ static void spl_sfc_nor_rtos_boot(void)
 	start_second_cpu();
 #else
 	/* NOTE: not return */
-	rtos_raw_start(&rtos_header);
+	rtos_raw_start(&rtos_header, NULL);
 #endif
+}
+
+void *spl_rtos_get_spl_image_info(void)
+{
+	return NULL;
 }
 #endif
 

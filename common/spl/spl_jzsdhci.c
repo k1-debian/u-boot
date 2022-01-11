@@ -10,6 +10,7 @@
 #include <asm/io.h>
 #include "spl_gpt_partition.h"
 #include "spl_rtos.h"
+#include "spl_rtos_argument.h"
 #ifdef CONFIG_JZSD_OTA_VERSION20
 #include "spl_ota_jzsd.h"
 #endif
@@ -24,24 +25,9 @@
 #define msc_debug(fmt, args...) do { }while(0)
 #endif
 
-struct card_info_params {
-	unsigned int magic;         /* "RTOS" */
-	unsigned int version;       /* 结构体版本 */
-	int type;                   /* =0 mmc, =1 SD, =2 SDIO, =3 SD_COMBO  */
-	int highcap;                /* =0 <2GB, =1 >2GB */
-	int rca;                    /* address << 16 */
-	int bus_width;              /* =0 1bit,
-                                 * =2 4bit
-                                 * =3 8bit
-                                 */
-	unsigned int max_speed;
-	unsigned int reserved;
-	unsigned int raw_cid[4];
-	unsigned int raw_csd[4];
-	unsigned char ext_csd[512]; /* 64字节 cache line对齐读取速度更块 */
-};
 
-static struct card_info_params *card_params = NULL;
+static struct spl_rtos_argument spl_rtos_args;
+static struct rtos_boot_os_args os_boot_args;
 
 /* global variables */
 static uint32_t io_base = MSC0_BASE;
@@ -458,7 +444,7 @@ static void msc_set_high_speed_enable(int enable)
 	msc_writeb(MSC_HOST_CTRL1_R, val);
 }
 
-static u32 mmc_block_read_poll(u32 start, u32 blkcnt, u32 *dst)
+static u32 mmc_block_read_poll(u8 type, u32 start, u32 blkcnt, u32 *dst)
 {
 	u32 cnt, nob;
 	u32 cmd_args = 0;
@@ -499,10 +485,16 @@ static u32 mmc_block_read_poll(u32 start, u32 blkcnt, u32 *dst)
 
 	mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
 
-	if(1 == blkcnt)
-		mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
-	else
-		mmc_cmd(MMC_CMD_READ_MULTIPLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	if (type) {
+		/* 读取块设备内容 */
+		if(1 == blkcnt)
+			mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+		else
+			mmc_cmd(MMC_CMD_READ_MULTIPLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	} else {
+		/* 读取ESD信息 */
+		mmc_cmd(8, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	}
 
 	for(; nob > 0; nob--) {
 		cnt = 512 / 4;
@@ -529,7 +521,12 @@ err:
 	return blkcnt - nob;
 }
 
-static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
+/*
+ * 读取 ESD信息 或 设备块内容
+ * =0: 读取ESD信息
+ * =1: 正常读取设备块内容
+ */
+static u32 mmc_block_read_sdma(u8 type, u32 start, u32 blkcnt, u32 *dst)
 {
 #define MSC_DMA_ALIGN_SIZE              (64)
 #define MSC_BLOCK_SIZE                  (512)
@@ -572,7 +569,7 @@ static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
     msc_writew(MSC_XFER_MODE_R, xfer_data);
 
     /* 命令:设置块大小 */
-    mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
+	mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
 
     /* 命令:发送数据data */
     /* data:设置DMA边界 */
@@ -597,18 +594,28 @@ static u32 mmc_block_read_sdma(u32 start, u32 blkcnt, u32 *dst)
         flush_addr_start = flush_addr_start & ~(MSC_DMA_ALIGN_SIZE - 1);
         flush_cache(flush_addr_start, MSC_DMA_ALIGN_SIZE);
         flush_cache(flush_addr_start + buffer_size, MSC_DMA_ALIGN_SIZE);
-        //flush_invalid_cache(flush_addr_start + MSC_DMA_ALIGN_SIZE, buffer_size);
+		/* 读取块内容不执行invalid，加快启动速度，读取ESD需要保证数据完全一致 */
+		if (!type)
+			flush_invalid_cache(flush_addr_start + MSC_DMA_ALIGN_SIZE, buffer_size);
     } else {
         u32 buffer_size = blkcnt * MSC_BLOCK_SIZE;
-        //flush_invalid_cache(flush_addr_start, buffer_size);
+		/* 读取块内容不执行invalid，加快启动速度，读取ESD需要保证数据完全一致 */
+		if (!type)
+			flush_invalid_cache(flush_addr_start, buffer_size);
     }
     msc_writel(MSC_SDMASA_R, virt_to_phys(dst));
 
 
-    if(1 == blkcnt)
-        mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
-    else
-        mmc_cmd(MMC_CMD_READ_MULTIPLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	if (type) {
+		/* 读取块设备内容 */
+		if(1 == blkcnt)
+			mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+		else
+			mmc_cmd(MMC_CMD_READ_MULTIPLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	} else {
+		/* 读取ESD信息 */
+		mmc_cmd(8, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
+	}
 
     /* 清除中断标志 */
     u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
@@ -658,75 +665,6 @@ err:
     msc_reset(MSC_SW_RST_CMD_BIT);
     msc_reset(MSC_SW_RST_DAT_BIT);
     return blkcnt - nob;
-}
-
-static u32 mmc_get_ext_csd_poll(u32 *buffer)
-{
-	u32 cnt, nob;
-	u32 cmd_args = 0;
-	u32 xfer_data = 0;
-	u32 blkcnt = 1;
-	u32 *dst = (u32 *)buffer;
-
-	msc_debug("%s-->blkcnt: %d \n", __func__, blkcnt);
-	msc_debug("%s-->dst: 0x%x\n", __func__, dst);
-	msc_debug("%s-->bus_width: %d\n", __func__, bus_width);
-
-	nob = blkcnt;
-	msc_writew(MSC_BLOCKSIZE_R, 0x200);
-	msc_writew(MSC_BLOCKCOUNT_R, nob);
-
-	msc_set_xfer_bus_width(bus_width);
-	msc_debug("HOST_CTRL1_R			= %x\n", msc_readb(MSC_HOST_CTRL1_R));
-
-	xfer_data = msc_readw(MSC_XFER_MODE_R);
-	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
-	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;
-	xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
-				| MSC_AUTO_CMD12_ENABLE);
-	if (1 != blkcnt)
-		xfer_data |= MSC_MULTI_BLK_SEL_BIT;
-
-	msc_writew(MSC_XFER_MODE_R, xfer_data);
-
-	mmc_cmd(8, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
-
-	for(; nob > 0; nob--) {
-		cnt = 512 / 4;
-		if(wait_buf_rb())
-			goto err;
-
-		while(cnt--) {
-			*dst = msc_readl(MSC_BUF_DATA_R);
-			dst++;
-		}
-	}
-
-	if(wait_xfer_complete())
-		goto err;
-#ifdef DEBUG_MSC
-	if(xfer_err_stat_check())
-		goto err;
-#endif
-
-#if 0
-	/* DUMP EXT CSD */
-	int i = 0;
-	unsigned int *tmp_buf = (unsigned int *)buffer;
-	for (i = 0; i < 512 / 4; i++) {
-		if ( (i != 0) && (i % 4 == 0) ) {
-			printf("\n");
-		}
-		printf("%x:", tmp_buf[i]);
-	}
-	printf("\n");
-#endif
-
-err:
-	msc_sync_abort();
-	msc_reset(MSC_SW_RST_CMD_BIT);
-	msc_reset(MSC_SW_RST_DAT_BIT);
-	return blkcnt - nob;
 }
 
 
@@ -862,9 +800,9 @@ err:
 u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst)
 {
 #ifdef CONFIG_MMC_SDMA
-    return mmc_block_read_sdma(start, blkcnt, dst);
+    return mmc_block_read_sdma(1, start, blkcnt, dst);
 #else
-    return mmc_block_read_poll(start, blkcnt, dst);
+    return mmc_block_read_poll(1, start, blkcnt, dst);
 #endif
 }
 
@@ -872,9 +810,9 @@ u32 mmc_block_read(u32 start, u32 blkcnt, u32 *dst)
 static u32 mmc_get_ext_csd(u32 *buffer)
 {
 #ifdef CONFIG_MMC_SDMA
-	return mmc_get_ext_csd_sdma(buffer);
+	return mmc_block_read_sdma(0, 0, 1, buffer);
 #else
-	return mmc_get_ext_csd_poll(buffer);
+	return mmc_block_read_poll(0, 0, 1, buffer);
 #endif
 }
 
@@ -962,26 +900,20 @@ static void soc_mmc_enable_tuning(int enable)
 
 static int msc_sd_switch_high_speed_mode(void)
 {
-	u32 nob;
 	u32 blk_size;
 	u32 xfer_data = 0;
-	u32 dst;
 	u32 cnt;
 	int ret;
 
-	nob = 1;
 	blk_size = 64;
 
 	msc_writew(MSC_BLOCKSIZE_R, blk_size);
-	msc_writew(MSC_BLOCKCOUNT_R, nob);
+	msc_writew(MSC_BLOCKCOUNT_R, 1);    /* 读取blk */
 
 	xfer_data = msc_readw(MSC_XFER_MODE_R);
 
-	xfer_data &= ~MSC_MULTI_BLK_SEL_BIT;     /* single */
-	xfer_data &= ~MSC_DMA_ENABLE_BIT;        /* disable DMA */
-	xfer_data &= ~MSC_AUTO_CMD_ENABLE_MASK;
-	xfer_data |= MSC_BLOCK_COUNT_ENABLE_BIT;
-
+	 /* single / disable DMA */
+	xfer_data &= ~(MSC_MULTI_BLK_SEL_BIT | MSC_DMA_ENABLE_BIT | MSC_AUTO_CMD_ENABLE_MASK);
 	xfer_data |= (MSC_BLOCK_COUNT_ENABLE_BIT | MSC_DATA_XFER_DIR_BIT  \
 				| MSC_AUTO_CMD_DISABLE);
 
@@ -999,9 +931,10 @@ static int msc_sd_switch_high_speed_mode(void)
 		goto err;
 	}
 
+	/* 将其读出，但不判断返回结果, */
 	cnt = blk_size / 4;
 	while(cnt--)
-		dst = msc_readl(MSC_BUF_DATA_R);
+		msc_readl(MSC_BUF_DATA_R);
 
 	if(wait_xfer_complete()) {
 		ret = -1;
@@ -1019,14 +952,17 @@ err:
 
 static int sd_found(void)
 {
+	/* 去除不必要代码,减少生成镜像大小 */
+#ifndef CONFIG_STORAGE_REDUCE_SD
+
 	u8 *resp;
 	u32 cardaddr, timeout = 0xffff;
 	int rca;
+	struct card_info_params *card_params = NULL;
 
 	msc_debug("sd_found\n");
 #ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
 	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
-	printf("card params address=0x%p\n", card_params);
 #endif
 
 	resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
@@ -1087,14 +1023,28 @@ static int sd_found(void)
 	if (card_params) {
 		card_params->magic      = 0x534f5452;  /* RTOS */
 		card_params->version    = 0x0001;
-		card_params->type       = 1, /* MMC */
+		card_params->type       = 1, /* SD */
 		card_params->rca        = rca >> 16;
 		card_params->highcap    = highcap;
 		card_params->bus_width  = bus_width;
 		card_params->max_speed  = MSC_WORKING_CLK;
+#ifdef CONFIG_JZ_MMC_MSC0
+		card_params->host_index = 0;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC1
+		card_params->host_index = 1;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC2
+		card_params->host_index = 2;
+#endif
 	}
+	spl_rtos_args.card_params = card_params;
 
 	return 0;
+
+#else
+	return -1;
+#endif
 }
 
 
@@ -1127,14 +1077,16 @@ void soc_mmc_execute_tuning(void)
 
 static int mmc_found(void)
 {
+	/* 去除不必要代码,减少生成镜像大小 */
+#ifndef CONFIG_STORAGE_REDUCE_MMC
 	u8 *resp;
 	u32 rca, status;
 	u32 buswidth_arg, buswidth, timeout = 100;
+	struct card_info_params *card_params = NULL;
 
 	msc_debug("mmc_found\n");
 #ifdef CONFIG_SPL_RTOS_CARD_PARAMS_BASE
 	card_params = (struct card_info_params *)(CONFIG_SPL_RTOS_CARD_PARAMS_BASE);
-	printf("card params address=0x%p\n", card_params);
 #endif
 	msc_sync_abort();
 
@@ -1191,6 +1143,7 @@ static int mmc_found(void)
 		return 0;
 	}
 
+
 	/* 切换高速加快load速度 获取Card 信息,下一阶段无需再次初始化 */
 	msc_set_xfer_bus_width(bus_width);
 
@@ -1240,13 +1193,32 @@ static int mmc_found(void)
 	card_params->bus_width  = bus_width;
 	card_params->max_speed  = MSC_WORKING_CLK;
 
+#ifdef CONFIG_JZ_MMC_MSC0
+	card_params->host_index = 0;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC1
+	card_params->host_index = 1;
+#endif
+#ifdef CONFIG_JZ_MMC_MSC2
+	card_params->host_index = 2;
+#endif
+	spl_rtos_args.card_params = card_params;
+
 	return 0;
+
+#else
+
+	return -1;
+#endif
 }
 
 static int jzmmc_init(void)
 {
 	u8 *resp;
 	u32 ret = 0;
+
+	spl_rtos_args.card_params = NULL;
+	spl_rtos_args.os_boot_args = NULL;
 
 	mmc_init_host();
 
@@ -1400,7 +1372,7 @@ unsigned char second_cpu_little_stack[128] __attribute__((aligned(8)));
 
 __attribute__ ((noreturn)) void do_boot_second_cpu(void)
 {
-	rtos_raw_start(&rtos_header);
+	rtos_raw_start(&rtos_header, &spl_rtos_args);
 	while (1);
 }
 
@@ -1534,14 +1506,33 @@ static void mmc_load_rtos_boot(void)
 
 	flush_cache_all();
 
+#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_RTOS_LOAD_OS)
+	/* 由RTOS 加载OS镜像, SPL等待OS加载完成，并由SPL完成后续引导 */
+	os_boot_args.magic = 0x53475241;  /* ARGS */
+	os_boot_args.boot_type = SPL_RTOS_TYPE_LOAD_OS;
+	os_boot_args.is_loading = 0;
+	os_boot_args.command_line = CONFIG_SYS_SPL_ARGS_ADDR;
+	spl_get_built_in_gpt_partition(CONFIG_SPL_OS_NAME, &os_boot_args.offset_sector, &os_boot_args.size_sector);
+
+	spl_rtos_args.os_boot_args = &os_boot_args;
+#endif
+
 #ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
 	start_second_cpu();
 #else
 /* NOTE: not return */
-	rtos_raw_start(&rtos_header);
+	rtos_raw_start(&rtos_header, &spl_rtos_args);
 #endif
 }
+
+void *spl_rtos_get_spl_image_info(void)
+{
+	return os_boot_args.spl_image_info;
+}
+
 #endif
+
+
 
 char *spl_mmc_load_image(void)
 {
@@ -1572,11 +1563,19 @@ char *spl_mmc_load_image(void)
 	register_jzsd_ota_ops(&jzsd_ota_ops);
 	return spl_jzsd_ota_load_image();
 #else
-	mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
+	if (os_boot_args.boot_type == SPL_RTOS_TYPE_LOAD_OS) {
+		/* 等待RTOS加载镜像文件 */
+		while (!os_boot_args.is_loading) {
+			mdelay(10);
+		}
+	} else {
+		/* 正常加载 */
+		mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
+	}
+
 #endif
 #else
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
 #endif
-
 	return NULL;
 }

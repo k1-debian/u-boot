@@ -33,7 +33,7 @@
 #include <malloc.h>
 #include <linux/compiler.h>
 #include <regulator.h>
-
+#include "spl_rtos_argument.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -257,6 +257,13 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		debug("SPL: Un-supported Boot Device\n");
 		hang();
 	}
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+	/* RTOS只完成引导,但没有启动 */
+	if (spl_rtos_get_spl_image_info()) {
+		memcpy(&spl_image, spl_rtos_get_spl_image_info(), sizeof(struct rtos_boot_os_args) );
+	}
+#endif
 
 	switch (spl_image.os) {
 	case IH_OS_U_BOOT:
