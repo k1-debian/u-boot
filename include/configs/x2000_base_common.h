@@ -544,11 +544,19 @@
 #endif
 
 #ifndef CONFIG_ROOTFS_DEV
+
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
+
+#ifdef CONFIG_RTOS_CONN_WITH_OS
+#define CONFIG_ROOTFS_DEV "root=/dev/mtdblock0 rootwait"
+#else
 #define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
+#endif
+
 #else
 #define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
 #endif
+
 #endif
 
 #define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_DEV" "ARG_ROOTFS_TYPE

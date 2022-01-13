@@ -542,6 +542,7 @@ static void spl_sfc_rtos_boot(void)
 
 	debug("rtos:%s %x\n", rtos_name, rtos_offset);
 #else
+	#ifdef CONFIG_SPL_RTOS_NAME
 	struct jz_sfcnand_partition_param *partitions = get_partitions();
 
 	rtos_offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_NAME);
@@ -550,6 +551,9 @@ static void spl_sfc_rtos_boot(void)
 		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_offset = CONFIG_RTOS_OFFSET;
 	}
+	#else
+		rtos_offset = CONFIG_RTOS_OFFSET;
+	#endif
 #endif
 
 	if (spl_sfc_rtos_load(&rtos_header, rtos_offset))
