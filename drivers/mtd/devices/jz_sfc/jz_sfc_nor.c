@@ -659,9 +659,9 @@ int32_t sfc_nor_flash_init(void)
 	}
 	flash->flash_info = nor_info;
 
-#if define CONFIG_SFC_NOR_INIT_RATE
+#if defined CONFIG_SFC_NOR_INIT_RATE
 	sfc_rate = CONFIG_SFC_NOR_INIT_RATE;
-#elif define CONFIG_SFC_NOR_RATE
+#elif defined CONFIG_SFC_NOR_RATE
 	sfc_rate = CONFIG_SFC_NOR_RATE;
 #endif
 
