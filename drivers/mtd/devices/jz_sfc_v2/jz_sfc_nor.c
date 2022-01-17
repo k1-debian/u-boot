@@ -675,8 +675,10 @@ int sfc_nor_flash_init(void)
 	}
 	memset(flash, 0, sizeof(struct sfc_flash));
 
-#ifdef CONFIG_SFC_NOR_INIT_RATE
+#if define CONFIG_SFC_NOR_INIT_RATE
 	sfc_rate = CONFIG_SFC_NOR_INIT_RATE;
+#elif define CONFIG_SFC_NOR_RATE
+	sfc_rate = CONFIG_SFC_NOR_RATE;
 #endif
 
 	flash->sfc = sfc_res_init(sfc_rate);
