@@ -548,7 +548,7 @@
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
 
 #ifdef CONFIG_RTOS_CONN_WITH_OS
-#define CONFIG_ROOTFS_DEV "root=/dev/mtdblock0 rootwait"
+#define CONFIG_ROOTFS_DEV "root=/dev/mtdblock0 rootwait" " clk_ignore_unused "
 #else
 #define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
 #endif
