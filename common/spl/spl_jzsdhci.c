@@ -1506,7 +1506,7 @@ static void mmc_load_rtos_boot(void)
 
 	flush_cache_all();
 
-#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_RTOS_LOAD_OS)
+#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_RTOS_CONN_WITH_OS)
 	/* 由RTOS 加载OS镜像, SPL等待OS加载完成，并由SPL完成后续引导 */
 	os_boot_args.magic = 0x53475241;  /* ARGS */
 	os_boot_args.boot_type = SPL_RTOS_TYPE_LOAD_OS;
