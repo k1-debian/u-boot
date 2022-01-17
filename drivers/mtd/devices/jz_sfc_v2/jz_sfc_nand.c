@@ -849,10 +849,8 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz
 		}
 		memset(flash, 0, sizeof(struct sfc_flash));
 
-#if defined CONFIG_SFC_NAND_INIT_RATE
+#ifdef CONFIG_SFC_NAND_INIT_RATE
 		sfc_rate = CONFIG_SFC_NAND_INIT_RATE;
-#elif defined CONFIG_SFC_NAND_RATE
-		sfc_rate = CONFIG_SFC_NAND_RATE;
 #endif
 #ifdef CONFIG_BURNER
 		if(sfc_frequency) {
