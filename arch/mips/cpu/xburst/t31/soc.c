@@ -172,12 +172,4 @@ int disable_interrupts(void)
 }
 extern void flush_cache_all(void);
 
-unsigned long do_go_exec(ulong (*entry)(int, char * const []), int argc,
-                char * const argv[])
-{
-        printf("Flush cache all before jump. \n");
-        flush_cache_all();
-
-        return entry (argc, argv);
-}
 #endif /*!CONFIG_SPL_BUILD*/
