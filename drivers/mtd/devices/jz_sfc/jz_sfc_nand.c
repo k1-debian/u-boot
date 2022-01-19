@@ -1009,7 +1009,7 @@ struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, int read_back,uint32_t sfc_frequency, struct jz_sfcnand_burner_param *param)
+int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode, uint32_t sfc_frequency, int read_back, struct jz_sfcnand_burner_param *param)
 {
 	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
