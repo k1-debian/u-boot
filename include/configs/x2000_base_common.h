@@ -244,6 +244,7 @@
 #define CONFIG_NOR_MINOR_VERSION_NUMBER		0
 #define CONFIG_NOR_REVERSION_NUMBER		0
 #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
+#define CONFIG_FLASH_TYPE "flashtype=nor"
 #endif
 
 /* sfc nand config */
@@ -271,6 +272,7 @@
 #define MTDIDS_DEFAULT                  "nand0:nand"
 #define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
 #define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
+#define CONFIG_FLASH_TYPE "flashtype=nand"
 #endif
 
 #define CONFIG_SYS_NAND_SELF_INIT
@@ -554,7 +556,7 @@
 #endif
 
 #else
-#define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
+#define CONFIG_ROOTFS_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro2"
 #endif
 
 #endif
@@ -567,7 +569,7 @@
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
 #define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
 #else
-#define CONFIG_ROOTFS2_DEV "root=/dev/mtdblock_bbt_ro4"
+#define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro4"
 #endif
 #endif
 
