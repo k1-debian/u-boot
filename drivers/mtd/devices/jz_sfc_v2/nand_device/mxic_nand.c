@@ -5,7 +5,7 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
-#define MXIC_DEVICES_NUM         3
+#define MXIC_DEVICES_NUM         4
 #define MXIC_CMD_GET_ECC	0x7c
 #define THOLD	    4
 #define TSETUP	    4
@@ -71,12 +71,32 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.tRD = TRD,
-		.tPP = TPP,
-		.tBE = TBE,
+		.tRD = 70,
+		.tPP = 760,
+		.tBE = 6,
 
-		.plane_select = 1,
-		.ecc_max = 0x4,
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+	[3] = {
+	/*MX35LF4GE4AD*/
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 4 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 110,
+		.tPP = 800,
+		.tBE = 6,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
 };
@@ -85,6 +105,7 @@ static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x12, "MX35LF1GE4AB", &mxic_param[0]),
 	DEVICE_ID_STRUCT(0x22, "MX35LF2GE4AB", &mxic_param[1]),
 	DEVICE_ID_STRUCT(0x26, "MX35LF2GE4AD", &mxic_param[2]),
+	DEVICE_ID_STRUCT(0x37, "MX35LF4GE4AD", &mxic_param[3]),
 };
 
 
@@ -99,6 +120,7 @@ static cdt_params_t *mxic_get_cdt_params(struct sfc_flash *flash, uint8_t device
 	    case 0x12:
 	    case 0x22:
 	    case 0x26:
+	    case 0x37:
 		    break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -149,7 +171,6 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 	switch(device_id) {
 		case 0x12:
 		case 0x22:
-		case 0x26:
 			switch((ecc_status >> 0x4) & 0x3) {
 				case 0x2:
 					ret = -EBADMSG;
@@ -164,6 +185,24 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 				default:
 					pr_err("it is flash Unknown state, device_id: 0x%02x\n", device_id);
 					ret = -EIO;
+			}
+			break;
+		case 0x26:
+		case 0x37:
+			switch((ecc_status >> 0x4) & 0x3) {
+			    case 0x0:
+				    ret = 0;
+				    break;
+			    case 0x1:
+				    if((ret = get_ecc_value(flash)) > 0x8)
+					    ret = -EBADMSG;
+				    break;
+			    case 0x2:
+				    ret = -EBADMSG;
+				    break;
+			    default:
+				    printf("it is flash Unknown state, device_id: 0x%02x\n", device_id);
+				    ret = -EIO;
 			}
 			break;
 		default:

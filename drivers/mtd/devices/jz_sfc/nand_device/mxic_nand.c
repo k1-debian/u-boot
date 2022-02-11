@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define MXIC_DEVICES_NUM         2
+#define MXIC_DEVICES_NUM         4
 #define MXIC_CMD_GET_ECC	0x7c
 #define THOLD	    4
 #define TSETUP	    4
@@ -55,11 +55,51 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[2] = {
+	/*MX35LF2GE4AD*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 70,
+		.tPP = 760,
+		.tBE = 6,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+	[3] = {
+	/*MX35LF4GE4AD*/
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 4 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 110,
+		.tPP = 800,
+		.tBE = 6,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x12, "MX35LF1GE4AB", &mxic_param[0]),
 	DEVICE_ID_STRUCT(0x22, "MX35LF2GE4AB", &mxic_param[1]),
+	DEVICE_ID_STRUCT(0x26, "MX35LF2GE4AD", &mxic_param[2]),
+	DEVICE_ID_STRUCT(0x37, "MX35LF4GE4AD", &mxic_param[3]),
 };
 
 static void mxic_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -162,6 +202,24 @@ retry:
 				    ret = -EIO;
 			}
 			break;
+		case 0x26:
+		case 0x37:
+			switch((ecc_status >> 0x4) & 0x3) {
+			    case 0x0:
+				    ret = 0;
+				    break;
+			    case 0x1:
+				    if((ret = get_ecc_value(flash)) > 0x8)
+					    ret = -EBADMSG;
+				    break;
+			    case 0x2:
+				    ret = -EBADMSG;
+				    break;
+			    default:
+				    printf("it is flash Unknown state, device_id: 0x%02x\n", device_id);
+				    ret = -EIO;
+			}
+			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			ret = -EIO;
@@ -183,6 +241,8 @@ static void mxic_single_read(struct sfc_transfer *transfer, struct flash_operati
 			columnaddr |= (plane_flag << 12);
 			break;
 		case 0x12:
+		case 0x26:
+		case 0x37:
 			break;
 		default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
@@ -219,6 +279,8 @@ static void mxic_quad_read(struct sfc_transfer *transfer, struct flash_operation
 			columnaddr |= (plane_flag << 12);
 			break;
 		case 0x12:
+		case 0x26:
+		case 0x37:
 			break;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
@@ -255,6 +317,8 @@ static void mxic_single_load(struct sfc_transfer *transfer, struct flash_operati
 			columnaddr |= (plane_flag << 12);
 			break;
 		case 0x12:
+		case 0x26:
+		case 0x37:
 			break;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
@@ -290,6 +354,8 @@ static void mxic_quad_load(struct sfc_transfer *transfer, struct flash_operation
 			columnaddr |= (plane_flag << 12);
 			break;
 		case 0x12:
+		case 0x26:
+		case 0x37:
 		    break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
