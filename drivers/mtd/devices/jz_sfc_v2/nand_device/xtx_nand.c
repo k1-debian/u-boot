@@ -94,7 +94,9 @@ static cdt_params_t *xtx_get_cdt_params(struct sfc_flash *flash, uint8_t device_
 	CDT_PARAMS_INIT(xtx_nand->cdt_params);
 
 	switch(device_id) {
-	    case 0xA1:
+	    case 0xE1:
+	    case 0xE2:
+	    case 0xC1:
 		    break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
