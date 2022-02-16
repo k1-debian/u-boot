@@ -230,7 +230,7 @@ int sdhci_send_command(struct mmc *mmc, struct mmc_cmd *cmd,
 		}
 		if (--retry == 0)
 			break;
-		udelay(10);
+		mdelay(10);
 	} while ((stat & mask) != mask);
 
 	if (retry == 0) {
