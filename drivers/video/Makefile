@@ -82,6 +82,7 @@ COBJS-$(CONFIG_VIDEO_LH155) += jz_lcd/lcd_panel/lh155.o
 COBJS-$(CONFIG_VIDEO_SPILCD_RRJ_R108103_GC9203_128x220) += jz_lcd/lcd_panel/spilcd_gc9203.o
 COBJS-$(CONFIG_VIDEO_MA0060) += jz_lcd/lcd_panel/lcd_ma0060.o
 COBJS-$(CONFIG_VIDEO_FW050) += jz_lcd/lcd_panel/lcd_fw050.o
+COBJS-$(CONFIG_VIDEO_ST7789V) += jz_lcd/lcd_panel/lcd_st7798v.o
 COBJS-$(CONFIG_JZ_MIPI_DSI) += jz_lcd/jz_mipi_dsi/jz_mipi_dsi.o jz_lcd/jz_mipi_dsi/jz_mipi_dsi_lowlevel.o jz_lcd/jz_mipi_dsi/jz_mipi_dsih_hal.o \
 				jz_lcd/jz_mipi_dsi/write_command_to_mipi.o
 COBJS-$(CONFIG_VIDEO_JZ4775) += jz_lcd/backlight_pwm.o jz_lcd/jz4775_lcd.o
