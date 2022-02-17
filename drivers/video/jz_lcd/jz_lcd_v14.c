@@ -49,8 +49,8 @@ struct jzfb_config_info lcd_config_info;
 static int lcd_enable_state = 0;
 void board_set_lcd_power_on(void);
 void flush_cache_all(void);
-void lcd_close_backlight(void);
-void lcd_set_backlight_level(int num);
+/* void lcd_close_backlight(void); */
+/* void lcd_set_backlight_level(int num); */
 #define fb_write(addr,config)				\
 	writel(config,DPU_BASE+addr)
 #define fb_read(addr)				\
@@ -1042,6 +1042,7 @@ static void jzfb_cmp_start()
 {
 	if(!(fb_read(DC_ST) & DC_FRM_WORKING)) {
 		fb_write(DC_FRM_CFG_CTRL, DC_FRM_START);
+		printf("Composer  enabled.\n");
 	} else {
 		printf("Composer has enabled.\n");
 	}
@@ -1287,6 +1288,18 @@ static void lcd_disable(struct jzfb_config_info *info, stop_mode_t stop_md)
 	return;
 }
 
+static void wait_slcd_busy()
+{
+	int count = 100000;
+	while ((fb_read(DC_SLCD_ST) & DC_SLCD_ST_BUSY)
+			&& count--) {
+		udelay(10);
+	}
+	if (count < 0) {
+		serial_puts("SLCDC wait busy state wrong\n");
+	}
+}
+
 
 static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
 {
@@ -1300,11 +1313,10 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
 
 	if (info->lcd_type != LCD_TYPE_SLCD)
 		return;
-
 	is_enabled = lcd_enable_state;
-	if (!is_enabled) {
-		lcd_enable();
-	}
+	/* if (!is_enabled) { */
+	/* 	lcd_enable(); */
+	/* } */
 	smart_config = info->smart_config;
 	data_table = smart_config->data_table;
 	length_data_table = smart_config->length_data_table;
@@ -1332,17 +1344,6 @@ static void jzfb_slcd_mcu_init(struct jzfb_config_info *info)
 	}
 }
 
-static void wait_slcd_busy()
-{
-	int count = 100000;
-	while ((fb_read(DC_SLCD_ST) & DC_SLCD_ST_BUSY)
-			&& count--) {
-		udelay(10);
-	}
-	if (count < 0) {
-		serial_puts("SLCDC wait busy state wrong\n");
-	}
-}
 
 
 void slcd_set_mcu_register(struct jzfb_config_info *info,unsigned long cmd, unsigned long data)
@@ -1871,7 +1872,6 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 	unsigned int intc = 0;
 
 	jzfb_set_fix_par(info);
-
 	jzfb_videomode_to_var(&info->var, mode);
 
 	jzfb_colormode_to_var(&info->var, &jzfb_colormodes[0]);
@@ -1900,6 +1900,18 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 
 	if(lcd_config_info.lcd_type == LCD_TYPE_MIPI_SLCD || LCD_TYPE_TFT || LCD_TYPE_MIPI_TFT) {
 		fb_write(DC_FRM_CFG_ADDR, info->framedesc_phys[info->current_frm_desc]);
+	}
+	if(lcd_config_info.lcd_type == LCD_TYPE_SLCD){
+	/* printf("---------------slcd_reg------------------\n"); */
+	/* printf("SLCD_CFG:           %lx\n",fb_read(DC_SLCD_CFG)); */
+	/* printf("SLCD_WR_DUTY:       %lx\n",fb_read(DC_SLCD_WR_DUTY)); */
+	/* printf("SLCD_TIMING:        %lx\n",fb_read(DC_SLCD_TIMING)); */
+	/* printf("SLCD_FRM_SIZE:      %lx\n",fb_read(DC_SLCD_FRM_SIZE)); */
+	/* printf("SLCD_SLOW_TIME:     %lx\n",fb_read(DC_SLCD_SLOW_TIME)); */
+	/* printf("SLCD_CMD:           %lx\n",fb_read(DC_SLCD_CMD)); */
+	/* printf("SLCD_ST:            %lx\n",fb_read(DC_SLCD_ST)); */
+	/* printf("---------------slcd_reg------------------\n"); */
+		jzfb_slcd_mcu_init(info);
 	}
 
 #ifdef CONFIG_JZ_MIPI_DSI
@@ -1942,7 +1954,7 @@ void lcd_ctrl_init(void *lcd_base)
 		pixel_clock_rate *= 2;
 	}
 
-	debug("pixel_clock_rate = %d\n",pixel_clock_rate);
+	printf("pixel_clock_rate = %d\n",pixel_clock_rate);
 	clk_set_rate(LCD, pixel_clock_rate);
 
 	/*lcd_close_backlight();*/

@@ -566,11 +566,23 @@
 #define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
 #define CONFIG_LCD_LOGO
 
+//#define CONFIG_VIDEO_ST7789V		// SLCD
+//#define CONFIG_SMART_LCD
+#ifdef CONFIG_SMART_LCD
+#define CONFIG_SLCD_VDDEN_PIN		GPIO_PB(21)
+#define CONFIG_SLCD_RST_PIN			GPIO_PD(13)
+#define CONFIG_SLCD_CS_PIN			GPIO_PD(10)
+#define CONFIG_SLCD_RD_PIN			GPIO_PD(12)
+#define CONFIG_SLCD_BL_PIN			GPIO_PD(14)	// backlight
+#endif
+
 /*#define CONFIG_CMD_LOGO_RLE*/
 /*#define CONFIG_RLE_LCD_LOGO*/
 /*#define CONFIG_LOGO_EXTEND*/
 /*#define CONFIG_LCD_INFO_BELOW_LOGO*/
 
+
+#define CONFIG_GPIO_LCD_PWM     GPIO_PD(14)		// for backlight
 #define CONFIG_SYS_PWM_PERIOD       10000 /* Pwm period in ns */
 #define CONFIG_SYS_PWM_CHN      3  /* Pwm channel ok*/
 #define CONFIG_SYS_PWM_FULL 256
