@@ -162,13 +162,14 @@ struct params {
 #define DDR_VAL		((1 << 30) | (1 << 29) | (1 << 0))
 
 			/*slect sclk_a; div = 1/16 frq=39M*/
-#define MSC0_VAL	((0 << 30) | (1 << 29) | (3 << 0))
+			/* Keep default value, disable tuning , tx 135 phase.*/
+#define MSC0_VAL	((0 << 30) | (1 << 29) | (3 << 0) | (1 << 20) | (1 << 15))
 
 			/*slect sclk_a; div = 1/20 frq=31.2M*/
-#define MSC1_VAL	((0 << 30) | (1 << 29) | (4 << 0))
+#define MSC1_VAL	((0 << 30) | (1 << 29) | (4 << 0) | (1 << 20) | (1 << 15))
 
 			/*slect sclk_a; div = 1/24 frq=26M*/
-#define MSC2_VAL	((0 << 30) | (1 << 29) | (5 << 0))
+#define MSC2_VAL	((0 << 30) | (1 << 29) | (5 << 0) | (1 << 20) | (1 << 15))
 
 			/*slect sclk_a; div = 1/16 frq=78M*/
 #define SFC_VAL		((0 << 30) | (1 << 29) | (7 << 0))
