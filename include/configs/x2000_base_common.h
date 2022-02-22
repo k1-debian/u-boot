@@ -535,7 +535,9 @@
 
 /* boot args rootfs
  */
-#if defined(CONFIG_ROOTFS_UBI)
+#if defined(CONFIG_ROOTFS_EXT2)
+#define ARG_ROOTFS_TYPE " ro" /* rootfstype=ext2 */
+#elif defined(CONFIG_ROOTFS_UBI)
 #define ARG_ROOTFS_TYPE "rootfstype=ubifs ro"
 #elif defined(CONFIG_ROOTFS_SQUASHFS)
 #define ARG_ROOTFS_TYPE "rootfstype=squashfs ro"
@@ -561,7 +563,13 @@
 
 #endif
 
-#define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_DEV" "ARG_ROOTFS_TYPE
+#ifdef CONFIG_LPJ
+#define CONFIG_BOGOMIPS "lpj="CONFIG_LPJ
+#else
+#define CONFIG_BOGOMIPS ""
+#endif
+
+#define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_DEV" "ARG_ROOTFS_TYPE" "CONFIG_BOGOMIPS
 
 /* boot args rootfs2
  */
@@ -574,7 +582,9 @@
 #endif
 
 #ifdef CONFIG_ROOTFS2_DEV
-#if defined(CONFIG_ROOTFS2_UBI)
+#if defined(CONFIG_ROOTFS2_EXT2)
+#define ARG_ROOTFS2_TYPE " ro" /* rootfstype=ext2 */
+#elif defined(CONFIG_ROOTFS2_UBI)
 #define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
 #elif defined(CONFIG_ROOTFS2_SQUASHFS)
 #define ARG_ROOTFS2_TYPE "rootfstype=squashfs ro"
