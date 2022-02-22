@@ -43,7 +43,10 @@ static inline int rtos_check_header(struct rtos_header *rtos)
 
 static inline void rtos_raw_start(struct rtos_header *rtos, void *arg)
 {
-	__attribute__ ((noreturn)) void (*func)(void *arg) = (void *)rtos->img_start;
+#ifndef CONFIG_RTOS_CAN_RETURN
+	__attribute__ ((noreturn))
+#endif
+	void (*func)(void *arg) = (void *)rtos->img_start;
 	func(arg);
 }
 
