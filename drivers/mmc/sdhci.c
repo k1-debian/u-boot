@@ -121,7 +121,7 @@ static int sdhci_transfer_data(struct sdhci_host *host, struct mmc_data *data,
 		}
 #endif
 		if (timeout-- > 0)
-			udelay(10);
+			udelay(500);
 		else {
 			printf("Transfer data timeout\n");
 			return -1;
@@ -230,7 +230,7 @@ int sdhci_send_command(struct mmc *mmc, struct mmc_cmd *cmd,
 		}
 		if (--retry == 0)
 			break;
-		mdelay(10);
+		udelay(10);
 	} while ((stat & mask) != mask);
 
 	if (retry == 0) {
