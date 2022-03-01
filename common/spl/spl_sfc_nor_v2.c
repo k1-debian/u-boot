@@ -810,12 +810,16 @@ static void spl_sfc_nor_rtos_boot(void)
 
 	debug("rtos:%s %x\n", rtos_name, rtos_addr);
 #else
+    #ifdef CONFIG_SPL_RTOS_NAME
 	rtos_addr = get_part_offset_by_name(partition, CONFIG_SPL_RTOS_NAME);
 	if (rtos_addr == -1) {
 		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
 		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_addr = CONFIG_RTOS_OFFSET;
 	}
+    #else
+    rtos_addr = CONFIG_RTOS_OFFSET;
+    #endif
 #endif
 
 	if (spl_sfc_nor_rtos_load(&rtos_header, rtos_addr))
