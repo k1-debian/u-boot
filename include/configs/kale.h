@@ -223,7 +223,7 @@
     #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/pzqi/uImage; bootm 0x80600000"
     /*#define CONFIG_BOOTCOMMAND "loady 0x80600000; bootm 0x80600000"*/
   #elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2800; bootm 0x80600000"
+    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80a00000 0x1800 0x3000; bootm 0x80a00000"
     /*#define CONFIG_BOOTCOMMAND "set dtb 0x83000000; set uImage 0x80600000; mmc dev 0;mmc read ${uImage} 0x1800 0x2800; mmc read ${dtb} 0x5800 0x100; bootm ${uImage} - ${dtb}"*/ /*dtb support*/
   #elif defined(CONFIG_SPL_SFC_NOR)
 	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x600000 0x80920000 ;bootm 0x80920000"
@@ -296,6 +296,7 @@
  * Drivers configuration.
  */
 
+#define MSC_WORKING_CLK 24000000
 /* MMC */
 #ifdef CONFIG_JZ_MMC_MSC0
 #define CONFIG_GENERIC_MMC
