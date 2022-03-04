@@ -1366,6 +1366,28 @@ void slcd_cfg_init(struct jzfb_smart_config *smart_config)
 		slcd_cfg &= ~DC_TE_MIPI_SWITCH;
 	}
 
+	if(smart_config->te_switch){
+		slcd_cfg |= DC_TE_SWITCH;
+		if(smart_config->te_dp) {
+		    slcd_cfg |= DC_TE_DP;
+		} else {
+		    slcd_cfg &= ~DC_TE_DP;
+		}
+		if(smart_config->te_md) {
+		    slcd_cfg |= DC_TE_MD;
+		} else {
+		    slcd_cfg &= ~DC_TE_MD;
+		}
+		if(smart_config->te_anti_jit) {
+		    slcd_cfg |= DC_TE_ANTI_JIT;
+		} else {
+		    slcd_cfg &= ~DC_TE_ANTI_JIT;
+		}
+
+	} else {
+		slcd_cfg &= ~DC_TE_SWITCH;
+	}
+
 	if(smart_config->dc_md) {
 		slcd_cfg |= DC_DC_MD;
 	} else {
@@ -1950,9 +1972,9 @@ void lcd_ctrl_init(void *lcd_base)
 	pixel_clock_rate = PICOS2KHZ(lcd_config_info.modes->pixclock) * 1000;
 
 	/* smart lcd WR freq = (lcd pixel clock)/2 */
-	if (lcd_config_info.lcd_type == LCD_TYPE_SLCD) {
-		pixel_clock_rate *= 2;
-	}
+	/* if (lcd_config_info.lcd_type == LCD_TYPE_SLCD) { */
+	/* 	pixel_clock_rate *= 2; */
+	/* } */
 
 	printf("pixel_clock_rate = %d\n",pixel_clock_rate);
 	clk_set_rate(LCD, pixel_clock_rate);

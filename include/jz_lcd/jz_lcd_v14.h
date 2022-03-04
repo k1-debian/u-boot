@@ -427,6 +427,9 @@ struct jzfb_smart_config{
 		unsigned int wr_md:1;
 		unsigned int te_mipi_switch:1;
 		unsigned int te_switch:1;
+		unsigned int te_dp:1;
+		unsigned int te_md:1;
+		unsigned int te_anti_jit:1;
 		enum smart_lcd_dwidth dwidth;
 		enum smart_lcd_cwidth cwidth;
 	} ;
