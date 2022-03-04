@@ -67,7 +67,7 @@ static inline void LPDDR2_SCKX4BL512160AAC_init(void *data)
 	.type	= LPDDR2,						\
 	.freq	= CONFIG_LPDDR2_SCKX4BL512160AAC_MEM_FREQ,			\
 	.size	= 64,						\
-	.init	= LPDDR2_SCB4BL256160AFL19GI_init,				\
+	.init	= LPDDR2_SCKX4BL512160AAC_init,				\
 }
 
 

@@ -285,6 +285,7 @@ static void reset_controller(void)
 
 static void ddrc_post_init(void)
 {
+	mem_remap();
 	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
 	ddr_writel(global_reg_value->DDRC_CTRL_VALUE, DDRC_CTRL);

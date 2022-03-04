@@ -79,23 +79,23 @@
 #define CONFIG_DDR_DLL_OFF
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
-/*#define CONFIG_DDR_FORCE_SELECT_CS1*/
-/* #define CONFIG_DDR_TYPE_DDR2 */
+#define CONFIG_DDR_FORCE_SELECT_CS1
+#define CONFIG_DDR_TYPE_DDR2
 #define CONFIG_DDR_TYPE_LPDDR2
 
 #ifdef CONFIG_DDR_TYPE_LPDDR2
 #define CONFIG_LPDDR2_M54D5121632A
-/*#define CONFIG_LPDDR2_SCB4BL256160AFL19GI*/
-/* #define CONFIG_LPDDR2_SCKX4BL512160AAC */
+#define CONFIG_LPDDR2_SCB4BL256160AFL19GI
+#define CONFIG_LPDDR2_SCKX4BL512160AAC
 #endif
 
 #ifdef CONFIG_DDR_TYPE_DDR2
-/* #define CONFIG_LVDDR_INNOPHY */
-/* #define CONFIG_DDR2_W975116NG18I */
+#define CONFIG_LVDDR_INNOPHY
+#define CONFIG_DDR2_W975116NG18I
 #define CONFIG_DDR2_W971GV6NG
 #define CONFIG_DDR2_M14D2561616A
-/* #define CONFIG_DDR2_M14D1G1664A */
-/* #define CONFIG_LVDDR_W9464L6KH */
+#define CONFIG_DDR2_M14D1G1664A
+#define CONFIG_LVDDR_W9464L6KH
 #endif
 
 
@@ -125,9 +125,17 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 "
-/*#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=128M@0x0 "*/
 
+#define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
+#define CONFIG_BOOTARGS_MEM_32M			"mem=32M@0x0"	/* customize bootargs for default env.*/
+#define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
+#define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
+
+#if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
+	#define BOOTARGS_COMMON "console=ttyS2,115200n8 "
+#else
+	#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=64M@0x0 "
+#endif
 /**
  * Boot command definitions.
  */
