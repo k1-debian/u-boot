@@ -58,6 +58,12 @@ extern void sdram_init(void);
 extern void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr);
 extern void flush_cache_all(void);
 
+void release_soft_reset(void)
+{
+	cpm_outl(cpm_inl(CPM_CLKGR0) | CPM_CLKGR_OTG, CPM_CLKGR0);
+	cpm_outl(cpm_inl(CPM_SRBC) & (~CPM_SLBC_OTG_SR), CPM_SRBC);
+	cpm_outl(cpm_inl(CPM_CLKGR0) & (~CPM_CLKGR_OTG), CPM_CLKGR0);
+}
 
 void board_init_f(ulong dummy)
 {
@@ -116,6 +122,9 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
 #endif
+
+	/* Release otg soft reset. */
+	release_soft_reset();
 
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */
