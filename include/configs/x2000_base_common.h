@@ -632,6 +632,7 @@
     #define CONFIG_SPL_RTOS_NAME    "rtos"
     #define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " " ARGS_ROOTFS
     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #define CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME    "rtosdata"
     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
     #define CONFIG_BOOTX_BOOTARGS ""
     #undef  CONFIG_BOOTCOMMAND

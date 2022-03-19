@@ -9,6 +9,7 @@ partition:
 	kernel    =     1m,     8m, EMPTY
 	rootfs    =     9m,     40m, LINUX_FS
 	userdata  =     49m,    36m, LINUX_FS
-	rtos    =       85m,    32m, EMPTY
+	rtos      =     85m,    24m, EMPTY
+	rtosdata  =    109m,     8m, LINUX_FS
 
 #fstype could be: LINUX_FS, FAT_FS, EMPTY

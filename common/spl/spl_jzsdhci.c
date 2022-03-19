@@ -1432,6 +1432,41 @@ static void start_second_cpu(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME
+static int mmc_rtos_load_rtosdata_partition(struct rtos_header *rtos)
+{
+	unsigned int mapped_rtosdata_offset_sector;
+	unsigned int mapped_rtosdata_size_sector;
+	unsigned int *mapped_rtosdata_address;
+	int ret;
+
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME,
+								&mapped_rtosdata_offset_sector, &mapped_rtosdata_size_sector);
+	if (ret) {
+		printf("not found: "CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME"\n");
+		return -1;
+	}
+
+	if (rtos->heap_end - rtos->heap_start <= mapped_rtosdata_size_sector * 512) {
+		printf("part too large:" CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME"\n");
+		return -1;
+	}
+
+	mapped_rtosdata_address = (unsigned int *)(rtos->heap_end - mapped_rtosdata_size_sector * 512);
+
+	ret = mmc_block_read(mapped_rtosdata_offset_sector, mapped_rtosdata_size_sector, mapped_rtosdata_address);
+	if (ret == 0) {
+		printf("read rtos data err\n");
+		return -1;
+	}
+
+	/* 传递RTOS DATA大小到RTOS系统中 */
+	unsigned int *rtos_mapped_rtosdata_size = (unsigned int *)(rtos->mapped_rtosdata_size) ;
+	*rtos_mapped_rtosdata_size = mapped_rtosdata_size_sector * 512;
+	return 0;
+}
+#endif
+
 static int mmc_rtos_load(struct rtos_header *rtos, unsigned int sector_offset)
 {
 	int err = 0;
@@ -1501,10 +1536,17 @@ static void mmc_load_rtos_boot(void)
 	#endif
 #endif
 
+	/* RTOS镜像加载 */
 	if (mmc_rtos_load(&rtos_header, rtos_offset))
 		hang();
 
 	flush_cache_all();
+
+	/* RTOS-Linux 映射文件系统加载 */
+	#ifdef CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME
+	mmc_rtos_load_rtosdata_partition(&rtos_header);
+	#endif
+
 
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_RTOS_CONN_WITH_OS)
 	/* 由RTOS 加载OS镜像, SPL等待OS加载完成，并由SPL完成后续引导 */
