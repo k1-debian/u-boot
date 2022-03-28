@@ -10,7 +10,7 @@
 #define	TSHSL_R		10
 #define	TSHSL_W		50
 
-#define TRD		65
+#define TRD		60
 #define TPP		700
 #define TBE		10
 
@@ -33,13 +33,13 @@ static struct jz_sfcnand_base_param winbond_param = {
 	.tBE = TBE,
 
 	.plane_select = 0,
-	.ecc_max = 0x4,//0x3,
+	.ecc_max = 0x3,//0x3,
 	.need_quad = 1,
 
 };
 
 static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xAA, "25N01KVZEIR", &winbond_param),
+	DEVICE_ID_STRUCT(0xAA, "25N01GVZEIR", &winbond_param),
 };
 
 
@@ -64,7 +64,22 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 	int ret = 0;
 	switch(device_id) {
 		case 0xAA:
-			return 0;
+			switch((ecc_status >> 4) & 0x3)
+			{
+				case 0x0:
+					ret = 0;
+					break;
+				case 0x01:
+					ret = 0x1;
+					break;
+				case 0x02:
+				case 0x03:
+					ret =0x2;
+					break;
+				default:
+					ret = -EIO;
+				}
+			break;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 			return -EIO;   //notice!!!
