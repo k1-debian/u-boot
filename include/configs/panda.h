@@ -520,6 +520,19 @@
 #define CONFIG_SYS_FDT_BASE		0
 #endif
 
+/********** RTOS **********/
+#ifdef CONFIG_SPL_RTOS_BOOT
+
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_RTOS_OFFSET              (17 * 1024 + CONFIG_SPL_PAD_TO)
+#define CONFIG_RTOS_OFFSET_SECTOR       (CONFIG_RTOS_OFFSET / 512)
+#define CONFIG_SPL_RTOS_NAME            "rtos"
+#endif
+
+#endif
+
+/********** RTOS **********/
+
 /**
  * GPT configuration
  */
