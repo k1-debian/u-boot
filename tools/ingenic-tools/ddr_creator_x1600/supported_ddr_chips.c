@@ -28,6 +28,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_LVDDR_W9464L6KH
 	LVDDR_W9464L6KH,
 #endif
+#ifdef CONFIG_LVDDR2_A3L28E40BGD
+	LVDDR2_A3L28E40BGD_AHJA,
+#endif
 };
 
 

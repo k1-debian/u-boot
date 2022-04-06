@@ -43,7 +43,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
-/*#define CONFIG_DDRP_SOFTWARE_TRAINING*/
+/* #define CONFIG_DDRP_SOFTWARE_TRAINING */
 
 extern struct ddr_reg_value supported_ddr_reg_values[];
 
@@ -377,10 +377,23 @@ void ddrc_dfi_init(void)
 			(((global_reg_value->DDR_MR##n##_VALUE  >> 13) & 0x3) << 8) |						\
 			(((global_reg_value->DDR_MR##n##_VALUE ) & 0x1fff) << (12))
 
-		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR);
-		mdelay(1);
+		if(global_reg_value->h.id == 0x65){
+			/*LVDDR2_A3L28E40BGD*/
+			ddr_writel(0xa63011, DDRC_LMR);
+			mdelay(1);
+			ddr_writel(0x1000011, DDRC_LMR);
+			mdelay(1);
+			ddr_writel(0x80211, DDRC_LMR);
+			mdelay(1);
+			ddr_writel(0x1fff211, DDRC_LMR);
+			mdelay(1);
+		}
+		else{
+			ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MR(1), DDRC_LMR);
+			mdelay(1);
+		}
 		printf("mr0 = 0x%x\n", DDRC_LMR_MR(0));
 		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
 #undef DDRC_LMR_MR

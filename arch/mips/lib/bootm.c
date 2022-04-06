@@ -143,6 +143,10 @@ static void boot_jump_linux(bootm_headers_t *images)
 #ifdef CONFIG_BOOTARGS_MEM_32M
 			linux_cmdline_set(CONFIG_BOOTARGS_MEM_32M, strlen(CONFIG_BOOTARGS_MEM_32M));
 #endif
+		} else if(ram_size == 16) {
+#ifdef CONFIG_BOOTARGS_MEM_16M
+			linux_cmdline_set(CONFIG_BOOTARGS_MEM_16M, strlen(CONFIG_BOOTARGS_MEM_16M));
+#endif
 		}
 	}
 #endif

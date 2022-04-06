@@ -96,6 +96,7 @@
 #define CONFIG_DDR2_M14D2561616A
 #define CONFIG_DDR2_M14D1G1664A
 #define CONFIG_LVDDR_W9464L6KH
+#define CONFIG_LVDDR2_A3L28E40BGD
 #endif
 
 
@@ -127,6 +128,7 @@
  */
 
 #define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
+#define CONFIG_BOOTARGS_MEM_16M			"mem=16M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_32M			"mem=32M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
