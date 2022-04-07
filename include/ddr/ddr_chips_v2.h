@@ -18,5 +18,6 @@
 #include "chips-v2/DDR2_W975116NG18I.h"
 #include "chips-v2/LVDDR_W9464L6KH-5I.h"
 #include "chips-v2/DDR3L_W634GU6QB-11.h"
+#include "chips-v2/LVDDR2_A3L28E40BGD-AHJA.h"
 
 #endif

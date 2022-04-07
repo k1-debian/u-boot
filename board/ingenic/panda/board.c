@@ -147,7 +147,11 @@ static char *board_process_mem_arg(char *arg)
 {
 	unsigned long ram_size = initdram(0) >> 20;
 
-	if(ram_size == 32){
+	if(ram_size == 16){
+#ifdef CONFIG_BOOTARGS_MEM_16M
+		arg = linux_cmdline_set(arg, CONFIG_BOOTARGS_MEM_16M, strlen(CONFIG_BOOTARGS_MEM_16M));
+#endif
+	}else if(ram_size == 32){
 #ifdef CONFIG_BOOTARGS_MEM_32M
 		arg = linux_cmdline_set(arg, CONFIG_BOOTARGS_MEM_32M, strlen(CONFIG_BOOTARGS_MEM_32M));
 #endif

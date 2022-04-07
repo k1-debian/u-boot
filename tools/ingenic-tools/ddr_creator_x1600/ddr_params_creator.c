@@ -93,7 +93,21 @@ static unsigned int sdram_size(int cs, struct ddr_params *p)
 		return 0;
 	}
 
-	banks = p->bank8 ? 8 : 4;
+	switch (p->bank8) {
+#define _CASE(D, P)					\
+		case D:						\
+			banks = P;				\
+			break
+		_CASE(BANK4, 4);
+		_CASE(BANK8, 8);
+		_CASE(BANK1, 1);
+#undef _CASE
+	default:
+		out_error("don't support the ddr bank.!");
+		assert(1);
+		break;
+	}
+
 	dw = p->dw32 ? 4 : 2;
 	size = (1 << (row + col)) * dw * banks;
 
@@ -547,7 +561,21 @@ static void fill_mem_remap(struct ddr_reg_value *reg, struct ddr_params *p)
 	if(p->size.chip1 && (p->size.chip0 != p->size.chip1))
 		return;
 
-	bank_bits = p->bank8 == 1 ? 3 : 2;
+	switch (p->bank8) {
+#define _CASE(D, P)					\
+		case D:						\
+			bank_bits = P;			\
+			break
+		_CASE(BANK4, 2);
+		_CASE(BANK8, 3);
+		_CASE(BANK1, 0);
+#undef _CASE
+	default:
+		out_error("don't support the ddr bank.!");
+		assert(1);
+		break;
+	}
+
 	bit_width = CONFIG_DDR_DW32 == 1 ? 2 : 1;
 
 	/*
@@ -627,7 +655,8 @@ void register_ddr_creator(struct ddr_creator_ops *ops)
 	}
 }
 
-static void fill_reg_value(struct ddr_reg_value *reg, struct ddrc_reg *ddrc, struct ddrp_reg *ddrp, struct ddr_params *p)
+static void fill_reg_value(struct ddr_reg_value *reg, struct ddrc_reg *ddrc,\
+							struct ddrp_reg *ddrp, struct ddr_params *p)
 {
 
 	reg->h.freq		= p->freq;
