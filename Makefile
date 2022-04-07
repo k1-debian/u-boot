@@ -617,8 +617,13 @@ ifneq ($(CONFIG_GPT_AT_TAIL),y)
 		cat $(obj)tools/ingenic-tools/mbr-gpt.bin $(obj)u-boot-with-spl.bin > $@
 else
 		@chmod +x $(obj)tools/ingenic-tools/mk-gpt-xboot.sh
+ifdef CONFIG_JZSD_OTA_VERSION20
+		$(obj)tools/ingenic-tools/mk-gpt-xboot.sh $(obj)tools/ingenic-tools/mbr-of-gpt.bin \
+		$(obj)u-boot-with-spl.bin $(obj)tools/ingenic-tools/gpt.bin $(CONFIG_GPT_TABLE_PATH)/partitions_mmc_ota.tab $@
+else
 		$(obj)tools/ingenic-tools/mk-gpt-xboot.sh $(obj)tools/ingenic-tools/mbr-of-gpt.bin \
 		$(obj)u-boot-with-spl.bin $(obj)tools/ingenic-tools/gpt.bin $(CONFIG_GPT_TABLE_PATH)/partitions.tab $@
+endif
 endif
 endif
 
