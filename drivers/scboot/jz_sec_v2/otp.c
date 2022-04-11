@@ -172,6 +172,7 @@ static int efuse_update_state(void)
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
 	printf("xxxxxxx data updated: %x\n", *(unsigned int *)EFUSE_REG_DAT1);
 	printf("xxxxxxx state updated: %x\n", REG32(EFUSE_REG_STAT));
+	REG32(EFUSE_REG_STAT) = 0;
 }
 
 int cpu_wtotp(int opera)
@@ -180,15 +181,17 @@ int cpu_wtotp(int opera)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+	efuse_1v8_output(!efuse_args->efuse_en_active);
+	REG32(EFUSE_REG_STAT) = 0;
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		printf("secall SC_FUNC_WTOTP fail 0x%08x\n", *(volatile unsigned int *)(MCU_TCSM_RETVAL));
@@ -242,6 +245,7 @@ int otp_r()
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
 	printf("REG32(EFUSE_REG_DAT1) = %x\n",REG32(EFUSE_REG_DAT1));
+	REG32(EFUSE_REG_STAT) = 0;
 	return 0;
 }
 
@@ -261,9 +265,8 @@ static int otp_w(unsigned int offset)
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+	efuse_1v8_output(!efuse_args->efuse_en_active);
 
 	otp_r();
 
@@ -284,6 +287,7 @@ int cpu_burn_rckey(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT, 0, 1);
 
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
 
@@ -386,6 +390,7 @@ static int check_nku(unsigned int *idata, unsigned int length)
 			debug("\n");
 	}
 
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
@@ -505,6 +510,8 @@ int cpu_burn_ukey(void *idata)
 int cpu_burn_secboot_enable(void)
 {
 	printf("xxxx otp efuse state:%x\n", REG32(EFUSE_REG_STAT));
+	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	REG32(EFUSE_REG_CTRL) = 0;
 
 	/* set write data :security boot enable, security boot enable protected, disable JTAG*/
 	REG32(EFUSE_REG_DAT1) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB)
@@ -517,9 +524,10 @@ int cpu_burn_secboot_enable(void)
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+	efuse_1v8_output(!efuse_args->efuse_en_active);
+	REG32(EFUSE_REG_STAT) = 0;
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	efuse_update_state();
 
