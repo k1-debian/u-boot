@@ -57,6 +57,16 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 		return -EPERM;
 	}
 
+	if (mmc_args->mmc_enh_area) {
+		for(i=0; i<mmc_args->mmc_enh_area_range_count; i++) {
+			ret = set_enh_area(mmc, mmc_args->enh_area[i].start_kib, mmc_args->enh_area[i].length_kib);
+			if (ret) {
+				printf("Error: mmc set enhanced area error!\n");
+				return -EPERM;
+			}
+		}
+	}
+
 	if (mmc_args->mmc_erase == MMC_ERASE_ALL) {
 		blk = 0;
 		blk_cnt = mmc->capacity / MMC_BYTE_PER_BLOCK;
