@@ -379,9 +379,9 @@ void ddrc_dfi_init(void)
 
 		if(global_reg_value->h.id == 0x65){
 			/*LVDDR2_A3L28E40BGD*/
-			ddr_writel(0xa63011, DDRC_LMR);
+			ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
 			mdelay(1);
-			ddr_writel(0x1000011, DDRC_LMR);
+			ddr_writel(DDRC_LMR_MR(1) | 0x1000000, DDRC_LMR);
 			mdelay(1);
 			ddr_writel(0x80211, DDRC_LMR);
 			mdelay(1);
