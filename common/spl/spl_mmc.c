@@ -30,7 +30,25 @@
 #include "spl_rtos.h"
 #include <version.h>
 
+#include <asm/arch/clk.h>
+#include <asm/arch/mmc.h>
+#include <asm/arch/cpm.h>
+#include <asm/io.h>
+#include "spl_gpt_partition.h"
+#ifdef CONFIG_JZSD_OTA_VERSION20
+#include "spl_ota_jzsd.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
+
+static ulong mmc_block_read(lbaint_t start, lbaint_t blkcnt, void *dst)
+{
+	int err;
+	struct mmc *mmc = find_mmc_device(0);
+	if (!mmc)
+		return 0;
+	err = mmc->block_dev.block_read(0, start, blkcnt, dst);
+}
 
 static int mmc_load_image_raw(struct mmc *mmc, unsigned long sector)
 {
@@ -200,6 +218,37 @@ void *spl_rtos_get_spl_image_info(void)
 
 #endif /* CONFIG_SPL_RTOS_BOOT */
 
+#ifdef CONFIG_JZSD_OTA_VERSION20
+static int mmc_load_img_from_partition(const char *name)
+{
+	unsigned int start_sector;
+	int ret;
+	struct mmc *mmc;
+
+	mmc = find_mmc_device(0);
+	if (!mmc) {
+#ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
+		puts("spl: mmc device not found!!\n");
+#endif
+		hang();
+	}
+
+	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
+	if (ret) {
+		printf("mmc:failed get part %s\n", name);
+		return ret;
+	}
+
+	return mmc_load_image_raw(mmc, start_sector);
+}
+#endif
+
+#ifdef CONFIG_JZSD_OTA_VERSION20
+static struct jzsd_ota_ops jzsd_ota_ops = {
+	.jzsd_read = mmc_block_read,
+	.jzsd_load_img_from_partition = mmc_load_img_from_partition,
+};
+#endif
 
 char *spl_mmc_load_image(void)
 {
@@ -244,8 +293,12 @@ char *spl_mmc_load_image(void)
 		return NULL;
 #endif /* CONFIG_BOOT_VMLINUX */
 #ifdef CONFIG_SPL_OS_BOOT
-		if (spl_start_uboot() || mmc_load_image_raw_os(mmc))
+#ifdef CONFIG_JZSD_OTA_VERSION20
+		register_jzsd_ota_ops(&jzsd_ota_ops);
+		return spl_jzsd_ota_load_image();
 #endif
+		if (spl_start_uboot() || mmc_load_image_raw_os(mmc))
+#endif /* CONFIG_SPL_OS_BOOT */
 			err = mmc_load_image_raw(mmc,
 				CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
 #ifdef CONFIG_SPL_FAT_SUPPORT
@@ -265,7 +318,7 @@ char *spl_mmc_load_image(void)
 		if (spl_start_uboot() || mmc_load_image_fat_os(mmc))
 #endif
 		err = mmc_load_image_fat(mmc, CONFIG_SPL_FAT_LOAD_PAYLOAD_NAME);
-#endif
+#endif /* CONFIG_SPL_FAT_SUPPORT */
 	} else {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 		puts("spl: wrong MMC boot mode\n");
