@@ -82,7 +82,7 @@ extern struct spi spi;
 
 #define MMC_MAX_ENH_AREA	1
 #define MMC_ENH_PART	        2
-#define MMC_ENH_AREA_MAX	10
+#define MMC_GPP_AREA_MAX	4
 
 #define SPI_NO_ERASE	0
 #define SPI_ERASE_PART	1
@@ -196,9 +196,15 @@ struct mmc_erase_range {
 	uint32_t start;
 	uint32_t end;
 };
-struct mmc_enh_area_range {
+
+struct mmc_uda_enh_area_range {
 	uint32_t start_kib;
 	uint32_t length_kib;
+};
+struct mmc_gpp_area_info {
+	uint32_t length_kib;
+	uint32_t enh_attr;
+	uint32_t ext_attr;
 };
 
 struct mmc_param{
@@ -206,9 +212,11 @@ struct mmc_param{
 	int mmc_erase;
 	uint32_t mmc_erase_range_count;
 	struct mmc_erase_range mmc_erase_range[MMC_ERASE_CNT_MAX];
-	int mmc_enh_area;
-	uint32_t mmc_enh_area_range_count;
-	struct mmc_enh_area_range enh_area[MMC_ENH_AREA_MAX];
+	int mmc_uda_enh_area;
+	struct mmc_uda_enh_area_range uda_enh_area;
+	int mmc_gpp_area;
+	uint32_t mmc_gpp_area_count;
+	struct mmc_gpp_area_info gpp_area[MMC_GPP_AREA_MAX];
 };
 struct nand_param{
 	int nand_erase_count;
