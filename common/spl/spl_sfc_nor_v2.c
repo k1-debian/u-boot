@@ -32,6 +32,9 @@
 struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);
 struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);
 
+/* Prevent cur_r_cmd from being overwritten when the firmware is too large */
+unsigned int cur_r_cmd;
+
 #ifdef SFC_NOR_DEBUG
 void dump_cdt(struct sfc *sfc)
 {
@@ -74,38 +77,38 @@ static inline unsigned int sfc_readl(unsigned short offset)
 	return readl(SFC_BASE + offset);
 }
 
-static inline void sfc_flush_and_start(struct sfc *sfc)
+static inline void sfc_flush_and_start(void)
 {
 	sfc_writel(SFC_TRIG, TRIG_FLUSH);
 	sfc_writel(SFC_TRIG, TRIG_START);
 }
 
-static inline void sfc_clear_all_intc(struct sfc *sfc)
+static inline void sfc_clear_all_intc(void)
 {
 	sfc_writel(SFC_SCR, 0x1f);
 }
 
-static inline void sfc_mask_all_intc(struct sfc *sfc)
+static inline void sfc_mask_all_intc()
 {
 	sfc_writel(SFC_INTC, 0x1f);
 }
 
-static inline void sfc_set_mem_addr(struct sfc *sfc,unsigned int addr)
+static inline void sfc_set_mem_addr(unsigned int addr)
 {
 	sfc_writel(SFC_MEM_ADDR, addr);
 }
 
-static inline void sfc_set_length(struct sfc *sfc, int value)
+static inline void sfc_set_length(int value)
 {
 	sfc_writel(SFC_TRAN_LEN, value);
 }
 
-static inline unsigned int sfc_read_rxfifo(struct sfc *sfc)
+static inline unsigned int sfc_read_rxfifo(void)
 {
 	return sfc_readl(SFC_RM_DR);
 }
 
-static inline void sfc_write_txfifo(struct sfc *sfc, const unsigned int value)
+static inline void sfc_write_txfifo(const unsigned int value)
 {
 	sfc_writel(SFC_RM_DR, value);
 }
@@ -115,14 +118,12 @@ static inline unsigned int get_sfc_ctl_sr(void)
 	return sfc_readl(SFC_SR);
 }
 
-static unsigned int cpu_read_rxfifo(struct sfc *sfc)
+static unsigned int cpu_read_rxfifo(struct sfc_cdt_xfer *xfer)
 {
 	int i;
 	unsigned long align_len = 0;
 	unsigned int fifo_num = 0;
-	struct sfc_cdt_xfer *xfer;
 
-	xfer = sfc->xfer;
 	align_len = ALIGN(xfer->config.datalen, 4);
 
 	if (((align_len - xfer->config.cur_len) / 4) > THRESHOLD) {
@@ -132,7 +133,7 @@ static unsigned int cpu_read_rxfifo(struct sfc *sfc)
 	}
 
 	for (i = 0; i < fifo_num; i++) {
-		*(unsigned int *)xfer->config.buf = sfc_read_rxfifo(sfc);
+		*(unsigned int *)xfer->config.buf = sfc_read_rxfifo();
 		xfer->config.buf += 4;
 		xfer->config.cur_len += 4;
 	}
@@ -140,17 +141,17 @@ static unsigned int cpu_read_rxfifo(struct sfc *sfc)
 	return 0;
 }
 
-static void cpu_write_txfifo(struct sfc *sfc)
+static void cpu_write_txfifo(struct sfc_cdt_xfer *xfer)
 {
 	/**
 	 * Assuming that all data is less than one word,
 	 * if len large than one word, unsupport!
 	 **/
 
-	sfc_write_txfifo(sfc, *(unsigned int *)sfc->xfer->config.buf);
+	sfc_write_txfifo(*(unsigned int *)xfer->config.buf);
 }
 
-static void sfc_sr_handle(struct sfc *sfc)
+static void sfc_sr_handle(struct sfc_cdt_xfer *xfer)
 {
 	unsigned int reg_sr = 0;
 	unsigned int tmp = 0;
@@ -163,12 +164,12 @@ static void sfc_sr_handle(struct sfc *sfc)
 
 		if (reg_sr & CLR_RREQ) {
 			sfc_writel(SFC_SCR, CLR_RREQ);
-			cpu_read_rxfifo(sfc);
+			cpu_read_rxfifo(xfer);
 		}
 
 		if (reg_sr & CLR_TREQ) {
 			sfc_writel(SFC_SCR, CLR_TREQ);
-			cpu_write_txfifo(sfc);
+			cpu_write_txfifo(xfer);
 		}
 
 		if (reg_sr & CLR_UNDER) {
@@ -187,17 +188,17 @@ static void sfc_sr_handle(struct sfc *sfc)
 		sfc_writel(SFC_SCR, tmp);
 }
 
-static void sfc_start_transfer(struct sfc *sfc)
+static void sfc_start_transfer(struct sfc_cdt_xfer *xfer)
 {
-	sfc_clear_all_intc(sfc);
-	sfc_mask_all_intc(sfc);
-	sfc_flush_and_start(sfc);
+	sfc_clear_all_intc();
+	sfc_mask_all_intc();
+	sfc_flush_and_start();
 
-	sfc_sr_handle(sfc);
+	sfc_sr_handle(xfer);
 
 }
 
-static void sfc_use_cdt(struct sfc *sfc)
+static void sfc_use_cdt(void)
 {
 	uint32_t tmp = sfc_readl(SFC_GLB);
 	tmp |= GLB_CDT_EN;
@@ -215,7 +216,7 @@ static void write_cdt(struct sfc *sfc, struct sfc_cdt *cdt, uint16_t start_index
 	sfc_debug("create CDT index: %d ~ %d,  index number:%d.\n", start_index, end_index, cdt_num);
 }
 
-static void sfc_set_index(struct sfc *sfc, unsigned short index)
+static void sfc_set_index(unsigned short index)
 {
 
 	uint32_t tmp = sfc_readl(SFC_CMD_IDX);
@@ -224,7 +225,7 @@ static void sfc_set_index(struct sfc *sfc, unsigned short index)
 	sfc_writel(SFC_CMD_IDX, tmp);
 }
 
-static void sfc_set_dataen(struct sfc *sfc, uint8_t dataen)
+static void sfc_set_dataen(uint8_t dataen)
 {
 
 	uint32_t tmp = sfc_readl(SFC_CMD_IDX);
@@ -233,7 +234,7 @@ static void sfc_set_dataen(struct sfc *sfc, uint8_t dataen)
 	sfc_writel(SFC_CMD_IDX, tmp);
 }
 
-static void sfc_set_datadir(struct sfc *sfc, uint8_t datadir)
+static void sfc_set_datadir(uint8_t datadir)
 {
 
 	uint32_t tmp = sfc_readl(SFC_CMD_IDX);
@@ -242,7 +243,7 @@ static void sfc_set_datadir(struct sfc *sfc, uint8_t datadir)
 	sfc_writel(SFC_CMD_IDX, tmp);
 }
 
-static void sfc_set_addr(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+static void sfc_set_addr(struct sfc_cdt_xfer *xfer)
 {
 	sfc_writel(SFC_COL_ADDR, xfer->columnaddr);
 	sfc_writel(SFC_ROW_ADDR, xfer->rowaddr);
@@ -250,7 +251,7 @@ static void sfc_set_addr(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
 	sfc_writel(SFC_STA_ADDR1, xfer->staaddr1);
 }
 
-static void sfc_transfer_mode(struct sfc *sfc, int value)
+static void sfc_transfer_mode(int value)
 {
 	unsigned int tmp;
 	tmp = sfc_readl(SFC_GLB);
@@ -261,37 +262,34 @@ static void sfc_transfer_mode(struct sfc *sfc, int value)
 	sfc_writel(SFC_GLB, tmp);
 }
 
-static void sfc_set_data_config(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+static void sfc_set_data_config(struct sfc_cdt_xfer *xfer)
 {
-	sfc_set_dataen(sfc, xfer->dataen);
+	sfc_set_dataen(xfer->dataen);
 
-	sfc_set_length(sfc, 0);
+	sfc_set_length(0);
 	if(xfer->dataen){
-		sfc_set_datadir(sfc, xfer->config.data_dir);
-		sfc_transfer_mode(sfc, xfer->config.ops_mode);
-		sfc_set_length(sfc, xfer->config.datalen);
+		sfc_set_datadir(xfer->config.data_dir);
+		sfc_transfer_mode(xfer->config.ops_mode);
+		sfc_set_length(xfer->config.datalen);
 
 		/* default use cpu mode */
-		sfc_set_mem_addr(sfc, 0);
+		sfc_set_mem_addr(0);
 	}
 }
 
-static void sfc_sync_cdt(struct sfc *sfc)
+static void sfc_sync_cdt(struct sfc_cdt_xfer *xfer)
 {
-	struct sfc_cdt_xfer *xfer;
-	xfer = sfc->xfer;
-
 	/* 1. set cmd index */
-	sfc_set_index(sfc, xfer->cmd_index);
+	sfc_set_index(xfer->cmd_index);
 
 	/* 2. set addr */
-	sfc_set_addr(sfc, xfer);
+	sfc_set_addr(xfer);
 
 	/* 3. config data config */
-	sfc_set_data_config(sfc, xfer);
+	sfc_set_data_config(xfer);
 
 	/* 4. start transfer */
-	sfc_start_transfer(sfc);
+	sfc_start_transfer(xfer);
 }
 
 void sfc_threshold(struct sfc *sfc)
@@ -317,8 +315,7 @@ static void write_enable(void)
 	/* set transfer config */
 	xfer.dataen = DISABLE;
 
-	flash->sfc->xfer = &xfer;
-	sfc_sync_cdt(flash->sfc);
+	sfc_sync_cdt(&xfer);
 }
 
 static void enter_4byte(void)
@@ -335,8 +332,7 @@ static void enter_4byte(void)
 	/* set transfer config */
 	xfer.dataen = DISABLE;
 
-	flash->sfc->xfer = &xfer;
-	sfc_sync_cdt(flash->sfc);
+	sfc_sync_cdt(&xfer);
 }
 
 static void inline set_quad_mode_cmd(void)
@@ -373,8 +369,7 @@ static void set_quad_mode_reg(void)
 	xfer.config.ops_mode = CPU_OPS;
 	xfer.config.buf = (uint8_t *)&data;
 
-	flash->sfc->xfer = &xfer;
-	sfc_sync_cdt(flash->sfc);
+	sfc_sync_cdt(&xfer);
 }
 
 static void sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned int len)
@@ -395,8 +390,7 @@ static void sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned 
 	xfer.config.ops_mode = CPU_OPS;
 	xfer.config.buf = buf;
 
-	flash->sfc->xfer = &xfer;
-	sfc_sync_cdt(flash->sfc);
+	sfc_sync_cdt(&xfer);
 }
 
 static inline void set_flash_timing(void)
@@ -419,8 +413,7 @@ static void reset_nor(void)
 	/* set transfer config */
 	xfer.dataen = DISABLE;
 
-	flash->sfc->xfer = &xfer;
-	sfc_sync_cdt(flash->sfc);
+	sfc_sync_cdt(&xfer);
 
 	udelay(100);
 }
@@ -581,7 +574,7 @@ void sfc_init(void)
 	flash->sfc = sfc;
 
 	/* use CDT mode */
-	sfc_use_cdt(flash->sfc);
+	sfc_use_cdt();
 	sfc_debug("Enter 'CDT' mode.\n");
 
 	/* try creating default CDT table */
@@ -632,6 +625,7 @@ void sfc_init(void)
 				break;
 		}
 	}
+	cur_r_cmd = flash->cur_r_cmd;
 }
 
 static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned int len)
@@ -640,7 +634,7 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	memset(&xfer, 0, sizeof(xfer));
 
 	/* set Index */
-	xfer.cmd_index = flash->cur_r_cmd;
+	xfer.cmd_index = cur_r_cmd;
 
 	/* set addr */
 	xfer.columnaddr = 0;
@@ -653,8 +647,7 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	xfer.config.ops_mode = CPU_OPS;
 	xfer.config.buf = buf;
 
-	flash->sfc->xfer = &xfer;
-	sfc_sync_cdt(flash->sfc);
+	sfc_sync_cdt(&xfer);
 
 	return len;
 }
