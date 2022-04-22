@@ -19,5 +19,9 @@
 #include "chips-v2/LVDDR_W9464L6KH-5I.h"
 #include "chips-v2/DDR3L_W634GU6QB-11.h"
 #include "chips-v2/LVDDR2_A3L28E40BGD-AHJA.h"
+#include "chips-v2/X1600EN_DDR2_COMPATIBLE_PARAM.h"
+#include "chips-v2/X1600E_LPDDR2_COMPATIBLE_PARAM.h"
+#include "chips-v2/X1600HN_DDR2_COMPATIBLE_PARAM.h"
+#include "chips-v2/X1660L_LVDDR_COMPATIBLE_PARAM.h"
 
 #endif

@@ -78,7 +78,7 @@ static inline void DDR2_M14D2561616A_init(void *data)
 	.id = DDR_CHIP_ID(VENDOR_ESMT, TYPE_DDR2, MEM_32M),	\
 	.type = DDR2,					\
 	.freq = CONFIG_DDR2_M14D2561616A_MEM_FREQ,	\
-	.size = 64,					\
+	.size = 32,					\
 	.init = DDR2_M14D2561616A_init,			\
 }
 #endif /* __DDR2_CONFIG_H */

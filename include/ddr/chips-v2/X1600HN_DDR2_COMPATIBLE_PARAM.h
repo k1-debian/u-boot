@@ -1,0 +1,60 @@
+#ifndef __X1600HN_DDR2_COMPATIBLE_PARAM_H
+#define	__X1600HN_DDR2_COMPATIBLE_PARAM_H
+
+static inline void X1600HN_DDR2_init(void *data)
+{
+	struct ddr_chip_info *c = (struct ddr_chip_info *)data;
+
+	c->DDR_ROW     = 13;
+	c->DDR_COL     = 10;
+	c->DDR_ROW1    = 13;
+	c->DDR_COL1    = 10;
+
+	c->DDR_BANK8   = 1;
+	c->DDR_CL      = 7;
+
+	c->DDR_tRAS    = DDR__ns(45);
+	c->DDR_tRTP    = DDR__ps(7500);
+	c->DDR_tRP     = DDR__ps(16000);
+	c->DDR_tRCD    = DDR__ps(16000);
+	c->DDR_tRC     = DDR__ps(58125);
+	c->DDR_tRRD    = DDR__ns(10);
+	c->DDR_tWR     = DDR__ns(15);
+	c->DDR_tWTR    = DDR__ps(7500);
+	c->DDR_tRFC    = DDR__ps(127500);
+	c->DDR_tMINSR  = DDR__ns(60);
+	c->DDR_tXP     = DDR__tck(3);
+	c->DDR_tMRD    = DDR__tck(2);
+
+	c->DDR_BL      =  8;
+	c->DDR_RL      = DDR__tck(7);
+	c->DDR_WL      = DDR__tck(6);
+	c->DDR_tCCD    = DDR__tck(2);
+	c->DDR_tRTW    = (((c->DDR_BL > 4) ? 6 : 4) + 1);
+	c->DDR_tFAW    = DDR__ns(45);
+	c->DDR_tCKE    = DDR__tck(3);
+	c->DDR_tCKESR  = DDR__tck(3);
+	c->DDR_tRDLAT  = DDR__tck(7);
+	c->DDR_tWDLAT  = DDR__tck(3);
+
+	c->DDR_tXSNR   = (c->DDR_tRFC + DDR__ns(10));
+	c->DDR_tXSRD   = DDR__tck(200);
+	c->DDR_tCKSRE  = DDR__ns(10000);
+	c->DDR_tREFI   = DDR__ns(7800);
+
+	c->DDR_CLK_DIV = 1;
+}
+#ifndef CONFIG_X1600HN_DDR2_MEM_FREQ
+#define CONFIG_X1600HN_DDR2_MEM_FREQ CONFIG_SYS_MEM_FREQ
+#endif
+
+#define X1600HN_DDR2 {					\
+	.name 	= "X1600HN-DDR2",					\
+	.id	= DDR_CHIP_ID(0, TYPE_DDR2, MEM_128M),	\
+	.type	= DDR2,						\
+	.freq	= CONFIG_X1600HN_DDR2_MEM_FREQ,			\
+	.size	= 128,						\
+	.init	= X1600HN_DDR2_init,				\
+}
+
+#endif /* __DDR2_CONFIG_H */

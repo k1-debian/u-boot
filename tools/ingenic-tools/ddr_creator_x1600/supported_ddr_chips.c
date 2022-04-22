@@ -31,6 +31,15 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_LVDDR2_A3L28E40BGD
 	LVDDR2_A3L28E40BGD_AHJA,
 #endif
+#ifdef CONFIG_X1600EN_DDR2
+	X1600EN_DDR2,
+#endif
+#ifdef CONFIG_X1600HN_DDR2
+	X1600HN_DDR2,
+#endif
+#ifdef CONFIG_X1600E_LPDDR2
+	X1600E_LPDDR2,
+#endif
 };
 
 
