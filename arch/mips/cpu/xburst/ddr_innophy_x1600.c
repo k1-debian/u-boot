@@ -604,8 +604,11 @@ void get_ddr_params_normal(void)
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
 		printf("invalid burned ddr id\n");
 	}
-
+#ifndef CONFIG_X1600_KGD_COMPATIBLE
 	burned_ddr_id &= 0xffff;
+#else
+	burned_ddr_id &= 0xffc7;
+#endif
 
 	size = ARRAY_SIZE(supported_ddr_reg_values);
 
