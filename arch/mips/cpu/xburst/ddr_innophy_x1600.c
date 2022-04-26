@@ -599,16 +599,18 @@ void get_ddr_params_normal(void)
 	int found = 0;
 	int size = 0;
 	int i;
+	int mask;
 	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
 		printf("invalid burned ddr id\n");
 	}
 #ifndef CONFIG_X1600_KGD_COMPATIBLE
-	burned_ddr_id &= 0xffff;
+	mask = 0xffff;
 #else
-	burned_ddr_id &= 0xffc7;
+	mask = 0xffc7;
 #endif
+	burned_ddr_id &= mask;
 
 	size = ARRAY_SIZE(supported_ddr_reg_values);
 
@@ -618,7 +620,7 @@ void get_ddr_params_normal(void)
 	} else {
 		for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 			global_reg_value = &supported_ddr_reg_values[i];
-			if(burned_ddr_id == global_reg_value->h.id) {
+			if(burned_ddr_id == (global_reg_value->h.id & mask)) {
 				found = 1;
 				break;
 			}
