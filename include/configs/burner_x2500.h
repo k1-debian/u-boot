@@ -223,6 +223,10 @@
 
 #define CONFIG_CMD_DDR_TEST	/* DDR Test Command */
 
+#define	CONFIG_X2500_EFUSE
+#define	CONFIG_JZ_EFUSE
+#define CONFIG_EFUSE_LEVEL	0
+
 /**
  * Serial download configuration
  */
