@@ -45,6 +45,7 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[XTX_MID2C_DEVICES_NUM] = {
 
 static struct device_id_struct device_id[XTX_MID2C_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x24, "XT26G02E ", &xtx_mid2c_param[0]),
+	/* DEVICE_ID_STRUCT(0x24, "NM5A02G01A", &xtx_mid2c_param[0]), */
 };
 
 
