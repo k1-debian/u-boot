@@ -5,7 +5,7 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
-#define MXIC_DEVICES_NUM         4
+#define MXIC_DEVICES_NUM         5
 #define MXIC_CMD_GET_ECC	0x7c
 #define THOLD	    4
 #define TSETUP	    4
@@ -98,7 +98,28 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.plane_select = 0,
 		.ecc_max = 0x8,
 		.need_quad = 1,
+	},	
+	[4] = {
+	/*MX35UF2GE4AD*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2	* 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 80,
+		.tPP = 760,
+		.tBE = 6,
+
+		.plane_select = 0,
+		.ecc_max = 8,
+		.need_quad = 1,
 	},
+
 };
 
 static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
@@ -106,6 +127,7 @@ static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x22, "MX35LF2GE4AB", &mxic_param[1]),
 	DEVICE_ID_STRUCT(0x26, "MX35LF2GE4AD", &mxic_param[2]),
 	DEVICE_ID_STRUCT(0x37, "MX35LF4GE4AD", &mxic_param[3]),
+	DEVICE_ID_STRUCT(0xA6, "MX35UF2GE4AD", &mxic_param[4]),
 };
 
 
@@ -121,6 +143,7 @@ static cdt_params_t *mxic_get_cdt_params(struct sfc_flash *flash, uint8_t device
 	    case 0x22:
 	    case 0x26:
 	    case 0x37:
+	    case 0xA6:
 		    break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -205,6 +228,40 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 				    ret = -EIO;
 			}
 			break;
+		case 0xA6:
+			switch((ecc_status >>4) &0x15){
+				case 0:
+					ret =0;
+					break ;
+				case 1:
+					ret = 1;
+					break;
+				case 2:
+					ret = 2;
+					break;
+				case 3:
+					ret = 3;
+					break;
+				case 4:
+					ret = 4;
+					break;
+				case 5:
+					ret = 5;
+					break;
+				case 6:
+					ret = 6;
+					break;
+				case 7:
+					ret = 7;
+					break;
+				case 8:
+					ret = 8;
+					break;
+				default :
+					ret  = -EBADMSG;
+				}
+			break;
+
 		default:
 			pr_err("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			ret = -EIO;
