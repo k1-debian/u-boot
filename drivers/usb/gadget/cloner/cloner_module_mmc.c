@@ -57,13 +57,7 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 		return -EPERM;
 	}
 
-	if (mmc_args->mmc_uda_enh_area) {
-		ret = set_enh_area(mmc, mmc_args->uda_enh_area.start_kib, mmc_args->uda_enh_area.length_kib);
-		if (ret) {
-			printf("Error: mmc set uda enhanced area error!\n");
-			return -EPERM;
-		}
-	}
+#ifdef CONFIG_MMC_CREATE_GPP_AND_ENH
 	if (mmc_args->mmc_gpp_area) {
 		for(i=0; i<mmc_args->mmc_gpp_area_count; i++) {
 			ret = create_gp_partition(mmc, i + 1,
@@ -76,6 +70,15 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 			}
 		}
 	}
+
+	if (mmc_args->mmc_uda_enh_area) {
+		ret = set_enh_area(mmc, mmc_args->uda_enh_area.start_kib, mmc_args->uda_enh_area.length_kib);
+		if (ret) {
+			printf("Error: mmc set uda enhanced area error!\n");
+			return -EPERM;
+		}
+	}
+#endif
 
 	if (mmc_args->mmc_erase == MMC_ERASE_ALL) {
 		blk = 0;

@@ -212,11 +212,13 @@ struct mmc_param{
 	int mmc_erase;
 	uint32_t mmc_erase_range_count;
 	struct mmc_erase_range mmc_erase_range[MMC_ERASE_CNT_MAX];
+#ifdef CONFIG_MMC_CREATE_GPP_AND_ENH
 	int mmc_uda_enh_area;
 	struct mmc_uda_enh_area_range uda_enh_area;
 	int mmc_gpp_area;
 	uint32_t mmc_gpp_area_count;
 	struct mmc_gpp_area_info gpp_area[MMC_GPP_AREA_MAX];
+#endif
 };
 struct nand_param{
 	int nand_erase_count;

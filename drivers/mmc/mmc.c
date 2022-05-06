@@ -827,6 +827,7 @@ static void mmc_is_wp(unsigned int csd_response4)
 		mmc_csd_perm_w_protect = 0;
 }
 
+#ifdef CONFIG_MMC_CREATE_GPP_AND_ENH
 static unsigned int get_sector_count(unsigned char *ext_csd)
 {
 	return (ext_csd[EXT_CSD_SEC_COUNT_3] << 24) |
@@ -1199,6 +1200,7 @@ int set_enh_area(struct mmc *mmc, unsigned int start_kib, unsigned int length_ki
 
 	return 0;
 }
+#endif /* CONFIG_MMC_CREATE_GPP_AND_ENH */
 
 
 static int mmc_startup(struct mmc *mmc)
