@@ -30,5 +30,12 @@
 #include <ddr/ddrc_x2000.h>
 #endif
 
+#if defined(CONFIG_A1)
+#include <ddr/ddr_chips.h>
+#include <ddr/a1/ddr_params.h>
+#include <ddr/a1/ddrc.h>
+#include <asm/ddr_innophy_a1.h>
+#include <ddr/a1/ddrp_inno.h>
+#endif
 
 #endif /* __DDR_COMMON_H__ */

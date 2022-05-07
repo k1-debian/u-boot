@@ -8,8 +8,8 @@
  * DDR3-1333 info
  */
 /* DDR3 paramters */
-#define DDR_ROW     13  /* ROW : 12 to 18 row address ,1G only 512MB*/
-#define DDR_ROW1     13  /* ROW : 12 to 18 row address ,1G only 512MB*/
+#define DDR_ROW     14  /* ROW : 12 to 18 row address ,1G only 512MB*/
+#define DDR_ROW1     14  /* ROW : 12 to 18 row address ,1G only 512MB*/
 #define DDR_COL     10  /* COL :  8 to 14 column address */
 #define DDR_COL1     10  /* COL :  8 to 14 column address */
 #define DDR_BANK8   1 	/* Banks each chip: 0-4bank, 1-8bank */
@@ -37,7 +37,7 @@
 /*
  * DDR3 controller timing2 register
  */
-#define DDR_tRFC   DDR__ns(110) 	/* AUTO-REFRESH command period. DDR3 - ns*/
+#define DDR_tRFC   DDR__ns(160) 	/* AUTO-REFRESH command period. DDR3 - ns*/
 //#define DDR_tMINSR 60   /*FIXME Minimum Self-Refresh / Deep-Power-Down . DDR3 no*/
 #define DDR_tXP    DDR__tck(5)	/*FIXME DDR3 only: Exit active power down to any valid command, ns*/
 #define DDR_tMRD   DDR__tck(4)    /*FIXME unit: tCK. Load-Mode-Register to next valid command period: DDR3 rang 4 to 7 tCK. DDR3 spec no */

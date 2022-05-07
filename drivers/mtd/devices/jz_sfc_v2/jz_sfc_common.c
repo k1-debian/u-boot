@@ -760,8 +760,11 @@ static int sfc_ctl_init(struct sfc *sfc)
 void sfc_clk_set(struct sfc *sfc, uint32_t sfc_rate)
 {
 	sfc->src_clk = (unsigned long)sfc_rate;
+#ifdef CONFIG_JZ_SFC0
+	clk_set_rate(SFC0, sfc->src_clk);
+#else
 	clk_set_rate(SFC, sfc->src_clk);
-
+#endif
 	if(sfc->src_clk >= 200000000){
 		/* set sample delay */
 		sfc_smp_delay(sfc,DEV_CONF_SMP_DELAY_180);

@@ -80,6 +80,8 @@ ifeq ($(if $(CONFIG_X2000)$(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)$(CONF
 DDR_CREATOR_DIR := ddr_creator_x2000
 else ifeq ($(if $(CONFIG_X1600),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x1600
+else ifeq ($(if $(CONFIG_A1),y,n),y)
+DDR_CREATOR_DIR := ddr_creator_a1
 endif
 
 ifdef CONFIG_MULT_DDR_PARAMS_CREATOR
