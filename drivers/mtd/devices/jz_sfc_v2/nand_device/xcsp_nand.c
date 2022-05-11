@@ -6,7 +6,7 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
-#define XCSP_DEVICES_NUM         2
+#define XCSP_DEVICES_NUM         3
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -41,6 +41,27 @@ static struct jz_sfcnand_base_param xcsp_param[XCSP_DEVICES_NUM] = {
 	},
 
 	[1] = {
+		/*XCSP2AAWH */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+
+	[2] = {
 		/*XCSP4AAWH */
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
@@ -65,13 +86,15 @@ static struct jz_sfcnand_base_param xcsp_param[XCSP_DEVICES_NUM] = {
 
 static struct device_id_struct device_id[XCSP_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x01, "XCSP1AAWH ", &xcsp_param[0]),
-	DEVICE_ID_STRUCT(0xb1, "XCSP4AAWH ", &xcsp_param[1]),
+	DEVICE_ID_STRUCT(0xa1, "XCSP2AAWH ", &xcsp_param[1]),
+	DEVICE_ID_STRUCT(0xb1, "XCSP4AAWH ", &xcsp_param[2]),
 };
 
 static cdt_params_t *xcsp_nand_get_cdt_params(struct sfc_flash *flash, uint8_t device_id) {
 	CDT_PARAMS_INIT(xcsp_nand->cdt_params);
 	switch(device_id) {
 		case 0x01:
+		case 0xa1:
 		case 0xb1:
 			break;
 		default:
@@ -112,6 +135,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 	int ret = 0;
 	switch(device_id) {
 		case 0x01:
+		case 0xa1:
 		case 0xb1:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
