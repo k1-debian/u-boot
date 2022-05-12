@@ -138,13 +138,13 @@ static void msc_clk_switch(int high_frq)
 		val &= ~MSC_CLK_H_FREQ;
 	writel(val, CPM_MSC_CLK_R);
 #else //CONFIG_FPGA
-
+// DEVICE CLK = THIS_CLK / 4
 #ifndef MSC_INIT_CLK
-#define MSC_INIT_CLK    200000
+#define MSC_INIT_CLK    1600000
 #endif
 
 #ifndef MSC_WORKING_CLK
-#define MSC_WORKING_CLK 50000000
+#define MSC_WORKING_CLK 200000000
 #endif
 
   #ifdef CONFIG_JZ_MMC_MSC0
@@ -250,7 +250,6 @@ static u32 wait_buf_rb(void)
 
 	while(!(msc_readw(MSC_NORMAL_INT_STAT_R) \
 				& MSC_BUF_RD_READY_STAT_BIT) && --timeout){
-		udelay(1);  //1 block read time
 	}
 
 	if(!timeout) {
@@ -467,7 +466,11 @@ static u32 mmc_block_read_poll(u8 type, u32 start, u32 blkcnt, u32 *dst)
 	msc_debug("%s-->bus_width: %d\n", __func__, bus_width);
 
 	nob = blkcnt;
-	msc_writew(MSC_BLOCKSIZE_R, 0x200);
+	if(type == 1) {
+		msc_writew(MSC_BLOCKSIZE_R, 0x200);
+	}else {
+		msc_writew(MSC_BLOCKSIZE_R, 4);
+	}
 	msc_writew(MSC_BLOCKCOUNT_R, nob);
 
 	msc_set_xfer_bus_width(bus_width);
@@ -483,25 +486,47 @@ static u32 mmc_block_read_poll(u8 type, u32 start, u32 blkcnt, u32 *dst)
 
 	msc_writew(MSC_XFER_MODE_R, xfer_data);
 
-	mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
-
 	if (type) {
+		mmc_cmd(MMC_CMD_SET_BLOCKLEN, 0x200, 0, MSC_CMDAT_RESPONSE_R1);
 		/* 读取块设备内容 */
 		if(1 == blkcnt)
 			mmc_cmd(MMC_CMD_READ_SINGLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
 		else
 			mmc_cmd(MMC_CMD_READ_MULTIPLE_BLOCK, cmd_args, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
 	} else {
+		mmc_cmd(MMC_CMD_SET_BLOCKLEN, 4, 0, MSC_CMDAT_RESPONSE_R1);
 		/* 读取ESD信息 */
 		mmc_cmd(8, 0, MSC_DATA_PRESENT_SEL_BIT, MSC_CMDAT_RESPONSE_R1);
 	}
-
-	for(; nob > 0; nob--) {
-		cnt = 512 / 4;
-		if(wait_buf_rb())
-			goto err;
-
-		while(cnt--) {
+	if(type) {
+		for(; nob > 0; nob--) {
+			if(wait_buf_rb())
+				goto err;
+			if(0) {
+				cnt = 512 / 4;
+				while(cnt--) {
+					*dst = msc_readl(MSC_BUF_DATA_R);
+					dst++;
+				}
+			} else {
+				int i;
+				for(i = 0;i < 512 / 4 / 8;i++) {
+					dst[0] = msc_readl(MSC_BUF_DATA_R);
+					dst[1] = msc_readl(MSC_BUF_DATA_R);
+					dst[2] = msc_readl(MSC_BUF_DATA_R);
+					dst[3] = msc_readl(MSC_BUF_DATA_R);
+					dst[4] = msc_readl(MSC_BUF_DATA_R);
+					dst[5] = msc_readl(MSC_BUF_DATA_R);
+					dst[6] = msc_readl(MSC_BUF_DATA_R);
+					dst[7] = msc_readl(MSC_BUF_DATA_R);
+					dst += 8;
+				}
+			}
+		}
+	} else {
+		for(; nob > 0; nob--) {
+			if(wait_buf_rb())
+				goto err;
 			*dst = msc_readl(MSC_BUF_DATA_R);
 			dst++;
 		}
