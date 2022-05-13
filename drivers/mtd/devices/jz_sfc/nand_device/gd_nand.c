@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          11
+#define GD_DEVICES_NUM          12
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -241,6 +241,26 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 
 		.need_quad = 1,
 	},
+	[11] = {
+		/*GD5F2GM7UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP_Q5,
+		.tBE = 10,
+
+		.ecc_max = 0x8,
+
+		.need_quad = 1,
+	},
 
 };
 
@@ -256,6 +276,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[8]),
 	DEVICE_ID_STRUCT(0x55, "GD5F4GQ6UE",&gd_param[9]),
 	DEVICE_ID_STRUCT(0x61, "GD5F2GQ5UF",&gd_param[10]),
+	DEVICE_ID_STRUCT(0x92, "GD5F2GM7UE",&gd_param[11]),
 };
 
 static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -272,6 +293,7 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
 			break;
 		case 0xD1 ... 0xD4:
 		case 0x51 ... 0x55:
+		case 0x92:
 			addr_len = 2;
 			break;
 		default:
@@ -311,6 +333,7 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 			break;
 		case 0xD1 ... 0xD4:
 		case 0x51 ... 0x55:
+		case 0x92:
 			addr_len = 2;
 			break;
 		default:
@@ -451,6 +474,7 @@ retry:
 			}
 			break;
 		case 0x52:
+		case 0x92:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x1:
 					if((ret = gd_get_f0_register_value(flash)) < 0)
