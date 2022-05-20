@@ -45,6 +45,10 @@ static uint32_t bus_width = MSC_BUS_WIDTH_4;
 static uint32_t bus_width = MSC_BUS_WIDTH_1;
 #endif
 
+static void soc_mmc_set_rx_phase(int val);
+static void soc_mmc_set_tx_phase(int val);
+static void soc_mmc_enable_tuning(int enable);
+
 static uint32_t msc_readl(uint32_t off)
 {
 	return readl(io_base + off);
@@ -140,11 +144,11 @@ static void msc_clk_switch(int high_frq)
 #else //CONFIG_FPGA
 // DEVICE CLK = THIS_CLK / 4
 #ifndef MSC_INIT_CLK
-#define MSC_INIT_CLK    1600000
+#define MSC_INIT_CLK    400000
 #endif
 
 #ifndef MSC_WORKING_CLK
-#define MSC_WORKING_CLK 200000000
+#define MSC_WORKING_CLK 50000000
 #endif
 
   #ifdef CONFIG_JZ_MMC_MSC0
@@ -156,6 +160,20 @@ static void msc_clk_switch(int high_frq)
   #ifdef CONFIG_JZ_MMC_MSC2
 	#define CPM_MSC MSC2
   #endif
+
+
+#if defined(MSC_CLK_RX_SEL) || defined(MSC_CLK_TX_SEL)
+	if(high_frq) {
+		soc_mmc_enable_tuning(0);
+		soc_mmc_set_rx_phase(MSC_CLK_RX_SEL);
+		soc_mmc_set_tx_phase(MSC_CLK_TX_SEL);
+	} else {
+		soc_mmc_enable_tuning(0);
+		soc_mmc_set_rx_phase(0);
+		soc_mmc_set_tx_phase(0);
+	}
+#endif
+
 	/* TODO: set clk */
 	msc_writew(MSC_CLK_CTRL_R, MSC_SD_CLK_EN_BIT | MSC_INTERNAL_CLK_EN_BIT);
 	/* set clk */
@@ -164,7 +182,7 @@ static void msc_clk_switch(int high_frq)
 	else
 		clk_set_rate(CPM_MSC, MSC_WORKING_CLK);
 
-	//printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__,   \
+	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__, \
 			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC), 1 << bus_width);
 #endif
 
@@ -849,7 +867,7 @@ static void response_convert_to_rtos(unsigned int *src, unsigned int *dst)
 	dst[3] = src[0];
 }
 
-static void soc_mmc_set_rx_phase(void)
+static void soc_mmc_set_rx_phase(int val)
 {
     unsigned int offset;
     unsigned int value;
@@ -866,13 +884,13 @@ static void soc_mmc_set_rx_phase(void)
 
     value = cpm_inl(offset);
     value &= ~(0x7 << 17);
-    value |= (0x0 << 17);   /* sample clock: 0x7 is 325-degree for RX phase */
+    value |= (val << 17);   /* sample clock: 0x7 is 325-degree for RX phase */
                             /* sample clock: 0x2 is  90-degree for RX phase */
                             /* sample clock: 0x0 is   0-degree for RX phase */
     cpm_outl(value, offset);
 }
 
-static void soc_mmc_set_tx_phase(void)
+static void soc_mmc_set_tx_phase(int val)
 {
     unsigned int offset;
     unsigned int value;
@@ -889,7 +907,7 @@ static void soc_mmc_set_tx_phase(void)
 
     value = cpm_inl(offset);
     value &= ~(0x3 << 15);
-    value |= (0x3 << 15);  /* sample clock: 0x3 is 270-degree for TX phase
+    value |= (val << 15);  /* sample clock: 0x3 is 270-degree for TX phase
                             *               0x2 is 180-degree for TX phase
                             *               0x1 is 135-degree for TX phase
                             *               0x0 is 90-degree for TX phase
@@ -1029,8 +1047,8 @@ static int sd_found(void)
 
 	/* 控制器 HS下相关配置 */
 	soc_mmc_enable_tuning(0);
-	soc_mmc_set_rx_phase();
-	soc_mmc_set_tx_phase();
+	soc_mmc_set_rx_phase(0);
+	soc_mmc_set_tx_phase(3);
 	msc_set_high_speed_enable(1);
 
 	/* 默认切换为high speed 50MHz */
@@ -1164,7 +1182,36 @@ static int mmc_found(void)
 
 	/* 正常启动 不记录Card 信息 */
 	if (!card_params) {
+#if MSC_WORKING_CLK > 100000000
+		/* 控制器 HS200模式下相关配置 */
+		msc_set_high_speed_enable(1);
+		/* 设置为HS200 */
+		int reg_value = msc_readw(MSC_HOST_CTRL2_R);
+		reg_value &= ~MSC_UHS_MODE_SEL_MASK;
+		reg_value &= ~MSC_SIGNALING_EN_BIT;
+		reg_value |= MSC_UHS_MODE_SEL_SDR104;
+		reg_value |= MSC_SIGNALING_EN_BIT;
+		msc_writew(MSC_HOST_CTRL2_R, reg_value);
+
+		/* 设置频率 HS200 */
+		int value = 2;  /* =2: 200M HS200
+						 * =1: 52M  High Speed
+						 * =0: 26M  Default
+						 */
+		int timing_arg = 0x3 << 24 | 185 << 16 | value << 8 | 0x1;
+		resp = mmc_cmd(6, timing_arg, 0, MSC_CMDAT_RESPONSE_R1b); /* set buswidth*/
+
+		timeout = 100000;
+		do {
+			resp = mmc_cmd(13, rca, 0, MSC_CMDAT_RESPONSE_R1);
+			status = resp[1] | (resp[2] << 8) | (resp[3] << 16) | (resp[4] << 24);
+			if((status & (0xf << 9)) != (7 << 9))
+				break;
+			udelay(1);
+		}while(--timeout);
+#endif
 		msc_clk_switch(1);
+
 		return 0;
 	}
 
@@ -1176,8 +1223,8 @@ static int mmc_found(void)
 
 	/* 控制器 HS200模式下相关配置 */
 	soc_mmc_enable_tuning(0);
-	soc_mmc_set_rx_phase();
-	soc_mmc_set_tx_phase();
+	soc_mmc_set_rx_phase(0);
+	soc_mmc_set_tx_phase(3);
 	msc_set_high_speed_enable(1);
 
 	/* 设置为HS200 */
