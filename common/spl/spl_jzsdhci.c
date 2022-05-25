@@ -182,7 +182,7 @@ static void msc_clk_switch(int high_frq)
 	else
 		clk_set_rate(CPM_MSC, MSC_WORKING_CLK);
 
-	printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__, \
+	//printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__, \
 			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC), 1 << bus_width);
 #endif
 
