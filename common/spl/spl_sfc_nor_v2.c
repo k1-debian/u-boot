@@ -528,7 +528,7 @@ unsigned int get_part_offset_by_name(struct norflash_partitions partition, char 
 	int i = 0;
 
 	for (i = 0; i < partition.num_partition_info; i++) {
-		if (!strncmp(partition.nor_partition[i].name, name, sizeof(name))) {
+		if (!strcmp(partition.nor_partition[i].name, name)) {
 			return partition.nor_partition[i].offset;
 		}
 	}
@@ -541,7 +541,7 @@ unsigned int get_part_size_by_name(struct norflash_partitions partition, char *n
 	int i = 0;
 
 	for (i = 0; i < partition.num_partition_info; i++) {
-		if (!strncmp(partition.nor_partition[i].name, name, sizeof(name))) {
+		if (!strcmp(partition.nor_partition[i].name, name)) {
 			return partition.nor_partition[i].size;
 		}
 	}
@@ -939,7 +939,7 @@ void spl_vmlinux_load(void)
 
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
-static char *spl_sfc_nand_os_ota_load(void)
+static char *spl_sfc_nor_os_ota_load(void)
 {
 	struct norflash_partitions partition;
 	unsigned int img_addr = 0;
