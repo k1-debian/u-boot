@@ -501,6 +501,37 @@
 #define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
+#define CONFIG_LCD
+
+#ifdef CONFIG_LCD
+#define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
+#define CONFIG_LCD_LOGO
+
+/* #define CONFIG_CMD_LOGO_RLE */
+/* #define CONFIG_LOGO_EXTEND */
+#define CONFIG_SYS_PWM_PERIOD       10000 /* Pwm period in ns */
+#define CONFIG_SYS_PWM_CHN      0  /* Pwm channel ok*/
+#define CONFIG_SYS_PWM_FULL 100
+#define CONFIG_SYS_BACKLIGHT_LEVEL 60 /* Backlight brightness is (60 / 100) */
+
+#define CONFIG_JZ_LCD_V14
+#define CONFIG_JZ_PWM_V2
+
+#define CONFIG_SYS_CONSOLE_INFO_QUIET
+#define CONFIG_SYS_CONSOLE_IS_IN_ENV
+
+#define CONFIG_VIDEO_FW035
+#ifdef CONFIG_VIDEO_FW035
+#define CONFIG_SLCD_VDD_PIN     GPIO_PA(31)
+#define CONFIG_SLCD_PWM_PIN     GPIO_PC(2)
+#define CONFIG_SLCD_RD_PIN      GPIO_PA(16)
+#define CONFIG_SLCD_CS_PIN      GPIO_PA(23)
+#define CONFIG_SLCD_RST_PIN     GPIO_PB(13)
+#define CONFIG_GPIO_LCD_PWM		GPIO_PC(0)
+#endif
+
+#endif /* CONFIG_LCD */
+
 /**
  * SPL configuration
  */
