@@ -382,7 +382,7 @@ extern unsigned int __ps_per_tck;
 
 #define DDR__ns(ns)   (ns * 1000)
 #define DDR__ps(ps)   (ps)
-#define DDR__tck(tck) (tck * __ps_per_tck)
+#define DDR__tck(tck) ((tck) * __ps_per_tck)
 
 #ifdef CONFIG_DDR_INNOPHY
 struct ddr_reg_header {

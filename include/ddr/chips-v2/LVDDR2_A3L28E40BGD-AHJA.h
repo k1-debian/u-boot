@@ -12,7 +12,7 @@ static inline void LVDDR2_A3L28E40BGD_AHJA_init(void *data)
 	c->DDR_COL = 10;/* COL :  8 to 10 column address */
 	c->DDR_COL1 = 10;/* COL :  8 to 10 column address */
 	c->DDR_BANK8 = 2; /* Banks each chip: 0-4bank, 1-8bank 0 for falcon fpga, 1 for develop board */
-	c->DDR_CL = 6; /* CAS latency: 1 to 7 */
+	c->DDR_CL = 5; /* CAS latency: 1 to 7 */
 
 
 /*
@@ -38,8 +38,9 @@ static inline void LVDDR2_A3L28E40BGD_AHJA_init(void *data)
 
 /* new add */
 	c->DDR_BL = 8;   /* MDDR Burst length: 3 - 8 burst, 2 - 4 burst , 1 - 2 burst*/
-	c->DDR_RL = DDR__tck(6);    /* MDDR: Read Latency = tAL + tCL */
-	c->DDR_WL = DDR__tck(5);     /* MDDR: must 1 */
+	unsigned int RL = c->DDR_CL;
+	c->DDR_RL = DDR__tck(RL);    /* MDDR: Read Latency = tAL + tCL */
+	c->DDR_WL = DDR__tck(RL - 1);     /* MDDR: must 1 */
 
 	c->DDR_tCKE = DDR__tck(3);        /*t4 CKE minimum pulse width, tCK */
 	c->DDR_tXSR = DDR__tck(200);   /*t6?*/
