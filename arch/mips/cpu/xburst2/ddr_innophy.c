@@ -232,19 +232,21 @@ void ddrc_dfi_init(enum ddr_type type)
 	while(!(ddr_readl(DDRC_DWSTATUS) & DDRC_DWSTATUS_DFI_INIT_COMP)); //polling dfi_init_complete
 
 	reg_val = ddr_readl(DDRC_CTRL);
-	reg_val |= (1 << 23);
+	reg_val &= ~(1 << 23);
 	ddr_writel(reg_val, DDRC_CTRL); //set dfi_reset_n high
 
+	udelay(500);
 	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
 	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
 
-//	type = LPDDR3;
 
-	ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
-	mdelay(1);
 
 	switch(type) {
 	case LPDDR2:
+		udelay(200);
+		ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
 #define DDRC_LMR_MR(n)                                                          \
                 global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
 		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |                           \
@@ -329,6 +331,7 @@ void ddrc_dfi_init(enum ddr_type type)
 		break;
 
 	case LPDDR3:
+		udelay(200);	//200us delay before RST.
 #define DDRC_LMR_MR(n)                                                          \
                 global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
 		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |                           \
@@ -401,10 +404,6 @@ void ddrc_dfi_init(enum ddr_type type)
 static void ddrc_prev_init(void)
 {
 	FUNC_ENTER();
-	/* DDRC CFG init*/
-	/* /\* DDRC CFG init*\/ */
-	/* ddr_writel(DDRC_CFG_VALUE, DDRC_CFG); */
-	/* DDRC timing init*/
 	ddr_writel(global_reg_value->DDRC_TIMING1_VALUE, DDRC_TIMING(1));
 	ddr_writel(global_reg_value->DDRC_TIMING2_VALUE, DDRC_TIMING(2));
 	ddr_writel(global_reg_value->DDRC_TIMING3_VALUE, DDRC_TIMING(3));
@@ -414,21 +413,24 @@ static void ddrc_prev_init(void)
 	/* DDRC memory map configure*/
 	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
-
-	/* ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); */
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE & ~(7 << 12), DDRC_CTRL);
-
+	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
+	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+	mem_remap();
 	FUNC_EXIT();
 }
 
 static void ddrc_post_init(void)
 {
+	unsigned int reg = 0;
 	FUNC_ENTER();
 
-	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
-	mem_remap();
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE, DDRC_CTRL);
+
+	/*控制寄存器应该只修改配置相关的内容，需要读后写操作.*/
+	reg = ddr_readl(DDRC_CTRL);
+	/*X2000/X2500/X1600 该寄存器有差异. */
+	reg |= global_reg_value->DDRC_CTRL_VALUE & (0xf << 12);
+	ddr_writel(reg, DDRC_CTRL);
 
 	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
 	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
@@ -562,19 +564,20 @@ void sdram_init(void)
 
 	ddrp_pll_init();
 
-	ddrc_dfi_init(type);
-
 	/* DDR Controller init*/
 	ddrc_prev_init();
 
-	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
+	ddrc_dfi_init(type);
 
-	ddrc_post_init();
+
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 	ddrp_software_calibration();
 #else
 	ddrp_auto_calibration();
 #endif
+
+	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/
+	ddrc_post_init();
 
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);

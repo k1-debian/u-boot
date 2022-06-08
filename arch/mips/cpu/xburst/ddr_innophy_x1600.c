@@ -279,21 +279,26 @@ static void reset_controller(void)
 {
 	ddr_writel(0xf << 20, DDRC_CTRL);
 	mdelay(5);
+	/* reg value 1 keeps dfi_rst_n low.*/
 	ddr_writel(0x8 << 20, DDRC_CTRL);
 	mdelay(5);
 }
 
 static void ddrc_post_init(void)
 {
-	mem_remap();
-	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+	unsigned reg = 0;
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE, DDRC_CTRL);
+
+	/*控制寄存器应该只修改配置相关的内容，需要读后写操作.*/
+	reg = ddr_readl(DDRC_CTRL);
+	reg |= global_reg_value->DDRC_CTRL_VALUE & (1 << 2 | 1 << 11 | 0xf << 12);
+	ddr_writel(reg, DDRC_CTRL);
 }
 
 static void ddrc_prev_init(void)
 {
 	dwc_debug("DDR Controller init\n");
+	/*1. 先初始化DDR 控制器，主要一些timing 参数，在初始化ddr 颗粒的时候需要用到.*/
 	/* DDRC timing init*/
 	ddr_writel(global_reg_value->DDRC_TIMING1_VALUE, DDRC_TIMING(1));
 	ddr_writel(global_reg_value->DDRC_TIMING2_VALUE, DDRC_TIMING(2));
@@ -305,7 +310,9 @@ static void ddrc_prev_init(void)
 	/* DDRC memory map configure*/
 	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE & 0xffff8fff, DDRC_CTRL);
+	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+
+	mem_remap();
 }
 
 void ddrc_dfi_init(void)
@@ -320,15 +327,14 @@ void ddrc_dfi_init(void)
 #endif
 
 	reg = ddr_readl(DDRC_CTRL);
-	reg |= (1 << 23);
-	ddr_writel(reg, DDRC_CTRL); //set dfi_reset_n high
+	reg &= ~(1 << 23);
+	ddr_writel(reg, DDRC_CTRL); //set reg value 0, keeps dfi_reset_n high
+
+	udelay(500);	//DDR3 needs 500us delay before CKE High, LPDDR2/LPDDR3 needs 100ns.
 
 	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
 
 	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
-
-	ddr_writel(7 << 8 | 1 << 0, DDRC_LMR); //Send All bank precharge.
-	mdelay(1);
 
 	if(current_ddr_type == DDR3) {
 #define DDRC_LMR_MR(n)						\
@@ -342,14 +348,28 @@ void ddrc_dfi_init(void)
 	printf("MR3 : 0x%x\n", DDRC_LMR_MR(3));
 	printf("ZQCL : 0x%x\n", global_reg_value->DDRC_DLMR_VALUE | (0x4 << 3) | 0x1);
 
+	/*从CKE High 到第一个MR命令需要延时tXPR,*/
+	udelay(100);
 	ddr_writel(DDRC_LMR_MR(0)/*0x1a30011*/, DDRC_LMR); //MR0
+	udelay(100);
 	ddr_writel(DDRC_LMR_MR(1)/*0x6111*/, DDRC_LMR); //MR1
+	udelay(100);
 	ddr_writel(DDRC_LMR_MR(2)/*0x8211*/, DDRC_LMR); //MR2
+	udelay(100);
 	ddr_writel(DDRC_LMR_MR(3)/*0x311*/, DDRC_LMR); //MR3
+	udelay(100);
 	ddr_writel(global_reg_value->DDRC_DLMR_VALUE | (0x4 << 3) | 0x1/*0x19*/, DDRC_LMR);
+	udelay(100);
 
 #undef DDRC_LMR_MR
 	} else if(current_ddr_type == LPDDR2) {
+
+		/*CKE High 到第一个命令之间需要延时200us.*/
+		udelay(200);
+		/*对于LPDDR2， 发送All bank precharge命令是可选的.*/
+		ddr_writel(7 << 8 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
 #define DDRC_LMR_MR(n)										\
 		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
 			((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24) |						\
@@ -377,6 +397,10 @@ void ddrc_dfi_init(void)
 			(((global_reg_value->DDR_MR##n##_VALUE  >> 13) & 0x3) << 8) |						\
 			(((global_reg_value->DDR_MR##n##_VALUE ) & 0x1fff) << (12))
 
+		udelay(1);
+		/*CKE High 延时400ns, 发送All bank precharge*/
+		ddr_writel(7 << 8 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+
 		if(global_reg_value->h.id == 0x65){
 			/*LVDDR2_A3L28E40BGD*/
 			ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
@@ -394,6 +418,16 @@ void ddrc_dfi_init(void)
 			ddr_writel(DDRC_LMR_MR(1), DDRC_LMR);
 			mdelay(1);
 		}
+		/*MR 寄存器设置完成之后，需要All Bank Precharge.*/
+		ddr_writel(7 << 8 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		udelay(100);
+
+		/*发送2个或者多个auto refresh 命令.*/
+		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
+		udelay(100);
+		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
+		udelay(100);
+
 		printf("mr0 = 0x%x\n", DDRC_LMR_MR(0));
 		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
 #undef DDRC_LMR_MR
@@ -686,10 +720,11 @@ void sdram_init(void)
 
 	ddrp_cfg(global_reg_value);
 	ddrp_pll_init();
+	ddrc_prev_init();
+
 	ddrc_dfi_init();
 
         /* DDR Controller init*/
-	ddrc_prev_init();
 	dwc_debug("DDR PHY init OK\n");
 	ddrc_post_init();
 
@@ -700,8 +735,8 @@ void sdram_init(void)
 #endif
 
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
-	ddr_writel(0x1 ,DDRC_AUTOSR_EN);
 	ddr_writel(CONFIG_DDR_AUTO_SELF_REFRESH_CNT ,DDRC_AUTOSR_CNT);
+	ddr_writel(0x1 ,DDRC_AUTOSR_EN);
 #endif
 	{
 		unsigned int dlp = 0;
