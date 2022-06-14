@@ -501,7 +501,7 @@
 #define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
-#define CONFIG_LCD
+/* #define CONFIG_LCD */
 
 #ifdef CONFIG_LCD
 #define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
