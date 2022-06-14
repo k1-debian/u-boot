@@ -28,7 +28,7 @@ static inline void X1600EN_DDR2_init(void *data)
 
 	c->DDR_BL      = 8;
 	c->DDR_RL      = DDR__tck(c->DDR_AL + c->DDR_CL);
-	c->DDR_WL      = DDR__tck(c->DDR_RL - 1);
+	c->DDR_WL      = DDR__tck(c->DDR_CL - 1);
 	c->DDR_tCCD    = DDR__tck(2);
 	c->DDR_tFAW    = DDR__ns(45);
 	c->DDR_tCKE    = DDR__tck(3) ;

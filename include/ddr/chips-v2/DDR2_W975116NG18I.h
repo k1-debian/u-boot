@@ -46,7 +46,7 @@ static inline void DDR2_W975116NG18I_init(void *data)
 	/*	c->DDR_RL =  DDR__tck(DDR_CL)  [> DDR2: Read Latency = tAL + tCL <]*/
 	/*	c->DDR_WL =  (DDR_CL - 1)[>(DDR_tRL - 1)        DDR2: Write Latency = tAL + tCL - 1<]*/
 	c->DDR_RL = DDR__tck(c->DDR_AL + c->DDR_CL);
-	c->DDR_WL = DDR__tck(c->DDR_RL - 1);
+	c->DDR_WL = DDR__tck(c->DDR_CL - 1);
 	c->DDR_tCCD = DDR__tck(2);      /* CAS# to CAS# command delay , tCK*/
 	/*	c->DDR_tRTW	(((DDR_BL > 4) ? 6 : 4) + 1)*/ /* 4 in case of BL=4, 6 in case of BL=8 */
 	c->DDR_tFAW = DDR__ns(45);     /* Four bank activate period, ns */
