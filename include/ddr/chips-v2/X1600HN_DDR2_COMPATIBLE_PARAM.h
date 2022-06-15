@@ -1,9 +1,32 @@
 #ifndef __X1600HN_DDR2_COMPATIBLE_PARAM_H
 #define	__X1600HN_DDR2_COMPATIBLE_PARAM_H
 
+/*
+ * CL:3,200M ~ 266M
+ * CL:4,266M ~ 333M
+ * CL:5,333M ~ 400M
+ * CL:6,
+ * CL:7,400M ~ 533M
+ *
+ * */
+#if ((CONFIG_SYS_MEM_FREQ > 200000000) && (CONFIG_SYS_MEM_FREQ <= 266000000))
+#define CONFIG_DDR_CL	3
+#elif((CONFIG_SYS_MEM_FREQ > 266000000) && (CONFIG_SYS_MEM_FREQ <= 333000000))
+#define CONFIG_DDR_CL	4
+#elif((CONFIG_SYS_MEM_FREQ > 333000000) && (CONFIG_SYS_MEM_FREQ <= 400000000))
+#define CONFIG_DDR_CL	5
+#elif((CONFIG_SYS_MEM_FREQ > 400000000) && (CONFIG_SYS_MEM_FREQ <= 533000000))
+#define CONFIG_DDR_CL	7
+#else
+#define CONFIG_DDR_CL	0
+#endif
+
+#define CONFIG_DDR_AL	0
+
 static inline void X1600HN_DDR2_init(void *data)
 {
 	struct ddr_chip_info *c = (struct ddr_chip_info *)data;
+	unsigned int RL = CONFIG_DDR_CL + CONFIG_DDR_AL;
 
 	c->DDR_ROW     = 13;
 	c->DDR_COL     = 10;
@@ -11,7 +34,7 @@ static inline void X1600HN_DDR2_init(void *data)
 	c->DDR_COL1    = 10;
 
 	c->DDR_BANK8   = 1;
-	c->DDR_CL      = 7;
+	c->DDR_CL      = CONFIG_DDR_CL;
 
 	c->DDR_tRAS    = DDR__ns(45);
 	c->DDR_tRTP    = DDR__ps(7500);
@@ -27,8 +50,8 @@ static inline void X1600HN_DDR2_init(void *data)
 	c->DDR_tMRD    = DDR__tck(2);
 
 	c->DDR_BL      =  8;
-	c->DDR_RL      = DDR__tck(7);
-	c->DDR_WL      = DDR__tck(6);
+	c->DDR_RL      = DDR__tck(RL);
+	c->DDR_WL      = DDR__tck(RL - 1);
 	c->DDR_tCCD    = DDR__tck(2);
 	c->DDR_tRTW    = (((c->DDR_BL > 4) ? 6 : 4) + 1);
 	c->DDR_tFAW    = DDR__ns(45);

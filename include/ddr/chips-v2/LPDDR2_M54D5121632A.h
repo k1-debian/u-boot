@@ -19,6 +19,44 @@
 #ifndef __LPDDR2_M54D5121632A_H__
 #define __LPDDR2_M54D5121632A_H__
 
+/*
+ * RL:3,WL:1,25M ~ 166M
+ * RL:3,WL:1,166M ~ 200M
+ * RL:4,WL:2,200M ~ 266M
+ * RL:5,WL:2,266M ~ 333M
+ * RL:6,WL:3,333M ~ 400M
+ * RL:7,WL:4,400M ~ 466M
+ * RL:8,WL:4,466M ~ 533M
+ *
+ * */
+#define CONFIG_DDR_DATA_RATE (CONFIG_SYS_MEM_FREQ * 2)
+
+#if	((CONFIG_DDR_DATA_RATE > 50000000) && (CONFIG_DDR_DATA_RATE <= 333000000))
+#define CONFIG_DDR_RL	3
+#define CONFIG_DDR_WL	1
+#elif((CONFIG_DDR_DATA_RATE > 333000000) && (CONFIG_DDR_DATA_RATE <= 400000000))
+#define CONFIG_DDR_RL	3
+#define CONFIG_DDR_WL	1
+#elif((CONFIG_DDR_DATA_RATE > 400000000) && (CONFIG_DDR_DATA_RATE <= 533000000))
+#define CONFIG_DDR_RL	4
+#define CONFIG_DDR_WL	2
+#elif((CONFIG_DDR_DATA_RATE > 533000000) && (CONFIG_DDR_DATA_RATE <= 667000000))
+#define CONFIG_DDR_RL	5
+#define CONFIG_DDR_WL	2
+#elif((CONFIG_DDR_DATA_RATE > 667000000) && (CONFIG_DDR_DATA_RATE <= 800000000))
+#define CONFIG_DDR_RL	6
+#define CONFIG_DDR_WL	3
+#elif((CONFIG_DDR_DATA_RATE > 800000000) && (CONFIG_DDR_DATA_RATE <= 933000000))
+#define CONFIG_DDR_RL	7
+#define CONFIG_DDR_WL	4
+#elif((CONFIG_DDR_DATA_RATE > 933000000) && (CONFIG_DDR_DATA_RATE <= 1066000000))
+#define CONFIG_DDR_RL	8
+#define CONFIG_DDR_WL	4
+#else
+#define CONFIG_DDR_RL	0
+#define CONFIG_DDR_WL	0
+#endif
+
 static inline void LPDDR2_M54D5121632A_init(void *data)
 {
 	struct ddr_chip_info *c = (struct ddr_chip_info *)data;
@@ -30,8 +68,8 @@ static inline void LPDDR2_M54D5121632A_init(void *data)
 	c->DDR_COL1 		= 10,
 	c->DDR_BANK8 		= 0,
 	c->DDR_BL	   	= 8,
-	c->DDR_RL	   	= -1,
-	c->DDR_WL	   	= -1,
+	c->DDR_RL	   	= CONFIG_DDR_RL,
+	c->DDR_WL	   	= CONFIG_DDR_WL,
 
 	c->DDR_tMRW  		= DDR__tck(5);
 	c->DDR_tDQSCK 		= DDR__ps(2000);

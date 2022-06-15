@@ -4,25 +4,7 @@ struct ddr_latency_table
 	unsigned int freq;
 	int latency;
 };
-static struct ddr_latency_table rl_LPDDR2[] = {
-	{333000000,3},/*Date Rate xxM, RL*/
-	{400000000,3},
-	{533000000,4},
-	{667000000,5},
-	{800000000,6},
-	{933000000,7},
-	{1066000000,8},
-};
 
-static struct ddr_latency_table wl_LPDDR2[]= {
-	{333000000,1},/*Date Rate xxM, WL*/
-	{400000000,1},
-	{533000000,2},
-	{667000000,2},
-	{800000000,3},
-	{933000000,4},
-	{1066000000,4},
-};
 static struct ddr_out_impedance out_impedance[]={
 	{80000,5},
 	{60000,7},
@@ -31,22 +13,6 @@ static struct ddr_out_impedance out_impedance[]={
 	{34000,13},
 };
 
-static int find_ddr_lattency(struct ddr_latency_table *table,int size,unsigned int freq)
-{
-	int i, max;
-	unsigned int data_rate = freq * 2;
-	i = size / sizeof(struct ddr_latency_table) - 1;
-	max = i;
-	for(;i>=0;i--) {
-		if(data_rate >= table[i].freq) {
-			if ((data_rate % table[i].freq) && (data_rate <= table[max].freq))
-				return table[i + 1].latency;
-			else
-				return table[i].latency;
-		}
-	}
-	return table[0].latency;
-}
 #ifdef CONFIG_DDR_INNOPHY
 static void fill_mr_params_lpddr2(struct ddr_params *p)
 {
@@ -179,7 +145,6 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params, struct ddr_chip
 	int tmp;
 	struct lpddr2_params *params = &ddr_params->private_params.lpddr2_params;
 
-
 	params->tDQSCK = chip->DDR_tDQSCK;
 	params->tDQSCKMAX = chip->DDR_tDQSCKMAX;
 	params->tXSR = chip->DDR_tXSR;
@@ -187,26 +152,9 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params, struct ddr_chip
 	params->tRTP = chip->DDR_tRTP;
 	params->tCCD = chip->DDR_tCCD;
 	params->tFAW = chip->DDR_tFAW;
-	if(params->RL == -1)
-	{
-		tmp = find_ddr_lattency(rl_LPDDR2,sizeof(rl_LPDDR2),ddr_params->freq);
-		if(tmp == -1) {
-			out_error("it cann't find RL latency,when ddr frequancy is %d.check %s %d\n",
-				  ddr_params->freq,__FILE__,__LINE__);
-			assert(1);
-		}
-		params->RL = tmp * __ps_per_tck;
-	}
-	if(params->WL == -1)
-	{
-		tmp = find_ddr_lattency(wl_LPDDR2,sizeof(wl_LPDDR2),ddr_params->freq);
-		if(tmp == -1) {
-			out_error("it cann't find WL latency,when ddr frequancy is %d. check %s %d\n",
-				  ddr_params->freq,__FILE__,__LINE__);
-			assert(1);
-		}
-		params->WL = tmp * __ps_per_tck;
-	}
+
+	params->RL *=  __ps_per_tck;
+	params->WL *=  __ps_per_tck;
 
 #ifdef CONFIG_DDR_INNOPHY
 	fill_mr_params_lpddr2(ddr_params);
