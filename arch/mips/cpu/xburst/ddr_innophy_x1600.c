@@ -684,11 +684,7 @@ void get_ddr_params(void)
 
 unsigned int get_ddr_size(void)
 {
-#ifdef CONFIG_X1660_DDR
-	return 32;
-#else
-	return 64;
-#endif
+	return (global_reg_value->DDR_CHIP_0_SIZE) >> 20;
 }
 
 /* DDR sdram init */
