@@ -197,7 +197,10 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params, struct ddr_chip
 			assert(1);
 		}
 		params->RL = tmp * __ps_per_tck;
+	}else{
+		params->RL *= __ps_per_tck;
 	}
+
 	if(params->WL == -1)
 	{
 		tmp = find_ddr_lattency(wl_LPDDR2,sizeof(wl_LPDDR2),ddr_params->freq);
@@ -207,6 +210,8 @@ static void fill_in_params_lpddr2(struct ddr_params *ddr_params, struct ddr_chip
 			assert(1);
 		}
 		params->WL = tmp * __ps_per_tck;
+	}else{
+		params->WL *= __ps_per_tck;
 	}
 
 	fill_mr_params_lpddr2(ddr_params);
