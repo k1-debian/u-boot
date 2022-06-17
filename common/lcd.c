@@ -180,6 +180,8 @@ void lcd_sync(void)
 	if (lcd_flush_dcache)
 		flush_dcache_range((u32)lcd_base,
 			(u32)(lcd_base + lcd_get_size(&line_length)));
+		flush_scache_range((u32)lcd_base,
+			(u32)(lcd_base + lcd_get_size(&line_length)));
 #endif
 
 	lcd_dma_sync();

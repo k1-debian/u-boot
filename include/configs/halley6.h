@@ -506,6 +506,7 @@
 #ifdef CONFIG_LCD
 #define LCD_BPP             5 /* 4: 16BPP, 5: 24BPP. */
 #define CONFIG_LCD_LOGO
+#define CONFIG_LCD_ENABLE_RDMA_FB
 
 /* #define CONFIG_CMD_LOGO_RLE */
 /* #define CONFIG_LOGO_EXTEND */
@@ -523,7 +524,6 @@
 #define CONFIG_VIDEO_FW035
 #ifdef CONFIG_VIDEO_FW035
 #define CONFIG_SLCD_VDD_PIN     GPIO_PA(31)
-#define CONFIG_SLCD_PWM_PIN     GPIO_PC(2)
 #define CONFIG_SLCD_RD_PIN      GPIO_PA(16)
 #define CONFIG_SLCD_CS_PIN      GPIO_PA(23)
 #define CONFIG_SLCD_RST_PIN     GPIO_PB(13)
@@ -555,7 +555,7 @@
 #define CONFIG_SPL_BOARD_INIT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_GPIO_SUPPORT
-/* #define CONFIG_SPL_I2C_SUPPORT */
+/* #define CONFIG_SPL_I2C_SUPPOf1->msb_right == f2->msb_right;RT */
 /* #define CONFIG_SPL_REGULATOR_SUPPORT */
 #define CONFIG_SPL_CORE_VOLTAGE		1100
 
