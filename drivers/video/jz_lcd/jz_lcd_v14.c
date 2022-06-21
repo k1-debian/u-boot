@@ -471,7 +471,7 @@ static bool cmp_var_to_colormode(struct fb_var_screeninfo *var,
 	{
 		return f1->length == f2->length &&
 			f1->offset == f2->offset &&
-			ONFIG_LCD_ENABLE_RDMA_FB
+			f1->msb_right == f2->msb_right;
 	}
 
 	if (var->bits_per_pixel == 0 ||
