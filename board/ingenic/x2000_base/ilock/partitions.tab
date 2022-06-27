@@ -10,6 +10,7 @@ partition:
 	rootfs    =     9m,     50m, LINUX_FS
 	userdata  =     59m,    26m, LINUX_FS
 	rtos      =     85m,    24m, EMPTY
-	rtosdata  =    109m,     8m, LINUX_FS
+	rtosdata  =    109m,     4m, LINUX_FS
+	facedata  =    113m,     4m, LINUX_FS
 
 #fstype could be: LINUX_FS, FAT_FS, EMPTY
