@@ -287,7 +287,7 @@ ifdef CONFIG_JZ_SCBOOT
 ifdef CONFIG_X1600
 LIBS-y += drivers/scboot/jz_sec_v3/libscboot.o
 else
-ifdef ($(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100),)
+ifeq ($(if $(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100),y,n),y)
 LIBS-y += drivers/scboot/jz_sec_v2/libscboot.o
 else
 LIBS-y += drivers/scboot/jz_sec_v1/libscboot.o

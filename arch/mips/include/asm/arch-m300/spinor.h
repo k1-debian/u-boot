@@ -115,6 +115,11 @@ struct burner_params {
 	unsigned char uk_quad;	/* for uboot kernel set quad mode */
 };
 
+struct builtin_params {
+	struct burner_params burner_params;
+	struct mini_spi_nor_info mini_spi_nor_info;
+};
+
 struct spiflash_info {
 	struct burner_params burner_params;
 	struct mini_spi_nor_info mini_spi_nor_info;
