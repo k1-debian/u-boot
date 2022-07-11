@@ -80,9 +80,9 @@ struct jz_gpio_func_def {
 #define PXPAT0C		0x48   /* Port Pattern 0 Clear Register */
 #define PXFLG		0x50   /* Port Flag Register */
 #define PXFLGC		0x58   /* Port Flag clear Register */
-#define PXPE		0x70   /* Port Pull Disable Register */
-#define PXPES		0x74   /* Port Pull Disable Set Register */
-#define PXPEC		0x78   /* Port Pull Disable Clear Register */
+#define PXPE		0x80   /* Port Pull Disable Register */
+#define PXPES		0x84   /* Port Pull Disable Set Register */
+#define PXPEC		0x88   /* Port Pull Disable Clear Register */
 
 
 #define PXPEL		0x110   /* Port Pull Disable Register */

@@ -171,8 +171,13 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x1? 0 : pins, base + PXPAT0C);
 
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
+#if defined(CONFIG_X1000)
 	writel(func & 0x10? pins : 0, base + PXPEC);
 	writel(func & 0x10? 0 : pins, base + PXPES);
+#else
+	writel(func & 0x10? pins : 0, base + PXPES);
+	writel(func & 0x10? 0 : pins, base + PXPEC);
+#endif
 #endif
 
 #if defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
