@@ -208,6 +208,7 @@ read_oob:
 	/* plane select */
 	if(curr_device->device_id == 0x22			/* MX35LF2GE4AB */
 			|| curr_device->device_id == 0x72	/* DS35Q2GAXXX,	ZD35Q2GA */
+		        || curr_device->device_id == 0xF1	/* DS35X1GBXXX*/
 			|| curr_device->device_id == 0xF2	/* DS35Q2GBXXX */
 			|| curr_device->device_id == 0x24)	/* XT26G02E */
 		column |= (((page >> 6) & 1) << 12);
