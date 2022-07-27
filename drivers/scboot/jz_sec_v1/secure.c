@@ -41,6 +41,7 @@ int init_seboot(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int * clkgate = (volatile unsigned int *)0xb0000020;
 	*clkgate = 0;
+	printf("scboot for x1xxx.\n");
 
 	reset_mcu();
 	printf("reset_mcu %x\n", REG32(PDMA_BASE + DMCS_OFF));

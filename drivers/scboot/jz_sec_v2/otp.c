@@ -113,7 +113,7 @@ static int efuse_config(void)
 	int wr_adj = 0;
 	int rd_adj = 0;
 	while(1) {
-		if((wr_adj + 1) * ahb2_cycle > 2) {
+		if((wr_adj + 1) * ahb2_cycle > 4) {
 			debug("-----wr_adj = %x --\n",wr_adj);
 			break;
 		}
@@ -167,13 +167,68 @@ static int efuse_config(void)
 
 static int efuse_update_state(void)
 {
+	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	printf("xxxxxxx data updated: %x\n", *(unsigned int *)EFUSE_REG_DAT1);
+	printf("xxxxxxx data updated: %x\n", REG32(EFUSE_REG_DAT1));
 	printf("xxxxxxx state updated: %x\n", REG32(EFUSE_REG_STAT));
 	REG32(EFUSE_REG_STAT) = 0;
 }
+
+int redundancy_rd(void)
+{
+	REG32(EFUSE_REG_DAT1) = 0;
+	printf("************************EFUSE_REG_DAT1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
+	REG32(EFUSE_REG_CTRL) = (0x1f << EFUSE_REGOFF_CRTL_ADDR) | (1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RWL;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
+	printf("++++++++++++++++++++++++EFUSE_REG_DAT1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
+	printf("++++++++++++++++++++++++EFUSE_REG_DAT2 = 0x%08x\n", REG32(EFUSE_REG_DAT2));
+	REG32(EFUSE_REG_CTRL) = 0;
+}
+
+int otp_r()
+{
+	efuse_1v8_output(!efuse_args->efuse_en_active);
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_STAT) = 0;
+	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR | 0 << EFUSE_REGOFF_CRTL_LENG);
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
+	printf("REG32(EFUSE_REG_DAT1) = %x\n",REG32(EFUSE_REG_DAT1));
+	REG32(EFUSE_REG_STAT) = 0;
+
+	return 0;
+}
+
+static int otp_w(unsigned int offset)
+{
+	if (offset >= 16) {
+		fprintf(stderr, "offset too big!\n");
+		return -1;
+	}
+	unsigned int ret;
+#define PRT_REDUNDANCY  0x00010001
+	REG32(EFUSE_REG_DAT1) = PRT_REDUNDANCY << offset;
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
+
+	efuse_1v8_output(efuse_args->efuse_en_active);
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
+	efuse_1v8_output(!efuse_args->efuse_en_active);
+
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+
+	otp_r();
+
+	return 0;
+}
+
+
 
 int cpu_wtotp(int opera)
 {
@@ -183,14 +238,15 @@ int cpu_wtotp(int opera)
 
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 	efuse_1v8_output(!efuse_args->efuse_en_active);
-	REG32(EFUSE_REG_STAT) = 0;
+
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
@@ -200,6 +256,7 @@ int cpu_wtotp(int opera)
 	}
 
 	efuse_update_state();
+	redundancy_rd();
 
 	return 0;
 }
@@ -238,45 +295,13 @@ int otp_init(void)
 	return 0;
 }
 
-int otp_r()
-{
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR | 0x01 << EFUSE_REGOFF_CRTL_LENG);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	printf("REG32(EFUSE_REG_DAT1) = %x\n",REG32(EFUSE_REG_DAT1));
-	REG32(EFUSE_REG_STAT) = 0;
-	return 0;
-}
-
-static int otp_w(unsigned int offset)
-{
-	if (offset >= 16) {
-		fprintf(stderr, "offset too big!\n");
-		return -1;
-	}
-	unsigned int ret;
-#define PRT_REDUNDANCY  0x00010001
-	REG32(EFUSE_REG_DAT1) = PRT_REDUNDANCY << offset;
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-
-	efuse_1v8_output(efuse_args->efuse_en_active);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-
-	otp_r();
-
-	return 0;
-}
 
 int cpu_burn_rckey(void)
 {
 	unsigned int ret;
 	volatile struct sc_args *args;
+	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
+	memset(rir_ret, 0, 16);
 
 	printf("xxxxxxxxxxx func : %s\n",__func__);
 	if(EFUSTATE_CK_PRT) {
@@ -294,7 +319,9 @@ int cpu_burn_rckey(void)
 	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
 
 	ret = *(volatile unsigned int *)(MCU_TCSM_RETVAL);
-	if (ret != SC_ERR_SUCC && ret != SC_ERR_CK_EXISTENCE && ret != SC_ERR_RIR) {
+	if(ret == SC_ERR_CK_EXISTENCE) {
+		printf("chipkey has been written!\n");
+	} else if (ret != SC_ERR_SUCC && ret != SC_ERR_RIR) {
 		return -ESEC;
 	}
 
@@ -407,6 +434,8 @@ static int check_nku(unsigned int *idata, unsigned int length)
 int cpu_burn_nku(void *idata,unsigned int length)
 {
 	unsigned int ret = 0;
+	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
+	memset(rir_ret, 0, 16);
 
 	printf("xxxxxxxxxxx func : %s\n",__func__);
 	if (EFUSTATE_NKU_PRT) {
@@ -450,6 +479,9 @@ int cpu_burn_ukey(void *idata)
 	unsigned int encukey[4] = {0};
 	volatile unsigned int *ukey = (volatile unsigned int *)MCU_TCSM_PUTUKEY;
 	unsigned int *rsaukey = (unsigned int *)idata;
+	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
+	memset(rir_ret, 0, 16);
+
 
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
@@ -470,8 +502,8 @@ int cpu_burn_ukey(void *idata)
 #define UKEY_F_OFFSET    0x02
 #define UKEY1_F_OFFSET   0x03
 
-	debug("UK %d*2 WORD\n", UKEY_LEN_WORD);
-	for (iLoop = 0; iLoop < UKEY_LEN_WORD * 2; iLoop++) {
+	debug("UK0 %d WORD\n", UKEY_LEN_WORD);
+	for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
 		ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
 
 		debug("%08x ",ukey[iLoop]);
@@ -479,9 +511,8 @@ int cpu_burn_ukey(void *idata)
 			debug("\n");
 	}
 
-	args->arg[0] = (0x01 << UKEY_F_OFFSET) | (0x01 << UKEY1_F_OFFSET);
+	args->arg[0] = (0x01 << UKEY_F_OFFSET);
 	args->arg[1] = MCU_TCSM_PADDR(ukey);
-	args->arg[2] = MCU_TCSM_PADDR(&ukey[UKEY_LEN_WORD]);
 
 	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
@@ -496,6 +527,30 @@ int cpu_burn_ukey(void *idata)
 	}
 
 	otp_w(EFUSE_PTCOFF_UKP);
+
+
+	memset(ukey, 0, MCU_TCSM_KEYLEN);
+	debug("UK1 %d WORD\n", UKEY_LEN_WORD);
+	for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
+		ukey[iLoop] = rsaukey[iLoop + UKEY_LEN_WORD] /*encukey[iLoop]*/;
+
+		debug("%08x ",ukey[iLoop]);
+		if((iLoop + 1) % 4 == 0)
+			debug("\n");
+	}
+
+
+	args->arg[0] = (0x01 << UKEY1_F_OFFSET);
+	args->arg[2] = MCU_TCSM_PADDR(ukey);
+
+	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
+
+	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+		printf("burn ukey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
+		return -ESEC;
+	}
+
+
 
 	if (cpu_wtotp(WT_OTP_UK1) < 0) {
 		printf("write ukey1 protect err\n");
@@ -512,6 +567,7 @@ int cpu_burn_secboot_enable(void)
 	printf("xxxx otp efuse state:%x\n", REG32(EFUSE_REG_STAT));
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_STAT) = 0;
 
 	/* set write data :security boot enable, security boot enable protected, disable JTAG*/
 	REG32(EFUSE_REG_DAT1) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB)
@@ -524,9 +580,9 @@ int cpu_burn_secboot_enable(void)
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 	efuse_1v8_output(!efuse_args->efuse_en_active);
-	REG32(EFUSE_REG_STAT) = 0;
+
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	efuse_update_state();

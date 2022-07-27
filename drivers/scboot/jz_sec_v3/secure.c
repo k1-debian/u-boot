@@ -40,6 +40,7 @@ int init_seboot(void)
 	int ret = 0;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
+	printf("scboot for x16xx.\n");
 
 	printf("clkgate0: %x\n", REG32(CPM_BASE + CPM_CLKGR0));
 	printf("clkgate1: %x\n", REG32(CPM_BASE + CPM_CLKGR1));

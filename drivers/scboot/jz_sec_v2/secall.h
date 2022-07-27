@@ -4,7 +4,7 @@
 #include "pdma.h"
 #include "sc.h"
 
-#define send_secall(func) ( REG32(PDMA_BASE + DMCS_OFF) = (REG32(PDMA_BASE + DMCS_OFF) & 0xff0000ff) | 0x8 | ((func)<<8) | 1<<24)
+#define send_secall(func)	(REG32(DMCS) = (REG32(DMCS) & 0xf) | ((func)<<8) | 0x8)
 
 #define polling_done(args) ({ \
 			while (args->retval & 0x80000000);	\

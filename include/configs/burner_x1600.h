@@ -37,22 +37,25 @@
 
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		400000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		800000000
-#define CONFIG_SYS_MEM_FREQ		400000000
+#define CONFIG_SYS_MEM_FREQ		350000000
+
+#define CONFIG_SYS_AHB0_FREQ		200000000
+#define CONFIG_SYS_AHB2_FREQ		200000000	/*APB = AHB2/2*/
 
 /**
  * CACHE
  **/
 #define CONFIG_SYS_DCACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_DCACHELINE_SIZE	(32)
-#define CONFIG_SYS_DCACHE_WAYS		(4)
+#define CONFIG_SYS_DCACHE_WAYS		(8)
 #define CONFIG_SYS_ICACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_ICACHELINE_SIZE	(32)
-#define CONFIG_SYS_ICACHE_WAYS		(4)
+#define CONFIG_SYS_ICACHE_WAYS		(8)
 #define CONFIG_SYS_CACHELINE_SIZE	(32)
 /* A switch to configure whether cpu has a 2nd level cache */
 #define CONFIG_BOARD_SCACHE
