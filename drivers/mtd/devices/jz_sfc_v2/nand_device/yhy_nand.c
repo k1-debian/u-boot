@@ -6,10 +6,19 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
+/*
+HYF1GQ4UDACAE:
+arch/mips/boot/dts/ingenic/halley5_v20.dts
+	ingenic,sfc-init-frequency = <100000000>;
+	ingenic,sfc-max-frequency = <200000000>;
+cloner sfc rate:100MHZ；
+*/
+
+
 #define	YHY_MIDC9_DEVICES_NUM         2
-#define TSETUP		2
-#define THOLD		4
-#define	TSHSL_R		20
+#define TSETUP		20
+#define THOLD		20
+#define	TSHSL_R		50
 #define	TSHSL_W		50
 
 #define TRD		200
@@ -35,7 +44,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 0x1,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 
@@ -55,7 +64,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 0x1,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 
@@ -85,14 +94,20 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 		case 0x21:
 		case 0x52:
 			switch((ecc_status >> 4) & 0x3) {
-				case 0x00:
+					case 0x0:
 					ret = 0;
 					break;
-				case 0x01:
+				case 0x1:
 					ret = 0x1;
 					break;
-				default:
+				case 0x2:
 					ret = -EBADMSG;
+					break;
+				case 0x3:
+					ret = 0x4;
+					break;
+				default:
+					ret = 0;
 			}
 			break;
 		default:
