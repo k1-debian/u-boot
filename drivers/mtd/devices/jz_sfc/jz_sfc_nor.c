@@ -960,13 +960,8 @@ int norflash_get_params_from_burner(uint32_t sfc_frequency,unsigned char *addr)
 
 	/* update sfc rate */
 #ifdef CONFIG_BURNER
-	if(sfc_frequency) {
+	if(sfc_frequency)
 		clk_set_rate(SFC,sfc_frequency);
-		printf("cloner set sfc frequency:%d\n",sfc_frequency);
-	}
-	else {
-		printf("cloner set sfc frequency fail\n");
-	}
 #endif
 
 #if 0

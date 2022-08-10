@@ -853,13 +853,8 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz
 		sfc_rate = CONFIG_SFC_NAND_INIT_RATE;
 #endif
 #ifdef CONFIG_BURNER
-		if(sfc_frequency) {
+		if(sfc_frequency)
 			sfc_rate = sfc_frequency;
-			printf("cloner set sfc frequency:%d\n",sfc_frequency);
-		}
-		else {
-			printf("cloner set sfc frequency fail\n");
-		}
 #endif
 		flash->sfc = sfc_res_init(sfc_rate);
 

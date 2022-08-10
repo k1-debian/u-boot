@@ -84,24 +84,7 @@
  * DDR
  **/
 #define CONFIG_DDR_INNOPHY
-#ifdef CONFIG_LVDDR_INNOPHY
-#define CONFIG_DDR_TYPE_DDR2
-#define CONFIG_DDR_PARAMS_CREATOR
-#define CONFIG_DDR_HOST_CC
-#define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-#define CONFIG_DDRC_CTRL_PDT DDRC_CTRL_PDT_128
-#define CONFIG_LVDDR_W9464L6KH-5I
-#define DDR2_CHIP_DRIVER_OUT_STRENGTH 0
-#define CONFIG_DDR_PHY_IMPEDANCE 40000
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE 50000
-
-#undef CONFIG_SYS_MEM_FREQ
-#define CONFIG_SYS_MEM_FREQ		200000000
-#else
 #define CONFIG_DDR_TYPE_VARIABLE
-#endif
 
 /**
  * Environment

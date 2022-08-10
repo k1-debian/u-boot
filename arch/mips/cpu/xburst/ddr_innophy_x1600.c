@@ -702,10 +702,10 @@ void sdram_init(void)
 
 	current_ddr_type = get_ddr_type();
 
-	clk_set_rate(DDR, CONFIG_SYS_MEM_FREQ);
+	clk_set_rate(DDR, global_reg_value->h.freq);
 	reset_dll();
 	rate = clk_get_rate(DDR);
-	if(rate != CONFIG_SYS_MEM_FREQ)
+	if(rate != global_reg_value->h.freq)
 		dwc_debug("sdram set ddr freq failed\n");
 
 	reset_controller();
