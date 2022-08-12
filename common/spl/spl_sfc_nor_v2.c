@@ -370,6 +370,8 @@ static void set_quad_mode_reg(void)
 	xfer.config.buf = (uint8_t *)&data;
 
 	sfc_sync_cdt(&xfer);
+
+	flash->cur_r_cmd = NOR_READ_QUAD;
 }
 
 static void sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned int len)

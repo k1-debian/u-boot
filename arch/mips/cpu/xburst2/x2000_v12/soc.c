@@ -123,8 +123,15 @@ void board_init_f(ulong dummy)
 	/* Clear the BSS */
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
 
+#ifdef CONFIG_SPL_COMMAND_ICACHE
+	typedef void (*board_init_func)(gd_t * id, ulong dest_addr);
+	board_init_func p_board_init_func = (board_init_func *)bus_to_virt(board_init_r);
 	debug("board_init_r\n");
+	p_board_init_func(NULL, 0);
+#else
 	board_init_r(NULL, 0);
+#endif
+
 #else
 	debug("run start1 firmware finished\n");
 	return;
