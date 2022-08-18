@@ -371,6 +371,7 @@
 #define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/$(SOC)/u-boot-spl.lds"
 #endif
 
+
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	86//0x5A //wli changed 0x20 /* 16KB offset */
 #define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x400 /* 512 KB */
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	(CONFIG_SYS_NAND_BLOCK_SIZE * 4)
@@ -409,7 +410,10 @@
  * GPT configuration
  */
 #ifdef CONFIG_GPT_CREATOR
+#define CONFIG_GPT_TAB_BUILT_IN
+#ifndef CONFIG_GPT_TABLE_PATH
 #define CONFIG_GPT_TABLE_PATH	"$(TOPDIR)/board/$(BOARDDIR)"
+#endif
 #else
 /* USE MBR + zero-GPT-table instead if no gpt table defined*/
 #define CONFIG_MBR_P0_OFF	64mb
@@ -526,7 +530,7 @@
 #endif
 
 #ifndef CONFIG_ROOTFS_DEV
-#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#if defined(CONFIG_SPL_MMC_SUPPORT)
 #define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
 #else
 #define CONFIG_ROOTFS_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro2"
@@ -538,8 +542,8 @@
 /* boot args rootfs2
  */
 #ifndef CONFIG_ROOTFS2_DEV
-#ifdef CONFIG_SPL_JZMMC_SUPPORT
-#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p2 rootwait"
 #else
 #define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro4"
 #endif
