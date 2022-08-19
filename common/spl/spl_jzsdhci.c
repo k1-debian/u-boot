@@ -1327,6 +1327,10 @@ static int dump_ddr_content(unsigned int *src, int len)
 }
 #endif
 
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+extern int secure_scboot (void *, void *);
+#endif
+
 static int mmc_load_image_raw(unsigned long sector)
 {
 	int err = 0;
@@ -1341,6 +1345,11 @@ static int mmc_load_image_raw(unsigned long sector)
 	if (err < 0)
 		goto end;
 
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE -
+					 sizeof(struct image_header));
+#endif
+
 #ifdef DEBUG_DDR_CONTENT
 	dump_ddr_content(header, 0x200);
 #endif
@@ -1350,6 +1359,10 @@ static int mmc_load_image_raw(unsigned long sector)
 	/* convert size to sectors - round up */
 	image_size_sectors = (spl_image.size + 0x200 - 1) / 0x200;
 
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	spl_image.load_addr -= 2048;
+#endif
+
 	/* Read the header too to avoid extra memcpy */
 	err = mmc_block_read(sector, image_size_sectors,
 			     (void *)spl_image.load_addr);
@@ -1358,6 +1371,15 @@ static int mmc_load_image_raw(unsigned long sector)
 	dump_ddr_content(spl_image.load_addr, 200);
 #endif
 	flush_cache_all();
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	int ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
+	if(ret) {
+		printf("Error spl secure load kernel.\n");
+		hang();
+	}
+#endif
+
 end:
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
 	if (err < 0)
