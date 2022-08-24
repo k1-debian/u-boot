@@ -7,15 +7,29 @@
 #include <ubi_uboot.h>
 
 /*
-HYF1GQ4UDACAE:
+HYF1GQ4UDACAE:HYF2GQ4UAACAE:HYF2GQ4UADCAE:
+include/configs/halley5.h
+        #define CONFIG_SFC_NAND_RATE    200000000
 arch/mips/boot/dts/ingenic/halley5_v20.dts
 	ingenic,sfc-init-frequency = <100000000>;
 	ingenic,sfc-max-frequency = <200000000>;
 cloner sfc rate:100MHZ；
+
+HYF4GQ4UAACBE:
+include/configs/halley5.h
+        #define CONFIG_SFC_NAND_RATE    200000000
+        #define CONFIG_SPI_NAND_BPP    (4096 +256)
+arch/mips/boot/dts/ingenic/halley5_v20.dts
+	ingenic,sfc-init-frequency = <100000000>;
+	ingenic,sfc-max-frequency = <200000000>;
+buildroot-menuconfig
+	BR2_TARGET_ROOTFS_UBIFS_LEBSIZE [=0x3E000]
+	BR2_TARGET_ROOTFS_UBIFS_MINIOSIZE [=0x1000]
+	BR2_TARGET_ROOTFS_UBIFS_MAXLEBCNT [=4096]
+cloner sfc rate:100MHZ；
 */
 
-
-#define	YHY_MIDC9_DEVICES_NUM         2
+#define	YHY_MIDC9_DEVICES_NUM         3
 #define TSETUP		20
 #define THOLD		20
 #define	TSHSL_R		50
@@ -68,11 +82,32 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 
+    [2] = {
+		/*HYF4GQ4U */
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 256,
+		.flashsize = 4 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+
 };
 
 static struct device_id_struct device_id[YHY_MIDC9_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x21, "HYF1GQ4U", &yhy_midc9_param[0]),
 	DEVICE_ID_STRUCT(0x52, "HYF2GQ4U", &yhy_midc9_param[1]),
+        DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
 };
 
 static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint8_t device_id) {
@@ -80,6 +115,7 @@ static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint8_t d
 	switch(device_id) {
 		case 0x21:
 		case 0x52:
+                case 0xD4:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -93,6 +129,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 	switch(device_id) {
 		case 0x21:
 		case 0x52:
+                case 0xD4:
 			switch((ecc_status >> 4) & 0x3) {
 					case 0x0:
 					ret = 0;
