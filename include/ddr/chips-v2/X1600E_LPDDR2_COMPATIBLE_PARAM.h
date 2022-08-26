@@ -113,7 +113,7 @@ static inline void X1600E_LPDDR2_init(void *data)
 	c->DDR_tFAW  		= DDR_SELECT_MAX__tCK_ps(8, 50 * 1000);
 
 	c->DDR_tRFC  		= DDR__ns(90);
-	c->DDR_tREFI 		= DDR__ns(7800);
+	c->DDR_tREFI 		= DDR__ns(3900);
 
 	c->DDR_tCKE  		= DDR__tck(3);
 	c->DDR_tCKESR 		= DDR_SELECT_MAX__tCK_ps(3, DDR__ns(15));

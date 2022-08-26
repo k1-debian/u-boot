@@ -103,7 +103,7 @@ static inline void DDR3_PMF512816FBR_MBDN_init(void *data)
 	c->DDR_tFAW  		= DDR__ns(35);
 
 	c->DDR_tRFC  		= DDR__ns(260);
-	c->DDR_tREFI 		= DDR__ns(7800);
+	c->DDR_tREFI 		= DDR__ns(3000);
 
 	c->DDR_tCKE  		= DDR_SELECT_MAX__tCK_ps(3, 5000);
 	c->DDR_tCKESR 		= c->DDR_tCKE + DDR__tck(1);

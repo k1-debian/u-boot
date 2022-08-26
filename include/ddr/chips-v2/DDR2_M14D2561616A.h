@@ -79,7 +79,7 @@ static inline void DDR2_M14D2561616A_init(void *data)
 	c->DDR_tXSNR = (c->DDR_tRFC + DDR__ns(10));
 	c->DDR_tXSRD = DDR__tck(200);
 	c->DDR_tCKSRE = DDR__ns(10000);
-	c->DDR_tREFI = DDR__ns(7800);
+	c->DDR_tREFI = DDR__ns(3900);
 
 	c->DDR_CLK_DIV = 1;
 }

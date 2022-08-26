@@ -115,7 +115,7 @@ static inline void LPDDR3_W63AH6NKB_BI_init(void *data)
 	c->DDR_tFAW  		= DDR_SELECT_MAX__tCK_ps(8, 50 * 1000);
 
 	c->DDR_tRFC  		= DDR__ns(130);
-	c->DDR_tREFI 		= DDR__ns(7800);
+	c->DDR_tREFI 		= DDR__ns(3900);
 
 	c->DDR_tCKE  		= DDR_SELECT_MAX__tCK_ps(3, 7500);
 	c->DDR_tCKESR 		= DDR_SELECT_MAX__tCK_ps(3, 15 * 1000);

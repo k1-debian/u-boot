@@ -81,7 +81,7 @@ static inline void LVDDR2_A3L28E40BGD_AHJA_init(void *data)
 
 	c->DDR_tCKE = DDR__tck(3);
 	c->DDR_tXSR = DDR__tck(200);
-	c->DDR_tREFI = DDR__ns(15600);
+	c->DDR_tREFI = DDR__ns(4880);
 
 #ifdef CONFIG_LVDDR_INNOPHY
 	c->DDR_tRTP = DDR__ps(7500);

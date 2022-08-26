@@ -108,7 +108,7 @@ static inline void DDR3_W631GU6NG_init(void *data)
 	c->DDR_tFAW  		= DDR__ns(35);
 
 	c->DDR_tRFC  		= DDR__ns(110);
-	c->DDR_tREFI 		= DDR__ns(7800);
+	c->DDR_tREFI 		= DDR__ns(3900);
 
 	c->DDR_tCKE  		= DDR_SELECT_MAX__tCK_ps(3, 5000);
 	c->DDR_tCKESR 		= c->DDR_tCKE + DDR__tck(1);
