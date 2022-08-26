@@ -413,9 +413,12 @@ static void ddrc_prev_init(void)
 	/* DDRC memory map configure*/
 	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
-	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
-	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
 	mem_remap();
+	
+	/* 初始化时，关闭DDR自刷新功能. */
+	ddr_writel(0, DDRC_AUTOSR_EN);
+	ddr_writel(0, DDRC_AUTOSR_CNT);
+	ddr_writel(0, DDRC_REFCNT);
 	FUNC_EXIT();
 }
 
@@ -425,6 +428,9 @@ static void ddrc_post_init(void)
 	FUNC_ENTER();
 
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
+
+	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
+	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
 
 	/*控制寄存器应该只修改配置相关的内容，需要读后写操作.*/
 	reg = ddr_readl(DDRC_CTRL);
@@ -571,13 +577,17 @@ void sdram_init(void)
 
 
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
+
+	/*soft training 需要在training之前初始化完ddr控制器*/
+	ddrc_post_init();
 	ddrp_software_calibration();
 #else
+	/*auto training 需要在training之后，初始化控制器功能，防止控制器自动刷新对training结果造成影响.*/
 	ddrp_auto_calibration();
+	ddrc_post_init();
 #endif
 
 	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/
-	ddrc_post_init();
 
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);

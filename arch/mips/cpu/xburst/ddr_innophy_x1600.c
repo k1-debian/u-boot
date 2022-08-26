@@ -165,9 +165,67 @@ void ddrp_pll_init(void)
 	udelay(5);
 }
 
+
+/*
+	ZQ校准，
+	1. 用于校准drive 的 pull up/pull down校准.
+	2. 用于校准rx ODT的 pull up/pull down校准.
+
+	一般不使用自动校准，使用寄存器的值设置阻值.
+*/
+static void ddrp_zqcalibration(void)
+{
+	unsigned int timeout = 0xffffffff;
+	unsigned int val = 0;
+
+
+	//1. Clear ZQCal module to initial state.
+	val = ddr_readl(DDR_PHY_OFFSET + (0x80 << 2));
+	val |= (1 << 6);
+	ddr_writel(val, DDR_PHY_OFFSET + (0x80 << 2));
+
+	//2. enable ZQCal module
+	val = ddr_readl(DDR_PHY_OFFSET + (0x80 << 2));
+	val &= ~(1 << 6);
+	val |= (1 << 5);
+	ddr_writel(val, DDR_PHY_OFFSET + (0x80 << 2));
+
+
+	while(!((ddr_readl(DDR_PHY_OFFSET + (0x88 << 2)) & 1) == 1) && --timeout) {
+		udelay(1);
+		unsigned int pd_resist = ddr_readl(DDR_PHY_OFFSET + (0x89 << 2));
+		unsigned int pu_resist = ddr_readl(DDR_PHY_OFFSET + (0x8a << 2));
+		unsigned int pd_odt = ddr_readl(DDR_PHY_OFFSET + (0x8b << 2));
+		unsigned int pu_odt = ddr_readl(DDR_PHY_OFFSET + (0x8c << 2));
+
+
+		printf("--pd: %x, pu: %x, pd_odt: %x, pu_odt:%x\n", pd_resist, pu_resist, pd_odt, pu_odt);
+	}
+
+
+	//DQ ODT & Drive choose calib value.
+	val = ddr_readl(DDR_PHY_OFFSET + (0xc7 << 2));
+	val |= (0xf << 0);
+	ddr_writel(val, DDR_PHY_OFFSET + (0xc7 << 2));
+
+
+	//CMD choose calib value
+	val = ddr_readl(DDR_PHY_OFFSET + (0xb4 << 2));
+	val |= (0x1 << 0);
+	ddr_writel(val, DDR_PHY_OFFSET + (0xb4 << 2));
+}
+
 void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 {
 	unsigned int val;
+	/*reset digital and analog core.*/
+
+	val = ddr_readl(DDRP_INNOPHY_PHY_RST);
+	ddr_writel(0, DDRP_INNOPHY_PHY_RST);
+	mdelay(1);
+	ddr_writel(val, DDRP_INNOPHY_PHY_RST);
+	mdelay(1);
+
 	ddr_writel(DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L, DDRP_INNOPHY_DQ_WIDTH);
 	ddr_writel(global_reg_value->DDRP_MEMCFG_VALUE, DDRP_INNOPHY_MEM_CFG);
 
@@ -184,6 +242,21 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 	val = ddr_readl(DDRP_INNOPHY_AL);
 	val &= ~(0xf);
 	ddr_writel(val, DDRP_INNOPHY_AL);
+
+
+	if(1) {
+		// bypass sdll.
+		val = ddr_readl(DDR_PHY_OFFSET + (0x15 << 2));
+		val &= ~0xff;
+		val |= 0x18;
+		ddr_writel(val, DDR_PHY_OFFSET + (0x15 << 2));
+
+		val = ddr_readl(DDR_PHY_OFFSET + (0x14 << 2));
+		val |= 0x10;
+		ddr_writel(val, DDR_PHY_OFFSET + (0x14 << 2));
+	}
+
+	//ddrp_zqcalibration();
 
 	/* ????   reserve   read only   ???? */
 	val = ddr_readl(DDRC_CTRL);
@@ -289,6 +362,10 @@ static void ddrc_post_init(void)
 	unsigned reg = 0;
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
 
+
+	/* auto refresh 需要在 auto training之后开启.*/
+	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+
 	/*控制寄存器应该只修改配置相关的内容，需要读后写操作.*/
 	reg = ddr_readl(DDRC_CTRL);
 	reg |= global_reg_value->DDRC_CTRL_VALUE & (1 << 2 | 1 << 11 | 0xf << 12);
@@ -310,7 +387,11 @@ static void ddrc_prev_init(void)
 	/* DDRC memory map configure*/
 	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
-	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+
+	/* 初始化时，关闭DDR自刷新功能. */
+	ddr_writel(0 ,DDRC_AUTOSR_EN);
+	ddr_writel(0, DDRC_AUTOSR_CNT);
+	ddr_writel(0, DDRC_REFCNT);
 
 	mem_remap();
 }
@@ -457,30 +538,6 @@ void ddrp_wl_training(void)
 	writel(0x24,0xb3011028);
 }
 
-/*
- * Name     : phy_calibration()
- * Function : control the RX DQS window delay to the DQS
- * */
-void phy_calibration(void)
-{
-	int m = phy_readl(INNO_TRAINING_CTRL);
-#ifndef CONFIG_FASTBOOT
-	printf("INNO_TRAINING_CTRL 1: %x\n", phy_readl(INNO_TRAINING_CTRL));
-#endif
-	m = 0xa1;
-	phy_writel(m,INNO_TRAINING_CTRL);
-#ifndef CONFIG_FASTBOOT
-	printf("INNO_TRAINING_CTRL 2: %x\n", phy_readl(INNO_TRAINING_CTRL));
-#endif
-	while (0x3 != phy_readl(INNO_CALIB_DONE));
-#ifndef CONFIG_FASTBOOT
-	printf("calib done: %x\n", phy_readl(INNO_CALIB_DONE));
-#endif
-	phy_writel(0xa0,INNO_TRAINING_CTRL);
-#ifndef CONFIG_FASTBOOT
-	printf("INNO_TRAINING_CTRL 3: %x\n", phy_readl(INNO_TRAINING_CTRL));
-#endif
-}
 
 int get_ddr_type(void)
 {
@@ -542,7 +599,6 @@ static void ddrp_software_calibration(void)
 	unsigned int addr = 0xa0100000, val;
 	unsigned int i, n, m = 0;
 	unsigned int reg;
-	struct ddrp_calib calib_val[8 * 2 * 8 * 5];
 
 	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	reg |= (DDRP_TRAINING_CTRL_DSCSE_BP);
@@ -716,18 +772,26 @@ void sdram_init(void)
 
 	ddrp_cfg(global_reg_value);
 	ddrp_pll_init();
+
 	ddrc_prev_init();
 
 	ddrc_dfi_init();
 
         /* DDR Controller init*/
 	dwc_debug("DDR PHY init OK\n");
-	ddrc_post_init();
 
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
+
+	/* Soft training, 依赖 ddr 控制器 dfi接口，training 之前需要先初始化好ddr 控制器相关timing.*/
+	ddrc_post_init();
 	ddrp_software_calibration();
 #else
+	/*
+	 * auto training, 是phy本身的行为，与ddr控制器,dfi接口无关，并且必须保持dfi静默。
+	 * 在进行auto training 之前，需要关闭ddr 控制器的auto refresh, auto self refresh等会自动发命令的功能.
+	*/
 	ddrp_auto_calibration();
+	ddrc_post_init();
 #endif
 
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
