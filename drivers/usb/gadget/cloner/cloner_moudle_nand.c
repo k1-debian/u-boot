@@ -1,8 +1,8 @@
 #include <cloner/cloner.h>
-#include "burn_printf.h"
+#include "cloner_moudle.h"
+#include "cloner_log.h"
 #include "cloner_nand.c"
 
-struct nand_param *nand_args;
 
 static int clmd_nand_init(struct cloner *cloner, void *args, void *mdata)
 {

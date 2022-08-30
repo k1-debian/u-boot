@@ -3,7 +3,8 @@
 #include <linux/types.h>
 #include <linux/mtd/mtd.h>
 #include <cloner/cloner.h>
-#include <errno.h>
+#include "cloner_moudle.h"
+#include "cloner_log.h"
 
 #define FMW_SIZE_MAX	512
 

@@ -28,8 +28,8 @@
 #include "./nand_device/nand_common.h"
 
 #ifdef CONFIG_BURNER
-static int burn_readback = 0;
-static char *readback_buf = NULL;
+#include <cloner/cloner.h>
+static unsigned char *readback_buf = NULL;
 #endif
 
 #ifdef MTDIDS_DEFAULT
@@ -401,9 +401,9 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 		}
 
 #ifdef CONFIG_BURNER
-		if(burn_readback) {
+		if(debug_args->write_back_chk) {
 			if(!readback_buf) {
-				readback_buf = (char *)malloc(wlen);
+				readback_buf = (unsigned char *)malloc(wlen);
 				if(!readback_buf) {
 					printf("burn read back buffer malloc failed!\n");
 					ret = -ENOMEM;
@@ -833,13 +833,16 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 	//dump_cdt(flash->sfc);
 }
 
-int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz_sfcnand_burner_param *param)
+int32_t jz_sfc_nand_init()
 {
 	struct nand_chip *chip;
 	struct mtd_info *mtd;
 	struct jz_sfcnand_flashinfo *flash_info;
 	int32_t ret = 0;
 	uint32_t sfc_rate = 200000000;
+#ifdef CONFIG_BURNER
+	struct jz_sfcnand_burner_param *param = spi_args->flash_info;
+#endif
 
 	if(!flash) {
 		flash = malloc(sizeof(struct sfc_flash));
@@ -853,8 +856,8 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz
 		sfc_rate = CONFIG_SFC_NAND_INIT_RATE;
 #endif
 #ifdef CONFIG_BURNER
-		if(sfc_frequency)
-			sfc_rate = sfc_frequency;
+		if(spi_args->sfc_frequency)
+			sfc_rate = spi_args->sfc_frequency;
 #endif
 		flash->sfc = sfc_res_init(sfc_rate);
 
@@ -907,18 +910,23 @@ int32_t jz_sfc_nand_init(uint32_t sfc_quad_mode,uint32_t sfc_frequency,struct jz
 		goto failed;
 	}
 
-#if defined(CONFIG_JZ_SPINAND_SN) && defined(CONFIG_JZ_SPINAND_MAC)
-	mtd->size = flash_info->param.flashsize - CONFIG_SN_SIZE - CONFIG_MAC_SIZE;
-#ifdef CONFIG_JZ_SPINAND_LICENSE
-	mtd->size -= CONFIG_LICENSE_SIZE;
-#endif
-#else
 	mtd->size = flash_info->param.flashsize;
+#ifdef CONFIG_BURNER
+	if(spi_args->reserve_space)
 #endif
+	{
+#if defined(CONFIG_JZ_SPINAND_SN)
+		mtd->size -= CONFIG_SN_SIZE;
+#elif defined(CONFIG_JZ_SPINAND_MAC)
+		mtd->size -= CONFIG_MAC_SIZE;
+#elif defined(CONFIG_JZ_SPINAND_LICENSE)
+		mtd->size -= CONFIG_LICENSE_SIZE;
+#endif
+	}
 
 #ifdef CONFIG_BURNER
-	readback_buf = (char *)malloc(flash_info->param.pagesize);
-	flash_info->param.need_quad = sfc_quad_mode;
+	readback_buf = (unsigned char *)malloc(flash_info->param.pagesize);
+	flash_info->param.need_quad = spi_args->sfc_quad_mode;
 
 	/* for burner get pt indext */
 	flash_info->partition.num_partition = param->partition_num;
@@ -982,6 +990,7 @@ failed:
 	return ret;
 }
 
+#ifdef CONFIG_BURNER
 static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint8_t partcount, struct jz_sfcnand_partition *jz_mtd_spinand_partition)
 {
 	char mtdparts_env[X_ENV_LENGTH];
@@ -1037,15 +1046,15 @@ struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_
 	return &jz_mtd_spinand_partition[i];
 }
 
-int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode,uint32_t sfc_frequency, int read_back, struct jz_sfcnand_burner_param *param)
+int32_t mtd_sfcnand_probe_burner()
 {
+	struct jz_sfcnand_burner_param *param = spi_args->flash_info;
 	struct mtd_info *mtd = &nand_info[0];
 	struct nand_chip *chip;
+
 	int32_t ret;
-#ifdef CONFIG_BURNER
-	burn_readback = read_back;
-#endif
-	if(jz_sfc_nand_init(sfc_quad_mode, sfc_frequency, param)) {
+
+	if(jz_sfc_nand_init()) {
 		printf("ERR: jz_sfc_nand_init error!\n");
 		return -EIO;
 	}
@@ -1053,7 +1062,7 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode,ui
 	chip->scan_bbt(mtd);
 	chip->options |= NAND_BBT_SCANNED;
 	/*0: none 1, force-erase, force erase contain creat bbt*/
-	if (*erase_mode == 1)
+	if (spi_args->spi_erase == 1)
 		if((ret = run_command("nand erase.chip -y", 0)))
 			return ret;
 
@@ -1065,3 +1074,4 @@ int32_t mtd_sfcnand_probe_burner(uint32_t *erase_mode, uint32_t sfc_quad_mode,ui
 			(void *)&param->partition/*This is a structure rather than a pointer in burner*/);
 	return 0;
 }
+#endif

@@ -15,9 +15,10 @@ extern struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,i
  * ******************************************************************************/
 
 struct jz_sfcnand_burner_param bp;
-void get_burner_nandinfo(char *flash_info)
+void get_burner_nandinfo()
 {
 	int i;
+	struct jz_sfcnand_burner_param *flash_info = spi_args->flash_info;
 	struct jz_sfcnand_burner_param *tmpbp = (struct jz_sfcnand_burner_param*)flash_info;
 
 	bp.magic_num = tmpbp->magic_num;

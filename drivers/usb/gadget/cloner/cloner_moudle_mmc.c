@@ -3,13 +3,12 @@
 #include <part.h>
 #include <mmc.h>
 #include <cloner/cloner.h>
-#include "burn_printf.h"
+#include "cloner_moudle.h"
+#include "cloner_log.h"
 
 #define MMC_BYTE_PER_BLOCK 512
 #define SPL_CODE_START_ADDRESS 0x4400
 
-struct mmc_param *mmc_args;
-struct ddr_param *ddr_args;
 
 static void mmc_add_info_to_flash(char *buf)
 {
@@ -201,7 +200,6 @@ int clmd_mmc_read(struct cloner *cloner, int sub_type, void *ops_data)
 		return -EPERM;
 	}
 
-	realloc_buf(cloner, cnt * MMC_BYTE_PER_BLOCK);
 	n = mmc->block_dev.block_read(dev, blk, cnt, buf);
 	BURNNER_PRI("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 	if (n != cnt)

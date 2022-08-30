@@ -1,5 +1,7 @@
 #ifdef CONFIG_JZ_SPI
-struct spi_param *spi_args;
+#include <cloner/cloner.h>
+#include <cloner/cloner_moudle.h>
+
 static struct spi_flash *flash = NULL;
 
 int spi_erase()

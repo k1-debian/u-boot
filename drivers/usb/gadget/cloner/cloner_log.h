@@ -1,5 +1,5 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef __CLONER_LOG_H__
+#define __CLONER_LOG_H__
 
 typedef struct {
 	int enable;
@@ -23,4 +23,4 @@ log_t log;
 	L.printf(fmt, ##__VA_ARGS__);		\
 } while (0)
 #endif
-#endif /*__LOG_H__*/
+#endif /*__CLONER_LOG_H__*/

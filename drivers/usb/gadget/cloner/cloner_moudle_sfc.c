@@ -1,10 +1,9 @@
 #include <cloner/cloner.h>
-#include "burn_printf.h"
+#include "cloner_moudle.h"
+#include "cloner_log.h"
 
 static char *readbuf = NULL;
 extern struct ParameterInfo	*global_args;
-struct spi_param *spi_args;
-struct ddr_param *ddr_args;
 
 #ifdef CONFIG_MTD_SFCNOR
 #include "cloner_sfcnor.c"
@@ -22,7 +21,7 @@ extern unsigned int ssi_rate;
 #endif
 
 
-int clmd_spisfc_info(struct cloner *cloner)
+int clmd_sfc_info(struct cloner *cloner)
 {
 	int id_code = 0;
 
@@ -46,7 +45,7 @@ int clmd_spisfc_info(struct cloner *cloner)
 	return id_code;
 }
 
-int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
+int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 {
 	spi_args = (struct spi_param *)args;
 	if(!spi_args)
@@ -64,7 +63,7 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 
 #ifdef CONFIG_MTD_SFCNOR
 	if(policy_args->use_sfc_nor){
-		ret = norflash_get_params_from_burner(spi_args->sfc_frequency,(unsigned char *)spi_args + sizeof(struct spi_param));
+		ret = norflash_get_params_from_burner();
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
 			sfc_erase();
 		}
@@ -73,31 +72,30 @@ int clmd_spisfc_init(struct cloner *cloner, void *args, void *ops_data)
 #endif
 #ifdef CONFIG_MTD_SFCNAND
 	if(policy_args->use_sfc_nand){
-		ret = mtd_sfcnand_probe_burner(&(spi_args->spi_erase),spi_args->sfc_quad_mode,spi_args->sfc_frequency,
-				debug_args->write_back_chk, spi_args->flash_info);
+		ret = mtd_sfcnand_probe_burner();
 		if (!ret)
-			get_burner_nandinfo(spi_args->flash_info);
+			get_burner_nandinfo();
 	}
 #endif
 #ifdef CONFIG_MTD_SPINAND
 	ssi_rate = CONFIG_SPI_RATE;
 	if(policy_args->use_spi_nand){
-		get_burner_nandinfo(spi_args->flash_info, &nand_param_from_burner);
-		mtd_spinand_probe_burner(&(spi_args->spi_erase),&nand_param_from_burner);
+		get_burner_nandinfo();
+		mtd_spinand_probe_burner();
 	}
 #endif
 #ifdef CONFIG_JZ_SPI
 	ssi_rate = CONFIG_SPI_RATE;
 	if(policy_args->use_spi_nor){
 		if (spi_args->spi_erase == SPI_ERASE_PART) {
-			spi_erase(cloner);
+			spi_erase();
 		}
 	}
 #endif
 	return ret;
 }
 
-int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
+int clmd_sfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
 	int ret = 0;
 	switch(sub_type)
@@ -143,7 +141,7 @@ int clmd_spisfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 	return ret;
 }
 
-static int32_t clmd_spisfc_read(struct cloner *cloner, int sub_type, void *ops_data) {
+static int32_t clmd_sfc_read(struct cloner *cloner, int sub_type, void *ops_data) {
 
 	int32_t ret = 0;
 
@@ -190,7 +188,7 @@ static int32_t clmd_spisfc_read(struct cloner *cloner, int sub_type, void *ops_d
 	return ret;
 }
 
-static int32_t clmd_spisfc_reset(struct cloner *cloner) {
+static int32_t clmd_sfc_reset(struct cloner *cloner) {
 
 	int32_t ret = 0;
 
@@ -209,7 +207,7 @@ static int32_t clmd_spisfc_reset(struct cloner *cloner) {
 	return ret;
 }
 
-int cloner_spisfc_init(void)
+int cloner_sfc_init(void)
 {
 	struct cloner_moudle *clmd = malloc(sizeof(struct cloner_moudle));
 	int ret;
@@ -218,14 +216,14 @@ int cloner_spisfc_init(void)
 		return -ENOMEM;
 	clmd->medium = MAGIC_SFC;
 	clmd->ops = SPISFC;
-	clmd->write = clmd_spisfc_write;
-	clmd->init = clmd_spisfc_init;
-	clmd->info = clmd_spisfc_info;
-	clmd->read = clmd_spisfc_read;
+	clmd->write = clmd_sfc_write;
+	clmd->init = clmd_sfc_init;
+	clmd->info = clmd_sfc_info;
+	clmd->read = clmd_sfc_read;
 	clmd->check = NULL;
-	clmd->reset = clmd_spisfc_reset;
+	clmd->reset = clmd_sfc_reset;
 	clmd->data = NULL;
-	printf("cloner spisfc register\n");
+	printf("cloner sfc register\n");
 	return register_cloner_moudle(clmd);
 }
-CLONER_MOUDLE_INIT(cloner_spisfc_init);
+CLONER_MOUDLE_INIT(cloner_sfc_init);
