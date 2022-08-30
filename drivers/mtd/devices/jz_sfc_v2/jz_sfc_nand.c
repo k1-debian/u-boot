@@ -917,9 +917,11 @@ int32_t jz_sfc_nand_init()
 	{
 #if defined(CONFIG_JZ_SPINAND_SN)
 		mtd->size -= CONFIG_SN_SIZE;
-#elif defined(CONFIG_JZ_SPINAND_MAC)
+#endif
+#if defined(CONFIG_JZ_SPINAND_MAC)
 		mtd->size -= CONFIG_MAC_SIZE;
-#elif defined(CONFIG_JZ_SPINAND_LICENSE)
+#endif
+#if defined(CONFIG_JZ_SPINAND_LICENSE)
 		mtd->size -= CONFIG_LICENSE_SIZE;
 #endif
 	}
