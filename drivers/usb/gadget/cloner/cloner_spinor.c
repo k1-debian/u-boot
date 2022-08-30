@@ -1,6 +1,10 @@
 #ifdef CONFIG_JZ_SPI
+#include <spi.h>
+#include <spi_flash.h>
 #include <cloner/cloner.h>
-#include <cloner/cloner_moudle.h>
+#include "cloner_moudle.h"
+#include "cloner_log.h"
+
 
 static struct spi_flash *flash = NULL;
 
