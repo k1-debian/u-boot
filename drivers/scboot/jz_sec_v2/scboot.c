@@ -128,6 +128,9 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 //				return ret;
 #else
 
+	if (srcptr != dstptr)
+		printf("securityboot: srcptr(0x%x) not equal to dstptr(0x%x)\n", srcptr, dstptr);
+
 	args->arg[0] = 1 | 1 << 1 | 1 << 2;
 	args->arg[2] = virt_to_phys(srcptr);
 

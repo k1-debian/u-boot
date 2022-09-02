@@ -402,10 +402,9 @@ void spl_load_kernel(long offset)
 	header->ih_name[IH_NMLEN - 1] = 0;
 
 	spl_parse_image_header(header);
-	spl_image.load_addr -= 2048;
-	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
 
-	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
+	sfc_nand_load(offset, spl_image.size, spl_image.load_addr - 2048);
+	ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
 	if(ret) {
 		printf("Error spl secure load kernel.\n");
 		hang();

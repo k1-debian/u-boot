@@ -185,7 +185,8 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 		if (binlen <= SC_MAX_SIZE_PERTIME)
 			endround = 1;
 
-		args->arg[0] = endround << 1 | newround;
+		// endround << 1, 当 endround 为 1 时secall无法退出, 故暂时 0 << 1
+		args->arg[0] = 0 << 1 | newround;
 		args->arg[1] = lens;
 
 		for (iLoop = 0; iLoop < lens / 4; iLoop++)
