@@ -32,6 +32,14 @@
 /*
  * uart setting
  */
+#ifdef CONFIG_GPIO_SPI_TO_UART
+#define CONFIG_SYS_UART_INDEX		-1
+#endif
+
+#ifdef CONFIG_GPIO_SPI_TO_UART2
+#define CONFIG_SYS_UART_INDEX		-1
+#endif
+
 #ifndef CONFIG_SYS_UART_INDEX
 #define CONFIG_SYS_UART_INDEX		2
 #endif
@@ -445,7 +453,9 @@
 /*
  * boot args console tty
  */
-#if CONFIG_SYS_UART_INDEX == 0
+#if CONFIG_SYS_UART_INDEX == -1
+#define ARG_CONSOLE_TTY "console=ttySC0,"
+#elif CONFIG_SYS_UART_INDEX == 0
 #define ARG_CONSOLE_TTY "console=ttyS0,"
 #elif CONFIG_SYS_UART_INDEX == 1
 #define ARG_CONSOLE_TTY "console=ttyS1,"

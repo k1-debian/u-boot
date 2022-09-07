@@ -293,6 +293,12 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
  * This requires UART clocks to be enabled.  In order for this to work the
  * caller must ensure that the gd pointer is valid.
  */
+#ifdef CONFIG_GPIO_SPI_TO_UART
+extern int gpio_spi_to_uart_init(void);
+#endif
+#ifdef CONFIG_GPIO_SPI_TO_UART2
+extern int gpio_spi_to_uart_init2(void);
+#endif
 void preloader_console_init(void)
 {
 	gd->bd = &bdata;
@@ -304,7 +310,13 @@ void preloader_console_init(void)
 #ifdef CONFIG_PALLADIUM
 	gd->baudrate = 3750000;
 #endif
+#if defined CONFIG_GPIO_SPI_TO_UART
+	gpio_spi_to_uart_init();
+#elif defined CONFIG_GPIO_SPI_TO_UART2
+	gpio_spi_to_uart_init2();
+#else
 	serial_init();		/* serial communications setup */
+#endif
 
 	gd->have_console = 1;
 

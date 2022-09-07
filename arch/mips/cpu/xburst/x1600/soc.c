@@ -51,6 +51,9 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 extern void pll_init(void);
 extern void sdram_init(void);
 extern void validate_cache(void);
+#ifdef CONFIG_GPIO_SPI_TO_UART
+extern int gpio_spi_to_uart_init(void);
+#endif
 
 #ifdef CONFIG_SIMULATION
 volatile noinline void hello_word(void)
@@ -92,6 +95,11 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
+
+#ifdef CONFIG_GPIO_SPI_TO_UART
+	gpio_spi_to_uart_init();
+#endif
+
 	printf("ERROR EPC %x\n", read_c0_errorepc());
 
 #ifndef CONFIG_FPGA
