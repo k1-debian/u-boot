@@ -64,7 +64,7 @@ int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 #ifdef CONFIG_MTD_SFCNOR
 	if(policy_args->use_sfc_nor){
 		ret = norflash_get_params_from_burner();
-		if (spi_args->spi_erase == SPI_ERASE_PART) {
+		if (spi_args->spi_erase) {
 			sfc_erase();
 		}
 	}
@@ -87,7 +87,7 @@ int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 #ifdef CONFIG_JZ_SPI
 	ssi_rate = CONFIG_SPI_RATE;
 	if(policy_args->use_spi_nor){
-		if (spi_args->spi_erase == SPI_ERASE_PART) {
+		if (spi_args->spi_erase) {
 			spi_erase();
 		}
 	}

@@ -171,20 +171,22 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x1? 0 : pins, base + PXPAT0C);
 
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
-#if defined(CONFIG_X1000)
+ #if defined(CONFIG_X1000)
 	writel(func & 0x10? pins : 0, base + PXPEC);
 	writel(func & 0x10? 0 : pins, base + PXPES);
-#else
+ #else
 	writel(func & 0x10? pins : 0, base + PXPES);
 	writel(func & 0x10? 0 : pins, base + PXPEC);
-#endif
-#endif
-
-#if defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
+ #endif
+#elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
+	writel(func & 0x10? pins : 0, base + PXPUS);
+	writel(func & 0x10? 0 : pins, base + PXPUC);
+#elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
 	gpio_set_driver_state(n, pins, PXPE_PULLUP);
 #endif
-#if defined(PXDSL) && defined(PXDSH)
-//	gpio_set_driver_strength(n, pins, PXDS_8mA);
+
+#if 0 //defined(PXDSL) && defined(PXDSH)
+	gpio_set_driver_strength(n, pins, PXDS_8mA);
 #endif
 }
 

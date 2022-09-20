@@ -70,8 +70,6 @@
 #define MMC_ENH_PART	        2
 #define MMC_GPP_AREA_MAX	4
 
-#define SPI_NO_ERASE	0
-#define SPI_ERASE_PART	1
 #ifndef CONFIG_SF_DEFAULT_SPEED
 # define CONFIG_SF_DEFAULT_SPEED    20000000
 #endif

@@ -107,6 +107,16 @@
 #define CONFIG_SPL_VERSION_OFFSET	16
 #define CONFIG_SPIFLASH_PART_OFFSET	(0x6800)
 
+/*
+ *  SPINAND MAC SN : the product of customer add partition of sequence code.
+ */
+#define CONFIG_JZ_SPINAND_MAC
+#define CONFIG_MAC_SIZE	                 (1 * 1024 * 1024)
+#define CONFIG_JZ_SPINAND_SN
+#define CONFIG_SN_SIZE	                 (1 * 1024 * 1024)
+#define CONFIG_JZ_SPINAND_LICENSE
+#define CONFIG_LICENSE_SIZE              (1 * 1024 * 1024)
+
 
 /* MMC */
 #define CONFIG_GENERIC_MMC		1

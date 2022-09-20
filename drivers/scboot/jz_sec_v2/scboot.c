@@ -124,8 +124,6 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 		binlen -= SC_MAX_SIZE_PERTIME;
 	} while (!endround);
 
-//			if(ret)
-//				return ret;
 #else
 
 	if (srcptr != dstptr)

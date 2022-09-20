@@ -98,7 +98,7 @@ int spi_program(struct cloner *cloner)
 		len = (length/blk_size)*blk_size + blk_size;
 	}
 
-	if (spi_args->spi_erase == SPI_NO_ERASE) {
+	if (!spi_args->spi_erase) {
 		ret = spi_flash_erase(flash, offset, len);
 		BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
 				ret ? "ERROR" : "OK");

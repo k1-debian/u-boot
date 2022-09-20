@@ -163,9 +163,12 @@
  *  SPINAND MAC SN : the product of customer add partition of sequence code.
  */
 #define CONFIG_JZ_SPINAND_MAC
-#define CONFIG_MAC_SIZE	    (1 * 1024 * 1024)
+#define CONFIG_MAC_SIZE	                 (1 * 1024 * 1024)
 #define CONFIG_JZ_SPINAND_SN
-#define CONFIG_SN_SIZE	    (1 * 1024 * 1024)
+#define CONFIG_SN_SIZE	                 (1 * 1024 * 1024)
+#define CONFIG_JZ_SPINAND_LICENSE
+#define CONFIG_LICENSE_SIZE              (1 * 1024 * 1024)
+
 
 #endif
 
@@ -176,6 +179,7 @@
 #define CONFIG_CMD_BURN
 #ifdef CONFIG_CMD_BURN
 #define CONFIG_USB_GADGET_DUALSPEED
+#define CONFIG_SOFT_BURNER_V2
 #define CONFIG_BURNER
 /*#define CONFIG_JZ_SCBOOT*/
 #define CONFIG_USB_GADGET

@@ -96,16 +96,6 @@
 /**
  * Drivers configuration.
  */
-/*pmu slp pin*/
-/*#define CONFIG_REGULATOR*/
-#ifdef  CONFIG_REGULATOR
-#define CONFIG_JZ_PMU_SLP_OUTPUT1
-#define CONFIG_INGENIC_SOFT_I2C
-#define CONFIG_PMU_RICOH6x
-#define CONFIG_RICOH61X_I2C_SCL GPIO_PC(25)
-#define CONFIG_RICOH61X_I2C_SDA GPIO_PC(26)
-#define CONFIG_SOFT_I2C_READ_REPEATED_START
-#endif
 
 /* MMC */
 #define CONFIG_JZ_MMC_MSC0

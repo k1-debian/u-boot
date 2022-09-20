@@ -15,11 +15,6 @@ int sfc_reset()
 
 int sfc_erase()
 {
-	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
-	unsigned int cs = CONFIG_SF_DEFAULT_CS;
-	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
-	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
-	int err = 0;
 	int ret = jz_sfc_chip_erase();
 	if (ret < 0)
 		printf("sfc chip erese failed!\n");
@@ -112,7 +107,7 @@ int sfc_program(struct cloner *cloner)
 		return -EIO;
 	}
 
-	if (spi_args->spi_erase == SPI_NO_ERASE) {
+	if (!spi_args->spi_erase) {
 		if (partition->manager_mode == MTD_D_MODE)
 			pt_index = offset / blk_size;
 		if(pt_index != pt_index_bak){
