@@ -1,9 +1,9 @@
-#include <linux/list.h>
-#include <errno.h>
-#include <malloc.h>
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
 #include "cloner_log.h"
+
+#include <linux/list.h>
+#include <malloc.h>
 #include "extend_policy_manager.h"
 
 static LIST_HEAD(epmg_list);

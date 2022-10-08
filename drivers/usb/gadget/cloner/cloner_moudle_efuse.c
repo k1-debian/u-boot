@@ -1,7 +1,7 @@
-#include <efuse.h>
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
 #include "cloner_log.h"
+#include <efuse.h>
 
 static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_data)
 {

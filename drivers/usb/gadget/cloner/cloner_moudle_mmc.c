@@ -1,10 +1,8 @@
-#include <errno.h>
-#include <common.h>
-#include <part.h>
-#include <mmc.h>
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
 #include "cloner_log.h"
+#include <part.h>
+#include <mmc.h>
 
 #define MMC_BYTE_PER_BLOCK 512
 #define SPL_CODE_START_ADDRESS 0x4400
