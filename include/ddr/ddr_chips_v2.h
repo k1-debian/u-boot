@@ -83,5 +83,8 @@
 #include "chips-v2/X1660L_LVDDR_COMPATIBLE_PARAM.h"
 #endif
 
+#ifdef CONFIG_DDR3L_GDP1BFLM_CB
+#include "chips-v2/DDR3L_GDP1BFLM-CB.h"
+#endif
 
 #endif

@@ -31,6 +31,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_LPDDR3_NK6CL256M16DKX_H1
 	LPDDR3_NK6CL256M16DKX_H1,
 #endif
+#ifdef CONFIG_DDR3L_GDP1BFLM_CB
+	DDR3L_GDP1BFLM_CB,
+#endif
 };
 
 
