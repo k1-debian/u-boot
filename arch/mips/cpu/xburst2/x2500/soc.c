@@ -101,6 +101,13 @@ void reallocate_cache(void)
 
 }
 
+/*Improving the priority of ddrc in lcd processing*/
+void change_lcd_ddrc_process_priority(void)
+{
+	*(unsigned int *)0x1301202c = 0x11fffff1;   //DDRC-APB-CCHC3
+	*(unsigned int *)0x13012038 = 0xff0000cd;   //DDRC-APB-CCHC6
+}
+
 void board_init_f(ulong dummy)
 {
 	/* Set global data pointer */
@@ -149,6 +156,8 @@ void board_init_f(ulong dummy)
 
 	debug("SDRAM init\n");
 	sdram_init();
+
+	change_lcd_ddrc_process_priority();
 
 #ifdef CONFIG_DDR_AUTO_REFRESH_TEST
 	ddr_test_refresh(0xa0000000, 0xa1000000);
