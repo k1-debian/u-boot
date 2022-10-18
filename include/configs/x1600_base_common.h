@@ -17,7 +17,7 @@
 
 #define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ		200000000	/*If EPLL not use mast be set 0*/
+#define CONFIG_SYS_EPLL_FREQ		300000000	/*If EPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		1104000000
