@@ -471,6 +471,7 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 				printf("double verify failed!\n");
 				return -1;
 			}
+			memcpy(((char *)val + info->begin_align), (char *)buf, byte_num);
 			break;
 		case NONE:
 		default:
@@ -479,7 +480,7 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 	}
 	printf("efuse write data:\n");
 	for(n = 0; n < info->word_num; n++) {
-		printf("%08x\n", buf[n]);
+		printf("%08x\n", val[n]);
 		efuse_writel(val[n], EFUSE_DATA(n));
 	}
 	otp_w(info->word_address, info->word_num);
