@@ -91,25 +91,27 @@ union cmd {
 
 	struct write {
 		uint64_t partition;
+		uint64_t offset;
+		uint64_t length;
 		uint32_t ops;
-		uint32_t offset;
-		uint32_t length;
 		uint32_t crc;
 	}write;
 
 	struct read {
 		uint64_t partition;
+		uint64_t offset;
+		uint64_t length;
 		uint32_t ops;
-		uint32_t offset;
-		uint32_t length;
 	}read;
 
 	struct check {
 		uint64_t partition;
-		uint32_t ops;
-		uint32_t offset;
+		uint64_t offset;
 		uint32_t check;
+		uint32_t ops;
 	} check;
+
+
 #ifdef CONFIG_JZ_SCBOOT
 	struct security {
 		uint32_t security_en;
@@ -211,8 +213,8 @@ struct debug_param{
 	uint32_t stage2_timeout;
 };
 struct mmc_erase_range {
-	uint32_t start;
-	uint32_t end;
+	uint64_t start;
+	uint64_t end;
 };
 
 struct mmc_uda_enh_area_range {
