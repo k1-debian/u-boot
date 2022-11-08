@@ -90,7 +90,6 @@ struct mini_spi_nor_info {
 	unsigned int page_size;
 	unsigned int erase_size;
 
-//	unsigned char spl_quad;	/* reserve, for spl set quad mode */
 };
 
 struct nor_partition {
@@ -123,7 +122,6 @@ struct builtin_params {
 struct spiflash_info {
 	struct burner_params burner_params;
 	struct mini_spi_nor_info mini_spi_nor_info;
-	unsigned char b_quad;	/* for burner set quad mode */
 };
 
 struct nor_block_info {

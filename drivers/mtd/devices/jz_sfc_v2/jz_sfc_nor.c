@@ -982,7 +982,6 @@ int norflash_get_params_from_burner()
 	dump_mini_cloner_params();
 	printf("fs_erase_size=%d\n", params.fs_erase_size);
 	printf("uk_quad=%d\n", params.uk_quad);
-	printf("burner_quad_mode=%d\n",spiflash_info->b_quad);
 #endif
 
 	memcpy(flash->g_nor_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
