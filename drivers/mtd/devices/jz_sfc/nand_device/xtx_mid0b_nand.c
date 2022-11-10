@@ -6,7 +6,7 @@
 #include "nand_common.h"
 
 #define XTX_MID0B_DEVICES_NUM         3
-#define TSETUP		5
+#define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
 #define	TSHSL_W		20
@@ -44,7 +44,7 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 		.oobsize = 128,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
-		.tSETUP  = TSETUP,
+		.tSETUP  = 20,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
