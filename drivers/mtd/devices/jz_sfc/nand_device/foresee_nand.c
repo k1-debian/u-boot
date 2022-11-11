@@ -144,7 +144,7 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.tSHSL_W = TSHSL_W,
 
 		.tRD = 60,
-		.tPP = 700,
+		.tPP = 750,
 		.tBE = 10,
 
 		.ecc_max = 0x1,

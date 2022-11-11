@@ -6,7 +6,7 @@
 #include <ubi_uboot.h>
 
 #define XTX_MID0B_DEVICES_NUM         4
-#define TSETUP		5
+#define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
 #define	TSHSL_W		20
