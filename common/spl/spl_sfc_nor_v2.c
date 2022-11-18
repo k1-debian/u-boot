@@ -479,14 +479,11 @@ static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 	cdt[NOR_RESET].staExp = 0;
 	cdt[NOR_RESET].staMsk = 0;
 
-#if 0
 	/* 2.nor read id */
 	cdt[NOR_READ_ID].link = CMD_LINK(0, DEFAULT_ADDRMODE, TM_STD_SPI);
-	cdt[NOR_READ_ID].xfer = CMD_XFER(0, DISABLE, 0, DISABLE, SPINOR_OP_RDID);
+	cdt[NOR_READ_ID].xfer = CMD_XFER(0, DISABLE, 0, ENABLE, SPINOR_OP_RDID);
 	cdt[NOR_READ_ID].staExp = 0;
 	cdt[NOR_READ_ID].staMsk = 0;
-
-#endif
 
 	/* 3. nor get status */
 	cdt[NOR_GET_STATUS].link = CMD_LINK(0, DEFAULT_ADDRMODE, TM_STD_SPI);
@@ -523,6 +520,34 @@ static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 #ifdef SFC_NOR_DEBUG
 	dump_cdt(flash->sfc);
 #endif
+}
+
+unsigned int sfc_nor_read_id(void)
+{
+	struct sfc_cdt_xfer xfer;
+	unsigned char buf[3];
+	unsigned int chip_id = 0;
+
+	memset(&xfer, 0, sizeof(xfer));
+
+	/* set Index */
+	xfer.cmd_index = NOR_READ_ID;
+
+	/* set addr */
+	xfer.rowaddr = 0;
+	xfer.columnaddr = 0;
+
+	/* set transfer config */
+	xfer.dataen = ENABLE;
+	xfer.config.datalen = 3;
+	xfer.config.data_dir = GLB_TRAN_DIR_READ;
+	xfer.config.ops_mode = CPU_OPS;
+	xfer.config.buf = buf;
+
+	sfc_sync_cdt(&xfer);
+
+	chip_id = ((buf[0] & 0xff) << 16) | ((buf[1] & 0xff) << 8) | (buf[2] & 0xff);
+	return chip_id;
 }
 
 unsigned int get_part_offset_by_name(struct norflash_partitions partition, char *name)
@@ -585,6 +610,20 @@ void spl_load_kernel(long offset)
 #endif
 }
 
+#define CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
+
+#ifdef CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
+
+#ifndef CONFIG_SPL_EXTRA_NOR_INFO_OFF
+#define CONFIG_SPL_EXTRA_NOR_INFO_OFF CONFIG_SPL_PAD_TO
+#endif
+
+struct spi_nor_info_tag {
+    char tag[8];
+    int array_size;
+};
+#endif
+
 void sfc_init(void)
 {
 	struct mini_spi_nor_info *spi_nor_info;
@@ -613,9 +652,34 @@ void sfc_init(void)
 	set_flash_timing();
 	sfc_threshold(flash->sfc);
 
+	unsigned int nor_id = sfc_nor_read_id();
+
 	/* get nor flash params */
 	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), (unsigned char *)&flash->g_nor_info, sizeof(struct mini_spi_nor_info));
-	sfc_debug("%s %x\n", flash->g_nor_info.name, flash->g_nor_info.id);
+#ifdef CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
+	if (nor_id != flash->g_nor_info.id) {
+		struct spi_nor_info_tag tag;
+		sfc_nor_read_params(CONFIG_SPL_EXTRA_NOR_INFO_OFF, (void *)&tag, sizeof(tag));
+		if (!strncmp(tag.tag, "nor_tag", sizeof(tag.tag))) {
+			struct mini_spi_nor_info info;
+			int i;
+			for (i = 0; i < tag.array_size; i++) {
+				int off = CONFIG_SPL_EXTRA_NOR_INFO_OFF + sizeof(tag) + i*sizeof(info);
+				sfc_nor_read_params(off, (void *)&info, sizeof(info));
+				if (nor_id == info.id) {
+					flash->g_nor_info = info;
+					break;
+				}
+			}
+			if (i == tag.array_size)
+				printf("not match extra nor info: %x\n", nor_id);
+		} else {
+			printf("not found extra nor info array\n");
+		}
+	}
+#endif
+
+	printf("%s %x %x\n", flash->g_nor_info.name, flash->g_nor_info.id, nor_id);
 
 	/* update to private CDT table */
 	create_cdt_table(flash, UPDATE_CDT);
