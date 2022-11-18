@@ -25,6 +25,8 @@ static int secall(volatile struct sc_args *argsx,unsigned int func,unsigned stat
 			/*printf("3..mcu control:%08x\n", *(volatile unsigned int *)0xb3421030);*/
 			/*printf("wait secall excuted: retval:%x\n", argsx->retval);*/
 			/*printf("RETVAL %x\n", *(volatile unsigned int *)(MCU_TCSM_RETVAL));*/
+			if(*(volatile unsigned int *)(MCU_TCSM_RETVAL) & 0xFFFF)
+				break;
 		}
 	}
 /*	printf("wait secall excuted: retval:%x\n", argsx->retval);*/

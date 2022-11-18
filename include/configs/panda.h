@@ -49,6 +49,7 @@
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 48 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 
+/*#define CONFIG_UART2_PA*/
 #define CONFIG_SYS_UART_INDEX		2
 #define CONFIG_BAUDRATE			115200
 
@@ -184,12 +185,27 @@
 	"ubifsload 0x80f00000 vmlinux.ub; bootm 0x80f00000"
 #endif
 
-#define CONFIG_SPL_MAX_SIZE		26624	/* 18KB */
-#define CONFIG_SPL_PAD_TO		26624  /* equal to spl max size in x1600 */
-#define CONFIG_UBOOT_OFFSET             26624 /* equal to spl max size in x1600 */
+#define CONFIG_SPL_MAX_SIZE		0x6800	/* 18KB */
+#define CONFIG_SPL_PAD_TO		0x6800  /* equal to spl max size in x1600 */
+#define CONFIG_UBOOT_OFFSET             0x6800 /* equal to spl max size in x1600 */
 
 /* security */
 /*#define CONFIG_JZ_SCBOOT_TEST*/
+/*#define CONFIG_JZ_SCBOOT*/
+#ifdef CONFIG_JZ_SCBOOT
+#undef CONFIG_SPL_MAX_SIZE
+#undef CONFIG_SPL_PAD_TO
+#undef CONFIG_UBOOT_OFFSET
+#define CONFIG_SPL_MAX_SIZE		0x6000	/* 18KB */
+#define CONFIG_SPL_PAD_TO		0x6000  /* equal to spl max size in x1600 */
+#define CONFIG_UBOOT_OFFSET             0x6000 /* equal to spl max size in x1600 */
+
+#define CONFIG_JZ_SECURE_SUPPORT
+#define CONFIG_SYS_SC_TEXT_BASE     0x80100004
+/*#define CONFIG_JZ_CKEYAES*/
+#endif
+
+
 
 /* used for debug */
 /* #define CONFIG_SPL_LIBCOMMON_SUPPORT */

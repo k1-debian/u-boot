@@ -8,6 +8,7 @@
 #include <asm/arch/clk.h>
 #include <div64.h>
 
+#include <asm/jz_cache.h>
 #include <asm/arch/sfc.h>
 #include <asm/arch/spinor.h>
 #include <generated/sfc_timing_val.h>
@@ -594,6 +595,8 @@ void spl_load_kernel(long offset)
 	spl_parse_image_header(header);
 	spl_image.load_addr -= 2048;
 	sfc_read_data(offset, spl_image.size, (unsigned char *)spl_image.load_addr);
+
+	flush_scache_range(spl_image.load_addr, spl_image.load_addr + spl_image.size);
 
 	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
 	if(ret) {

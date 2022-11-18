@@ -95,7 +95,6 @@ static int setup_sckeys(void *addr, unsigned int *len)
 	int iLoop = 0;
 	unsigned int ret;
 
-#ifdef CONFIG_X1600
 	/* parsing sc_key: info */
 	for (iLoop = 0; iLoop < SC_KEY_INFO_WORD_SIZE; iLoop++)
 		tcsmptr[SC_KEY_INFO_WORD_OFF + iLoop]
@@ -149,18 +148,7 @@ static int setup_sckeys(void *addr, unsigned int *len)
 				tcsmptr + SC_KEY_KU_WORD_OFF,
 				SC_KEY_N_WORD_SIZE);
 	}
-#else
-	/* 384 * 4 = 1536, sc_key */
-	for (iLoop = 0; iLoop < SC_KEY_SIZE/4; iLoop++)
-		tcsmptr[iLoop] = ddrptr[iLoop];
 
-	*len = tcsmptr[0]; /* image length */
-
-	/* len must 4 wrod align */
-	if((*len) == 0 || (*len) % 16)
-		return -1;
-
-#endif
 	return 0;
 }
 
@@ -174,7 +162,7 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 	int *srcptr = (int *)(input + SC_MAGIC_SIZE + SC_KEY_SIZE);
 	int *dstptr = (int *)(output);
 
-#ifdef CONFIG_X1600
+#if 0
 	int newround = 1;
 	int endround = 0;
 	int pos = 0;
