@@ -613,8 +613,6 @@ void spl_load_kernel(long offset)
 #endif
 }
 
-#define CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
-
 #ifdef CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
 
 #ifndef CONFIG_SPL_EXTRA_NOR_INFO_OFF
@@ -625,6 +623,25 @@ struct spi_nor_info_tag {
     char tag[8];
     int array_size;
 };
+
+void copy_to_mini_info(struct spi_nor_info *s, struct mini_spi_nor_info *m)
+{
+    memcpy(m->name, s->name, sizeof(m->name));
+	m->id = s->id;
+	m->read_standard = s->read_standard;
+	m->read_quad = s->read_quad;
+	m->wr_en = s->wr_en;
+	m->en4byte = s->en4byte;
+	m->quad_set = s->quad_set;
+	m->quad_get = s->quad_get;
+	m->busy = s->busy;
+	m->quad_ops_mode = s->quad_ops_mode;
+	m->addr_ops_mode = s->addr_ops_mode;
+	m->chip_size = s->chip_size;
+	m->page_size = s->page_size;
+	m->erase_size = s->erase_size;
+}
+
 #endif
 
 void sfc_init(void)
@@ -664,13 +681,13 @@ void sfc_init(void)
 		struct spi_nor_info_tag tag;
 		sfc_nor_read_params(CONFIG_SPL_EXTRA_NOR_INFO_OFF, (void *)&tag, sizeof(tag));
 		if (!strncmp(tag.tag, "nor_tag", sizeof(tag.tag))) {
-			struct mini_spi_nor_info info;
+			struct spi_nor_info info;
 			int i;
 			for (i = 0; i < tag.array_size; i++) {
 				int off = CONFIG_SPL_EXTRA_NOR_INFO_OFF + sizeof(tag) + i*sizeof(info);
 				sfc_nor_read_params(off, (void *)&info, sizeof(info));
 				if (nor_id == info.id) {
-					flash->g_nor_info = info;
+				  	copy_to_mini_info(&info, &flash->g_nor_info);
 					break;
 				}
 			}
