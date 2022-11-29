@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          12
+#define GD_DEVICES_NUM          13
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -123,6 +123,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+#if 1
 	[5] = {
 		/*GD5F4GQ4UC*/
 		.pagesize = 4 * 1024,
@@ -143,8 +144,28 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+#else
+      [5] = {
+		/*GD5F4GM5UF*/
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 4 * 1024 * 64 * 2048,
 
-	[6] = {
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD_4G,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+#endif
+      [6] = {
 		/*GD5F1GQ4RF9IG*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
@@ -266,7 +287,26 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[12] = {
+		/*GD5F1GM7UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
 
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP_Q5,
+		.tBE = 10,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[GD_DEVICES_NUM] = {
@@ -282,6 +322,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x51, "GD5F1GQ5UE",&gd_param[9]),
 	DEVICE_ID_STRUCT(0x32, "GD5F2GQ5UExxH",&gd_param[10]),
 	DEVICE_ID_STRUCT(0x92, "GD5F2GM7UE",&gd_param[11]),
+	DEVICE_ID_STRUCT(0x91, "GD5F1GM7UE",&gd_param[12]),
 };
 
 
@@ -298,7 +339,9 @@ static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint8_t device_i
 	    case 0xD1 ... 0xD4:
 	    case 0x51 ... 0x55:
 	    case 0x32:
-		case 0x92:
+	    case 0x92:
+		    break;
+	    case 0x91:
 		    break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -398,7 +441,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 				case 0x1:
 					if((ret = gd_get_f0_register_value(flash)) < 0)
 						return ret;
-					switch((ecc_status >> 4) & 0x3) {
+					switch((ret >> 4) & 0x3) {
 						case 0x0:
 							ret = 0x1;
 							break;
@@ -417,6 +460,39 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 					break;
 				case 0x2:
 					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0x0;
+					break;
+			}
+			break;
+		case 0x91:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x1:
+					if((ret = gd_get_f0_register_value(flash)) < 0)
+						return ret;
+					switch((ret >> 4) & 0x3) {
+						case 0x0:
+							ret = 0x4;
+							break;
+						case 0x1:
+							ret = 0x5;
+							break;
+						case 0x2:
+							ret = 0x6;
+							break;
+						case 0x3:
+							ret = 0x7;
+							break;
+						default:
+							break;
+					}
+					break;
+				case 0x2:
+					ret = -EBADMSG;
+					break;
+				case 0x3:
+					ret = 0x8;
 					break;
 				default:
 					ret = 0x0;
