@@ -253,7 +253,11 @@
     #elif defined (CONFIG_SPL_SFC_NAND)
 		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
     #else
+	#if defined(CONFIG_JZ_MMC_MSC0)
 		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#elif defined(CONFIG_JZ_MMC_MSC1)
+		#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk1p7 rootdelay=3 rw"
+	#endif
     #endif
     #ifdef CONFIG_OTA_VERSION30
 		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
@@ -285,7 +289,7 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
      #endif /* CONFIG_BOOT_VMLINUX */
 
-    #ifdef CONFIG_JZ_MMC_MSC0
+    #if defined(CONFIG_JZ_MMC_MSC0) || defined(CONFIG_JZ_MMC_MSC1)
 	#define CONFIG_SPL_OS_NAME        "boot" /* sd offset of xImage being loaded */
     #else
 	#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
