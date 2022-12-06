@@ -302,16 +302,26 @@ void gpio_enable_pull(unsigned gpio)
 {
 	unsigned port= gpio / 32;
 	unsigned pin = gpio % 32;
-
+#if defined(PXPES) && defined(PXPEC) && defined(PXPE)
 	writel(1 << pin, GPIO_PXPEC(port));
+#elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
+	writel(1 << pin, GPIO_PXPUC(port));
+#else
+	gpio_set_driver_state(port, pins, PXPE_PULLHZ);
+#endif
 }
 
 void gpio_disable_pull(unsigned gpio)
 {
 	unsigned port= gpio / 32;
 	unsigned pin = gpio % 32;
-
+#if defined(PXPES) && defined(PXPEC) && defined(PXPE)
 	writel(1 << pin, GPIO_PXPES(port));
+#elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
+        writel(1 << pin, GPIO_PXPUS(port));
+#else
+        gpio_set_driver_state(port, pins, PXPE_PULLUP);
+#endif
 }
 
 void gpio_as_irq_high_level(unsigned gpio)
