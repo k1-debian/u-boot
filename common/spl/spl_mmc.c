@@ -247,31 +247,6 @@ void *spl_rtos_get_spl_image_info(void)
 #endif /* CONFIG_SPL_RTOS_BOOT */
 
 #ifdef CONFIG_JZSD_OTA_VERSION20
-static int mmc_load_img_from_partition(const char *name)
-{
-	unsigned int start_sector;
-	int ret;
-	struct mmc *mmc;
-
-	mmc = find_mmc_device(0);
-	if (!mmc) {
-#ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
-		puts("spl: mmc device not found!!\n");
-#endif
-		hang();
-	}
-
-	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
-	if (ret) {
-		printf("mmc:failed get part %s\n", name);
-		return ret;
-	}
-
-	return mmc_load_image_raw(mmc, start_sector);
-}
-#endif
-
-#ifdef CONFIG_JZSD_OTA_VERSION20
 static struct jzsd_ota_ops jzsd_ota_ops = {
 	.jzsd_read = mmc_block_read,
 	.jzsd_load_img_from_partition = mmc_load_img_from_partition,
