@@ -159,15 +159,18 @@ endef
 ALL_INCLUDE_PRIVATE := $(SRCTREE)/include/configs/$(BOARD).h $(DDR_CREATOR_DIR)/ddr_params_creator.h
 all:	$(obj).depend $(TOOLS)
 
-
-$(obj)ddr_params_creator: $(DDR-TYPE-y)
+ddr-type-objs-y := $(addprefix $(obj), $(DDR-TYPE-y))
+$(obj)ddr_params_creator: $(ddr-type-objs-y)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
-$(foreach f,$(DDR-TYPE-y), \
-	$(eval $(call PRIVATE_BUILD,$(f),$(f:.o=.c),$(ALL_INCLUDE_PRIVATE))))
+obj-ddr-creator-dir:
+	@mkdir -p $(obj)$(DDR_CREATOR_DIR)
 
-$(obj)ddr_reg_values.h:        $(obj)ddr_params_creator
+$(foreach f,$(DDR-TYPE-y), \
+	$(eval $(call PRIVATE_BUILD,$(obj)$(f),$(f:.o=.c),$(ALL_INCLUDE_PRIVATE))))
+
+$(obj)ddr_reg_values.h:   obj-ddr-creator-dir $(obj)ddr_params_creator
 	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator > $(OBJTREE)/include/generated/$(notdir $@)
 
 endif
@@ -272,7 +275,7 @@ else
 	 $(CONFIG_GPT_TABLE_PATH)/partitions.tab > $(SRCTREE)/common/spl/spl_gpt_tab_data.h
 endif
 
-.PHONY:gpt_partitions_to_c
+.PHONY:gpt_partitions_to_c obj-ddr-creator-dir
 
 clean:
 	rm -f $(TOOLS) $(obj).depend  \
@@ -310,5 +313,6 @@ endif
 include $(SRCTREE)/rules.mk
 
 sinclude $(obj).depend
+
 
 #########################################################################
