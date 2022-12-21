@@ -164,13 +164,13 @@ $(obj)ddr_params_creator: $(ddr-type-objs-y)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
-obj-ddr-creator-dir:
-	@mkdir -p $(obj)$(DDR_CREATOR_DIR)
+
+$(shell [ -d $(obj)$(DDR_CREATOR_DIR) ] || mkdir -p $(obj)$(DDR_CREATOR_DIR))
 
 $(foreach f,$(DDR-TYPE-y), \
 	$(eval $(call PRIVATE_BUILD,$(obj)$(f),$(f:.o=.c),$(ALL_INCLUDE_PRIVATE))))
 
-$(obj)ddr_reg_values.h:   obj-ddr-creator-dir $(obj)ddr_params_creator
+$(obj)ddr_reg_values.h:   $(obj)ddr_params_creator
 	$(OBJTREE)/tools/ingenic-tools/ddr_params_creator > $(OBJTREE)/include/generated/$(notdir $@)
 
 endif
@@ -275,7 +275,7 @@ else
 	 $(CONFIG_GPT_TABLE_PATH)/partitions.tab > $(SRCTREE)/common/spl/spl_gpt_tab_data.h
 endif
 
-.PHONY:gpt_partitions_to_c obj-ddr-creator-dir
+.PHONY:gpt_partitions_to_c
 
 clean:
 	rm -f $(TOOLS) $(obj).depend  \
