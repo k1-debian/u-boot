@@ -30,8 +30,6 @@
 #define CPM_MACPHYCDR		(0x54)
 #define CPM_I2S0CDR		(0x60)
 #define CPM_I2S0CDR1		(0x70)
-#define CPM_I2S1CDR		(0x7C)
-#define CPM_I2S1CDR1		(0x80)
 #define CPM_LPCDR		(0x64)
 #define CPM_MSC0CDR		(0x68)
 #define CPM_MSC1CDR		(0xA4)
