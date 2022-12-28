@@ -615,7 +615,8 @@
 #define CONFIG_ENV_IS_IN_SFC_NAND
 #endif
 
-
+/*#define CONFIG_JZ_FELIX*/
+/*#define CONFIG_CMD_JZ_VPU_TEST*/
 /*#define CONFIG_LCD*/
 
 #ifdef CONFIG_LCD

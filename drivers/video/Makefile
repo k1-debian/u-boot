@@ -93,6 +93,31 @@ COBJS-$(CONFIG_JZ_LCD_V13) += jz_lcd/backlight_pwm.o jz_lcd/jz_lcd_v13.o
 COBJS-$(CONFIG_JZ_LCD_V14) += jz_lcd/backlight_pwm.o jz_lcd/jz_lcd_v14.o
 COBJS-$(CONFIG_JZ47xx_EPD) += jz4775_epd/jz4775_epd.o
 COBJS-$(CONFIG_JZ_EPD) += jz_epd/jz_epd_v12.o
+COBJS-$(CONFIG_JZ_FELIX) += 	jz_vpu/jz_felix_drv.o 			\
+				jz_vpu/libh264/api/jzm_h264_dec.o 	\
+				jz_vpu/libh264/src/buffer.o	 	\
+				jz_vpu/libh264/src/golomb.o 		\
+				jz_vpu/libh264/src/h2645_parse.o 	\
+				jz_vpu/libh264/src/h264_direct.o 	\
+				jz_vpu/libh264/src/h264_parse.o 	\
+				jz_vpu/libh264/src/h264_picture.o 	\
+				jz_vpu/libh264/src/h264_ps.o 		\
+				jz_vpu/libh264/src/h264_refs.o 		\
+				jz_vpu/libh264/src/h264_sei.o 		\
+				jz_vpu/libh264/src/h264_slice.o 	\
+				jz_vpu/libh264/src/h264data.o 		\
+				jz_vpu/libh264/src/h264dec.o 		\
+				jz_vpu/libh264/src/log.o 		\
+				jz_vpu/libh264/src/mathtables.o 	\
+				jz_vpu/libh264/src/mem.o 		\
+				jz_vpu/libh264/src/vpu_ops.o
+
+ifdef CONFIG_JZ_FELIX
+LOCAL_CFLAGS += -I$(TOPDIR)/drivers/video/jz_vpu/ -I$(TOPDIR)/drivers/video/jz_vpu/libh264/ -I$(TOPDIR)/drivers/video/jz_vpu/libh264/include
+CFLAGS  += $(LOCAL_CFLAGS)
+CPPFLAGS += $(LOCAL_CFLAGS)
+endif
+
 
 COBJS	:= $(sort $(COBJS-y))
 SRCS	:= $(COBJS:.o=.c)

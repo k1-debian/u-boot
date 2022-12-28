@@ -87,6 +87,7 @@ COBJS-$(CONFIG_CMD_SOURCE) += cmd_source.o
 COBJS-$(CONFIG_CMD_BDI) += cmd_bdinfo.o
 COBJS-$(CONFIG_CMD_BEDBUG) += bedbug.o cmd_bedbug.o
 COBJS-$(CONFIG_CMD_BMP) += cmd_bmp.o
+COBJS-$(CONFIG_CMD_JZ_VPU_TEST) += cmd_jz_vpu.o
 COBJS-$(CONFIG_CMD_LOGO_RLE) += cmd_rle.o
 COBJS-$(CONFIG_CMD_BOOTMENU) += cmd_bootmenu.o
 COBJS-$(CONFIG_CMD_BOOTLDR) += cmd_bootldr.o
@@ -288,6 +289,12 @@ XCOBJS	:= $(sort $(XCOBJS-y))
 SRCS	:= $(COBJS:.o=.c) $(XCOBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 XOBJS	:= $(addprefix $(obj),$(XCOBJS))
+
+ifdef CONFIG_CMD_JZ_VPU_TEST
+LOCAL_CFLAGS += -I$(TOPDIR)/drivers/video/jz_vpu/ -I$(TOPDIR)/drivers/video/jz_vpu/libh264 -I$(TOPDIR)/drivers/video/jz_vpu/libh264/include
+CFLAGS += $(LOCAL_CFLAGS)
+CPPFLAGS += $(LOCAL_CFLAGS)
+endif
 
 CPPFLAGS += -I..
 
