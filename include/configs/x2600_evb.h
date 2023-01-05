@@ -19,8 +19,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __X2600__
-#define	__X2600__
+#ifndef __X2600_EVB_H_
+#define	__X2600_EVB_H_
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
@@ -32,14 +32,29 @@
 #define CONFIG_X2600		/* x2600 SoC */
 
 
-#define CONFIG_SYS_APLL_FREQ		600000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		-1		/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
-#define CONFIG_DDR_SEL_PLL		-1
-#define CONFIG_SYS_CPU_FREQ		600000000
-#define CONFIG_SYS_MEM_FREQ		20000000
+#define CONFIG_DDR_SEL_PLL		MPLL
+#define CONFIG_SYS_CPU_FREQ		1200000000
+#define CONFIG_SYS_MEM_FREQ		750000000
 
-#define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 48 MHz */
+#define CONFIG_SYS_AHB0_FREQ		300000000
+#define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
+
+
+
+/* CLK CGU */
+#define  CGU_CLK_SRC {				\
+		{LCD, MPLL},			\
+		{MSC0, MPLL},			\
+		{SFC, MPLL},			\
+		{CIM, MPLL},			\
+		{SRC_EOF,SRC_EOF}		\
+	}
+
+#define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 #define CONFIG_SYS_OST_FREQ		12500000	/* on fpga, 12.5MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 
@@ -89,7 +104,9 @@
 #endif
 
 #ifdef CONFIG_DDR_TYPE_DDR3
-	#define CONFIG_DDR3_TSD34096M1333C9_E_FPGA
+	/* #define CONFIG_DDR3_TSD34096M1333C9_E_FPG */
+	#define CONFIG_DDR3_W631GU6NG
+
 #endif
 
 #ifdef CONFIG_DDR_TYPE_LPDDR3
@@ -297,22 +314,6 @@
 /*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
 #endif
 
-#ifdef CONFIG_JZ_MMC_MSC2
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-#define CONFIG_SDHCI
-#define CONFIG_MMC_SPL_PARAMS
-#define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-
-/* MSC Command configuration */
-#define CONFIG_CMD_MMC
-
-#define CONFIG_JZ_MMC_MSC2_PE   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
-
 /* SFC */
 
 #define CONFIG_SFC_RATE			48000000
@@ -370,41 +371,34 @@
 #define CONFIG_ETHADDR          00:11:22:33:44:55
 
 
-#define GMAC_PHY_MII    0
-#define GMAC_PHY_RMII   4
-#define GMAC_PHY_GMII   0
-#define GMAC_PHY_RGMII  1
+#define GMAC_PHY_RMII   2//4
 #define CONFIG_SYS_RX_ETH_BUFFER 64
 
-/*#define CONFIG_NET_JZ4775*/
-/*#define CONFIG_GMAC1*/
-/*#define CONFIG_RGMII*/
+#define CONFIG_NET_X2600
+#ifdef CONFIG_NET_X2600
+#define CONFIG_MAC_AHB_BUS
 
-#ifdef CONFIG_RGMII
-#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RGMII
-#else
+/* Select GMAC Controller */
+#define CONFIG_GMAC0
+/* Select GMAC Interface mode */
+
 #define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RMII
-#endif
 
-#ifdef CONFIG_GMAC1
-#define CONFIG_GAMAC_MODE_CTRL_ADDR 0xb00000e8
-#define JZ_GMAC_BASE GMAC1_BASE
+#ifdef CONFIG_GMAC0
+#define CONFIG_HALLEY6_MAC_POWER_EN
+#define CONFIG_GAMAC_MODE_CTRL_ADDR	0xb00000e4
+#define JZ_GMAC_BASE			0xb34b0000
 #define CONFIG_GMAC_CRLT_PORT GPIO_PORT_B
-#define CONFIG_GMAC_CRLT_PORT_PINS (0xffff << 8)
-#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_3
-#define CONFIG_GMAC_PHY_RESET	GPIO_PB(1)
-#else
-#define CONFIG_GAMAC_MODE_CTRL_ADDR 0xb00000e4
-#define JZ_GMAC_BASE GMAC0_BASE
-#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_C
-#define CONFIG_GMAC_CRLT_PORT_PINS (0x7fff << 1)
+#define CONFIG_GMAC_CRLT_PORT_PINS (0x3ff << 19)
 #define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_1
-#define CONFIG_GMAC_PHY_RESET	GPIO_PB(0)
+#define CONFIG_GMAC_PHY_RESET	GPIO_PB(31)
+#define CONFIG_GMAC_TX_CLK_DELAY 0x3f
+#define CONFIG_GMAC_RX_CLK_DELAY 0
 #endif
 
-#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_OUTPUT1
+#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_INPUT
 #define CONFIG_GMAC_PHY_RESET_ENLEVEL	0
-/* end of gmac */
+#endif /* CONFIG_NET_X2600 */
 
 /* GPIO */
 #define CONFIG_JZ_GPIO
@@ -552,7 +546,7 @@
 #define CONFIG_CMD_SAVEENV  /* saveenv */
 /*#define CONFIG_SPL_JZ_MSC_BUS_8BIT	//only for emmc*/
   #ifdef CONFIG_SPL_JZMMC_SUPPORT
-	#define CONFIG_SPL_JZMMC_FOR_MSHC
+	#define CONFIG_SPL_JZSDHCI
   #endif
   #ifdef CONFIG_SPL_MMC_SUPPORT
 	#define CONFIG_JZ_MMC_SPLMSC		//Configuration SPL stage msc controller use jz_sdhci driver
