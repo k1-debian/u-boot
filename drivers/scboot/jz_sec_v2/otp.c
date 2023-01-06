@@ -43,24 +43,24 @@ int get_rsakeylen(void)
 static void efuse_1v8_output(int value)
 {
 	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
-		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+		mdelay(10);		/* wait for EFUSE IO power for mdelay(10). */
 		printf("EFUSE_EN_N gpio(%d) output %s!\n", efuse_en_gpio, value == 0 ? "low" : "high");
 		gpio_direction_output(efuse_en_gpio, value);
 		if (value)
-			mdelay(1);
+			mdelay(10);
 		else
 			udelay(10);
 	}
 #ifdef CONFIG_PMU_RICOH6x
 	else {
-		mdelay(1);		/* delay 1ms for power down. prevent miss of WT_DONE. */
+		mdelay(10);		/* delay 10ms for power down. prevent miss of WT_DONE. */
 		if(value == 0) {
 			regulator_set_voltage(efuse_1v8, 1800000, 1800000);
 			regulator_enable(efuse_1v8);
 		} else {
 			regulator_disable(efuse_1v8);
 		}
-		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+		mdelay(10);		/* wait for EFUSE IO power for mdelay(10). */
 	}
 #endif
 }

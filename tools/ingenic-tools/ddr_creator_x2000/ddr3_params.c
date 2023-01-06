@@ -30,11 +30,27 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 	}
 	p->mr0.ddr3.BL = (8 - p->bl) / 2;
 
-	BETWEEN(p->cl,5,13);
-	p->mr0.ddr3.CL_4_6 = (p->cl % 11) - 4;
-	p->mr0.ddr3.CL_2 = p->cl / 11;
-
-
+	BETWEEN(p->cl,5,14);
+	if(p->cl < 11) {
+		p->mr0.ddr3.CL_4_6 = (p->cl % 11) - 4;
+		p->mr0.ddr3.CL_2 = p->cl / 11;
+	}
+	else if(p->cl == 11) {
+		p->mr0.ddr3.CL_4_6 = 7;
+		p->mr0.ddr3.CL_2 = 0;
+	}
+	else if(p->cl == 12) {
+		p->mr0.ddr3.CL_4_6 = 0;
+		p->mr0.ddr3.CL_2 = 1;
+	}
+	else if(p->cl == 13) {
+		p->mr0.ddr3.CL_4_6 = 1;
+		p->mr0.ddr3.CL_2 = 1;
+	}
+	else if(p->cl == 14) {
+		p->mr0.ddr3.CL_4_6 = 2;
+		p->mr0.ddr3.CL_2 = 1;
+	}
 
 	p->mr0.ddr3.DR = 1; //dll reset
 
@@ -46,6 +62,12 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 		break;
 	case 9 ... 12:
 		p->mr0.ddr3.WR = (tmp + 1) / 2;
+		break;
+	case 14:
+		p->mr0.ddr3.WR = tmp / 2;
+		break;
+	case 16:
+		p->mr0.ddr3.WR = 0;
 		break;
 	default:
 		out_error("tWR(%d) is error, valid value is between from 5 to 12.\n",
