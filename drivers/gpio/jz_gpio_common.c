@@ -310,8 +310,10 @@ void gpio_enable_pull(unsigned gpio)
 	writel(1 << pin, GPIO_PXPEC(port));
 #elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
 	writel(1 << pin, GPIO_PXPUC(port));
+#elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
+	gpio_set_driver_state(port, pin, PXPE_PULLUP);
 #else
-	gpio_set_driver_state(port, pins, PXPE_PULLHZ);
+	printf("port is %d pin is %d  %s error\n",port,pin,__func__);
 #endif
 }
 
@@ -323,8 +325,10 @@ void gpio_disable_pull(unsigned gpio)
 	writel(1 << pin, GPIO_PXPES(port));
 #elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
         writel(1 << pin, GPIO_PXPUS(port));
+#elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
+	gpio_set_driver_state(port, pin, PXPE_PULLHZ);
 #else
-        gpio_set_driver_state(port, pins, PXPE_PULLUP);
+        printf("port is %d pin is %d  %s error\n",port,pin,__func__);
 #endif
 }
 
