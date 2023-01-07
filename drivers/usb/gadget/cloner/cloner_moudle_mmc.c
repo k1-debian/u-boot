@@ -36,6 +36,8 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 		dev = 1;
 	else if (policy_args->use_mmc2)
 		dev = 2;
+	else
+		return 0;
 
 	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
