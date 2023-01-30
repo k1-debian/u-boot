@@ -32,7 +32,14 @@ static int efuse_en_active = 0;
 #define EFUSE_SPEEN     0x10
 #define EFUSE_SPESEG    0x14
 
-
+#define CHIP_ID_SIZE    (96)
+#define USER_ID_SIZE    (32)
+#define SARADC_CAL_DAT_SIZE  (16)
+#define TRIM_DATA_SIZE  (8)
+#define PROGRAM_PROTECT_SIZE (8)
+#define CPU_ID_SIZE     (16)
+#define SPECIAL_USE_SIZE     (16)
+#define CUSTOMER_RESV_SIZE   (320)
 
 #define OFFSET_TO_ADDR(addr,i,read_bytes) (addr+(i*read_bytes))
 
@@ -504,101 +511,180 @@ void special_segment_efuse_write(unsigned int value)
 	special_segment_efuse_read(&val);
 	reduce_vddq(efuse_gpio);
 }
-static int  efuse_read_user_id_proc(void)
+
+int efuse_read(void *buf, int length, off_t offset)
 {
-	int len = 4;
-	unsigned char buf[4]={1,2,3,4};
-	jz_efuse_read(1, len, 0,(uint32_t *)buf);
-        printf("%02x%02x%02x%02x\n",buf[0],buf[1],buf[2],buf[3]);
-	return buf;
-}
-static int efuse_write_custer_test(void)
-{
-        int len = 2;
-	unsigned char buf[2]={99,99};
-	jz_efuse_write(7, len, 32,(uint32_t *)buf);
-        // printf("%02x%02x%02x%02x\n",buf[0],buf[1]);
-	return buf;
-}
-static int  efuse_read_custer()
-{
-	int len = 2;
-	unsigned char buf[2]={1,2};
-	jz_efuse_read(7, len, 32,(uint32_t *)buf);
-        printf("%02x%02x\n",buf[0],buf[1]);
-	return buf;
-}
-int efuse_read_id(void *buf, uint32_t length, uint32_t seg_id)
-{
-	int len = 2;
-	unsigned char bef[2]={1,2};
-	jz_efuse_read(seg_id, len, 34,(uint32_t *)bef);
-	//printf("***********************************************************************testtest\n");
-        printf("%02x%02x\n",bef[0],bef[1]);
+	int i = 0;
+	uint32_t seg_id = 0;
+	uint8_t val[40] = {0};
+	char *last = (char *)val + length - 1;
+
+
+	if (offset >= CHIP_ID_ADDR && offset < USER_ID_ADDR ) {
+	    seg_id = CHIP_ID;
+	}
+	else if (offset >= USER_ID_ADDR && offset < SARADC_CAL) {
+	    seg_id = USER_ID;
+	}
+	else if (offset >= SARADC_CAL && offset < TRIM_ADDR) {
+	    seg_id = SARADC_CAL_DAT;
+	}
+	else if (offset >= TRIM_ADDR && offset < PROGRAM_PROTECT_ADDR) {
+	    seg_id = TRIM_DATA;
+	}
+	else if (offset >= PROGRAM_PROTECT_ADDR && offset < CPU_ID_ADDR) {
+	    seg_id = PROGRAM_PROTECT;
+	}
+	else if (offset >= CPU_ID_ADDR && offset < SPECIAL_ADDR) {
+	    seg_id = CPU_ID;
+	}
+	else if (offset >= SPECIAL_ADDR && offset < CUSTOMER_RESV_ADDR) {
+	    seg_id = SPECIAL_USE;
+	}
+	/* 0x80 is scboot segment address The scboot end is controlled by a small core*/
+	else if (offset >= CUSTOMER_RESV_ADDR && offset <  0x80) {
+	    seg_id = CUSTOMER_RESV;
+	}
+	else {
+	    printf("ERROR:offset is error\n");
+	    return -EPERM;
+	}
+
+        jz_efuse_read(seg_id, length,0,(uint32_t *)val);
+	for (i = 0; i < length; i++) {
+	     snprintf((uint8_t *)buf + (i * 2), 3, "%02x", *((uint8_t *)last - i));
+	}
+
+        strcat(buf, "\n");
+        printf("read efuse data: %s\n",buf);
+
 	return 0;
 }
-/*
- *String to hexadecimal number, burning tool input through/ drivers/usb/gadget/cloner/cloner_ module_ The data
- *passed from the write function in eFuse is a string, so it needs to be converted to hexadecimal
-*/
-static int convert_string2hex(unsigned char *in_data, int in_data_len, unsigned char *out_data, int *out_data_len)
-{
-       int i;
-       int loop_count;
-       int convert_point = 0;
-       int mem_point = 0;
-       unsigned char convert_result;
-       unsigned char temp[3] = {0};
-       /* Check parameter validity */
-       if (in_data == NULL || in_data_len <= 0 || out_data == NULL || out_data_len == NULL || (in_data_len % 2) != 0) {
-               printf("invalid parameters\n");
-               return -1;
-       }
-	/* Determine whether the hexadecimal range is exceeded 0 ~ F */
-       for (i = 0; i < in_data_len; i++) {
-       if ((in_data[i] < '0') || (in_data[i] > 'f') || ((in_data[i] > '9') &&(in_data[i] < 'A'))) {
-              printf("out of range\n");
-              return -1;
-           }
-       }
-       loop_count = in_data_len / 2;
-       memset(out_data, 0x00, *out_data_len);
-       *out_data_len = 0;
 
-       for (i = 0; i < loop_count; i++) {
-              memset(temp, 0x00, sizeof(temp));
-              memcpy(temp, in_data + convert_point, 2);
-              convert_point += 2;
-              convert_result = simple_strtoull(temp, NULL, 16);
-              memcpy(out_data + mem_point, &convert_result, sizeof(unsigned char));
-              mem_point += sizeof(unsigned char);
-              *out_data_len += sizeof(unsigned char);
-       }
-       return 0;
+int efuse_read_id(void *buf, uint32_t length, uint32_t seg_id)
+{
+	int i = 0;
+	uint8_t val[40] = {0};
+
+        switch(seg_id){
+	    case CHIP_ID:
+		length = CHIP_ID_SIZE / 8;
+		break;
+	    case USER_ID:
+		length = USER_ID_SIZE / 8;
+		break;
+	    case SARADC_CAL_DAT:
+		length = SARADC_CAL_DAT_SIZE / 8;
+		break;
+	    case TRIM_DATA:
+		length = TRIM_DATA_SIZE / 8;
+		break;
+	    case PROGRAM_PROTECT:
+		length = PROGRAM_PROTECT_SIZE / 8;
+		break;
+	    case CPU_ID:
+		length = CPU_ID_SIZE / 8;
+		break;
+            case SPECIAL_USE:
+		length = SPECIAL_USE_SIZE / 8;
+		break;
+	    case CUSTOMER_RESV:
+		length = CUSTOMER_RESV_SIZE  / 8;
+		break;
+	    default:
+		printf("Unkown id !\n");
+		return -EPERM;
+		break;
+	}
+
+        char *last = (char *)val + length - 1;
+	jz_efuse_read(seg_id, length,0,(uint32_t *)val);
+	for(i = 0; i < length; i++){
+		snprintf((uint8_t *)buf + (i * 2), 3, "%02x", *((uint8_t *)last - i));
+	}
+
+	strcat(buf, "\n");
+	printf("read efuse data: %s\n",buf);
+	return length*2;
 }
 /*
  *buf is the input of the burning tool
  *length is the length of the input string
- *seg_id is segmentid such as chip_id
+ *seg_id is segment id such as chip_id
  * Subsequent interface parameters may change
  *See for details ./drivers/usb/gadget/cloner/cloner_module_efuse.c write read function
 */
 int efuse_write(void *buf, int length, int seg_id)
 {
-       //efuse_write_custer_test();
-       int len = length;
-       unsigned char in_data[len];
-       int in_data_len = len;
-       unsigned char out_data[len];
-       int out_data_len = len;
-       /*input buf(type string) save to array*/
-       memcpy(in_data,(unsigned char *)buf,len);
-       in_data_len = strlen(in_data);
-       /*input buf(type string) change to hex*/
-       convert_string2hex(in_data, in_data_len, out_data, &out_data_len);
-       jz_efuse_write(seg_id, len, 34,(uint32_t *)out_data);
-       return 0;
+        int ret = -EPERM;
+        int byte_num = 0;
+        int word_num = 0;
+        int offset   = 0;
+        int remainder_byte_num = 0;
+        int remainder_word_num = 0;
+        unsigned char val[40] = {0};
+        char tmp[41] = {'\0'};
+        char *last = (char *)buf + length;
+        int i = 0;
+
+        if (IS_ERR(buf)) {
+	    printf("%s %d: buffer error!\n",__func__,__LINE__);
+	    return ret;
+        }
+
+        byte_num = length / 2;
+        remainder_byte_num = length % 2;
+        word_num = byte_num / 4;
+        remainder_word_num = byte_num % 4;
+
+        for (i = 0; i < (byte_num+remainder_byte_num); i++) {
+            memcpy(tmp, last - ((i + 1) * 2), 2);
+            val[i] = (unsigned char)simple_strtoul(tmp, NULL, 16);
+	    printf("val[%d] is %02x\n",i,val[i]);
+        }
+
+        switch(seg_id){
+	    case CHIP_ID:
+		offset = CHIP_ID_SIZE / 8;
+		break;
+	    case USER_ID:
+		offset = USER_ID_SIZE / 8;
+		break;
+	    case SARADC_CAL_DAT:
+		offset = SARADC_CAL_DAT_SIZE / 8;
+		break;
+	    case TRIM_DATA:
+		offset = TRIM_DATA_SIZE / 8;
+		break;
+	    case PROGRAM_PROTECT:
+		offset = PROGRAM_PROTECT_SIZE / 8;
+		break;
+	    case CPU_ID:
+		offset = CPU_ID_SIZE / 8;
+		break;
+            case SPECIAL_USE:
+		offset = SPECIAL_USE_SIZE / 8;
+		break;
+	    case CUSTOMER_RESV:
+		offset = CUSTOMER_RESV_SIZE / 8;
+		break;
+	    default:
+		printf("Unkown id !\n");
+		return -EPERM;
+		break;
+        }
+
+        offset -= ( remainder_byte_num + byte_num );
+        if (offset < 0) {
+            printf("ERROR : offset is error\n");
+	    return -EPERM;
+        }
+
+        jz_efuse_write(seg_id, remainder_byte_num+byte_num,offset,(uint32_t *)val);
+
+        return 0;
 }
+
 int efuse_init(int gpio_pin,int active)
 {
       if(gpio_pin >= 0){
@@ -612,4 +698,9 @@ int efuse_init(int gpio_pin,int active)
 	if(adjust_efuse() < 0)
 		return -1;
 	return 0;
+}
+void efuse_debug_enable(int enable)
+{
+	efuse_debug = !!enable;
+	return;
 }

@@ -30,6 +30,7 @@
 #define CONFIG_X2500	/* x2500 SoC */
 
 
+
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		800000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_VPLL_FREQ            300000000       /*If VPLL not use mast be set 0*/
@@ -230,6 +231,7 @@
 #define	CONFIG_X2500_EFUSE
 #define	CONFIG_JZ_EFUSE
 #define CONFIG_EFUSE_LEVEL	0
+#define CONFIG_CMD_EFUSE
 
 /**
  * Serial download configuration

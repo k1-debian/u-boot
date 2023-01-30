@@ -229,6 +229,7 @@
 #define	CONFIG_X2000_EFUSE
 #define	CONFIG_JZ_EFUSE
 #define CONFIG_EFUSE_LEVEL	0
+#define CONFIG_CMD_EFUSE
 
 /**
  * Serial download configuration
