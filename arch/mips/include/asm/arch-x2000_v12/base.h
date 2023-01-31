@@ -58,6 +58,7 @@
 #define DDRC_APB_BASE   0xb3012000
 
 
+#define PWM_IOBASE      0xb34c0000
 #define MSC0_BASE	0xb3450000
 #define MSC1_BASE	0xb3460000
 #define MSC2_BASE	0xb3490000

@@ -317,6 +317,9 @@
  * Drivers configuration.
  */
 
+/*PWM*/
+#define CONFIG_JZ_PWM_V2
+
 /* MMC */
 #ifdef CONFIG_JZ_MMC_MSC0
 #define CONFIG_GENERIC_MMC

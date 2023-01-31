@@ -48,6 +48,7 @@ void pwm_enable(int num)
 {
 	if (!pwm_request(num)){
 			pwm_writel((1 << num), PWM_ENS);
+		printf("pwm_en =0x%x\n",pwm_readl(PWM_EN));
 			pwm_flag |= 1 << num;
 	} else {
 		printf("the channel is using!\n");
@@ -65,12 +66,20 @@ void pwm_disable(int num)
 
 void pwm_set_init_level(int num, int value)
 {
+#ifdef CONFIG_X2000_V12
+	pwm_writel(value, PWM_INITR);
+#else
 	pwm_writel(value, PWM_INL);
+#endif
 }
 
 void pwm_set_finish_level(int num, int value)
 {
+#ifdef CONFIG_X2000_V12
+	pwm_writel(value,PWM_INITR <<16);
+#else
 	pwm_writel(value, PWM_IDL);
+#endif
 }
 
 void pwm_config(int num, int div, int full_data, int half_data)
@@ -79,7 +88,15 @@ void pwm_config(int num, int div, int full_data, int half_data)
 
 	val = (half_data << 16) | (full_data - half_data);
 	//PRESCALE
-	pwm_writel(div, PWM_CCFG(num));
+#ifdef CONFIG_X2000_V12
+	if(num<8){
+		pwm_writel(div, PWM_CCFG_0(num));
+	}else{
+		pwm_writel(div, PWM_CCFG_1(num-8));
+	}
+#else
+	pwm_writel(div, PWM_CCFG0(num));
+#endif
 	//cpu mode
 	pwm_writel(CPU_MODE << num, PWM_MS);
 	//duty period
@@ -102,6 +119,7 @@ void pwm_init(struct pwm *pwm_data)
 			pwm_data->full_data,
 			pwm_data->half_data);
 		pwm_enable(pwm_data->channels);
+	//printf("channel = %d  div =%d full_data =%d  half_data =%d\n",pwm_data->channels,pwm_data->div,pwm_data->full_data,pwm_data->half_data);
 	} else {
 		printf("the channel is using!\n");
 	}
