@@ -78,6 +78,10 @@
 #define SKIP_SIZE 2048
 #endif
 
+#ifdef CONFIG_X2580
+#define SKIP_SIZE 2048
+#endif
+
 #define le(a) (((a & 0xff)<<24) | ((a>>8 & 0xff)<< 16) | ((a>>16 & 0xff)<< 8) | ((a>>24 & 0xff)))
 
 /*

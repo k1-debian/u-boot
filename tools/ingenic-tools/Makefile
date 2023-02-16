@@ -82,6 +82,8 @@ else ifeq ($(if $(CONFIG_X1600),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x1600
 else ifeq ($(if $(CONFIG_A1),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_a1
+else ifeq ($(if $(CONFIG_X2580),y,n),y)
+DDR_CREATOR_DIR := ddr_creator_x2580
 endif
 
 ifdef CONFIG_MULT_DDR_PARAMS_CREATOR
@@ -149,6 +151,8 @@ ifeq ($(DDR_CREATOR_DIR), ddr_creator_x2000)
 DDR-TYPE-y	+= $(DDR_CREATOR_DIR)/supported_ddr_chips.o
 else ifeq ($(DDR_CREATOR_DIR), ddr_creator_x1600)
 DDR-TYPE-y	+= $(DDR_CREATOR_DIR)/supported_ddr_chips.o
+else ifeq ($(DDR_CREATOR_DIR), ddr_creator_x2580)
+DDR-TYPE-y  += $(DDR_CREATOR_DIR)/supported_ddr_chips.o
 endif
 
 define PRIVATE_BUILD
@@ -238,6 +242,10 @@ $(obj)spl_params_fixer:	spl_params_fixer_x2500.c
 	$(HOSTSTRIP) $@
 else ifeq ($(if $(CONFIG_X1600),y,n),y)
 $(obj)spl_params_fixer:	spl_params_fixer_x1600.c
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
+	$(HOSTSTRIP) $@
+else ifeq ($(if $(CONFIG_X2580),y,n),y)
+$(obj)spl_params_fixer:	spl_params_fixer_x2580.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 else

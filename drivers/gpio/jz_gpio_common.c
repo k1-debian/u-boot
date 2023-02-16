@@ -83,6 +83,10 @@
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
 #include "jz_gpio/a1_gpio.c"
+#elif defined (CONFIG_X2580)
+#undef JZGPIO_GROUP_OFFSET
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/x2580_gpio.c"
 #elif defined (CONFIG_X2600)
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
@@ -185,6 +189,11 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 #elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
 	writel(func & 0x10? pins : 0, base + PXPUS);
 	writel(func & 0x10? 0 : pins, base + PXPUC);
+#elif defined(PXPD) && defined(PXPDC) && defined(PXPDS)
+ #if defined(CONFIG_X2580)
+	writel(func & 0x20? 0 : pins, base + PXPDENC);
+	writel(func & 0x20? pins : 0, base + PXPDENS);
+ #endif
 #elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
 	gpio_set_driver_state(n, pins, PXPE_PULLUP);
 #endif
