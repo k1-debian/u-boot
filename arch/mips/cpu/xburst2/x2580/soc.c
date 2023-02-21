@@ -131,12 +131,7 @@ void board_init_f(ulong dummy)
 #endif
 
 #ifndef CONFIG_FPGA
-#ifdef CONFIG_ENV_IS_IN_MMC
-	debug("t41 in mmc\n");
-#else
-	debug("t41 not in mmc\n");
-#endif
-	debug("t41 Timer init\n");
+	debug("Timer init\n");
 	timer_init();
 #ifdef CONFIG_SPL_REGULATOR_SUPPORT
 	debug("regulator set\n");

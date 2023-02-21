@@ -50,7 +50,7 @@ struct cgu_clk_src cgu_clk_src[] = {
 
 int board_early_init_f(void)
 {
-	/* T41 PA06-PA19默认1.8V，暂时不做配置 */
+	/* X2580 PA06-PA19默认1.8V，暂时不做配置 */
 	return 0;
 }
 
@@ -118,7 +118,7 @@ int spl_start_uboot(void)
 int checkboard(void)
 {
 #ifndef CONFIG_FAST_BOOT
-	puts("Board: ISVP (Ingenic XBurst T41 SoC)\n");
+	puts("Board: x2580_base (Ingenic XBurst X2580 SoC)\n");
 #endif
 	return 0;
 }
