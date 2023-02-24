@@ -34,7 +34,7 @@
 	.section .start_section
 
 _start:
-#ifdef CONFIG_SPL_MMC_SUPPORT
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
 	/* magic value ("MSPL") */
 	.word 0x4d53504c
 	.space 508, 0
@@ -58,15 +58,16 @@ _start:
 	.word 0x00000000
 #ifdef CONFIG_SPL_VERSION
 	.word (0x00000000 | CONFIG_SPL_VERSION)
+	.space (512-20),0
 #else
-	.word 0x00000000
-#endif /* CONFIG_SPL_VERSION */
+	.space (512-16),0
+#endif
 #elif CONFIG_SPL_SFC_NAND
 #define SSI_PPB	(CONFIG_SPI_NAND_PPB / 32)
 #define SSI_BPP (CONFIG_SPI_NAND_BPP / 1024)
 	.word (0x00000000 | (SSI_PPB<<16) | (SSI_BPP<<24))
 #endif
-	.space (500-8), 0
+	.space 500, 0
 	RESERVED_FOR_SC(0)
 #endif /* CONFIG_SPL_SFC_SUPPORT */
 
@@ -83,16 +84,15 @@ _start:
 	RESERVED_FOR_SC(0xff)
 #endif /* CONFIG_SPL_SPI_SUPPORT */
 
-    /* force riscv core soft reset */
-    la t8, 0xb2200fe0
-    lw t0, 0(t8)
-    lui t1, 0x8000
-    or t0, t0, t1
-    sw t0, 0(t8)
-
 	/*
 	 * CU0=UM=EXL=IE=0, BEV=ERL=1, IP2~7=1
-	 */
+	*/
+
+	li	t0, 0xb2200FE0
+	lw	t1, 0(t0)
+	ori     t1, t1, 0x18
+	sw	t1, 0(t0)
+
 	li	t0, 0x0040FC04
 	mtc0	t0, CP0_STATUS
 
@@ -105,42 +105,6 @@ _start:
 	li	t1, 0x00800000
 	or	t0, t0, t1
 	mtc0	t0, CP0_CAUSE
-
-    /* PA06~PA19 */
-    la t8, 0xf7fc0
-    la t9, 0xb0010134
-    sw t8, 0(t9)
-
-    la t8, 0xf7fc0
-    la t9, 0xb0010144
-    sw t8, 0(t9)
-
-    /* PA15 */
-    la t8, 0x8000
-    la t9, 0xb0010138
-    sw t8, 0(t9)
-
-    la t8, 0x8000
-    la t9, 0xb00101a4
-    sw t8, 0(t9)
-
-    /* PB00~PB31 */
-    la t8, 0xffffffff
-    la t9, 0xb0011134
-    sw t8, 0(t9)
-
-    la t8, 0xffffffff
-    la t9, 0xb0011148
-    sw t8, 0(t9)
-
-    /* PC00~PC31 */
-    la t8, 0xffffffff
-    la t9, 0xb0012134
-    sw t8, 0(t9)
-
-    la t8, 0xffffffff
-    la t9, 0xb0012148
-    sw t8, 0(t9)
 
 #ifdef CONFIG_PALLADIUM
 	.set	mips32

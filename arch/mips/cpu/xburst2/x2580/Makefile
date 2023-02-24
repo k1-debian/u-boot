@@ -26,25 +26,19 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(SOC).o
 
-SOBJS-y	=
 COBJS-y	= soc.o
-ifndef CONFIG_FPGA
-COBJS-y += pll.o
+
 COBJS-y += clk.o
-endif
+COBJS-y += pllsetting.o
+
 COBJS-y += ddr_set_dll.o
-ifdef CONFIG_DDR_INNOPHY
-ifdef CONFIG_FPGA
-COBJS-y += ../ddr_innophy_fpga.o
-else
+COBJS-y += ../ddr_innophy.o
 COBJS-y += ../ddr_innophy_x2580.o
-endif#CONFIG_FPGA
-else
-COBJS-y += ../ddr_dwc.o
-endif#CONFIG_DDR_INNOPHY
+
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
 COBJS-$(CONFIG_DDR_AUTO_REFRESH_TEST) += ../ddr_test_auto_refresh.o
-COBJS-$(CONFIG_SPL_DDR_SOFT_TRAINING) += ../ddr_dqs_training.o
+COBJS-$(CONFIG_BURNER) += ../param_manage.o
+
 
 SRCS	:= $(START:.o=.S) $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS-y) $(COBJS-y))
@@ -55,6 +49,35 @@ all:	$(obj).depend $(LIB)
 $(LIB):	$(OBJS)
 	$(call cmd_link_o_target, $(OBJS))
 
+ifndef CONFIG_FPGA
+HOSTCPPFLAGS =	-include $(SRCTREE)/include/libfdt_env.h \
+		-idirafter $(SRCTREE)/include \
+		-idirafter $(OBJTREE)/include2 \
+		-idirafter $(OBJTREE)/include \
+	        -I $(SRCTREE)/lib/libfdt \
+		-I $(SRCTREE)/tools \
+		-DCONFIG_SYS_TEXT_BASE=$(CONFIG_SYS_TEXT_BASE) \
+		-DUSE_HOSTCC \
+		-D__KERNEL_STRICT_NAMES
+
+$(obj).depend.pllsetting:$(OBJTREE)/include/generated/pll_reg_values.h
+$(obj)pllsetting.o:$(OBJTREE)/include/generated/pll_reg_values.h
+
+$(OBJTREE)/include/generated/pll_reg_values.h:$(OBJTREE)/$(dir)/pll_params_creator.exe
+	$< > $@
+
+$(OBJTREE)/$(dir)/pll_params_creator.exe:$(SRCTREE)/$(dir)/pll_params_creator.c | $(SRCTREE)/include/configs/$(BOARD).h
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) $(HOSTCPPFLAGS) -o $@ $^
+
+$(obj).depend.clk:$(OBJTREE)/include/generated/clk_reg_values.h
+$(obj)clk.o:$(OBJTREE)/include/generated/clk_reg_values.h
+
+$(OBJTREE)/include/generated/clk_reg_values.h:$(OBJTREE)/$(dir)/clk_params_creator.exe
+	$< > $@
+
+$(OBJTREE)/$(dir)/clk_params_creator.exe:$(SRCTREE)/$(dir)/clk_params_creator.c | $(SRCTREE)/include/configs/$(BOARD).h
+	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) $(HOSTCPPFLAGS) -o $@ $^
+endif
 #########################################################################
 
 # defines $(obj).depend target

@@ -667,7 +667,7 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 
 int sfc_nor_flash_init(void)
 {
-	uint32_t sfc_rate = 200000000;
+	uint32_t sfc_rate = 100000000;
 	flash = malloc(sizeof(struct sfc_flash));
 	if (!flash) {
 		printf("ERROR: %s %d kzalloc() error !\n",__func__,__LINE__);

@@ -1,5 +1,5 @@
 /*
- * X2580  cpm definitions
+ * T21  cpm definitions
  *
  * Copyright (c) 2017 Ingenic Semiconductor Co.,Ltd
  *
@@ -23,56 +23,57 @@
 #define __CPM_H__
 #include <asm/arch/base.h>
 /**********CGU registers Configuration*****/
-#define CPM_CPCCR	        (0x00)/*Clock Control Register*/
-#define CPM_CPPCR	        (0x0C)/*PLL Control Register*/
-#define CPM_CPAPCR	        (0x10)/*APLL Control Register*/
-#define CPM_CPMPCR	        (0x14)/*MPLL Control Register*/
-#define CPM_DDRCDR	        (0x2C)/*DDR Memory clock divider Register*/
-#define CPM_CPSPR 	        (0x34)/*CPM Scratch Pad Register*/
-#define CPM_CPSPPR	        (0x38)/*CPM Scratch Pad Protected Register*/
-#define CPM_USBPCR	        (0x3C)/*USB Parameter Control Register*/
-#define CPM_USBRDT	        (0x40)/*USB Reset Detect Timer Register*/
-#define CPM_USBVBFIL	    (0x44)/*USB VBUS Jitter Filter Register*/
-#define CPM_USBPCR1	        (0x48)/*USB Parameter Control Register1*/
-#define CPM_RSACDR	        (0x4C)/*RSA clock divider Register*/
-#define CPM_SLVCDR          (0x50)/*SSI_SLV clock divider Register*/
-#define CPM_MACCDR	        (0x54)/*MAC PHY clock divider Register*/
-#define CPM_SFC0CDR         (0x60)/*SFC0 clock divider Register*/
-#define CPM_LPCDR	        (0x64)/*LCD pixel clock divider Register*/
-#define CPM_MSC0CDR	        (0x68)/*MSC0 device clock divider Register*/
-#define CPM_MSC1CDR	        (0x6C)/*MSC1 device clock divider Register*/
-#define CPM_I2STCDR	        (0x70)/*I2S Transmit clock divider Register*/
-#define CPM_SSICDR	        (0x74)/*SSI device clock divider Register*/
-#define CPM_SFC1CDR	        (0x7C)/*SFC1 clock divider Register*/
-#define CPM_I2STCDR1	    (0x78)/*I2S Transmit clock divider Register*/
-#define CPM_ISPMCDR	        (0x80)/*ISPM clock divider Register*/
-#define CPM_I2SRCDR	        (0x84)/*I2S Receive clock divider Register*/
-#define CPM_I2SRCDR1	    (0x88)/*I2S Receive clock divider Register 1*/
-#define CPM_OSC_CTRL	    (0x8C)/*Oscillator Control Register*/
-#define CPM_CIM0CDR	        (0x90)/*CIM0 MCLK clock divider Register*/
-#define CPM_SOFTAPP	        (0x9C)/*Soft Configure For Application Register*/
+#define CPM_CPCCR	(0x00)
+#define CPM_CPPCR	(0x0C)
+#define CPM_CPAPCR	(0x10)
+#define CPM_CPMPCR	(0x14)
+#define CPM_DDRCDR	(0x2C)
+#define CPM_CPSPR 	(0x34)
+#define CPM_CPSPPR	(0x38)
+#define CPM_USBPCR	(0x3C)
+#define CPM_USBRDT	(0x40)
+#define CPM_USBVBFIL	(0x44)
+#define CPM_USBPCR1	(0x48)
+#define CPM_RSACDR	(0x4C)
+#define CPM_SLVCDR  (0x50)
+#define CPM_MACCDR	(0x54)
+#define CPM_SFCCDR	(0x60)
+#define CPM_LPCDR	(0x64)
+#define CPM_MSC0CDR	(0x68)
+#define CPM_MSC1CDR	(0x6C)
+#define CPM_I2STCDR	(0x70)
+#define CPM_SSICDR	(0x74)
+#define CPM_I2STCDR1	(0x78)
+#define CPM_SFC1CDR	(0x7C)
+#define CPM_ISPCDR	(0x80)
+#define CPM_I2SRCDR	(0x84)
+#define CPM_I2SRCDR1	(0x88)
+#define CPM_OSC_CTRL	(0x8C)
+#define CPM_CIM0CDR	(0x90)
+#define CPM_SOFTAPP	(0x9C)
 #define CPM_LDCCDR	        (0xA0)/*LDC clock divider Register*/
 #define CPM_ISPSCDR 	    (0xA8)/*ISPS clock divider Register*/
 #define CPM_ISPACDR 	    (0xAC)/*ISPA clock divider Register*/
-#define CPM_INTR	        (0xB0)/*CPM interrupt Register*/
-#define CPM_INTRE	        (0xB4)/*CPM interrupt enable Register*/
-#define CPM_BT0CDR	        (0xB8)/*BT0 CLK clock divider Register*/
-#define CPM_EL200	        (0xBC)/*ALGENC clock divider Register*/
-#define CPM_DRCG	        (0xD0)/*DDR Clock Gate Register*/
-#define CPM_CPCSR	        (0xD4)/*Clock Status Register*/
-#define CPM_CPVPCR	        (0xE0)/*VPLL Control Register*/
-#define CPM_GMACPHYC	    (0xE8)/*MAC PHY Control Register*/
+#define CPM_INTR	(0xB0)
+#define CPM_INTRE	(0xB4)
+#define CPM_BT0CDR	(0xB8)
+#define CPM_EL200	(0xBC)
+#define CPM_DRCG	(0xD0)
+#define CPM_CPCSR	(0xD4)
+#define CPM_CPVPCR	(0xE0)
+#define CPM_GMACPHYC	(0xE8)
 #define CPM_APR             (0xF0)/*ARBITER PRIORITY Register*/
 #define CPM_PWMCDR          (0xFC)/*PWM clock divider Register*/
 
+#define CPM_SOFT_APPR	(0x9C)
 /************power/reset management*********/
-#define CPM_LCR		        (0x04)
-#define CPM_CLKGR0          (0x20)
-#define CPM_OPCR            (0x24)
-#define CPM_CLKGR1          (0x28)
+#define CPM_LCR		(0x04)
+#define CPM_CLKGR0  (0x20)
+#define CPM_OPCR    (0x24)
+#define CPM_CLKGR1  (0x28)
 
-#define CPM_SRBC0           (0xc4)
-#define CPM_MESTSEL         (0xEC)
+#define CPM_SRBC   (0xC4)
+#define CPM_MESTSEL (0xEC)
 /******************************************/
 
 /**********CLKGR0 0x20**************/
@@ -86,7 +87,7 @@
 #define CPM_CLKGR_LCD		(1 << 24)
 #define CPM_CLKGR_ISP		(1 << 23)
 #define CPM_CLKGR_PDMA		(1 << 22)
-#define CPM_CLKGR_SFC0		(1 << 21)
+#define CPM_CLKGR_SFC		(1 << 21)
 #define CPM_CLKGR_SSI1		(1 << 20)
 #define CPM_CLKGR_UART5 	(1 << 19)
 #define CPM_CLKGR_UART4 	(1 << 18)
@@ -123,20 +124,22 @@
 #define CPM_CLKGR1_PWM  	(1 << 7)
 #define CPM_CLKGR1_DRAWBOX  (1 << 6)
 #define CPM_CLKGR1_AES		(1 << 5)
-#define CPM_CLKGR1_GMAC		(1 << 4)
+#define CPM_CLKGR1_GMAC0	(1 << 4)
 #define CPM_CLKGR1_LZMA 	(1 << 3)
 #define CPM_CLKGR1_IPU		(1 << 2)
 #define CPM_CLKGR1_DTRNG	(1 << 1)
 #define CPM_CLKGR1_EL200	(1 << 0)
 
-#define CPM_RSR_HR		    (1 << 3)
-#define CPM_RSR_P0R		    (1 << 2)
-#define CPM_RSR_WR		    (1 << 1)
-#define CPM_RSR_PR		    (1 << 0)
+#define CPM_RSR_HR		(1 << 3)
+#define CPM_RSR_P0R		(1 << 2)
+#define CPM_RSR_WR		(1 << 1)
+#define CPM_RSR_PR		(1 << 0)
 
-#define OPCR_ERCS		    (0x1<<2)
-#define OPCR_PD			    (0x1<<3)
-#define OPCR_IDLE		    (0x1<<31)
+#define OPCR_ERCS		(0x1<<2)
+#define OPCR_PD			(0x1<<3)
+#define OPCR_IDLE		(0x1<<31)
+
+#define CPM_SLBC_OTG_SR		(1 << 12)
 
 #define cpm_readl(off)          readl(CPM_BASE + (off))
 #define cpm_writel(val,off)     writel(val, CPM_BASE + (off))
@@ -145,6 +148,13 @@
 #define cpm_test_bit(bit,off)	(cpm_inl(off) & 0x1<<(bit))
 #define cpm_set_bit(bit,off)	(cpm_outl((cpm_inl(off) | 0x1<<(bit)),off))
 #define cpm_clear_bit(bit,off)	(cpm_outl(cpm_inl(off) & ~(0x1 << bit), off))
+
+/* MSC EXTCLK enable BIT */
+#define MSCCDR_EXCK_E           (1 << 21)
+#define MSCCDR_MPCS             (30)
+#define MSCCDR_MPCS_MASK        (3 << MSCCDR_MPCS)
+#define MSCCDR_MPCS_EXCLK       (3 << MSCCDR_MPCS)
+
 
 /*USBCDR*/
 #define USBCDR_UCS_PLL		(1 << 31)

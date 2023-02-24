@@ -29,22 +29,20 @@ enum clk_id {
 	EL200,
 	MACPHY,
 	LCD,
-	I2S,
 	MSC,
 	MSC0 = MSC,
 	MSC1,
-	SFC0,
-	SFC1,
+	I2S,
+	SFC,
 	CIM0,
-	ISPA,
-	ISPS,
-	ISPM,
+	ISP,
 	CGU_CNT,
 	CPU = CGU_CNT,
 	H2CLK,
 	APLL,
 	MPLL,
 	VPLL,
+	EPLL,
 	EXCLK,
 	USBPHY,
 };
@@ -63,6 +61,15 @@ struct cgu {
 struct cgu_clk_src {
 	unsigned int cgu_clk;
 	unsigned int src;
+};
+struct clk_cgu_setting {
+	unsigned int addr;
+	unsigned int val;
+	unsigned ce:8;
+	unsigned busy:8;
+	unsigned stop:8;
+	unsigned sel_src:8;
+	unsigned sel_val;
 };
 #define SRC_EOF -1
 

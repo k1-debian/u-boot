@@ -62,7 +62,7 @@
 #define NEMC_BASE	0xb3410000
 #define PDMA_BASE	0xb3420000
 #define AES_BASE    0xb3430000
-#define SFC0_BASE	0xb3440000
+#define SFC_BASE	0xb3440000
 #define SFC1_BASE	0xb3450000
 #define SCPWM_BASE	0xb3460000
 #define HASH_BASE	0xb3480000
@@ -109,6 +109,4 @@
 #define NEMC_CS5_BASE 0xb7000000
 #define NEMC_CS6_BASE 0xb6000000
 
-/* add */
-#define SFC_BASE SFC0_BASE
 #endif /* __BASE_H__ */

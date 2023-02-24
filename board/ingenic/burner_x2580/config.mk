@@ -1,10 +1,9 @@
 #
-# Ingenic Common configuration
+# Ingenic burner configuration
+#
 #
 # Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
 # Author: Zoro <ykli@ingenic.cn>
-# Based on: arch/mips/cpu/xburst/jz4780/config.mk
-#           Written by Paul Burton <paul.burton@imgtec.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -22,5 +21,10 @@
 # MA 02111-1307 USA
 #
 
-# branch likely triggers a reserved instruction exception
-PLATFORM_CPPFLAGS += -mno-branch-likely
+ifndef TEXT_BASE
+# ROM version
+# TEXT_BASE = 0x88000000
+
+# RAM version
+TEXT_BASE = 0x80100000
+endif

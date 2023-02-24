@@ -332,6 +332,14 @@
 #else
 #error please define DDR_FREQ
 #endif
+/* CLK CGU */
+#define  CGU_CLK_SRC {				\
+		{LCD, MPLL},			\
+		{MSC0, MPLL},			\
+	        {MSC1, MPLL},                   \
+		{SFC, MPLL},			\
+		{SRC_EOF,SRC_EOF}		\
+	}
 
 #define CONFIG_SYS_EXTAL		    24000000	/* EXTAL freq: 24 MHz */
 #define CONFIG_SYS_HZ			    1000		/* incrementer freq */
@@ -608,7 +616,7 @@
 #define CONFIG_SFC_NOR_RATE             50000000
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 /* This is used to specify the sfc to use in spl_sfc_nor_v2.c */
-#define SFC SFC0
+/*#define SFC SFC0*/
 #endif
 #endif /* CONFIG_SPL_SFC_SUPPORT */
 

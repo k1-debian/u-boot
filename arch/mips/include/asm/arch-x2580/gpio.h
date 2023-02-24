@@ -27,6 +27,9 @@
 #define GPIO_PB(n) 	(1*32 + n)
 #define GPIO_PC(n) 	(2*32 + n)
 #define GPIO_PD(n) 	(3*32 + n)
+#define GPIO_PE(n) 	(4*32 + n)
+#define GPIO_PF(n) 	(5*32 + n)
+#define GPIO_PG(n) 	(6*32 + n)
 
 enum gpio_function {
 	GPIO_FUNC_0     = 0x00,  //0000, GPIO as function 0 / device 0
@@ -48,52 +51,11 @@ enum gpio_port {
 	GPIO_NR_PORTS,
 };
 
-typedef enum {
-	DS_2_MA = 2,/* reserved, not support */
-	DS_3_MA,    /* reserved, not support */
-	DS_4_MA,
-	RESERVED5,
-	DS_6_MA ,
-	RESERVED7,
-	DS_8_MA,
-	DS_9_MA,
-	RESERVED10,
-	DS_11_MA,
-	DS_12_MA,
-	RESERVED13,
-	DS_14_MA,
-	RESERVED15,
-	DS_16_MA,
-	DS_17_MA,
-	RESERVED18,
-	DS_19_MA,
-	DS_20_MA,
-	RESERVED21,
-	DS_22_MA,
-	RESERVED23,
-	DS_24_MA,
-} gpio_drv_level_t;
-
-enum gpio_pull {
-	GPIO_PULL_UP,  //Pull Up
-	GPIO_PULL_SUP, //Strong Pull Up
-	GPIO_PULL_DOWN,//Pull Down
-	GPIO_DISABLE_PULL,//Disable UP and Down
-};
-
 struct jz_gpio_func_def {
 	int port;
 	int func;
 	unsigned long pins;
-    int driver_strength;
 };
-
-typedef struct gpio_drive_strength_table {
-    enum gpio_port port;
-	unsigned long pins;
-	gpio_drv_level_t drv_level;
-} gpio_drive_strength_table_t;
-
 
 /*************************************************************************
  * GPIO (General-Purpose I/O Ports)
@@ -134,12 +96,12 @@ typedef struct gpio_drive_strength_table {
 #define PXGPDCR		0x100   /* Port IO Power Domain control Register */
 #define PXGPDCRS	0x104   /* Port IO Power Domain control Set Register */
 #define PXGPDCRC	0x108   /* Port IO Power Domain control Clear Register */
-#define PXPU		0x110   /* Port Pull-up status Register */
-#define PXPUS		0x114   /* Port Pull-up status Set Register */
-#define PXPUC		0x118   /* Port Pull-up status Clear Register */
-#define PXPD		0x120   /* Port Pull-down status Register */
-#define PXPDS		0x124   /* Port Pull-down status Set Register */
-#define PXPDC		0x128   /* Port Pull-down status Clear Register */
+#define PXPUEN		0x110   /* Port Pull-up status Register */
+#define PXPUENS		0x114   /* Port Pull-up status Set Register */
+#define PXPUENC		0x118   /* Port Pull-up status Clear Register */
+#define PXPDEN		0x120   /* Port Pull-down status Register */
+#define PXPDENS		0x124   /* Port Pull-down status Set Register */
+#define PXPDENC		0x128   /* Port Pull-down status Clear Register */
 #define PXPDS0		0x130   /* Port Driver-strength 0  Register */
 #define PXPDS0S		0x134   /* Port Driver-strength 0 Set Register */
 #define PXPDS0C		0x138   /* Port Driver-strength 0 Clear Register */
@@ -156,16 +118,15 @@ typedef struct gpio_drive_strength_table {
 #define PXPSMTS		0x174   /* Port Schmitt Trigger Set Register */
 #define PXPSMTC		0x178   /* Port Schmitt Trigger Clear Register */
 
-/* Only PA6-19 use */
-#define PXPDS3		0x1a0   /* PortA Driver Strength Bit 3 Register */
-#define PXPDS3S		0x1a4   /* PortA Driver Strength Bit 3 Set Register */
-#define PXPDS3C		0x1a8   /* PortA Driver Strength Bit 3 Clear Register */
-#define PXPSPU		0x1b0   /* PortA Strong Pull Up Register */
-#define PXPSPUS		0x1b4   /* PortA Strong Pull Up Set Register */
-#define PXPSPUC		0x1b8   /* PortA Strong Pull Up Clear Register */
+/* Only PC use */
+#define PXPSMT1		0x180   /* Port Schmitt 1 Trigger Register */
+#define PXPSMT1S	0x184   /* Port Schmitt 1 Trigger Set Register */
+#define PXPSMT1C	0x188   /* Port Schmitt 1 Trigger Clear Register */
+#define PXPHE		0x190   /* Port Hold Enable Register */
+#define PXPHES		0x194   /* Port Hold Enable Set Register */
+#define PXPHEC		0x198   /* Port Hold Enable Clear Register */
 
-#define PSHADOW_OFF		0x7000
-#define PZGID2LD        0xF0    /* GPIOZ Group ID to load */
+#define PZGID2LD       0xF0    /* GPIOZ Group ID to load */
 
 #define GPIO_PXPIN(n)	(GPIO_BASE + (PXPIN + (n)*0x1000))     /* PIN Level Register */
 #define GPIO_PXINT(n)	(GPIO_BASE + (PXINT + (n)*0x1000))     /* Port Interrupt Register */
@@ -189,18 +150,17 @@ typedef struct gpio_drive_strength_table {
 #define GPIO_PXPDENS(n)	(GPIO_BASE + (PXPDENS + (n)*0x1000))   /* Port Pull-down status Set Register */
 #define GPIO_PXPDENC(n)	(GPIO_BASE + (PXPDENC + (n)*0x1000))   /* Port Pull-down status Clear Register */
 
-/* Only PA6-19 use */
-#define GPIO_PXPSPU(n)  (GPIO_BASE + (PXPSPU + (n)*0x1000))
-#define GPIO_PXPSPUS(n) (GPIO_BASE + (PXPSPUS + (n)*0x1000))
-#define GPIO_PXPSPUC(n) (GPIO_BASE + (PXPSPUC + (n)*0x1000))
+
 
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins);
 void gpio_port_set_value(int port, int pin, int value);
 void gpio_port_direction_input(int port, int pin);
 void gpio_port_direction_output(int port, int pin, int value);
-void gpio_set_driver_strength(enum gpio_port n, unsigned int pins, int ds);
 void gpio_init(void);
-void gpio_set_pull(unsigned gpio, enum gpio_pull pull);
+void gpio_enable_pull_up(unsigned gpio);
+void gpio_disable_pull_up(unsigned gpio);
+void gpio_enable_pull_down(unsigned gpio);
+void gpio_disable_pull_down(unsigned gpio);
 void gpio_as_irq_high_level(unsigned gpio);
 void gpio_as_irq_low_level(unsigned gpio);
 void gpio_as_irq_rise_edge(unsigned gpio);

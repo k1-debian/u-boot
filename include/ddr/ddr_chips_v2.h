@@ -27,6 +27,10 @@
 #include "chips-v2/DDR3_W631GU6NG.h"
 #endif
 
+#ifdef CONFIG_DDR2_M14D5121632A
+#include "chips-v2/DDR2_M14D5121632A.h"
+#endif
+
 #ifdef CONFIG_LPDDR3_NK6CL256M16DKX_H1
 #include "chips-v2/LPDDR3_NK6CL256M16DKX-H1.h"
 #endif

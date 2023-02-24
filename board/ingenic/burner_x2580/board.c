@@ -1,7 +1,7 @@
 /*
- * Ingenic X2580 setup code
+ * Ingenic burner setup code
  *
- * Copyright (c) 2017 Ingenic Semiconductor Co.,Ltd
+ * Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,30 +25,29 @@
 #include <net.h>
 #include <netdev.h>
 #include <asm/gpio.h>
-#include <asm/io.h>
 #include <asm/arch/cpm.h>
-#include <asm/arch/nand.h>
 #include <asm/arch/mmc.h>
+#include <asm/jz_uart.h>
 #include <asm/arch/clk.h>
-#include <power/d2041_core.h>
 
-extern int jz_net_initialize(bd_t *bis);
-struct cgu_clk_src cgu_clk_src[] = {
-	{EL200, APLL},
-	{MACPHY, MPLL},
-	{LCD, VPLL},
-	{MSC0, MPLL},
-	{MSC1, MPLL},
-	{SFC, MPLL},
-	{CIM0, MPLL},
-	{ISP, APLL},
-	{I2S, APLL},
-	{SRC_EOF,SRC_EOF}
-};
+#ifndef CONFIG_SPL_BUILD
+DECLARE_GLOBAL_DATA_PTR;
+struct global_info ginfo __attribute__ ((section(".data")));
+extern struct jz_uart *uart;
+#endif
+
+void board_nand_init(void)
+{
+	    return 0;
+}
 
 int board_early_init_f(void)
 {
-	/* X2580 PA06-PA19默认1.8V，暂时不做配置 */
+#ifndef CONFIG_SPL_BUILD
+	burner_param_info();
+	uart = (struct jz_uart *)(UART0_BASE + gd->arch.gi->uart_idx * 0x1000);
+#endif
+
 	return 0;
 }
 
@@ -61,22 +60,11 @@ void board_usb_init(void)
 }
 #endif /* CONFIG_USB_GADGET */
 
+
 int misc_init_r(void)
 {
-#if 0 /* TO DO */
-	uint8_t mac[6] = { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc };
-
-	/* set MAC address */
-	eth_setenv_enetaddr("ethaddr", mac);
-#endif
 	return 0;
 }
-
-#ifdef CONFIG_SYS_NAND_SELF_INIT
-void board_nand_init(void)
-{
-}
-#endif
 
 #ifdef CONFIG_MMC
 int board_mmc_init(bd_t *bd)
@@ -86,38 +74,19 @@ int board_mmc_init(bd_t *bd)
 }
 #endif
 
+#ifdef CONFIG_DRIVER_DM9000
+
 int board_eth_init(bd_t *bis)
 {
 	return 0;
 }
 
-#ifdef CONFIG_SPL_NAND_SUPPORT
-void nand_init(void)
-{
-}
+#endif /* CONFIG_DRIVER_DM9000 */
 
-int nand_spl_load_image(uint32_t offs, unsigned int size, void *dst)
-{
-	return 0;
-}
-
-void nand_deselect(void)
-{
-}
-#endif
-
-#ifdef CONFIG_SPL_NOR_SUPPORT
-int spl_start_uboot(void)
-{
-	return 1;
-}
-#endif
 /* U-Boot common routines */
 int checkboard(void)
 {
-#ifndef CONFIG_FAST_BOOT
-	puts("Board: x2580_base (Ingenic XBurst X2580 SoC)\n");
-#endif
+	puts("Board: burner_x2580 (Ingenic XBurst2 X2580 SoC)\n");
 	return 0;
 }
 

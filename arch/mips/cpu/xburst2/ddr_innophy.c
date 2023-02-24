@@ -44,7 +44,11 @@ struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
 
 extern void ddrp_auto_calibration(void);
+#ifdef CONFIG_X2580
+extern void ddrp_cfg(struct ddr_reg_value *global_reg_value, unsigned int rate);
+#else
 extern void ddrp_cfg(struct ddr_reg_value *global_reg_value);
+#endif
 extern void ddrp_pll_init(void);
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 extern void ddrp_software_calibration(void);
@@ -226,6 +230,17 @@ void ddrc_dfi_init(enum ddr_type type)
 	unsigned int reg_val;
 	FUNC_ENTER();
 
+#ifdef CONFIG_X2580
+	ddr_writel(DDRC_DWCFG_DFI_INIT_START, DDRC_DWCFG); // dfi_init_start high
+	ddr_writel(0, DDRC_DWCFG); // set buswidth 16bit
+	while(!(ddr_readl(DDRC_DWSTATUS) & DDRC_DWSTATUS_DFI_INIT_COMP)); //polling dfi_init_complete
+	ddr_writel(0, DDRC_CTRL); //set dfi_reset_n high
+	udelay(5);
+	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
+	udelay(5);
+	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
+	udelay(5);
+#else
 	reg_val = ddr_readl(DDRC_DWCFG);
 	reg_val &= ~(1 << 3);
 	ddr_writel(reg_val, DDRC_DWCFG); // set dfi_init_start low, and buswidth 16bit
@@ -238,7 +253,7 @@ void ddrc_dfi_init(enum ddr_type type)
 	udelay(500);
 	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
 	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
-
+#endif
 
 
 	switch(type) {
@@ -559,9 +574,14 @@ void sdram_init(void)
 	rate = clk_get_rate(DDR);
 	debug("DDR clk rate %d\n", rate);
 
-
+#ifdef CONFIG_X2580
+	ddr_writel(0xf << 20, DDRC_CTRL);
+	mdelay(1);
+	ddr_writel(0x8 << 20, DDRC_CTRL);
+	mdelay(1);
+	ddrp_cfg(global_reg_value, rate);
+#else
 	ddr_writel(1 << 20, DDRC_CTRL);  /* ddrc_reset_phy */
-
 	ddrp_cfg(global_reg_value);
 
 	reg_val = ddr_readl(DDRC_CTRL);
@@ -569,6 +589,7 @@ void sdram_init(void)
 	ddr_writel(reg_val, DDRC_CTRL); /*ddrc_reset_phy clear*/
 
 	ddrp_pll_init();
+#endif
 
 	/* DDR Controller init*/
 	ddrc_prev_init();

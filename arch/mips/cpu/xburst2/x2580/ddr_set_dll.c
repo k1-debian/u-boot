@@ -1,6 +1,6 @@
 /*
  * DDR driver for Synopsys DWC DDR PHY.
- * Used by X2580
+ * Used by Jz4775, JZ4780...
  *
  * Copyright (C) 2013 Ingenic Semiconductor Co.,Ltd
  * Author: Zoro <ykli@ingenic.cn>
@@ -27,11 +27,19 @@
 #include <ddr/ddr_common.h>
 #include <asm/io.h>
 
-void reset_dll(enum ddr_type type)
+void reset_dll(void)
 {
 /*
  * WARNING: 2015-01-08
  * 	DDR CLK GATE(CPM_DRCG 0xB00000D0), BIT6 must set to 1 (or 0x40).
  * 	If clear BIT6, chip memory will not stable, gpu hang occur.
  */
+}
+static struct jzsoc_ddr_hook ddr_hook={
+	.prev_ddr_init = reset_dll,
+	.post_ddr_init = NULL,
+};
+void soc_ddr_init()
+{
+	register_ddr_hook(&ddr_hook);
 }

@@ -1,10 +1,8 @@
 #
-# Ingenic Common configuration
+# Ingenic burner_x2500 makefile
 #
 # Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
 # Author: Zoro <ykli@ingenic.cn>
-# Based on: arch/mips/cpu/xburst/jz4780/config.mk
-#           Written by Paul Burton <paul.burton@imgtec.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -22,5 +20,23 @@
 # MA 02111-1307 USA
 #
 
-# branch likely triggers a reserved instruction exception
-PLATFORM_CPPFLAGS += -mno-branch-likely
+include $(TOPDIR)/config.mk
+
+LIB	= $(obj)lib$(BOARD).o
+
+COBJS	:= board.o
+
+SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
+
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
+	$(call cmd_link_o_target, $(OBJS))
+
+#########################################################################
+
+# defines $(obj).depend target
+include $(SRCTREE)/rules.mk
+
+sinclude $(obj).depend
+
+#########################################################################

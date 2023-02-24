@@ -22,32 +22,10 @@
  */
 
 static struct jz_gpio_func_def uart_gpio_func[] = {
-	// uart0
-	[0] = {.port = GPIO_PORT_B, .func = GPIO_FUNC_0, .pins = 0x9 << 19},
-//  [0] = { .port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = 0x3 << 8},
-	// uart1
-	[1] = {.port = GPIO_PORT_B, .func = GPIO_FUNC_0, .pins = 0x3 << 23},
-	// uart2
-	[2] = {.port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = 0x3 << 13},
-//  [2] = { .port = GPIO_PORT_D, .func = GPIO_FUNC_1, .pins = 0x3 << 11},
-	// uart3
-	[3] = {.port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x3 << 25},
-//  [3] = { .port = GPIO_PORT_D, .func = GPIO_FUNC_2, .pins = 0x3 },
-	// uart4
-	[4] = {.port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x3 << 29},
-//  [4] = { .port = GPIO_PORT_D, .func = GPIO_FUNC_2, .pins = 0x3 << 2},
-	// uart5
-//  [5] = { .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = 0x3 << 6},
-	[5] = {.port = GPIO_PORT_D, .func = GPIO_FUNC_2, .pins = 0x3 << 4},
-};
-
-static gpio_drive_strength_table_t soc_gpio_drive_strength_table[] = {
-	{ GPIO_PB(0), DS_4_MA }, //MSC0_D0
-	{ GPIO_PB(1), DS_4_MA }, //MSC0_D1
-	{ GPIO_PB(2), DS_4_MA }, //MSC0_D2
-	{ GPIO_PB(3), DS_4_MA }, //MSC0_D3
-	{ GPIO_PB(4), DS_4_MA }, //MSC0_CLK
-	{ GPIO_PB(5), DS_4_MA }, //MSC0_CMD
+	[0] = { .port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = 0x9 << 2},
+	[1] = { .port = GPIO_PORT_B, .func = GPIO_FUNC_0, .pins = 0x3 << 23},
+	[2] = { .port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = 0x3 << 18},
+	[3] = { .port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = 0x3 << 6},
 };
 
 static struct jz_gpio_func_def gpio_func[] = {
@@ -55,16 +33,12 @@ static struct jz_gpio_func_def gpio_func[] = {
 	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_0, .pins = (0x3<<4|0xf<<0)},
 #endif
 #if defined(CONFIG_JZ_MMC_MSC1_PC)
-	{ .port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = (0x3<<6|0xf<<2)},
+	{ .port = GPIO_PORT_C, .func = GPIO_FUNC_0, .pins = (0x3<<12|0xf<<8)},
 #endif
 #if defined(CONFIG_JZ_MMC_MSC1_PB)
-	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_1, .pins = (0x3<<21|0xf<<17)},
+	{ .port = GPIO_PORT_B, .func = GPIO_FUNC_0, .pins = (0x3<<21|0xf<<17)},
 #endif
-#ifdef CONFIG_JZ_SFC0_PA
+#ifdef CONFIG_JZ_SFC_PA
 	{ .port = GPIO_PORT_A, .func = GPIO_FUNC_1, .pins = 0x3f << 23},
 #endif
-#ifdef CONFIG_JZ_SFC1_PA
-	{ .port = GPIO_PORT_A, .func = GPIO_FUNC_1, .pins = (0x7<<20|0x7<<29)},
-#endif
-
 };
