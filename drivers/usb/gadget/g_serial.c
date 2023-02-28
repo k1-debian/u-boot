@@ -61,7 +61,6 @@ enum {
 	ACM_DATA_IDX,
 	ACM_IAD_IDX,
 };
-
 static struct usb_string strings_dev[] = {
 	[USB_GADGET_MANUFACTURER_IDX].s = "Linux 3.10.14-00004-g79978f3-dirty with dwc2-gadget",
 	[USB_GADGET_PRODUCT_IDX].s = GS_VERSION_NAME,
@@ -87,11 +86,13 @@ static struct usb_device_descriptor device_desc = {
 	.bLength =		USB_DT_DEVICE_SIZE,
 	.bDescriptorType =	USB_DT_DEVICE,
 	.bcdUSB =		cpu_to_le16(0x0200),
+	.bDeviceClass = USB_CLASS_COMM,
 	/* .bDeviceClass = f(use_acm) */
 	.bDeviceSubClass =	0,
 	.bDeviceProtocol =	0,
 	/* .bMaxPacketSize0 = f(hardware) */
-	.idVendor =		cpu_to_le16(GS_VENDOR_ID),
+	.idVendor = __constant_cpu_to_le16(CONFIG_USB_VENDOR_ID),
+	.idProduct = __constant_cpu_to_le16(CONFIG_USB_PRODUCT_ID),
 	/* .idProduct =	f(use_acm) */
 	.bcdDevice = cpu_to_le16(GS_VERSION_NUM),
 	/* .iManufacturer = DYNAMIC */
@@ -115,13 +116,8 @@ static const struct usb_descriptor_header *otg_desc[] = {
 };
 
 extern int gser_bind_config(struct usb_configuration *c);
-static struct usb_configuration serial_config_driver = {
-	/* .label = f(use_acm) */
-	/* .bConfigurationValue = f(use_acm) */
-	/* .iConfiguration = DYNAMIC */
-	.bmAttributes	= USB_CONFIG_ATT_SELFPOWER,
-	.bind = gser_bind_config,
-};
+
+static struct usb_composite_dev *g_cdev;
 
 static int g_serial_unbind(struct usb_composite_dev *cdev)
 {
@@ -147,8 +143,18 @@ static int g_serial_do_config(struct usb_configuration *c)
 #define STRING_USBDOWN 0
 #define CONFIG_USBDOWNLOADER 1
 
+static struct usb_configuration serial_config_driver = {
+	.label = "CDC ACM config",
+	.bConfigurationValue = 1,
+	/* .iConfiguration = DYNAMIC */
+	/* .bmAttributes	= USB_CONFIG_ATT_SELFPOWER, */
+	.bmAttributes	=  USB_CONFIG_ATT_ONE,
+	.bMaxPower	=  0xFA,
+	.bind = gser_bind_config,
+	.unbind = g_serial_unbind,
+};
 
-static int g_serial_register(struct usb_composite_dev *cdev)
+static int g_serial_config(struct usb_composite_dev *cdev)
 {
 	debug("%s---%d, iConfiguration = %d, bConfigurationValue = %d, bmAttributes = 0x%x\n", __func__, __LINE__,
 			serial_config_driver.iConfiguration, serial_config_driver.bConfigurationValue, serial_config_driver.bmAttributes);
@@ -163,7 +169,6 @@ static int g_serial_bind(struct usb_composite_dev *cdev)
 	int gcnum;
 	int status;
 	int i = 0;
-
 	status = usb_string_ids_tab(cdev, strings_dev);
 	if (status < 0)
 		goto error;
@@ -171,24 +176,23 @@ static int g_serial_bind(struct usb_composite_dev *cdev)
 	device_desc.iManufacturer = strings_dev[USB_GADGET_MANUFACTURER_IDX].id;
 	device_desc.iProduct = strings_dev[USB_GADGET_PRODUCT_IDX].id;
 	status = strings_dev[STRING_DESCRIPTION_IDX].id;
+	device_desc.iSerialNumber = strings_dev[USB_GADGET_SERIAL_IDX].id;
 	serial_config_driver.iConfiguration = status;
 
 	if (gadget_is_otg(cdev->gadget)) {
 		serial_config_driver.descriptors = otg_desc;
 		serial_config_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
 	}
-
-	ret = g_serial_register(cdev);
+	g_cdev = cdev;
+	ret = g_serial_config(cdev);
 	if (ret)
 		goto error;
 	gcnum = usb_gadget_controller_number(gadget);
-	if (gcnum >= 0)
+	if (gcnum >= 0){
 		device_desc.bcdDevice = cpu_to_le16(0x0200 + gcnum);
-	else {
+	} else {
 		device_desc.bcdDevice = __constant_cpu_to_le16(0x9999);
 	}
-
-	usb_gadget_connect(gadget);
 
 	return 0;
 
@@ -212,7 +216,7 @@ int jz_usb_serial_register(const char *type)
 	int ret = 0;
 
 	serial_config_driver.label = "CDC ACM config";
-	serial_config_driver.bConfigurationValue = 2;
+	serial_config_driver.bConfigurationValue = 1;
 	device_desc.bDeviceClass = USB_CLASS_COMM;
 	device_desc.idProduct = cpu_to_le16(GS_CDC_PRODUCT_ID);
 	strings_dev[STRING_DESCRIPTION_IDX].s = serial_config_driver.label;
@@ -224,6 +228,70 @@ int jz_usb_serial_register(const char *type)
 	}
 
 	return 0;
+}
+
+void  g_serial_virtual_set_config(const char *type)
+{
+	struct usb_composite_dev *cdev = g_cdev;
+	struct usb_configuration *c = NULL;
+	struct usb_function *f = NULL;
+	struct usb_descriptor_header **descriptors = NULL;
+	u32 tmp = 0;
+
+	if (!cdev) {
+		printf("BURNTOOL: there no cdev\n");
+		return;
+	}
+	/*virtual set config because enumned in bootrom*/
+	list_for_each_entry(c, &cdev->configs, list) {
+		if (c->bConfigurationValue == 1) {
+			break;
+		}
+	}
+	if (!c) {
+		printf("BURNTOOL: there no default 1 configuration\n");
+		return;
+	}
+
+	/*set config*/
+	cdev->config = c;
+	/*set_alt*/
+	for (tmp = 0; tmp < MAX_CONFIG_INTERFACES; tmp++) {
+		f = c->interface[tmp];
+		if (!f)
+			break;
+
+		if (cdev->gadget->speed == USB_SPEED_HIGH)
+			descriptors = f->hs_descriptors;
+		else
+			descriptors = f->descriptors;
+
+		for (; *descriptors; ++descriptors) {
+			struct usb_endpoint_descriptor *ep;
+			u32 addr;
+			if ((*descriptors)->bDescriptorType != USB_DT_ENDPOINT)
+				continue;
+
+			ep = (struct usb_endpoint_descriptor *)*descriptors;
+			addr = ((ep->bEndpointAddress & 0x80) >> 3)
+				|	(ep->bEndpointAddress & 0x0f);
+			__set_bit(addr, f->endpoints);
+		}
+
+		if (f->set_alt(f, tmp, 0)) {
+			list_for_each_entry(f, &cdev->config->functions, list) {
+				if (f->disable)
+					f->disable(f);
+
+				bitmap_zero(f->endpoints, 32);
+			}
+			cdev->config = NULL;
+			return;
+		}
+		/* usb_gadget_connect(gadget); */
+	}
+
+	return;
 }
 
 void jz_usb_serial_unregister(void)

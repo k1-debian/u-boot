@@ -48,6 +48,15 @@ int board_early_init_r(void)
 
 }
 
+#ifdef CONFIG_USB_GADGET
+int jz_udc_probe(void);
+void board_usb_init(void)
+{
+	printf("USB_udc_probe\n");
+	jz_udc_probe();
+}
+#endif /* CONFIG_USB_GADGET */
+
 #ifdef CONFIG_REGULATOR
 int regulator_init(void)
 {

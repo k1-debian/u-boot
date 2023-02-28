@@ -37,6 +37,7 @@ static int do_gser(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	jz_usb_serial_register(s);
 	jz_usb_serial_flag = 0;
+	g_serial_virtual_set_config(s);
 
 	while(!jz_usb_serial_flag)
 	{
