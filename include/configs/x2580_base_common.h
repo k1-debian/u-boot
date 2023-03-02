@@ -426,6 +426,10 @@
 #define CONFIG_RMEM_MB 0
 #endif
 
+#ifndef CONFIG_NMEM_MB
+#define CONFIG_NMEM_MB 0
+#endif
+
 #ifndef CONFIG_RTOS_SIZE_MB
 #define CONFIG_RTOS_SIZE_MB 0
 #endif
