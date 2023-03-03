@@ -244,7 +244,6 @@ static int dwc_udc_init(struct dwc2_udc *dev)
 #define PHY_RX_SQU_TRI             (0x64)
 #define PHY_RX_SQU_TRI_125MV       (0x8)
 
-	u8 reg;
 	reg = usb_phy_readb(PHY_BASE + PHY_RX_SQU_TRI);
 	reg &= ~(0xf << 3);
 	reg |= PHY_RX_SQU_TRI_125MV << 3;
