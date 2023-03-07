@@ -310,7 +310,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xD4, "GD5F4GQ4UB",&gd_param[2]),
 	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC",&gd_param[3]),
 	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4]),
-	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5]),
+	DEVICE_ID_STRUCT(0xB468, "GD5F4GQ4UC",&gd_param[5]),
 	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
 	DEVICE_ID_STRUCT(0x51, "GD5F1GQ5UE",&gd_param[7]),
 	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[8]),
@@ -324,7 +324,7 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint8_t addr_len = 0;
 	switch(device_id) {
 		case 0xB1 ... 0xB4:
@@ -340,6 +340,9 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
                 case 0x91:
 			addr_len = 2;
 			break;
+                case 0xB468:
+                        addr_len = 3;
+                        break;
 		default:
 			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
 			addr_len = 2;
@@ -367,7 +370,7 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint8_t addr_len = 0;
 	switch(device_id) {
 		case 0xB1 ... 0xB4:
@@ -383,6 +386,9 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 		case 0x91:
 			addr_len = 2;
 			break;
+                case 0xB468:
+                        addr_len = 3;
+		        break;
 		default:
 			printf("device_id err, please check your device id: device_id = 0x%02x\n", device_id);
 			addr_len = 2;
@@ -439,7 +445,7 @@ static int32_t gd_get_read_feature(struct flash_operation_message *op_info) {
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct sfc_transfer transfer;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 
@@ -592,6 +598,21 @@ retry:
 				default:
 					ret = 0;
 					break;
+			}
+			break;
+                case 0xB468:
+		          switch((ecc_status >> 4) & 0x7) {
+				case 0x7:
+					ret = -EBADMSG;
+					break;
+				case 0x6:
+					ret = 0x8;
+					break;
+				case 0x5:
+					ret = 0x7;
+					break;
+				default:
+					ret = 0;
 			}
 			break;
 		default:

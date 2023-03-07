@@ -90,7 +90,7 @@ static struct device_id_struct device_id[XCSP_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xb1, "XCSP4AAWH ", &xcsp_param[2]),
 };
 
-static cdt_params_t *xcsp_nand_get_cdt_params(struct sfc_flash *flash, uint8_t device_id) {
+static cdt_params_t *xcsp_nand_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
 	CDT_PARAMS_INIT(xcsp_nand->cdt_params);
 	switch(device_id) {
 		case 0x01:
@@ -131,7 +131,7 @@ static int32_t xcsp_get_f0_register_value(struct sfc_flash *flash)
 	return buf;
 }
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status) {
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
 	int ret = 0;
 	switch(device_id) {
 		case 0x01:

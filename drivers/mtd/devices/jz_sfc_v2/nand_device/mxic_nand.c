@@ -131,7 +131,7 @@ static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
 };
 
 
-static cdt_params_t *mxic_get_cdt_params(struct sfc_flash *flash, uint8_t device_id)
+static cdt_params_t *mxic_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(mxic_nand->cdt_params);
 
@@ -187,7 +187,7 @@ try_read_again:
 }
 
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
 

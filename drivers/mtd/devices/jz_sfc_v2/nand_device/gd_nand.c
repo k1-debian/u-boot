@@ -315,7 +315,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xD4, "GD5F4GQ4UB",&gd_param[2]),
 	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC",&gd_param[3]),
 	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4]),
-	DEVICE_ID_STRUCT(0xB4, "GD5F4GQ4UC",&gd_param[5]),
+	DEVICE_ID_STRUCT(0xB468, "GD5F4GQ4UC",&gd_param[5]),
 	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
 	DEVICE_ID_STRUCT(0x55, "GD5F4GQ6UE",&gd_param[7]),
 	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[8]),
@@ -326,7 +326,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 };
 
 
-static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint8_t device_id)
+static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(gd_nand->cdt_params);
 
@@ -343,6 +343,10 @@ static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint8_t device_i
 		    break;
 	    case 0x91:
 		    break;
+	    case 0xB468:
+		     gd_nand->cdt_params.standard_r.addr_nbyte = 3;
+		     gd_nand->cdt_params.quad_r.addr_nbyte = 3;
+		     break;
 	    default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
 		    return NULL;
@@ -380,7 +384,7 @@ static int32_t gd_get_f0_register_value(struct sfc_flash *flash)
 }
 
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
 
@@ -497,6 +501,21 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, ui
 				default:
 					ret = 0x0;
 					break;
+			}
+			break;
+		 case 0xB468:
+		          switch((ecc_status >> 4) & 0x7) {
+				case 0x7:
+					ret = -EBADMSG;
+					break;
+				case 0x6:
+					ret = 0x8;
+					break;
+				case 0x5:
+					ret = 0x7;
+					break;
+				default:
+					ret = 0;
 			}
 			break;
 		default:

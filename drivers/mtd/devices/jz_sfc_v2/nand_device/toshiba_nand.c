@@ -44,7 +44,7 @@ static struct device_id_struct device_id[TOSHIBA_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xed, "TC58CVG2S0HRAIJ", &toshiba_param[0]),
 };
 
-static cdt_params_t *toshiba_nand_get_cdt_params(struct sfc_flash *flash, uint8_t device_id) {
+static cdt_params_t *toshiba_nand_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
 	CDT_PARAMS_INIT(toshiba_nand->cdt_params);
 	switch(device_id) {
 		case 0xed:
@@ -56,7 +56,7 @@ static cdt_params_t *toshiba_nand_get_cdt_params(struct sfc_flash *flash, uint8_
 	return &toshiba_nand->cdt_params;
 }
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status) {
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
 	int ret = 0;
 	switch(device_id) {
 		case 0xed:

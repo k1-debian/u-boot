@@ -10,7 +10,7 @@
 #define WINDOND_DIE_SELECT	0xC2
 #define WINDOND_RESET		0xFF
 #define TSETUP		5
-#define THOLD		3
+#define THOLD		5
 #define	TSHSL_R		10
 #define	TSHSL_W		50
 
@@ -30,6 +30,7 @@ static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
                 .tHOLD   =THOLD,
                 .tSHSL_R =TSHSL_R,
                 .tSHSL_W =TSHSL_W,
+
 
 		.tRD = TRD,
 		.tPP = TPP,
@@ -61,8 +62,8 @@ static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 };
 
 static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xAA, "W25N01GV", &winbond_param[0]),
-	DEVICE_ID_STRUCT(0xAB, "W25M02GV", &winbond_param[1]),
+	DEVICE_ID_STRUCT(0xAA21, "W25N01GV", &winbond_param[0]),
+	DEVICE_ID_STRUCT(0xAB21, "W25M02GV", &winbond_param[1]),
 };
 
 void active_die(struct sfc_flash *flash, uint8_t die_id) {
@@ -141,18 +142,18 @@ static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct flas
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
-		case 0xAB:
+		case 0xAB21:
 			if(pageaddr > 65535) {
 				active_die(flash, 1);
 				pageaddr -= 65536;
 			} else {
 				active_die(flash, 0);
 			}
-		case 0xAA:
+		case 0xAA21:
 			break;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
@@ -213,7 +214,7 @@ static int32_t winbond_get_read_feature(struct flash_operation_message *op_info)
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct sfc_transfer transfer;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 
@@ -245,7 +246,7 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0xAA ... 0xAB:
+		case 0xAA21:
 			switch((ecc_status >> 4) & 0x3) {
 			    case 0x0:
 				    ret = 0;
@@ -289,10 +290,10 @@ static void winbond_write_enable(struct sfc_transfer *transfer, struct flash_ope
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 
 	switch(device_id) {
-		case 0xAB:
+		case 0xAB21:
 			if(op_info->pageaddr > 65535) {
 				active_die(flash, 1);
 				/*clear protect bits, because each die
@@ -302,7 +303,7 @@ static void winbond_write_enable(struct sfc_transfer *transfer, struct flash_ope
 			} else {
 				active_die(flash, 0);
 			}
-		case 0xAA:
+		case 0xAA21:
 		    break;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
@@ -326,14 +327,14 @@ static void winbond_program_exec(struct sfc_transfer *transfer, struct flash_ope
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
-	    case 0xAB:
+	    case 0xAB21:
 		if(pageaddr > 65535)
 			pageaddr -= 65536;
-	    case 0xAA:
+	    case 0xAA21:
 		break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
@@ -356,14 +357,14 @@ static void winbond_block_erase(struct sfc_transfer *transfer, struct flash_oper
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
-	    case 0xAB:
+	    case 0xAB21:
 		if(pageaddr > 65535)
 			pageaddr -= 65536;
-	    case 0xAA:
+	    case 0xAA21:
 		break;
 	    default:
 		    pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);

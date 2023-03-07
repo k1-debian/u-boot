@@ -49,7 +49,7 @@ static struct device_id_struct device_id[XTX_MID2C_DEVICES_NUM] = {
 };
 
 
-static cdt_params_t *xtx_mid2c_get_cdt_params(struct sfc_flash *flash, uint8_t device_id)
+static cdt_params_t *xtx_mid2c_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(xtx_mid2c_nand->cdt_params);
 
@@ -65,7 +65,7 @@ static cdt_params_t *xtx_mid2c_get_cdt_params(struct sfc_flash *flash, uint8_t d
 }
 
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
 

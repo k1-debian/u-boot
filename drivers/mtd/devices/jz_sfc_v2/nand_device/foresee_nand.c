@@ -88,7 +88,7 @@ static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 };
 
 
-static cdt_params_t *fs_get_cdt_params(struct sfc_flash *flash, uint8_t device_id)
+static cdt_params_t *fs_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(fs_nand->cdt_params);
 
@@ -107,7 +107,7 @@ static cdt_params_t *fs_get_cdt_params(struct sfc_flash *flash, uint8_t device_i
 }
 
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
 

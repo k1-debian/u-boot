@@ -239,8 +239,15 @@ static int probe_id_list(unsigned char* id)
 	unsigned char i;
 
 	for (i = 0; i < ARRAY_SIZE(nand_param); i++) {
-		if (nand_param[i].id_manufactory == id[0] &&
-			    nand_param[i].device_id == id[1]) {
+		if (nand_param[i].device_id >0x0 && nand_param[i].device_id<=0xff &&
+						nand_param[i].id_manufactory == id[0] &&
+						nand_param[i].device_id == id[1]) {
+			curr_device = &nand_param[i];
+			break;
+		}
+		else if(nand_param[i].device_id >0xff && nand_param[i].device_id <= 0xffff &&
+						nand_param[i].id_manufactory == id[0] &&
+						nand_param[i].device_id == (id[2] | (id[1]<<8))) {
 			curr_device = &nand_param[i];
 			break;
 		}
@@ -258,14 +265,14 @@ static int spinand_probe_id(struct jz_sfc* sfc)
 	 * cmd-->addr-->pid
 	 */
 	unsigned char addrlen[] = {0, 1};
-	unsigned char id[2] = {0};
+	unsigned char id[3] = {0};
 	unsigned char i;
-
 	for(i = 0; i < sizeof(addrlen); i++) {
-		SFC_SEND_COMMAND(sfc, SPINAND_CMD_RDID, 2, 0, addrlen[i], 0, 1, 0);
-		sfc_read_data((unsigned int *)id, 2);
-		if (!probe_id_list(id))
+		SFC_SEND_COMMAND(sfc, SPINAND_CMD_RDID, 3, 0, addrlen[i], 0, 1, 0);
+		sfc_read_data((unsigned int *)id, 3);
+		if (!probe_id_list(id)){
 			    break;
+		}
 	}
 	if(i == sizeof(addrlen)) {
 		debug("ERR: don`t support this kind of nand device, \
@@ -287,7 +294,6 @@ int spinand_init(void)
 	 */
 	if(spinand_probe_id(&sfc))
 		return -ENODEV;
-
 	/* disable write protect */
 	x = 0;
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_SET_FEATURE, 1, SPINAND_ADDR_PROTECT, 1, 0, 1, 1);

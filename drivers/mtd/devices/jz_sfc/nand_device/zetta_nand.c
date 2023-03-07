@@ -69,7 +69,7 @@ static int32_t zetta_get_read_feature(struct flash_operation_message *op_info)
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct sfc_transfer transfer;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;
 
@@ -127,7 +127,7 @@ static void zetta_single_read(struct sfc_transfer *transfer, struct flash_operat
 {
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
 	int plane_flag = 0;
 
@@ -164,7 +164,7 @@ static void zetta_quad_read(struct sfc_transfer *transfer, struct flash_operatio
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
 	int plane_flag = 0;
 
@@ -201,7 +201,7 @@ static void zetta_single_load(struct sfc_transfer *transfer, struct flash_operat
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
 	int plane_flag = 0;
 
@@ -237,7 +237,7 @@ static void zetta_quad_load(struct sfc_transfer *transfer, struct flash_operatio
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	uint32_t columnaddr = op_info->columnaddr;
 	int plane_flag = 0;
 

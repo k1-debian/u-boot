@@ -62,7 +62,7 @@ struct jz_sfcnand_base_param {
 };
 
 struct device_id_struct {
-	uint8_t id_device;
+	uint16_t id_device;
 	char *name;
 	struct jz_sfcnand_base_param *param;
 };
@@ -102,8 +102,8 @@ struct jz_sfcnand_cdt_params {
 typedef struct jz_sfcnand_cdt_params cdt_params_t;
 
 struct jz_sfcnand_ops {
-	cdt_params_t *(*get_cdt_params)(struct sfc_flash *, uint8_t);
-	int (*deal_ecc_status)(struct sfc_flash *, uint8_t, uint8_t);
+	cdt_params_t *(*get_cdt_params)(struct sfc_flash *, uint16_t);
+	int (*deal_ecc_status)(struct sfc_flash *, uint16_t, uint8_t);
 	int32_t (*get_feature)(struct sfc_flash *, uint8_t);
 };
 
@@ -120,7 +120,7 @@ struct jz_sfcnand_device {
 
 struct jz_sfcnand_flashinfo {
 	uint8_t id_manufactory;
-	uint8_t id_device;
+	uint16_t id_device;
 
 	struct jz_sfcnand_base_param param;
 	struct jz_sfcnand_partition_param partition;

@@ -7,8 +7,8 @@
 static unsigned char winbond_xgv[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0xAA, 2048, 2, 4, 2, 2, winbond_xgv),
-	DEVICE_STRUCT(0xAB, 2048, 2, 4, 2, 2, winbond_xgv),
+	DEVICE_STRUCT(0xAA21, 2048, 2, 4, 2, 2, winbond_xgv),
+	DEVICE_STRUCT(0xAB21, 2048, 2, 4, 2, 2, winbond_xgv),
 };
 
 static struct nand_desc winbond_nand = {

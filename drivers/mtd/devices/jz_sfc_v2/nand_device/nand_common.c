@@ -11,7 +11,7 @@ int32_t nand_common_get_feature(struct sfc_flash *flash, uint8_t flag)
 {
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct jz_sfcnand_ops *ops = nand_info->ops;
-	uint8_t device_id = nand_info->id_device;
+	uint16_t device_id = nand_info->id_device;
 	struct sfc_cdt_xfer xfer;
 	uint8_t ecc_status = 0;
 	int32_t ret = 0;

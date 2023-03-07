@@ -2,7 +2,7 @@
 #define __NAND_COMMON_H
 
 struct device_struct {
-	unsigned char device_id;
+	unsigned short device_id;
 	unsigned int  page_size;
 	unsigned char addr_len;
 	unsigned char ecc_bit;

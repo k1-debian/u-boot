@@ -33,22 +33,22 @@ static struct jz_sfcnand_base_param winbond_param = {
 	.tBE = TBE,
 
 	.plane_select = 0,
-	.ecc_max = 0x3,//0x3,
+	.ecc_max = 0x4,//0x3,
 	.need_quad = 1,
 
 };
 
 static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xAA, "25N01GVZEIR", &winbond_param),
+	DEVICE_ID_STRUCT(0xAA21, "25N01GVZEIG", &winbond_param),
 };
 
 
-static cdt_params_t *winbond_get_cdt_params(struct sfc_flash *flash, uint8_t device_id)
+static cdt_params_t *winbond_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(winbond_nand->cdt_params);
 
 	switch(device_id) {
-		case 0xAA:
+		case 0xAA21:
 		    break;
 		default:
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -59,26 +59,20 @@ static cdt_params_t *winbond_get_cdt_params(struct sfc_flash *flash, uint8_t dev
 }
 
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status)
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
 	switch(device_id) {
-		case 0xAA:
+		case 0xAA21:
 			switch((ecc_status >> 4) & 0x3)
 			{
-				case 0x0:
-					ret = 0;
-					break;
-				case 0x01:
-					ret = 0x1;
-					break;
 				case 0x02:
 				case 0x03:
-					ret =0x2;
+					ret = -EBADMSG;
 					break;
 				default:
-					ret = -EIO;
-				}
+					ret = 0;
+			}
 			break;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);

@@ -292,7 +292,7 @@ struct spi_nor_flash_ops {
 struct spl_nand_param {
 		unsigned int pagesize:16;
 		unsigned int id_manufactory:8;
-		unsigned int device_id:8;
+		unsigned int device_id:16;
 
 		unsigned int addrlen:2;
 		unsigned int ecc_bit:3;

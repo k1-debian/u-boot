@@ -14,7 +14,7 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0xD4, 4096, 2, 4, 2, 1, gdxb_errstat),
 	DEVICE_STRUCT(0xB1, 2048, 3, 4, 3, 1, gdxc_errstat),
 	DEVICE_STRUCT(0xB2, 2048, 3, 4, 3, 1, gdxc_errstat),
-	DEVICE_STRUCT(0xB4, 4096, 3, 4, 3, 1, gdxc_errstat),
+	DEVICE_STRUCT(0xB468, 4096, 3, 4, 3, 1, gdxc_errstat),
 	DEVICE_STRUCT(0xA1, 2048, 3, 4, 3, 1, gdxr_errstat),
 	DEVICE_STRUCT(0x51, 2048, 2, 4, 2, 1, gdxb_errstat),
 	DEVICE_STRUCT(0x52, 2048, 2, 4, 2, 1, gdxb_errstat),

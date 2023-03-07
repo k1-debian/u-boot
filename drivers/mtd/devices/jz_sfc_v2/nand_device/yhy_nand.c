@@ -110,7 +110,7 @@ static struct device_id_struct device_id[YHY_MIDC9_DEVICES_NUM] = {
         DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
 };
 
-static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint8_t device_id) {
+static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
 	CDT_PARAMS_INIT(yhy_midc9_nand->cdt_params);
 	switch(device_id) {
 		case 0x21:
@@ -124,7 +124,7 @@ static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint8_t d
 	return &yhy_midc9_nand->cdt_params;
 }
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint8_t device_id, uint8_t ecc_status) {
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
 	int ret = 0;
 	switch(device_id) {
 		case 0x21:
