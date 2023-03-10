@@ -532,6 +532,41 @@ struct ddr_reg_value {
 	unsigned int DDR_CHIP_1_SIZE;
 	unsigned int REMMAP_ARRAY[5];
 };
+#elif defined CONFIG_X2600
+struct ddr_reg_value {
+	struct ddr_reg_header h;
+	unsigned int DDRC_CFG_VALUE;
+	unsigned int DDRC_CTRL_VALUE;
+	unsigned int DDRC_DLMR_VALUE;
+	unsigned int DDRC_DDLP_VALUE;
+	unsigned int DDRC_MMAP0_VALUE;
+	unsigned int DDRC_MMAP1_VALUE;
+	unsigned int DDRC_REFCNT_VALUE;
+	unsigned int DDRC_TIMING1_VALUE;
+	unsigned int DDRC_TIMING2_VALUE;
+	unsigned int DDRC_TIMING3_VALUE;
+	unsigned int DDRC_TIMING4_VALUE;
+	unsigned int DDRC_TIMING5_VALUE;
+	unsigned int DDRC_AUTOSR_CNT_VALUE;
+	unsigned int DDRC_AUTOSR_EN_VALUE;
+	unsigned int DDRC_HREGPRO_VALUE;
+	unsigned int DDRC_PREGPRO_VALUE;
+	unsigned int DDRC_CGUC0_VALUE;
+	unsigned int DDRC_CGUC1_VALUE;
+	unsigned int DDRP_MEMCFG_VALUE;
+	unsigned int DDRP_CL_VALUE;
+	unsigned int DDRP_CWL_VALUE;
+	unsigned int DDR_MR0_VALUE;
+	unsigned int DDR_MR1_VALUE;
+	unsigned int DDR_MR2_VALUE;
+	unsigned int DDR_MR3_VALUE;
+	unsigned int DDR_MR10_VALUE;
+	unsigned int DDR_MR11_VALUE;
+	unsigned int DDR_MR63_VALUE;
+	unsigned int DDR_CHIP_0_SIZE;
+	unsigned int DDR_CHIP_1_SIZE;
+	unsigned int REMMAP_ARRAY[6];
+};
 #else
 struct ddr_reg_value {
 	struct ddr_reg_header h;

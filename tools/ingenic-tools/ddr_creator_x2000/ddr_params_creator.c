@@ -21,6 +21,12 @@
  */
 #include "ddr_params_creator.h"
 
+#ifdef CONFIG_X2600
+#define REMAP_ARR_SIZE 6
+#else
+#define REMAP_ARR_SIZE 5
+#endif
+
 unsigned int __ps_per_tck = -1;
 /**
  * ps2cycle:   translate timing(ps) to clk count
@@ -510,11 +516,6 @@ static unsigned int frandom(int max)
 
 static void fill_mem_remap(struct ddr_reg_value *reg, struct ddr_params *p)
 {
-#ifdef CONFIG_X2600
-#define REMAP_ARR_SIZE 6
-#else
-#define REMAP_ARR_SIZE 5
-#endif
 	int address_bits;
 	int swap_bits;
 	int bank_bits;
@@ -711,7 +712,7 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 	printf("DDR_MR63_VALUE        = %08x\n", reg->DDR_MR63_VALUE);
 	printf("DDR_CHIP_0_SIZE       = %08x\n", reg->DDR_CHIP_0_SIZE);
 	printf("DDR_CHIP_1_SIZE       = %08x\n", reg->DDR_CHIP_1_SIZE);
-	for(i = 0; i < 5; i++) {
+	for(i = 0; i < REMAP_ARR_SIZE; i++) {
 		printf("REMMAP_ARRAY[%d] = %08x\n", i, reg->REMMAP_ARRAY[i]);
 	}
 
@@ -756,7 +757,7 @@ void dump_generated_reg_struct(struct ddr_reg_value *reg)
 	printf("	.DDR_MR63_VALUE        = 0x%08x,\n", reg->DDR_MR63_VALUE);
 	printf("	.DDR_CHIP_0_SIZE       = 0x%08x,\n", reg->DDR_CHIP_0_SIZE);
 	printf("	.DDR_CHIP_1_SIZE       = 0x%08x,\n", reg->DDR_CHIP_1_SIZE);
-	for(i = 0; i < 5; i++) {
+	for(i = 0; i < REMAP_ARR_SIZE; i++) {
 		printf("	.REMMAP_ARRAY[%d] = 0x%08x,\n", i, reg->REMMAP_ARRAY[i]);
 	}
 	printf("},\n");

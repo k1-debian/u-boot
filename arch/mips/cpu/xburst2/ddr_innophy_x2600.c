@@ -263,14 +263,28 @@ static void ddrp_cfg(struct ddr_reg_value *global_reg_value)
  * */
 static void ddrp_calibration(int al8_1x,int ah8_1x,int al8_2x,int ah8_2x)
 {
-	ddr_writel(ddr_readl(DDRP_INNOPHY_TRAINING_CTRL) | DDRP_TRAINING_CTRL_DSCSE_BP, DDRP_INNOPHY_TRAINING_CTRL);
+	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	unsigned int timeout = 0xffffff;
+	/* unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA; */
 
-	int x = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL);
-	int y = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH);
-	x = (x & ~(0xf << 3)) | (al8_1x << DDRP_CALIB_BP_CYCLESELBH_BIT) | (al8_2x << DDRP_CALIB_BP_OPHCSELBH_BIT);
-	y = (y & ~(0xf << 3)) | (ah8_1x << DDRP_CALIB_BP_CYCLESELBH_BIT) | (ah8_2x << DDRP_CALIB_BP_OPHCSELBH_BIT);
-	ddr_writel(x, DDRP_INNOPHY_CALIB_BYPASS_AL);
-	ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
+	ddr_writel(0x0, DDRP_INNOPHY_CALIB_MODE);
+	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
+	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
+	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
+
+	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
+	    udelay(1);
+	    printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
+	    printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+	    printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+	}
+
+	if(!timeout) {
+	    debug("ddrp_auto_calibration failed!\n");
+	}
+	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
+	debug("ddrp_auto_calibration success!\n");
+
 }
 
 
