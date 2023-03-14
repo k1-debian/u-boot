@@ -31,7 +31,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-//#define DUMP_CGU_SELECT
+#define DUMP_CGU_SELECT
 #ifdef DUMP_CGU_SELECT
 static char clk_name[][10] = {
 
@@ -42,7 +42,7 @@ static char * cgu_name(int clk) {
 }
 #endif
 
-struct clk_cgu_setting cgusetting[19] = CGU_REG_VALUE;
+struct clk_cgu_setting cgusetting[] = CGU_REG_VALUE;
 
 void clk_prepare(void)
 {
@@ -54,6 +54,7 @@ void clk_prepare(void)
 
 	/*设置时钟到最大分频，防止PLL升频后，各外设时钟过高，工作不正常.*/
 
+	printf("---- size: %d\n", size);
 	for (i = 0; i < size; i++) {
 
 		/* MSC的时钟使能需要在MSC控制器中设置相关bit，此处跳过.*/
@@ -81,9 +82,13 @@ void clk_prepare(void)
 			writel(regval, reg);
 		}
 #ifdef DUMP_CGU_SELECT
-		printf("%s(0x%x) :0x%x\n",clk_name[i] ,reg,  readl(reg));
+		printf("(0x%x) :0x%x\n",reg,  readl(reg));
 #endif
 	}
+
+	printf("clk prepare done !!\n");
+	asm volatile ("ssnop");
+	asm volatile ("ssnop");
 }
 
 static inline void cgu_clks_set(void)

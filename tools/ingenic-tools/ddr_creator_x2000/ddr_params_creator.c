@@ -496,6 +496,10 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 		ddrp->memcfg.b.brusel = 0;
 	else if(p->bl == 8)
 		ddrp->memcfg.b.brusel = 1;
+#ifdef CONFIG_X2600
+	ddrp->memcfg.b.reserved6_7= 2;
+#endif
+
 }
 
 static unsigned int frandom(int max)

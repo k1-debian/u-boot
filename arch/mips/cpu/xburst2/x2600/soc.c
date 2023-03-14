@@ -22,7 +22,8 @@
  * MA 02111-1307 USA
  */
 
-/* #define debug */
+
+#define DEBUG
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -81,6 +82,7 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 #endif
 
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 	//dump_c0_regs();
 
 	debug("Timer init\n");

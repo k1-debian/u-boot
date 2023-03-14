@@ -261,7 +261,7 @@ static void ddrp_cfg(struct ddr_reg_value *global_reg_value)
  * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
  *
  * */
-static void ddrp_calibration(int al8_1x,int ah8_1x,int al8_2x,int ah8_2x)
+static void ddrp_calibration(void)
 {
 	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	unsigned int timeout = 0xffffff;
@@ -395,7 +395,7 @@ static void ddrp_software_calibration(void)
 
 	int x, y, z, x1, y1;
 	int c, o, d =0, r = 0;
-	unsigned int addr = 0xa0000000, val;
+	unsigned int addr = 0xa1000000, val;
 	unsigned int i, n, m = 0;
 	unsigned int reg;
 	unsigned int tmp;
@@ -491,7 +491,7 @@ void ddrc_dfi_init(enum ddr_type type)
 
 	tmp = ddr_readl(DDRC_DWCFG);
 	tmp &= ~(1 << 3);
-	tmp |= (1 << 4);
+	/* tmp |= (1 << 4); */
 	ddr_writel(tmp, DDRC_DWCFG); // set dfi_init_start low, and buswidth 16bit
 	while(!(ddr_readl(DDRC_DWSTATUS) & DDRC_DWSTATUS_DFI_INIT_COMP)); //polling dfi_init_complete
 
@@ -526,10 +526,10 @@ void ddrc_dfi_init(enum ddr_type type)
 	case DDR3:
 		udelay(200);
 #define DDRC_LMR_MR(n)								\
-		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR | 2 |	\
+		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR  |	\
 		((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |	\
-		(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)	|	\
-		(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << 28)
+		(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
+		/* (((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << 28) */
 
 		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR0
 		mdelay(5);
@@ -621,11 +621,15 @@ static void ddrc_post_init(void)
 	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
 	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
 
+#if 0
 	if(global_reg_value->DDRC_AUTOSR_CNT_VALUE) {
 		ddr_writel(1, DDRC_AUTOSR_EN);
 	} else {
 		ddr_writel(0, DDRC_AUTOSR_EN);
 	}
+#else
+		ddr_writel(0, DDRC_AUTOSR_EN);
+#endif
 
 	FUNC_EXIT();
 }
@@ -701,7 +705,8 @@ void sdram_init(void)
 
 	ddrc_dfi_init(type);
 
-	ddrp_software_calibration();
+	ddrp_calibration();
+	/* ddrp_software_calibration(); */
 
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);

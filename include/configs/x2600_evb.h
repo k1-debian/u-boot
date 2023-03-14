@@ -33,12 +33,12 @@
 
 
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1600000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		1200000000
-#define CONFIG_SYS_MEM_FREQ		750000000
+#define CONFIG_SYS_MEM_FREQ		800000000
 
 #define CONFIG_SYS_AHB0_FREQ		300000000
 #define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
@@ -50,7 +50,6 @@
 		{LCD, MPLL},			\
 		{MSC0, MPLL},			\
 		{SFC, MPLL},			\
-		{CIM, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
 
@@ -181,7 +180,7 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0"
+#define BOOTARGS_COMMON "console=ttyS0,115200 mem=128M@0x0"
 
 
 #ifdef CONFIG_BOOT_ANDROID

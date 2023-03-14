@@ -65,7 +65,7 @@
 #define CONFIG_DDR_CL	10
 #define CONFIG_DDR_CWL	7
 #elif((CONFIG_DDR_DATA_RATE >= 1400000000) && (CONFIG_DDR_DATA_RATE < 1600000000))
-#define CONFIG_DDR_CL	10
+#define CONFIG_DDR_CL	11
 #define CONFIG_DDR_CWL	8
 #elif((CONFIG_DDR_DATA_RATE >= 1600000000) && (CONFIG_DDR_DATA_RATE < 1868000000))
 #define CONFIG_DDR_CL	13
@@ -102,7 +102,7 @@ static inline void DDR3_W631GU6NG_init(void *data)
 	c->DDR_tRCD  		= DDR__ns(14);
 	c->DDR_tRC   		= c->DDR_tRAS + c->DDR_tRP;
 	c->DDR_tRRD  		= DDR_SELECT_MAX__tCK_ps(4, 6000);
-	c->DDR_tWR   		= DDR__ns(15);
+	c->DDR_tWR   		= DDR__ns(17);
 	c->DDR_tWTR  		= DDR_SELECT_MAX__tCK_ps(4, 7500);
 	c->DDR_tCCD  		= DDR__tck(4);
 	c->DDR_tFAW  		= DDR__ns(35);
@@ -117,10 +117,10 @@ static inline void DDR3_W631GU6NG_init(void *data)
 
 #define DDR3_W631GU6NG {					\
 	.name 	= "W631GU6NG",					\
-	.id	= DDR_CHIP_ID(VENDOR_WINBOND, TYPE_DDR3, MEM_256M),	\
+	.id	= DDR_CHIP_ID(VENDOR_WINBOND, TYPE_DDR3, MEM_128M),	\
 	.type	= DDR3,						\
 	.freq	= CONFIG_DDR3_W631GU6NG_MEM_FREQ,			\
-	.size	= 256,						\
+	.size	= 128,						\
 	.init	= DDR3_W631GU6NG_init,				\
 }
 
