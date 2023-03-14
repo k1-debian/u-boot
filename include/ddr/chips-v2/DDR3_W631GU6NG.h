@@ -113,6 +113,7 @@ static inline void DDR3_W631GU6NG_init(void *data)
 	c->DDR_tCKE  		= DDR_SELECT_MAX__tCK_ps(3, 5000);
 	c->DDR_tCKESR 		= c->DDR_tCKE + DDR__tck(1);
 	c->DDR_tXP  		= DDR_SELECT_MAX__tCK_ps(3, 6000);
+	c->DDR_tXSDLL		= DDR__tck(512);
 }
 
 #define DDR3_W631GU6NG {					\

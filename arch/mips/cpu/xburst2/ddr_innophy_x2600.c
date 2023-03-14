@@ -603,33 +603,31 @@ static void ddrc_prev_init(void)
 	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
 
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE & ~(7 << 12), DDRC_CTRL);
-	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
-	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+	/* ddr_writel(global_reg_vlue->DDRC_CTRL_VALUE & ~(7 << 12), DDRC_CTRL); */
+	ddr_writel(0, DDRC_AUTOSR_EN);
+	ddr_writel(0, DDRC_AUTOSR_CNT);
+	ddr_writel(0, DDRC_REFCNT);
 
 	FUNC_EXIT();
 }
 
 static void ddrc_post_init(void)
 {
+	unsigned int reg = 0;
 	FUNC_ENTER();
 
 	mem_remap();
+
+	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
+	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+
 	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE, DDRC_CTRL);
+	reg = ddr_readl(DDRC_CTRL);
+	reg |= global_reg_value->DDRC_CTRL_VALUE & (0xf << 12);
+	ddr_writel(global_reg_value->DDRC_CTRL_VALUE , DDRC_CTRL);
 
 	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
 	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
-
-#if 0
-	if(global_reg_value->DDRC_AUTOSR_CNT_VALUE) {
-		ddr_writel(1, DDRC_AUTOSR_EN);
-	} else {
-		ddr_writel(0, DDRC_AUTOSR_EN);
-	}
-#else
-		ddr_writel(0, DDRC_AUTOSR_EN);
-#endif
 
 	FUNC_EXIT();
 }
@@ -712,6 +710,13 @@ void sdram_init(void)
 		ddr_hook->post_ddr_init(type);
 
 	ddrc_post_init();
+
+	if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
+		/* ddr_writel(DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT); */
+		ddr_writel(1, DDRC_AUTOSR_EN);
+	} else {
+		ddr_writel(0, DDRC_AUTOSR_EN);
+	}
 
 	dump_ddrc_register();
 
