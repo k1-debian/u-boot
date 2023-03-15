@@ -27,6 +27,24 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <config.h>
+#include <asm/arch/cpm.h>
+
+/* APLL Control Register (CPAPCR) */
+#define CPAPCR_PLLFD_LSB	20
+#define CPAPCR_PLLFD_MASK	BITS_H2L(31, CPAPCR_PLLFD_LSB)
+
+#define CPAPCR_PLLRD_LSB	14
+#define CPAPCR_PLLRD_MASK	BITS_H2L(19, CPAPCR_PLLRD_LSB)
+
+#define CPAPCR_PLLOD1_LSB	11
+#define CPAPCR_PLLOD1_MASK	BITS_H2L(13, CPAPCR_PLLOD1_LSB)
+
+#define CPAPCR_PLLOD0_LSB	8
+#define CPAPCR_PLLOD0_MASK	BITS_H2L(10, CPAPCR_PLLOD0_LSB)
+
+#define CPAPCR_PLL_ON		(1 << 3)
+#define CPAPCR_PLL_LOCK		(1 << 2)
+#define CPAPCR_PLL_EN		(1 << 0)
 
 #define SEL_SCLKA		2
 #define SEL_CPU			1
@@ -48,12 +66,12 @@
 				 | (((DIV_L2 - 1) & 0xf) << 4)		\
 				 | (((DIV_CPU - 1) & 0xf) << 0))
 
-#define CONFIG_BOOTROM_PLLFREQ		576000000
+#define CONFIG_BOOTROM_PLLFREQ		624000000
 #define CONFIG_BOOTROM_CPMCPCCR		CPCCR_CFG
 
 struct desc {
-	unsigned set_addr:32;
-	unsigned poll_addr:32;
+	unsigned set_addr:16;
+	unsigned poll_addr:16;
 	unsigned value:32;
 	unsigned poll_h_mask:32;
 	unsigned poll_l_mask:32;
@@ -113,66 +131,61 @@ struct params {
 	struct desc cpm_desc[0];
 };
 
-struct desc descriptors[11] = {
+/* apll  624M*/
+#define XPLL_M		(52)
+#define XPLL_N		(1)
+#define XPLL_OD1	(2)
+#define XPLL_OD0	(1)
+#define APLL_PLLST	(0x20)
+#define APLL_FOUT	(JZ_EXCLK * (XPLL_M)/((XPLL_N) * XPLL_OD1 * XPLL_OD0))
+#define APLL_VAL	((XPLL_M << CPAPCR_PLLFD_LSB) |	\
+			(XPLL_N << CPAPCR_PLLRD_LSB) |	\
+			(XPLL_OD1 << CPAPCR_PLLOD1_LSB) |	\
+			(XPLL_OD0 << CPAPCR_PLLOD0_LSB) |	\
+			(1 << 7) | (1 << 6) |			\
+			CPAPCR_PLL_EN)
+#define APLL_POLL	(CPAPCR_PLL_LOCK | CPAPCR_PLL_ON)
+
+/* cpu:1/1; L2:1/2; H2:1/4; H0:4 P:1/8 */
+#define CPCCR_FRQ_VAL	((1 << 22) | (1 << 21) | (1 << 20) |	\
+			(7 << 16) | (3 << 12) | (3 << 8) |	\
+			(1 << 4) | (0 << 0) | (0x55 << 24))
+#define CPCCR_FRQ_POLL	(0x7)
+
+/* sclk_a:apll; cpll:sclk_a; H0:sclk_a; H2:sclk_a; */
+#define CPCCR_SEL_VAL	((7 << 16) | (3 << 12) | (3 << 8) |	\
+			(1 << 4) | (0 << 0) | (1 << 24) |	\
+			(1 << 26) | (1 << 28) | (2 << 30))
+#define CPCCR_SEL_POLL	(0xf << 28)
+
+			/*slect sclk_a; div = 1/2 frq=312M*/
+#define DDR_VAL		((1 << 30) | (1 << 29) | (1 << 0))
+
+			/*slect sclk_a; div = 1/16 frq=39M*/
+			/* Keep default value, disable tuning , tx 135 phase.*/
+#define MSC0_VAL	((0 << 30) | (1 << 29) | (3 << 0) | (1 << 20) | (1 << 15))
+
+			/*slect sclk_a; div = 1/20 frq=31.2M*/
+#define MSC1_VAL	((0 << 30) | (1 << 29) | (4 << 0) | (1 << 20) | (1 << 15))
+
+			/*slect sclk_a; div = 1/16 frq=78M*/
+#define SFC_VAL		((0 << 30) | (1 << 29) | (7 << 0))
+struct desc descriptors[14] = {
 	/*
-	 * saddr,			paddr,			value,	poll_h_mask,	poll_l_mask
+	 * saddr,	paddr,		value,		poll_h_mask,	poll_l_mask
 	 */
-
-    /*APLL = 600M
-     *PLLM  :0x4a ;PLLN  :0x0;PLLOD :0x1 ;PLLOD1:0x2 ; PLLRG :0x3
-     *X2580 PLL 600000000M : (((0x4a) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x2) << 7) | ((0x3) << 4))
-     * */
-	{0xb0000010,		0xb0000010,	    0x04a00931, 0x8,	0},
-
-    /* APLL=792MHZ
-    *  PLLM  :0x41 ; PLLN  :0x0 ;PLLOD :0x1 ;PLLOD1:0x1 ;PLLRG :0x3
-    *  X2580 PLL 792000000M : (((0x41) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4))
-    */
-	/*{0xb0000010,		0xb0000010,		0x04100883, 0x8,	0},*/
-
-    /*
-     *MPLL = 1200
-     *PLLM  :0x63 ;PLLN  :0x0 ;PLLOD :0x1 ;PLLOD1:0x1 ;PLLRG :0x3
-     *X2580 PLL 1200000000M : (((0x63) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4))
-     * */
-	{0xb0000014,		0xb0000014,		0x063008b1, 0x8,	0},
-
-    /*VPLL = 1000
-     *X2580 PLL 1000000000M : (((0x7c) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x2) << 7) | ((0x3) << 4))
-     *PLL reg set :0x07c00931
-     * */
-	{0xb00000e0,		0xb00000e0,		0x07c00931, 0x8,	0},
-
-	/* CPCCR */
-	{0xb0000000,		0xb00000d4,		0x557b5510,	0,		0x7},		/* conf DIV */
-	{0xb0000000,		0xffffffff,		0x9a0b5510,	0,		0},			/* conf select */
-#if defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SPL_SPI_SUPPORT)
-	/*if sfc 9:8[0:1]=1/4 or 9:8[1:0]=1/2  SFC SSICDR[7:0]=>240M(0x4),120M(0x9), 80M(0xe),48M(0x18), 24M(0x31)*/
-#if !defined(CONFIG_SFC_ORI_SEL_DF)
-	{0xb0000060,		0xb0000060,		0x60000204,	0,		0x10000000},//240M * 1/4 = 60M
-#else
-	{0xb0000060,		0xb0000060,		0x60000109,	0,		0x10000000},//120M * 1/2 = 60M
-#endif/*CONFIG_SFC_ORI_SEL_DF*/
-
-#elif defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SPL_SPI_SUPPORT)
-	/*if sfc 9:8[0:1]=1/4 or 9:8[1:0]=1/2  SFC SSICDR[7:0]=>240M(0x4),120M(0x9), 80M(0xe),48M(0x18), 24M(0x31)*/
-#if !defined(CONFIG_SFC_ORI_SEL_DF)
-	{0xb000007c,		0xb000007c,		0x60000204,	0,		0x10000000},//1/4
-#else
-	{0xb000007c,		0xb000007c,		0x60000109,	0,		0x10000000},//1/2
-#endif/*CONFIG_SFC_ORI_SEL_DF*/
-
-#elif defined(CONFIG_SPL_MMC_SUPPORT) && defined(CONFIG_JZ_MMC_MSC0)
-	/* MSC0 MSC0CDR[7:0]=>50M(0x5)*/
-	{0xb0000068,		0xb0000068,		0x60000005,	0,		0x10000000},
-#elif defined(CONFIG_SPL_MMC_SUPPORT) && defined(CONFIG_JZ_MMC_MSC1)
-	/* MSC1 MSC1CDR[7:0]=>24M(0x18)*/
-	//{0xb0000068,		0xb0000068,		0x60000018,	0,		0},
-	/* MSC1 MSC1CDR[7:0]=>50M(0x5)*/
-	{0xb000006c,		0xb000006c,		0x60000005,	0,		0x10000000},
+	{CPM_CPAPCR,	CPM_CPAPCR,	APLL_VAL,	APLL_POLL,	0},
+	{CPM_CPCCR,	CPM_CPCSR,	CPCCR_FRQ_VAL,	0,		CPCCR_FRQ_POLL},
+	{CPM_CPCCR,	CPM_CPCSR,	CPCCR_SEL_VAL,	CPCCR_SEL_POLL,	0},
+	{CPM_DDRCDR,	CPM_DDRCDR,	DDR_VAL,	0,		0x10000000},
+#ifdef CONFIG_JZ_MMC_MSC0
+	{CPM_MSC0CDR,	CPM_MSC0CDR,	MSC0_VAL,	0,		0x10000000},
 #endif
-
-	{0xffffffff,		0xffffffff, 	0,			0,		0},
+#ifdef CONFIG_JZ_MMC_MSC1
+	{CPM_MSC1CDR,	CPM_MSC1CDR,	MSC1_VAL,	0,		0x10000000},
+#endif
+	{CPM_SFCCDR,	CPM_SFCCDR,	SFC_VAL,	0,		0x10000000},
+	{0xffff,	0xffff, 	0,		0,		0},
 };
 
 void dump_params(struct params *p)
@@ -193,7 +206,7 @@ void dump_params(struct params *p)
 		printf("nand_timing[%d]:\t0x%08X\n", i, p->nand_timing.nand_timing[i]);
 
 	printf("descriptors:\n");
-	for (i = 0; i < 11; i++) {
+	for (i = 0; i < 14; i++) {
 		struct desc *desc = &p->cpm_desc[i];
 
 		if ((desc->set_addr == 0xffff) && (desc->poll_addr = 0xffff))
@@ -249,7 +262,7 @@ int main(int argc, char *argv[])
 
 	params->pll_freq = CONFIG_BOOTROM_PLLFREQ;
 	params->cpccr.d32 = CONFIG_BOOTROM_CPMCPCCR;
-#if 0
+
 	params->nand_timing.b.set_rw = 3;
 	params->nand_timing.b.wait_rw = 14;
 	params->nand_timing.b.hold_rw = 6;
@@ -266,23 +279,13 @@ int main(int argc, char *argv[])
 	params->nand_timing.b.trhw = 30;
 	params->nand_timing.b.t1 = 0;
 	params->nand_timing.b.t2 = 0;
-#endif
-#if 1 /* < 50M sfc keep default */
-	params->nand_timing.nand_timing[0] = 0;
-#endif
-#if 0 /* > 50M sfc */
-	params->nand_timing.nand_timing[0] = 0x00010007;
-#endif
-	params->nand_timing.nand_timing[1] = 0;
-	params->nand_timing.nand_timing[2] = 0;
-	params->nand_timing.nand_timing[3] = 0;
 
 	desc = params->cpm_desc;
 
-	for (i = 0; i < 11; i++) {
+	for (i = 0; i < 14; i++) {
 		memcpy(&desc[i], &descriptors[i], sizeof(struct desc));
 	}
-	/*dump_params(params);*/
+	dump_params(params);
 
 	fd = open(fix_file, O_RDWR);
 	if (fd < 0) {
