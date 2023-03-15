@@ -1,7 +1,7 @@
 #ifndef __SPINAND_H
 #define __SPINAND_H
-#include <asm/arch/jz_sfc_v2/sfc.h>
-#include <asm/arch/jz_sfc_v2/spinand_cmd.h>
+#include <asm/arch/sfc.h>
+#include <asm/arch/spinand_cmd.h>
 #include <linux/types.h>
 #include <linker_lists.h>
 

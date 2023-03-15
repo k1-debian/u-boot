@@ -31,7 +31,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define DUMP_CGU_SELECT
+/*#define DUMP_CGU_SELECT*/
 #ifdef DUMP_CGU_SELECT
 static char clk_name[][10] = {
 

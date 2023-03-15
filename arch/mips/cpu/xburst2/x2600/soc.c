@@ -41,6 +41,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 gd_t gdata __attribute__ ((section(".data")));
 
+#ifndef CONFIG_BURNER
 struct global_info ginfo __attribute__ ((section(".data"))) = {
 	.extal		= CONFIG_SYS_EXTAL,
 	.cpufreq	= CONFIG_SYS_CPU_FREQ,
@@ -48,7 +49,7 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 	.uart_idx	= CONFIG_SYS_UART_INDEX,
 	.baud_rate	= CONFIG_BAUDRATE,
 };
-
+#endif
 extern void gpio_init(void);
 extern void pll_init(void);
 extern void sdram_init(void);
@@ -65,8 +66,13 @@ void board_init_f(ulong dummy)
 	/* Set global data pointer */
 	gd = &gdata;
 
+
 	/* Setup global info */
+#ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
+#else
+	burner_param_info();
+#endif
 	gpio_init();
 
 	*(volatile unsigned int *)0xb0000020 = 0;
@@ -88,9 +94,10 @@ void board_init_f(ulong dummy)
 	debug("Timer init\n");
 	timer_init();
 
+#ifndef CONFIG_BURNER
 	debug("CLK stop\n");
 	clk_prepare();
-
+#endif
 	debug("PLL init\n");
 	pll_init();
 
@@ -119,12 +126,15 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
 #endif
-
+#ifndef CONFIG_BURNER
 	/* Clear the BSS */
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
 
 	debug("board_init_r\n");
 	board_init_r(NULL, 0);
+#else
+	debug("run start1 firmware finished\n");
+#endif
 }
 
 extern void flush_cache_all(void);

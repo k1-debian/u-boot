@@ -72,7 +72,7 @@
 #define CONFIG_SYS_CACHELINE_SIZE	(32)
 /* A switch to configure whether cpu has a 2nd level cache */
 #define CONFIG_BOARD_SCACHE
-#define CONFIG_SYS_SCACHE_SIZE		(512 * 1024)
+#define CONFIG_SYS_SCACHE_SIZE		(256 * 1024)
 #define CONFIG_SYS_SCACHELINE_SIZE	(64)
 #define CONFIG_SYS_SCACHE_WAYS		(8)
 
@@ -180,7 +180,7 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS0,115200 mem=128M@0x0"
+#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0"
 
 
 #ifdef CONFIG_BOOT_ANDROID
@@ -231,7 +231,7 @@
     #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 user/pzqi/uImage; bootm 0x80600000"
     /*#define CONFIG_BOOTCOMMAND "loady 0x80600000; bootm 0x80600000"*/
   #elif defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
-    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x2000; bootm 0x80600000"
+    #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80600000 0x1800 0x3000; bootm 0x80600000"
   #elif defined(CONFIG_SPL_SFC_NOR)
 	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
   #elif defined(CONFIG_SPL_SFC_NAND)
@@ -310,46 +310,53 @@
 #endif
 
 /* SFC */
+#define CONFIG_SFC_V20
+#define CONFIG_JZ_SFC_PD
 
 #define CONFIG_SFC_RATE			48000000
 
 #ifdef CONFIG_SPL_SFC_NOR
-#define CONFIG_SFC_NOR_RATE			100000000
-#define CONFIG_MTD_SFCNOR
+#define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SPI_SPL_CHECK
-/*#define CONFIG_SFC_QUAD*/
-#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
-#define CONFIG_SPI_NORFLASH_PART_OFFSET     0x3c74
-#define CONFIG_NOR_MAJOR_VERSION_NUMBER     1
-#define CONFIG_NOR_MINOR_VERSION_NUMBER     0
-#define CONFIG_NOR_REVERSION_NUMBER     0
+#define CONFIG_SFC_NOR_RATE	200000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_QUAD
+#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
+#define CONFIG_SPI_NORFLASH_PART_OFFSET		0x5874
+#define CONFIG_NOR_MAJOR_VERSION_NUMBER		1
+#define CONFIG_NOR_MINOR_VERSION_NUMBER		0
+#define CONFIG_NOR_REVERSION_NUMBER		0
 #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
+/*#define CONFIG_NOR_BUILTIN_PARAMS*/
 #endif
 
+/* sfc nand config */
 #ifdef  CONFIG_SPL_SFC_NAND
-#define CONFIG_SFC_NAND_RATE			48000000
+#define CONFIG_SFC_NAND_RATE    200000000	/* value <= 400000000(sfc 100Mhz)*/
+#define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
-#define CONFIG_SPI_NAND_BPP                     (2048 +64)              /*Bytes Per Page*/
+#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
+#define CONFIG_SPI_NAND_BPP                     (2048 +64)      /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
-#define CONFIG_MTD_SFCNAND
+#define CONFIG_JZ_SFC
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND
-#define CONFIG_SYS_MAX_NAND_DEVICE      1
-#define CONFIG_SYS_NAND_BASE    0xb3441000
-#define CONFIG_SYS_MAXARGS      16
-#define CONFIG_SYS_MAX_NAND_DEVICE  1
-#endif
+#define CONFIG_SYS_MAX_NAND_DEVICE		1
+#define CONFIG_SYS_NAND_BASE			0xb3441000
+#define CONFIG_SYS_MAXARGS			16
+/*#define CONFIG_NAND_BUILTIN_PARAMS*/
 
-#if defined(CONFIG_SPL_SFC_NAND) || defined(CONFIG_SPL_SFC_NOR)
-#define CONFIG_USE_SFC_V2
-#ifdef CONFIG_USE_SFC_V2
-#define CONFIG_JZ_SFC_V2
-#else
-#define CONFIG_JZ_SFC
-#endif
+/* sfc nand env config */
+#define CONFIG_MTD_DEVICE
+#define CONFIG_CMD_SAVEENV		/* saveenv */
+#define CONFIG_CMD_UBI
+#define CONFIG_CMD_UBIFS
+#define CONFIG_CMD_MTDPARTS
+#define CONFIG_MTD_PARTITIONS
+#define MTDIDS_DEFAULT                  "nand0:nand"
+#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 #endif
 
 #define CONFIG_SYS_NAND_SELF_INIT
