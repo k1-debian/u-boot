@@ -52,6 +52,38 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 extern void pll_init(void);
 extern void sdram_init(void);
 
+void reallocate_cache(void)
+{
+	flush_cache_all();
+
+	/* allcate L2 cache size */
+	/***********************************
+	  L2 cache size
+	  reg addr: 0x12200060
+	  bit   12 11 10
+	  0   0  0   L2C=0KB
+	  0   0  1   L2C=128KB
+	  0   1  0   L2C=256KB
+	  0   1  1   L2C=512KB
+	  1   0  0   L2C=1024KB
+	 ***********************************/
+	/* wait l2cache alloc ok */
+	__asm__ volatile(
+			".set push     \n\t"
+			".set mips32r2 \n\t"
+			"sync          \n\t"
+			"lw $0,0(%0)   \n\t"
+			".set pop      \n\t"
+			::"r" (0xa0000000));
+	*((volatile unsigned int *)(0xb2200060)) = 0x00000400;
+	__asm__ volatile(
+			".set push     \n\t"
+			".set mips32r2 \n\t"
+			"sync          \n\t"
+			"lw $0,0(%0)   \n\t"
+			".set pop      \n\t"
+			::"r" (0xa0000000));
+}
 
 void board_init_f(ulong dummy)
 {
@@ -110,6 +142,7 @@ void board_init_f(ulong dummy)
 	ddr_basic_tests();
 #endif
 
+	reallocate_cache();
 
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */

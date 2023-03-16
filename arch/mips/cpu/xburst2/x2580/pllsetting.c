@@ -19,15 +19,15 @@ static void pll_set(unsigned int reg)
 
 	switch(reg) {
 	case CPM_CPAPCR:
-		val = (((0x42) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4)) | (APLL_EN_VALUE << 0);
+		val = CONFIG_SYS_APLL_MNOD | (APLL_EN_VALUE << 0);
 		cpm_outl(val,CPM_CPAPCR);
 		break;
 	case CPM_CPMPCR:
-		val = (((0x42) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4)) | (MPLL_EN_VALUE << 0);
+		val = CONFIG_SYS_MPLL_MNOD | (MPLL_EN_VALUE << 0);
 		cpm_outl(val,CPM_CPMPCR);
 		break;
 	case CPM_CPVPCR:
-		val = (((0x42) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4)) | (VPLL_EN_VALUE << 0);
+		val = CONFIG_SYS_VPLL_MNOD | (VPLL_EN_VALUE << 0);
 		cpm_outl(val,CPM_CPVPCR);
 		break;
 	default:

@@ -362,7 +362,7 @@
 #define CONFIG_SYS_UART_INDEX		1
 #endif
 #ifndef CONFIG_BAUDRATE
-#define CONFIG_BAUDRATE				115200
+#define CONFIG_BAUDRATE				3000000
 #endif
 
 /* X2580 */
@@ -499,15 +499,9 @@
 #if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
 #define CONFIG_SFC_V20
 #define CONFIG_SPL_VERSION	1
-#define CDT_OFF	1 /*1:not use CDT;0:use CDT*/
 #define CONFIG_SPL_SFC_SUPPORT
 #define CONFIG_JZ_SFC
 #define CONFIG_SPL_PAD_TO_BLOCK
-#if CDT_OFF
-/* #define CONFIG_JZ_SFC */
-#else
-#define CONFIG_JZ_SFC_CDT
-#endif /* endif CDT_OFF */
 #ifdef CONFIG_SPL_SFC_NOR
 #define CONFIG_SFC_NOR
 #define CONFIG_SFC_NOR_INIT_RATE	50000000

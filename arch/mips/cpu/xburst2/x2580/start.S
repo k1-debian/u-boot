@@ -84,6 +84,13 @@ _start:
 	RESERVED_FOR_SC(0xff)
 #endif /* CONFIG_SPL_SPI_SUPPORT */
 
+	/* force riscv core soft reset */
+	la t8, 0xb2200fe0
+	lw t0, 0(t8)
+	lui t1, 0x8000
+	or t0, t0, t1
+	sw t0, 0(t8)
+
 	/*
 	 * CU0=UM=EXL=IE=0, BEV=ERL=1, IP2~7=1
 	*/
