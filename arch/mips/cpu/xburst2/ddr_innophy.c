@@ -81,6 +81,9 @@ static void dump_ddrc_register(void)
 	debug("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
 	debug("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
 	debug("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
+#ifdef CONFIG_X2600
+	debug("DDRC_REMAP6         0x%x\n", ddr_readl(DDRC_REMAP(6)));
+#endif
 	debug("DDRC_DWCFG          0x%x\n", ddr_readl(DDRC_DWCFG));
 	debug("DDRC_HREGPRO        0x%x\n", ddr_readl(DDRC_HREGPRO));
 	debug("DDRC_PREGPRO        0x%x\n", ddr_readl(DDRC_PREGPRO));
@@ -380,7 +383,10 @@ void ddrc_dfi_init(enum ddr_type type)
 		udelay(5);
 		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
 		udelay(5);
-//		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
+#ifdef CONFIG_X2600
+		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
+		mdelay(1);
+#endif
 #undef DDRC_LMR_MR
 		break;
 

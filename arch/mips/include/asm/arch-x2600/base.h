@@ -58,6 +58,7 @@
 #define GMAC0_BASE	0xb34b0000
 
 #define SFC_BASE        0xb3440000
+#define EFUSE_BASE      0xb3480000
 
 /* AHB_MCU BUS Devices Base */
 #define	TCU_BASE	0xb3630000

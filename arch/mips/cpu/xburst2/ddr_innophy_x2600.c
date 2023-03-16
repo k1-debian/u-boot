@@ -21,105 +21,53 @@
  * MA 02111-1307 USA
  */
 
-#define DEBUG
+//#define DEBUG
+/* #define DEBUG_READ_WRITE */
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
-#include <generated/ddr_reg_values.h>
+#ifndef CONFIG_BURNER
+//#include <generated/ddr_reg_values.h>
+extern struct ddr_reg_value supported_ddr_reg_values[];
+#endif
 
 #include <asm/io.h>
 #include <asm/arch/clk.h>
-#define CONFIG_DWC_DEBUG 1
-#include "ddr_debug.h"
+
+/*#define CONFIG_DWC_DEBUG 0*/
 #define ddr_hang() do{						\
-		printf("%s %d\n",__FUNCTION__,__LINE__);	\
+		debug("%s %d\n",__FUNCTION__,__LINE__);	\
 		hang();						\
 	}while(0)
 
 DECLARE_GLOBAL_DATA_PTR;
-
-struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
-
-extern void ddrp_auto_calibration(void);
+extern struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
 #ifdef  CONFIG_DWC_DEBUG
-#define FUNC_ENTER() printf("%s enter.\n",__FUNCTION__);
-#define FUNC_EXIT() printf("%s exit.\n",__FUNCTION__);
+#define FUNC_ENTER() debug("%s enter.\n",__FUNCTION__);
+#define FUNC_EXIT() debug("%s exit.\n",__FUNCTION__);
 
-static void dump_ddrc_register(void)
-{
-	printf("DDRC_STATUS         0x%x\n", ddr_readl(DDRC_STATUS));
-	printf("DDRC_CFG            0x%x\n", ddr_readl(DDRC_CFG));
-	printf("DDRC_CTRL           0x%x\n", ddr_readl(DDRC_CTRL));
-	printf("DDRC_LMR            0x%x\n", ddr_readl(DDRC_LMR));
-	printf("DDRC_DLP            0x%x\n", ddr_readl(DDRC_DLP));
-	printf("DDRC_TIMING1        0x%x\n", ddr_readl(DDRC_TIMING(1)));
-	printf("DDRC_TIMING2        0x%x\n", ddr_readl(DDRC_TIMING(2)));
-	printf("DDRC_TIMING3        0x%x\n", ddr_readl(DDRC_TIMING(3)));
-	printf("DDRC_TIMING4        0x%x\n", ddr_readl(DDRC_TIMING(4)));
-	printf("DDRC_TIMING5        0x%x\n", ddr_readl(DDRC_TIMING(5)));
-	printf("DDRC_REFCNT         0x%x\n", ddr_readl(DDRC_REFCNT));
-	printf("DDRC_AUTOSR_CNT     0x%x\n", ddr_readl(DDRC_AUTOSR_CNT));
-	printf("DDRC_AUTOSR_EN      0x%x\n", ddr_readl(DDRC_AUTOSR_EN));
-	printf("DDRC_MMAP0          0x%x\n", ddr_readl(DDRC_MMAP0));
-	printf("DDRC_MMAP1          0x%x\n", ddr_readl(DDRC_MMAP1));
-	printf("DDRC_REMAP1         0x%x\n", ddr_readl(DDRC_REMAP(1)));
-	printf("DDRC_REMAP2         0x%x\n", ddr_readl(DDRC_REMAP(2)));
-	printf("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
-	printf("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
-	printf("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
-	printf("DDRC_REMAP6         0x%x\n", ddr_readl(DDRC_REMAP(6)));
-	printf("DDRC_DWCFG          0x%x\n", ddr_readl(DDRC_DWCFG));
-	printf("DDRC_HREGPRO        0x%x\n", ddr_readl(DDRC_HREGPRO));
-	printf("DDRC_PREGPRO        0x%x\n", ddr_readl(DDRC_PREGPRO));
-/*
-	printf("#define timing1_tWL         %d\n", timing1_tWL);
-	printf("#define timing1_tWR         %d\n", timing1_tWR);
-	printf("#define timing1_tWTR        %d\n", timing1_tWTR);
-	printf("#define timing1_tWDLAT      %d\n", timing1_tWDLAT);
-
-	printf("#define timing2_tRL         %d\n", timing2_tRL);
-	printf("#define timing2_tRTP        %d\n", timing2_tRTP);
-	printf("#define timing2_tRTW        %d\n", timing2_tRTW);
-	printf("#define timing2_tRDLAT      %d\n", timing2_tRDLAT);
-
-	printf("#define timing3_tRP         %d\n", timing3_tRP);
-	printf("#define timing3_tCCD        %d\n", timing3_tCCD);
-	printf("#define timing3_tRCD        %d\n", timing3_tRCD);
-	printf("#define timing3_ttEXTRW     %d\n", timing3_ttEXTRW);
-
-	printf("#define timing4_tRRD        %d\n", timing4_tRRD);
-	printf("#define timing4_tRAS        %d\n", timing4_tRAS);
-	printf("#define timing4_tRC         %d\n", timing4_tRC);
-	printf("#define timing4_tFAW        %d\n", timing4_tFAW);
-
-	printf("#define timing5_tCKE        %d\n", timing5_tCKE);
-	printf("#define timing5_tXP         %d\n", timing5_tXP);
-	printf("#define timing5_tCKSRE      %d\n", timing5_tCKSRE);
-	printf("#define timing5_tCKESR      %d\n", timing5_tCKESR);
-	printf("#define timing5_tXS         %d\n", timing5_tXS);
-*/
-}
 
 static void dump_ddrp_register(void)
 {
-	printf("DDRP_INNOPHY_PHY_RST		0x%x\n", ddr_readl(DDRP_INNOPHY_PHY_RST));
-	printf("DDRP_INNOPHY_MEM_CFG		0x%x\n", ddr_readl(DDRP_INNOPHY_MEM_CFG));
-	printf("DDRP_INNOPHY_DQ_WIDTH		0x%x\n", ddr_readl(DDRP_INNOPHY_DQ_WIDTH));
-	printf("DDRP_INNOPHY_CL			0x%x\n", ddr_readl(DDRP_INNOPHY_CL));
-	printf("DDRP_INNOPHY_CWL		0x%x\n", ddr_readl(DDRP_INNOPHY_CWL));
-	printf("DDRP_INNOPHY_PLL_FBDIV		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV));
-	printf("DDRP_INNOPHY_PLL_CTRL		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_CTRL));
-	printf("DDRP_INNOPHY_PLL_PDIV		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_PDIV));
-	printf("DDRP_INNOPHY_PLL_LOCK		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_LOCK));
-	printf("DDRP_INNOPHY_TRAINING_CTRL	0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
-	printf("DDRP_INNOPHY_CALIB_DONE		0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
-	printf("DDRP_INNOPHY_CALIB_DELAY_AL	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL));
-	printf("DDRP_INNOPHY_CALIB_DELAY_AH	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH));
-	printf("DDRP_INNOPHY_CALIB_BYPASS_AL	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL));
-	printf("DDRP_INNOPHY_CALIB_BYPASS_AH	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH));
-	printf("DDRP_INNOPHY_INIT_COMP		0x%x\n", ddr_readl(DDRP_INNOPHY_INIT_COMP));
+	debug("DDRP_INNOPHY_PHY_RST		0x%x\n", ddr_readl(DDRP_INNOPHY_PHY_RST));
+	debug("DDRP_INNOPHY_MEM_CFG		0x%x\n", ddr_readl(DDRP_INNOPHY_MEM_CFG));
+	debug("DDRP_INNOPHY_DQ_WIDTH		0x%x\n", ddr_readl(DDRP_INNOPHY_DQ_WIDTH));
+	debug("DDRP_INNOPHY_CL			0x%x\n", ddr_readl(DDRP_INNOPHY_CL));
+	debug("DDRP_INNOPHY_CWL		0x%x\n", ddr_readl(DDRP_INNOPHY_CWL));
+	debug("DDRP_INNOPHY_PLL_FBDIV		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV));
+	debug("DDRP_INNOPHY_PLL_CTRL		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_CTRL));
+	debug("DDRP_INNOPHY_PLL_PDIV		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_PDIV));
+	debug("DDRP_INNOPHY_PLL_LOCK		0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_LOCK));
+	debug("DDRP_INNOPHY_TRAINING_CTRL	0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
+	debug("DDRP_INNOPHY_CALIB_DONE		0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+	debug("DDRP_INNOPHY_CALIB_DELAY_AL	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL));
+	debug("DDRP_INNOPHY_CALIB_DELAY_AH	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH));
+	debug("DDRP_INNOPHY_CALIB_BYPASS_AL	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL));
+	debug("DDRP_INNOPHY_CALIB_BYPASS_AH	0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH));
+	debug("DDRP_INNOPHY_INIT_COMP		0x%x\n", ddr_readl(DDRP_INNOPHY_INIT_COMP));
 }
+
 
 #else
 #define FUNC_ENTER()
@@ -129,98 +77,8 @@ static void dump_ddrp_register(void)
 #define dump_ddrp_register()
 #endif
 
-static void mem_remap(void)
-{
-	int i;
-	unsigned int *remap;
-	remap = global_reg_value->REMMAP_ARRAY;
 
-	for(i = 0;i < ARRAY_SIZE(global_reg_value->REMMAP_ARRAY);i++)
-	{
-		ddr_writel(remap[i], DDRC_REMAP(i+1));
-	}
-}
-#if 0
-void ddr_controller_init(enum ddr_type type)
-{
-	FUNC_ENTER();
-	ddr_writel(0, DDRC_CTRL);
-	/* DDRC CFG init*/
-	ddr_writel(DDRC_CFG_VALUE, DDRC_CFG);
-	/* DDRC timing init*/
-	ddr_writel(DDRC_TIMING1_VALUE, DDRC_TIMING(1));
-	ddr_writel(DDRC_TIMING2_VALUE, DDRC_TIMING(2));
-	ddr_writel(DDRC_TIMING3_VALUE, DDRC_TIMING(3));
-	ddr_writel(DDRC_TIMING4_VALUE, DDRC_TIMING(4));
-	ddr_writel(DDRC_TIMING5_VALUE, DDRC_TIMING(5));
-
-	/* DDRC memory map configure*/
-	ddr_writel(DDRC_MMAP0_VALUE, DDRC_MMAP0);
-	ddr_writel(DDRC_MMAP1_VALUE, DDRC_MMAP1);
-	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL);
-	ddr_writel(DDRC_REFCNT_VALUE, DDRC_REFCNT);
-	ddr_writel(DDRC_CTRL_VALUE, DDRC_CTRL);
-	//mem_remap();
-	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
-
-	if(DDRC_AUTOSR_CNT_VALUE) {
-		ddr_writel(DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
-		ddr_writel(1, DDRC_AUTOSR_EN);
-	} else {
-		ddr_writel(0, DDRC_AUTOSR_EN);
-	}
-	FUNC_EXIT();
-}
-#endif
-static enum ddr_type get_ddr_type(void)
-{
-	int type;
-
-	type = global_reg_value->h.type;
-	switch(global_reg_value->h.type){
-
-		case DDR3:
-			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
-			break;
-		case LPDDR:
-			printf("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
-			break;
-		case LPDDR2:
-			printf("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
-			break;
-		case LPDDR3:
-			printf("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
-			break;
-		case DDR2:
-			printf("DDR: %s type is : DDR2\n", global_reg_value->h.name);
-			break;
-		default:
-			type = UNKOWN;
-			printf("unsupport ddr type!\n");
-			ddr_hang();
-	}
-
-	return type;
-}
-
-static void controller_reset_phy(void)
-{
-	FUNC_ENTER();
-	ddr_writel(0xf << 20, DDRC_CTRL);
-	mdelay(1);
-	ddr_writel(0x8 << 20, DDRC_CTRL);  //dfi_reset_n low for innophy
-	mdelay(1);
-	FUNC_EXIT();
-}
-
-
-static struct jzsoc_ddr_hook *ddr_hook = NULL;
-void register_ddr_hook(struct jzsoc_ddr_hook * hook)
-{
-	ddr_hook = hook;
-}
-
-static void ddrp_pll_init(void)
+void ddrp_pll_init(void)
 {
 	ddr_writel(0x0, DDRP_INNOPHY_PLL_FBDIV);
 	ddr_writel(0x6, DDRP_INNOPHY_PLL_FBDIV_H);
@@ -229,13 +87,26 @@ static void ddrp_pll_init(void)
 	udelay(500);
 }
 
-static void ddrp_cfg(struct ddr_reg_value *global_reg_value)
+void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 {
 	unsigned int val;
+#ifdef DEBUG_READ_WRITE
+	val = ddr_readl(DDRP_INNOPHY_DQ_WIDTH);
+	val &= ~(0x3);
+	val |= DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L;
+	ddr_writel(val, DDRP_INNOPHY_DQ_WIDTH);
 
-	ddr_writel(0, DDRP_INNOPHY_DQ_WIDTH_H);
+	val = ddr_readl(DDRP_INNOPHY_MEM_CFG);
+	val &= ~(0x3 | 1 << 4);
+	val |= 1 << 4 | 3;
+	ddr_writel(val, DDRP_INNOPHY_MEM_CFG);
+
+	debug("ddr_readl(DDRP_INNOPHY_CL)  %x\n", ddr_readl(DDRP_INNOPHY_CL));
+	debug("ddr_readl(DDRP_INNOPHY_CWL)  %x\n", ddr_readl(DDRP_INNOPHY_CWL));
+#else
 	ddr_writel(DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L, DDRP_INNOPHY_DQ_WIDTH);
 	ddr_writel(global_reg_value->DDRP_MEMCFG_VALUE, DDRP_INNOPHY_MEM_CFG);
+#endif
 
 	val = ddr_readl(DDRP_INNOPHY_CL);
 	val &= ~(0xf);
@@ -251,6 +122,9 @@ static void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 	val &= ~(0xf);
 	ddr_writel(val, DDRP_INNOPHY_AL);
 
+	debug("ddr_readl(DDRP_INNOPHY_CL)   %x\n", ddr_readl(DDRP_INNOPHY_CL));
+	debug("ddr_readl(DDRP_INNOPHY_CWL)  %x\n", ddr_readl(DDRP_INNOPHY_CWL));
+	debug("ddr_readl(DDRP_INNOPHY_AL)   %x\n", ddr_readl(DDRP_INNOPHY_AL));
 }
 
 /*
@@ -261,11 +135,10 @@ static void ddrp_cfg(struct ddr_reg_value *global_reg_value)
  * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
  *
  * */
-static void ddrp_calibration(void)
+void ddrp_auto_calibration(void)
 {
 	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	unsigned int timeout = 0xffffff;
-	/* unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA; */
 
 	ddr_writel(0x0, DDRP_INNOPHY_CALIB_MODE);
 	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
@@ -273,14 +146,15 @@ static void ddrp_calibration(void)
 	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
 
 	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
-	    udelay(1);
-	    printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
-	    printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
-	    printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+
+		udelay(1);
+		printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
+		printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
 	}
 
 	if(!timeout) {
-	    debug("ddrp_auto_calibration failed!\n");
+		debug("ddrp_auto_calibration failed!\n");
 	}
 	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
 	debug("ddrp_auto_calibration success!\n");
@@ -288,8 +162,7 @@ static void ddrp_calibration(void)
 }
 
 
-
-
+#ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 
 //#define DDR_CHOOSE_PARAMS	0
 #ifdef DDR_CHOOSE_PARAMS
@@ -476,269 +349,7 @@ static void ddrp_software_calibration(void)
 
 }
 
-void ddr_phy_init(enum ddr_type type)
-{
-	FUNC_ENTER();
-	ddrp_pll_init();
-	ddrp_cfg(global_reg_value);
-	FUNC_EXIT();
-}
 
-void ddrc_dfi_init(enum ddr_type type)
-{
-	unsigned int tmp;
-	FUNC_ENTER();
-
-	tmp = ddr_readl(DDRC_DWCFG);
-	tmp &= ~(1 << 3);
-	/* tmp |= (1 << 4); */
-	ddr_writel(tmp, DDRC_DWCFG); // set dfi_init_start low, and buswidth 16bit
-	while(!(ddr_readl(DDRC_DWSTATUS) & DDRC_DWSTATUS_DFI_INIT_COMP)); //polling dfi_init_complete
-
-	tmp = ddr_readl(DDRC_CTRL);
-	tmp |= (1 << 23);
-	ddr_writel(tmp, DDRC_CTRL); //set dfi_reset_n high
-
-	udelay(500);
-
-	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
-
-	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
-
-	switch(type) {
-	case LPDDR2:
-#define DDRC_LMR_MR(n)										\
-		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
-			((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24) |						\
-			(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
-		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
-		mdelay(1);
-#undef DDRC_LMR_MR
-		break;
-	case DDR3:
-		udelay(200);
-#define DDRC_LMR_MR(n)								\
-		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR  |	\
-		((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |	\
-		(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
-		/* (((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << 28) */
-
-		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR0
-		mdelay(5);
-		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR1
-		mdelay(5);
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR2
-		mdelay(5);
-		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR3
-		mdelay(5);
-		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
-		mdelay(10);
-#undef DDRC_LMR_MR
-		break;
-	case LPDDR3:
-#define DDRC_LMR_MR(n)                                                         \
-        global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
-		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |                           \
-		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
-		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
-		mdelay(1);
-		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
-		mdelay(1);
-		/* ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11 */
-		/* mdelay(1); */
-#undef DDRC_LMR_MR
-		break;
-case DDR2:
-#define DDRC_LMR_MR(n)											\
-		global_reg_value->DDRC_DLMR_VALUE | 1 << 1 | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
-			((global_reg_value->DDR_MR##n##_VALUE & 0x1fff) << DDRC_LMR_DDR_ADDR_BIT) |		\
-			(((global_reg_value->DDR_MR##n##_VALUE >> 13) & 0x3) << DDRC_LMR_BA_BIT)
-
-		while (ddr_readl(DDRC_LMR) & (1 << 0));
-		udelay(100);
-		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
-		udelay(5);
-		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
-		udelay(5);
-		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR1
-		udelay(5);
-		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
-		udelay(5 * 1000);
-#undef DDRC_LMR_MR
-		break;
-	default:
-		ddr_hang();
-	}
-	FUNC_EXIT();
-}
-
-static void ddrc_prev_init(void)
-{
-	FUNC_ENTER();
-	/* DDRC CFG init*/
-	/* /\* DDRC CFG init*\/ */
-	/* ddr_writel(DDRC_CFG_VALUE, DDRC_CFG); */
-	/* DDRC timing init*/
-	ddr_writel(global_reg_value->DDRC_TIMING1_VALUE, DDRC_TIMING(1));
-	ddr_writel(global_reg_value->DDRC_TIMING2_VALUE, DDRC_TIMING(2));
-	ddr_writel(global_reg_value->DDRC_TIMING3_VALUE, DDRC_TIMING(3));
-	ddr_writel(global_reg_value->DDRC_TIMING4_VALUE, DDRC_TIMING(4));
-	ddr_writel(global_reg_value->DDRC_TIMING5_VALUE, DDRC_TIMING(5));
-
-	/* DDRC memory map configure*/
-	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
-	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
-
-	/* ddr_writel(global_reg_vlue->DDRC_CTRL_VALUE & ~(7 << 12), DDRC_CTRL); */
-	ddr_writel(0, DDRC_AUTOSR_EN);
-	ddr_writel(0, DDRC_AUTOSR_CNT);
-	ddr_writel(0, DDRC_REFCNT);
-
-	FUNC_EXIT();
-}
-
-static void ddrc_post_init(void)
-{
-	unsigned int reg = 0;
-	FUNC_ENTER();
-
-	mem_remap();
-
-	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
-	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
-
-	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
-	reg = ddr_readl(DDRC_CTRL);
-	reg |= global_reg_value->DDRC_CTRL_VALUE & (0xf << 12);
-	ddr_writel(global_reg_value->DDRC_CTRL_VALUE , DDRC_CTRL);
-
-	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
-	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
-
-	FUNC_EXIT();
-}
-
-void get_ddr_params_normal(void)
-{
-	int found = 0;
-	int size = 0;
-	int i;
-	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
-
-	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
-		printf("invalid burned ddr id\n");
-	}
-
-	burned_ddr_id &= 0xffff;
-
-	size = ARRAY_SIZE(supported_ddr_reg_values);
-
-	if(size == 1) {
-		found = 1;
-		global_reg_value = &supported_ddr_reg_values[0];
-	} else {
-		for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
-			global_reg_value = &supported_ddr_reg_values[i];
-			if(burned_ddr_id == global_reg_value->h.id) {
-				found = 1;
-				break;
-			}
-		}
-	}
-}
+#endif
 
 
-void get_ddr_params(void)
-{
-	get_ddr_params_normal();
-	//dump_generated_reg(global_reg_value);
-}
-
-void sdram_init(void)
-{
-	enum ddr_type type;
-	unsigned int rate;
-	unsigned int tmp;
-
-	debug("sdram init start\n");
-	soc_ddr_init();
-	get_ddr_params();
-	type = get_ddr_type();
-	clk_set_rate(DDR, global_reg_value->h.freq);
-	if(ddr_hook && ddr_hook->prev_ddr_init)
-		ddr_hook->prev_ddr_init(type);
-	rate = clk_get_rate(DDR);
-	debug("DDR clk rate %x\n", rate);
-
-//	controller_reset_phy();
-
-	ddr_writel(1 << 20, DDRC_CTRL);
-
-	/* DDR PHY init*/
-//	ddr_phy_init(type);
-
-	ddrp_cfg(global_reg_value);
-
-	tmp = ddr_readl(DDRC_CTRL);
-	tmp &= ~ (1 << 20);
-	ddr_writel(tmp, DDRC_CTRL);
-
-	ddrp_pll_init();
-
-	ddrc_prev_init();
-
-	ddrc_dfi_init(type);
-
-	ddrp_calibration();
-	/* ddrp_software_calibration(); */
-
-	if(ddr_hook && ddr_hook->post_ddr_init)
-		ddr_hook->post_ddr_init(type);
-
-	ddrc_post_init();
-
-	if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
-		/* ddr_writel(DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT); */
-		ddr_writel(1, DDRC_AUTOSR_EN);
-	} else {
-		ddr_writel(0, DDRC_AUTOSR_EN);
-	}
-
-	dump_ddrc_register();
-
-
-	printf("DDR size is : %d MByte\n", (global_reg_value->DDR_CHIP_0_SIZE + global_reg_value->DDR_CHIP_1_SIZE) / 1024 /1024);
-	debug("sdram init finished\n");
-}
-
-phys_size_t initdram(int board_type)
-{
-	/* SDRAM size was calculated when compiling. */
-#ifndef EMC_LOW_SDRAM_SPACE_SIZE
-#define EMC_LOW_SDRAM_SPACE_SIZE 0x10000000 /* 256M */
-#endif /* EMC_LOW_SDRAM_SPACE_SIZE */
-
-	unsigned int ram_size;
-	get_ddr_params();
-	ram_size = (unsigned int)(global_reg_value->DDR_CHIP_0_SIZE) + (unsigned int)(global_reg_value->DDR_CHIP_1_SIZE);
-	debug("ram_size=%x\n", ram_size);
-
-	if (ram_size > EMC_LOW_SDRAM_SPACE_SIZE)
-		ram_size = EMC_LOW_SDRAM_SPACE_SIZE;
-
-	return ram_size;
-}
