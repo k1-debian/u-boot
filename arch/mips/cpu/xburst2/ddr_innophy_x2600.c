@@ -462,6 +462,7 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 {
 	unsigned int val;
 #ifdef DEBUG_READ_WRITE
+	ddr_writel(0, DDRP_INNOPHY_DQ_WIDTH_H);
 	val = ddr_readl(DDRP_INNOPHY_DQ_WIDTH);
 	val &= ~(0x3);
 	val |= DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L;
@@ -475,6 +476,7 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 	debug("ddr_readl(DDRP_INNOPHY_CL)  %x\n", ddr_readl(DDRP_INNOPHY_CL));
 	debug("ddr_readl(DDRP_INNOPHY_CWL)  %x\n", ddr_readl(DDRP_INNOPHY_CWL));
 #else
+	ddr_writel(0, DDRP_INNOPHY_DQ_WIDTH_H);
 	ddr_writel(DDRP_DQ_WIDTH_DQ_H | DDRP_DQ_WIDTH_DQ_L, DDRP_INNOPHY_DQ_WIDTH);
 	ddr_writel(global_reg_value->DDRP_MEMCFG_VALUE, DDRP_INNOPHY_MEM_CFG);
 #endif
