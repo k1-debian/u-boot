@@ -77,6 +77,377 @@ static void dump_ddrp_register(void)
 #define dump_ddrp_register()
 #endif
 
+static void ddrp_zq_calibration(void)
+{
+	unsigned tmp;
+	ddr_writel(1 << 5, DDRP_INNOPHY_ZQ_CALIB_EN);
+	do{
+		tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE);
+	}while(tmp != 1);
+	ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
+	ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AL);
+	ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AH);
+}
+
+void ddrp_wl_calibration(void)
+{
+	unsigned tmp;
+
+	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+
+	tmp = 0 << 7 | 6;
+	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE1);
+
+	tmp = 0x40;
+	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE2);
+
+	tmp = 2 << 6 | 1 << 2;
+	ddr_writel(tmp, DDRP_INNOPHY_TRAINING_CTRL);
+
+	do{
+		tmp = ddr_readl(DDRP_INNOPHY_WL_DONE);
+	}while(tmp != 0x3);
+
+	ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
+
+	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+}
+
+int tx_re_training(unsigned int cmd_skew)
+{
+	unsigned tmp, wl_l, wl_h;
+
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A2);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A3);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A4);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A5);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A6);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A7);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A8);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A9);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A10);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A11);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A12);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A13);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A14);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A15);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_WEB);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CASB);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA2);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BG1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RESETN);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RASB);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB1);
+
+	tmp = ddr_readl(DDRC_CGUC1);
+	tmp &= ~(0xf << 4);
+	ddr_writel(tmp, DDRC_CGUC1);
+
+	ddr_writel(7 << 9 | 1 << 0, DDRC_LMR);
+	udelay(200);
+
+	tmp = 0 << 7 | 6;
+	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE1);
+	tmp = 0x40;
+	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE2);
+
+	tmp = ddr_readl(DDRC_CGUC1);
+	tmp |= 0xf << 4;
+	ddr_writel(tmp, DDRC_CGUC1);
+
+	ddr_writel(2 << 6 | 1 << 2, DDRP_INNOPHY_TRAINING_CTRL);
+
+	do{
+		tmp = ddr_readl(DDRP_INNOPHY_WL_DONE);
+	}while(tmp != 3);
+
+	ddr_readl( DDRP_INNOPHY_TRAINING_CTRL);
+	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
+
+	wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
+	wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
+	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+
+	if((wl_h == 0x3f) && (wl_l == 0x3f))
+		return -1;
+	else
+		return 0;
+}
+
+void tx_soft_training()
+{
+	unsigned int addr = 0xa1000000, val, reg;
+	unsigned int dq_skew[64] = {0};
+	unsigned int i, j, n, m = 0, finish = 0, de_skew;
+	unsigned int cmd_skew = 32;
+	unsigned int cnt = 256;
+	unsigned int cmd_test_all = 0;
+	volatile unsigned int val1 = 0;
+	int ret;
+
+	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+	reg |= (DDRP_TRAINING_CTRL_WL_BP);
+	reg &= ~(DDRP_TRAINING_CTRL_WL_START);
+	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
+
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A2);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A3);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A4);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A5);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A6);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A7);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A8);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A9);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A10);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A11);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A12);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A13);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A14);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A15);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_WEB);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CASB);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA2);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BG1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RESETN);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RASB);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB1);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_TX_DM0);
+	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_TX_DM1);
+
+	do{
+		for(i = 0; i < 64; i++){
+			/* printf("i = %d-----\n", i); */
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ0);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ1);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ2);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ3);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ4);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ5);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ6);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ7);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ8);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ9);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ10);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ11);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ12);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ13);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ14);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ15);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DM0);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DM1);
+
+			for (j = 0; j < cnt; j++) {
+				volatile unsigned int val1;
+				val = 0x12345678;
+				*(volatile unsigned int *)(addr + j * 4) = val;
+				val1 = *(volatile unsigned int *)(addr + j * 4);
+
+				if (val1 != val) {
+					/*printf("%s  val = 0x%x val1 = 0x%x addr = 0x%x\n", __func__, val, val1, addr + j * 4);*/
+					break;
+				}
+			}
+
+			if (j == cnt) {
+				dq_skew[m] = i;
+				m++;
+			}
+
+		}
+
+		if ((m == 1) && (dq_skew[0] == 0)) {
+			cmd_skew++;
+			m = 0;
+			tx_re_training(cmd_skew);
+			if ((cmd_skew > 64) || (cmd_skew < 0))
+				finish = 1;
+			else
+				finish = 0;
+		} else if ((m == 1) && (dq_skew[0] == 63)) {
+			cmd_skew--;
+			m = 0;
+			tx_re_training(cmd_skew);
+			if ((cmd_skew > 64) || (cmd_skew < 0))
+				finish = 1;
+			else
+				finish = 0;
+		} else if (m == 0) {
+			printf("%s no_data_found cmd_skew = %d\n", __func__, cmd_skew);
+			if (cmd_test_all == 0) {
+				cmd_skew = 0;
+				cmd_test_all = 1;
+			}
+			if (cmd_test_all == 1) {
+				cmd_skew++;
+			}
+
+			m = 0;
+			do  {
+				ret = tx_re_training(cmd_skew);
+				if (ret)
+					cmd_skew++;
+			} while (ret);
+			finish = 0;
+		} else {
+			de_skew = dq_skew[m / 2];
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ0);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ1);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ2);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ3);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ4);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ5);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ6);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ7);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ8);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ9);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ10);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ11);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ12);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ13);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ14);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ15);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DM0);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DM1);
+         finish = 1;
+      }
+
+   } while(!finish);
+
+}
+
+void rx_soft_training()
+{
+	unsigned int addr = 0xa1000000, val;
+	unsigned int dq_skew[64] = {0};
+	unsigned int i, j, n, m = 0, finish = 0, de_skew;
+	unsigned int dqs_skew = 32;
+	unsigned int cnt = 256;
+	unsigned int dqs_test_all = 0;
+	volatile unsigned int val1 = 0;
+	int ret;
+
+	do{
+		ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_RX_DQS0);
+		ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_RX_DQS1);
+		ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_RX_DQSB0);
+		ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_RX_DQSB1);
+		for(i = 0; i < 64; i++){
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ0);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ1);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ2);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ3);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ4);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ5);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ6);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ7);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ8);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ9);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ10);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ11);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ12);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ13);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ14);
+			ddr_writel(i, DDRP_INNOPHY_PBDS_RX_DQ15);
+
+			for (j = 0; j < cnt; j++) {
+				volatile unsigned int val1;
+				val = 0x12345678;
+				*(volatile unsigned int *)(addr + j * 4) = val;
+				val1 = *(volatile unsigned int *)(addr + j * 4);
+
+				if (val1 != val) {
+					/* printf("%s  val = 0x%x val1 = 0x%x addr 0x%x\n", __func__, val, val1, addr + j * 4); */
+					break;
+				}
+			}
+
+			if (j == cnt) {
+				dq_skew[m] = i;
+				m++;
+			}
+
+		}
+
+		if ((m == 1) && (dq_skew[0] == 0)) {
+			dqs_skew++;
+			m = 0;
+			if (dqs_skew == 64)
+				finish = 1;
+			else
+				finish = 0;
+		} else if ((m == 1) && (dq_skew[0] == 63)) {
+			dqs_skew--;
+			m = 0;
+			if (dqs_skew < 0)
+				finish = 1;
+			else
+				finish = 0;
+		} else if (m == 0) {
+			printf("%s no_data_found dqs_skew = %d\n", __func__, dqs_skew);
+			if (dqs_test_all == 0) {
+				dqs_skew = 0;
+				dqs_test_all = 1;
+			}
+			if (dqs_test_all == 1) {
+				dqs_skew++;
+			}
+
+			m = 0;
+			finish = 0;
+		} else {
+			de_skew = dq_skew[m / 2];
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ0);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ1);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ2);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ3);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ4);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ5);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ6);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ7);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ8);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ9);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ10);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ11);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ12);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ13);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ14);
+			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_RX_DQ15);
+			finish = 1;
+		}
+
+	} while(!finish);
+
+}
 
 void ddrp_pll_init(void)
 {

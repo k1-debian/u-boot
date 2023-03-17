@@ -64,10 +64,10 @@
 #elif((CONFIG_DDR_DATA_RATE > 1066000000) && (CONFIG_DDR_DATA_RATE < 1333000000))
 #define CONFIG_DDR_CL	10
 #define CONFIG_DDR_CWL	7
-#elif((CONFIG_DDR_DATA_RATE >= 1400000000) && (CONFIG_DDR_DATA_RATE < 1600000000))
+#elif((CONFIG_DDR_DATA_RATE >= 1400000000) && (CONFIG_DDR_DATA_RATE <= 1600000000))
 #define CONFIG_DDR_CL	11
 #define CONFIG_DDR_CWL	8
-#elif((CONFIG_DDR_DATA_RATE >= 1600000000) && (CONFIG_DDR_DATA_RATE < 1868000000))
+#elif((CONFIG_DDR_DATA_RATE > 1600000000) && (CONFIG_DDR_DATA_RATE < 1868000000))
 #define CONFIG_DDR_CL	13
 #define CONFIG_DDR_CWL	9
 #else
@@ -102,7 +102,7 @@ static inline void DDR3_W631GU6NG_init(void *data)
 	c->DDR_tRCD  		= DDR__ns(14);
 	c->DDR_tRC   		= c->DDR_tRAS + c->DDR_tRP;
 	c->DDR_tRRD  		= DDR_SELECT_MAX__tCK_ps(4, 6000);
-	c->DDR_tWR   		= DDR__ns(17);
+	c->DDR_tWR   		= DDR__ns(15);
 	c->DDR_tWTR  		= DDR_SELECT_MAX__tCK_ps(4, 7500);
 	c->DDR_tCCD  		= DDR__tck(4);
 	c->DDR_tFAW  		= DDR__ns(35);
@@ -112,8 +112,12 @@ static inline void DDR3_W631GU6NG_init(void *data)
 
 	c->DDR_tCKE  		= DDR_SELECT_MAX__tCK_ps(3, 5000);
 	c->DDR_tCKESR 		= c->DDR_tCKE + DDR__tck(1);
+	c->DDR_tCKSRE 		= DDR_SELECT_MAX__tCK_ps(5, 10000);
 	c->DDR_tXP  		= DDR_SELECT_MAX__tCK_ps(3, 6000);
+	c->DDR_tMRD			= DDR__tck(4);
 	c->DDR_tXSDLL		= DDR__tck(512);
+	c->DDR_tMOD   		= DDR_SELECT_MAX__tCK_ps(12, 15 * 1000);
+	c->DDR_tXPDLL 		= DDR_SELECT_MAX__tCK_ps(10, 24 * 1000);
 }
 
 #define DDR3_W631GU6NG {					\

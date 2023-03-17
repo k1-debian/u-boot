@@ -44,6 +44,10 @@ struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
 
 extern void ddrp_auto_calibration(void);
+extern void ddrp_zq_calibration(void);
+extern void ddrp_wl_calibration(void);
+extern void tx_soft_training(void);
+extern void rx_soft_training(void);
 #ifdef CONFIG_X2580
 extern void ddrp_cfg(struct ddr_reg_value *global_reg_value, unsigned int rate);
 #else
@@ -610,8 +614,17 @@ void sdram_init(void)
 	ddrp_software_calibration();
 #else
 	/*auto training 需要在training之后，初始化控制器功能，防止控制器自动刷新对training结果造成影响.*/
+#ifndef CONFIG_X2600
 	ddrp_auto_calibration();
 	ddrc_post_init();
+#else
+	ddrc_post_init();
+	/* ddrp_zq_calibration(); */
+	ddrp_wl_calibration();
+	ddrp_auto_calibration();
+	/* rx_soft_training(); */
+	/* tx_soft_training(); */
+#endif
 #endif
 
 	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/

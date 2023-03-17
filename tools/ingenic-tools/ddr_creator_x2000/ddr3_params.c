@@ -66,7 +66,7 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 	case 14:
 		p->mr0.ddr3.WR = tmp / 2;
 		break;
-	case 16:
+	case 15 ... 16:
 		p->mr0.ddr3.WR = 0;
 		break;
 	default:
