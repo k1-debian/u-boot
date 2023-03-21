@@ -325,9 +325,6 @@ void clk_init(void)
 		| CPM_CLKGR_SSI1
 #endif
 #ifdef CONFIG_JZ_SCBOOT
-		| CPM_CLKGR_RSA
-		| CPM_CLKGR_AES
-		| CPM_CLKGR_PDMA
 		| CPM_CLKGR_EFUSE
 		| CPM_CLKGR_DTRNG
 #endif
@@ -341,7 +338,9 @@ void clk_init(void)
 		| CPM_CLKGR_GMAC0
 #endif
 #ifdef CONFIG_JZ_SCBOOT
-		| CPM_CLKGR_HASH
+		| CPM_CLKGR1_HASH
+		| CPM_CLKGR1_AES
+		| CPM_CLKGR1_PDMA
 #endif
 		;
 	reg_clkgr &=  ~gate;
