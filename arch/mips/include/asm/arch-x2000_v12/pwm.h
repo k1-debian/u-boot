@@ -72,8 +72,6 @@ struct pwm {
 #define PWM_DMADDR      (0x140)
 #define PWM_DTLR        (0x190)
 #define PWM_OEN         (0x300)
-#define PWM_CCFG_0(n)   ((PWM_CCFG0) + 4*n)
-#define PWM_CCFG_1(n)   ((PWM_CCFG1) + 4*(n))
 #define PWM_WCFG(n)     ((PWM_WCFG0) + 4*n)
 
 #define PWM_WCFG_HIGH		(16)
