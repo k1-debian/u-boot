@@ -30,13 +30,19 @@
 #define CONFIG_X2580	/* T41 SoC */
 
 
-#define CONFIG_SYS_APLL_FREQ		900000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		900000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_VPLL_FREQ            800000000       /*If VPLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_FREQ		804000000	/*If APLL not use mast be set 0*/
+#define CONFIG_SYS_APLL_MNOD		(((0x42) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4))
+
+#define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_MNOD	    (((0x63) << 20) | ((0x0) << 14) | ((0x1) << 11) | ((0x1) << 7) | ((0x3) << 4))
+
+#define CONFIG_SYS_VPLL_FREQ		1188000000	/*If VPLL not use mast be set 0*/
+#define CONFIG_SYS_VPLL_MNOD        ((98 << 20) | (0 << 14) | (1 << 11) | (1 << 7) | (3 << 4))
+
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		CONFIG_SYS_APLL_FREQ
-#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 2)
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 3)
 
 #define CONFIG_SYS_AHB0_FREQ		200000000
 #define CONFIG_SYS_AHB2_FREQ		200000000	/*APB = AHB2/2*/
@@ -82,7 +88,6 @@
 */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 #define CONFIG_DDR_INNOPHY
-#define CONFIG_DDR_TYPE_DDR2
 
 /**
  * Boot command definitions.
