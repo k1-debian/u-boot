@@ -89,10 +89,14 @@ void pwm_config(int num, int div, int full_data, int half_data)
 	val = (half_data << 16) | (full_data - half_data);
 	//PRESCALE
 #ifdef CONFIG_X2000_V12
-	if(num<8){
-		pwm_writel(div, PWM_CCFG_0(num));
-	}else{
-		pwm_writel(div, PWM_CCFG_1(num-8));
+	{
+		unsigned int n = num % 8;
+		unsigned int div_ch = div << (4 * n);
+		unsigned int reg = (num / 8 *4) +PWM_CCFG0;
+		unsigned int divreg = pwm_readl(reg);
+		divreg &= ~(0xf << (4 * n));
+		divreg |= div << 4 * n;
+			pwm_writel(divreg,reg);
 	}
 #else
 	pwm_writel(div, PWM_CCFG0(num));
