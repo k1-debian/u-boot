@@ -23,7 +23,7 @@
  */
 
 
-#define DEBUG
+//#define DEBUG
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -103,19 +103,7 @@ void board_init_f(ulong dummy)
 
 	debug("CLK init\n");
 	clk_init();
-#if 0
-	printf("xxxxxconfig register : %x\n",read_c0_config());
-	debug_cache_2();
-	debug_icache_store(0x80001000, 4096);
-	dump_icache_tag(0x80001000, 4096);
-	__asm__ volatile (
-			".set push              \n\t"
-			".set noreorder         \n\t"
-			".set mips32r2          \n\t"
-			"li $2, 0x80001000	\n\t"
-			"jr.hb $2              \n\t"
-			"nop	\n\t");
-#endif
+
 	debug("SDRAM init\n");
 	sdram_init();
 
@@ -139,7 +127,7 @@ void board_init_f(ulong dummy)
 
 extern void flush_cache_all(void);
 
-#ifdef CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
 static int secure_load_uboot(struct spl_image_info *spl_image)
 {
@@ -153,24 +141,21 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void  (*image_entry_noargs_t)(void);
 
-	unsigned int addr_off = 0;
-
-#ifdef CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 	flush_cache_all();
-	int ret = secure_load_uboot(spl_image);
 
-	printf("*************ret = %d\n",ret);
+	int ret = secure_load_uboot(spl_image);
 	if (ret) {
 	  printf("Error spl secure load uboot.\n");
-	  while(1);
+	  hang();
 	}
 
-	addr_off += 2048;
-
+	spl_image->entry_point += 2048;
 #endif
 
+	debug("image entry point: 0x%x\n", spl_image->entry_point);
 	image_entry_noargs_t image_entry =
-			(image_entry_noargs_t) (spl_image->entry_point + addr_off);
+			(image_entry_noargs_t) spl_image->entry_point;
 
 	flush_cache_all();
 	__asm__ volatile (
