@@ -21,7 +21,8 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		&& !defined(CONFIG_X2000_V12) \
 		&& !defined(CONFIG_X2100) \
 		&& !defined(CONFIG_M300) \
-		&& !defined(CONFIG_X1600)
+		&& !defined(CONFIG_X1600) \
+		&& !defined(CONFIG_X2600)
 		{
 			int ret;
 
