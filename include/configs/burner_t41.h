@@ -225,13 +225,13 @@
 #define CONFIG_CMD_FAT
 #define CONFIG_EFI_PARTITION
 
+#define CONFIG_CMD_DDR_TEST
 
-/*#define CONFIG_CMD_DDR_TEST*/	/* DDR Test Command */
 /*
-#define	CONFIG_X2580_EFUSE
+#define CONFIG_CMD_EFUSE
 #define	CONFIG_JZ_EFUSE
-#define CONFIG_EFUSE_LEVEL	0
 */
+
 /**
  * Serial download configuration
  */

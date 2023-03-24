@@ -98,45 +98,19 @@
 /* MMC */
 #define CONFIG_JZ_MMC_MSC0
 #define CONFIG_JZ_MMC_MSC1
-
-#ifdef CONFIG_JZ_MMC_MSC0
 #define CONFIG_GENERIC_MMC
 #define CONFIG_MMC
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-
-/* MSC Command configuration */
 #define CONFIG_CMD_MMC
-
-#define CONFIG_JZ_MMC_MSC0_PD   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
-
-#ifdef CONFIG_JZ_MMC_MSC1
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-#define CONFIG_SDHCI
-#define CONFIG_MMC_SPL_PARAMS
-#define CONFIG_JZ_SDHCI
-/*#define CONFIG_MMC_SDMA*/
-
-/* MSC Command configuration */
-#define CONFIG_CMD_MMC
-
-/*#define CONFIG_JZ_MMC_MSC1_PC   //set gpio*/
-#define CONFIG_JZ_MMC_MSC1_PD   //set gpio
-/*#define CONFIG_MMC_TRACE		// only for DEBUG*/
-/*#define CONFIG_SDHCI_TRACE	// only for DEBUG*/
-#endif
 
 /* SFC */
 
-#define CONFIG_SFC_RATE			48000000
 #define CONFIG_SFC_V20
-
+#define CONFIG_SFC_RATE			48000000
 #define CONFIG_CMD_SFC_NOR
+#define CONFIG_MTD_SFCNAND
+
 #ifdef CONFIG_CMD_SFC_NOR
 #define CONFIG_SFC_NOR_RATE    200000000
 #define CONFIG_MTD_SFCNOR
@@ -155,7 +129,6 @@
 /*
  *MTD
  */
-#define CONFIG_MTD_SFCNAND
 #ifdef CONFIG_MTD_SFCNAND
 #define CONFIG_SFC_NAND_RATE               200000000
 
@@ -203,7 +176,6 @@
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_SOFT_BURNER
 #define CONFIG_BURNER
-/*#define CONFIG_JZ_SCBOOT*/
 #define CONFIG_USB_GADGET
 #define CONFIG_USB_JZ_BURNER_GADGET
 #define CONFIG_JZ_VERDOR_BURN_EXTPOL
@@ -237,11 +209,8 @@
 #define CONFIG_EFI_PARTITION
 #define CONFIG_CMD_DATE
 
-
-#define	CONFIG_X2000_EFUSE
-#define	CONFIG_JZ_EFUSE
-#define CONFIG_EFUSE_LEVEL	0
 #define CONFIG_CMD_EFUSE
+#define	CONFIG_JZ_EFUSE
 
 
 /**

@@ -182,7 +182,6 @@
 #ifdef CONFIG_CMD_BURN
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_BURNER
-/*#define CONFIG_JZ_SCBOOT*/
 #define CONFIG_USB_GADGET
 #define CONFIG_USB_JZ_BURNER_GADGET
 #define CONFIG_JZ_VERDOR_BURN_EXTPOL
@@ -228,9 +227,7 @@
 
 /*#define CONFIG_CMD_DDR_TEST*/	/* DDR Test Command */
 /*
-#define	CONFIG_X2580_EFUSE
 #define	CONFIG_JZ_EFUSE
-#define CONFIG_EFUSE_LEVEL	0
 */
 /**
  * Serial download configuration

@@ -125,15 +125,10 @@
 #define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
 #define CONFIG_CMD_SOURCE	/* "source" command support	*/
 #define CONFIG_CMD_BURN		/*ingenic usb burner support*/
-#define CONFIG_CMD_EFUSE	/*efuse*/
 #define CONFIG_CMD_DATE
 
-#ifdef CONFIG_CMD_EFUSE
-#define	CONFIG_X1000_EFUSE
+#define CONFIG_CMD_EFUSE	/*efuse*/
 #define	CONFIG_JZ_EFUSE
-#define CONFIG_EFUSE_GPIO	GPIO_PB(27)
-#define CONFIG_EFUSE_LEVEL	0
-#endif
 
 /**
  * Serial download configuration
@@ -240,7 +235,6 @@
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_BURNER
 #define CONFIG_USB_GADGET
-#define CONFIG_JZ_SCBOOT
 #define CONFIG_USB_JZ_BURNER_GADGET
 #define CONFIG_JZ_VERDOR_BURN_EXTPOL
 /*#define CONFIG_JZ_VERDOR_BURN_EP_TEST*/
