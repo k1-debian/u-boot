@@ -256,7 +256,12 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
      #endif /*CONFIG_OTA_VERSION20*/
 
+     #if defined(CONFIG_JZ_MMC_MSC0) ||defined(CONFIG_JZ_MMC_MSC1)
+     #define CONFIG_SPL_OS_NAME        "boot" /* sd offset of xImage being loaded */
+     #else
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+     #endif
+
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON " ip=192.168.10.238:192.168.10.1:192.168.10.1:255.255.255.0 init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
      #undef  CONFIG_BOOTCOMMAND
