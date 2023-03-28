@@ -632,7 +632,7 @@ static void ddrp_rx_dqs_auto_calibration(void)
 void ddrp_auto_calibration(void)
 {
 
-	ddrp_zq_calibration();
+	//ddrp_zq_calibration();
 	ddrp_wl_calibration();
 	ddrp_rx_dqs_auto_calibration();
 
