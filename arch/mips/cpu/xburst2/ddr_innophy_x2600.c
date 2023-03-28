@@ -77,29 +77,110 @@ static void dump_ddrp_register(void)
 #define dump_ddrp_register()
 #endif
 
+
+
+/*
+
+	该函数的作用主要用于校准 drv 和 odt 的pull up/down电阻.
+
+	对于drv pull up/down电阻使用的是40欧姆标定.
+	对于odt pull up/down电阻使用的是160欧姆标定.
+
+	实际设置的 ODT阻值与寄存器里面有偏差:
+
+	相关寄存器:
+
+	setting =
+	DDRP_INNOPHY_PD_DRV_DQ7_0
+	DDRP_INNOPHY_PU_DRV_DQ7_0
+	DDRP_INNOPHY_PD_DRV_DQ15_8
+	DDRP_INNOPHY_PU_DRV_DQ15_8
+
+	real = setting * (DDRP_INNOPHY_ZQ_CALIB_PU_ODT / 0x7)
+
+	0x7: 对应的是160欧姆的寄存器值.
+
+
+	DDRP_INNOPHY_PD_ODT_DQ7_0
+	DDRP_INNOPHY_PU_ODT_DQ7_0
+	DDRP_INNOPHY_PD_ODT_DQ15_8
+	DDRP_INNOPHY_PU_ODT_DQ15_8
+
+	real = setting * (DDRP_INNOPHY_ZQ_CALIB_PD_DRV  / 0x16)
+	或
+	real = setting * (DDRP_INNOPHY_ZQ_CALIB_PU_DRV  / 0x16)
+	0x16: 是对应41.4欧姆的寄存器值.
+*/
 static void ddrp_zq_calibration(void)
 {
 	unsigned tmp;
+
+	ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
 	ddr_writel(1 << 5, DDRP_INNOPHY_ZQ_CALIB_EN);
 	do{
 		tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE);
 	}while(tmp != 1);
+
 	ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
+
 	ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AL);
 	ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AH);
+	tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD);
+	tmp |= 1 << 7;
+	ddr_writel(tmp, DDRP_INNOPHY_ZQ_CALIB_CMD);	//Choose CMD pull up/down resistance. choose ZQCALIB value.
+
+	debug("DRP_INNOPHY_ZQ_CALIB_DONE : %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE));
+	printf("DRP_INNOPHY_ZQ_CALIB_AL: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AL));
+	printf("DRP_INNOPHY_ZQ_CALIB_AH: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AH));
+	printf("DRP_INNOPHY_ZQ_CALIB_PD_DRV: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV));
+	printf("DRP_INNOPHY_ZQ_CALIB_PU_DRV: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV));
+	printf("DRP_INNOPHY_ZQ_CALIB_PD_ODT: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT));
+	printf("DRP_INNOPHY_ZQ_CALIB_PU_ODT: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT));
+	printf("DRP_INNOPHY_ZQ_CALIB_CMD: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD));
+
+	debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
+	debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
+	debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
+	debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
+	debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
+	debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
+	debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 }
 
 void ddrp_wl_calibration(void)
 {
-	unsigned tmp;
+	unsigned tmp = 0;
 
-	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
-	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+	printf("DDRP_INNOPHY_WL_L: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+	printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
-	tmp = 0 << 7 | 6;
+	unsigned int mr1 = global_reg_value->DDR_MR1_VALUE;
+
+	mr1 = ((mr1 >> 16) & 0x7) << 13 | (mr1 & 0x1ffe); // 高三位BA2,BA1,BA0 低位地址线, 确保DLL ON， 否则后面会卡死.
+
+	/*
+		说明:
+		这里做write leveling ，
+		需要确保MR1寄存器里面的ZQ的设置和正常读写的一致，否则即使writeleveling 完成，
+		但是实际上用的是不同的ZQ 配置，会影响后面系统的稳定性.!
+	*/
+	/*
+		WL_MODE1:
+		[7:0]: load mode [7:0];
+	*/
+	tmp = mr1 & 0x7f; // keep bit7 0. others mr1.
 	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE1);
 
-	tmp = 0x40;
+	/*
+		WL_MODE2:
+		[7:6]: load mode select[1:0], 00:MR0, 01:MR1
+		[5:0]: load mode [13:8]
+	*/
+	tmp = 0;
+	tmp = 1 << 6 | ((mr1 >> 8) & 0x1f);	// 去掉高3位bank信息.取低5位.
+
 	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE2);
 
 	tmp = 2 << 6 | 1 << 2;
@@ -112,8 +193,8 @@ void ddrp_wl_calibration(void)
 	ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
 
-	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
-	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+	printf("DDRP_INNOPHY_WL_L: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+	printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 }
 
 int tx_re_training(unsigned int cmd_skew)
@@ -508,7 +589,7 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
  * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
  *
  * */
-void ddrp_auto_calibration(void)
+static void ddrp_rx_dqs_auto_calibration(void)
 {
 	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	unsigned int timeout = 0xffffff;
@@ -521,19 +602,41 @@ void ddrp_auto_calibration(void)
 	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
 
 		udelay(1);
-		printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
-		printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
 		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
 	}
 
 	if(!timeout) {
 		debug("ddrp_auto_calibration failed!\n");
+		while(1);
 	}
-	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
+
 	debug("ddrp_auto_calibration success!\n");
 
+	printf("DDRP_INNOPHY_CALIB_DONE: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+	printf("DDRP_INNOPHY_CALIB_ERR:	%X\n", ddr_readl(DDRP_INNOPHY_CALIB_ERR));
+	printf("DDRP_INNOPHY_CALIB_L_C: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_C));
+	printf("DDRP_INNOPHY_CALIB_L_DO: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_DO));
+	printf("DDRP_INNOPHY_CALIB_R_C: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_C));
+	printf("DDRP_INNOPHY_CALIB_R_DO: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_DO));
+
+	if(ddr_readl(DDRP_INNOPHY_CALIB_ERR) & (1 << 6)) {
+		printf("ddr pass but with error!\n");
+		while(1);
+	}
+
+
+
+	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
 }
 
+void ddrp_auto_calibration(void)
+{
+
+	ddrp_zq_calibration();
+	ddrp_wl_calibration();
+	ddrp_rx_dqs_auto_calibration();
+
+}
 
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 
