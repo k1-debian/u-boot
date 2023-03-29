@@ -77,7 +77,7 @@
 #define CONFIG_SYS_SCACHE_WAYS		(8)
 
 
-#define CONFIG_SYS_UART_INDEX		2
+#define CONFIG_SYS_UART_INDEX		0
 #define CONFIG_BAUDRATE			115200
 /*
 #define CONFIG_DDR_TEST_CPU
@@ -196,7 +196,7 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0"
+#define BOOTARGS_COMMON "console=ttyS0,115200 mem=128M@0x0"
 
 
 #ifdef CONFIG_BOOT_ANDROID
