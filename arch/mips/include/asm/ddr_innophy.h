@@ -86,6 +86,26 @@
 #define DDRC_CGUC1			(DDRC_APB_OFFSET + 0x68)
 #define DDRC_PREGPRO		(DDRC_APB_OFFSET + 0x6c)
 #define DDRC_BUFCFG	    	(DDRC_APB_OFFSET + 0x70)
+#elif defined(CONFIG_X2600)
+#define DDRC_STATUS			0x0
+#define DDRC_CFG			0x8
+#define DDRC_CTRL			0x10
+#define DDRC_LMR			0x18
+#define DDRC_DLP			0x20
+#define DDRC_AUTOSR_EN			0x28
+#define DDRC_AUTOSR_CNT			0x30
+#define DDRC_REFCNT			0x38
+#define DDRC_DBGINFO			0xE8
+#define DDRC_TIMING(n)			(0x40 + 8 * (n - 1))
+#define DDRC_MMAP0			0x78
+#define DDRC_MMAP1			0x80
+#define DDRC_HREGPRO			0xd8
+#define DDRC_DWCFG			(DDRC_APB_OFFSET + 0x00)
+#define DDRC_DWSTATUS			(DDRC_APB_OFFSET + 0x04)
+#define DDRC_REMAP(n)			(DDRC_APB_OFFSET + 0x08 + 4 * (n - 1))
+#define DDRC_CGUC0			(DDRC_APB_OFFSET + 0x68)
+#define DDRC_CGUC1			(DDRC_APB_OFFSET + 0x6C)
+#define DDRC_PREGPRO			(DDRC_APB_OFFSET + 0x70)
 #else
 #define DDRC_STATUS			0x0
 #define DDRC_CFG			0x8
@@ -216,22 +236,22 @@
 #define DDRP_INNOPHY_ZQ_CALIB_AL	(DDR_PHY_OFFSET + 0x514)
 #define DDRP_INNOPHY_ZQ_CALIB_AH	(DDR_PHY_OFFSET + 0x554)
 #define DDRP_INNOPHY_ZQ_CALIB_CMD	(DDR_PHY_OFFSET + 0x4d0)
-#define DDRP_INNOPHY_ZQ_CALIB_PD_DRV	(DDR_PHY_OFFSET + 0x1b0)	//The calibration value of 40 Ohm pull down resistance.
-#define DDRP_INNOPHY_ZQ_CALIB_PU_DRV	(DDR_PHY_OFFSET + 0x1b4)	//The calibration value of 40 Ohm pull up resistance.
-#define DDRP_INNOPHY_ZQ_CALIB_PD_ODT	(DDR_PHY_OFFSET + 0x1b8)	//The calibration value of 160 Ohm pull down resistance.
-#define DDRP_INNOPHY_ZQ_CALIB_PU_ODT	(DDR_PHY_OFFSET + 0x1bc)	//The calibration value of 160 Ohm pull up resistance.
-#define DDRP_INNOPHY_PD_ODT_DQ7_0	(DDR_PHY_OFFSET + 0x500)
-#define DDRP_INNOPHY_PU_ODT_DQ7_0	(DDR_PHY_OFFSET + 0x504)
-#define DDRP_INNOPHY_PD_DRV_DQ7_0	(DDR_PHY_OFFSET + 0x508)
-#define DDRP_INNOPHY_PU_DRV_DQ7_0	(DDR_PHY_OFFSET + 0x50c)
-#define DDRP_INNOPHY_PD_DRV_CMD		(DDR_PHY_OFFSET + 0x4c0)
-#define DDRP_INNOPHY_PU_DRV_CMD		(DDR_PHY_OFFSET + 0x4c4)
-#define DDRP_INNOPHY_PD_DRV_CK		(DDR_PHY_OFFSET + 0x4c8)
-#define DDRP_INNOPHY_PU_DRV_CK		(DDR_PHY_OFFSET + 0x4cc)
-#define DDRP_INNOPHY_PD_ODT_DQ15_8	(DDR_PHY_OFFSET + 0x540)
-#define DDRP_INNOPHY_PU_ODT_DQ15_8	(DDR_PHY_OFFSET + 0x544)
-#define DDRP_INNOPHY_PD_DRV_DQ15_8	(DDR_PHY_OFFSET + 0x548)
-#define DDRP_INNOPHY_PU_DRV_DQ15_8	(DDR_PHY_OFFSET + 0x54c)
+#define DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C	(DDR_PHY_OFFSET + 0x1b0)	//The calibration value of 40 Ohm pull down resistance.
+#define DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D	(DDR_PHY_OFFSET + 0x1b4)	//The calibration value of 40 Ohm pull up resistance.
+#define DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E	(DDR_PHY_OFFSET + 0x1b8)	//The calibration value of 160 Ohm pull down resistance.
+#define DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F	(DDR_PHY_OFFSET + 0x1bc)	//The calibration value of 160 Ohm pull up resistance.
+#define DDRP_INNOPHY_PD_DRV_CMD		(DDR_PHY_OFFSET + 0x4c0)	//0x130
+#define DDRP_INNOPHY_PU_DRV_CMD		(DDR_PHY_OFFSET + 0x4c4)	//0x131
+#define DDRP_INNOPHY_PD_DRV_CK		(DDR_PHY_OFFSET + 0x4c8)	//0x132
+#define DDRP_INNOPHY_PU_DRV_CK		(DDR_PHY_OFFSET + 0x4cc)	//0x133
+#define DDRP_INNOPHY_PD_ODT_DQ7_0	(DDR_PHY_OFFSET + 0x500)	//0x140
+#define DDRP_INNOPHY_PU_ODT_DQ7_0	(DDR_PHY_OFFSET + 0x504)	//0x141
+#define DDRP_INNOPHY_PD_DRV_DQ7_0	(DDR_PHY_OFFSET + 0x508)	//0x142
+#define DDRP_INNOPHY_PU_DRV_DQ7_0	(DDR_PHY_OFFSET + 0x50c)	//0x143
+#define DDRP_INNOPHY_PD_ODT_DQ15_8	(DDR_PHY_OFFSET + 0x540)	//0X150
+#define DDRP_INNOPHY_PU_ODT_DQ15_8	(DDR_PHY_OFFSET + 0x544)	//0x151
+#define DDRP_INNOPHY_PD_DRV_DQ15_8	(DDR_PHY_OFFSET + 0x548)	//0x152
+#define DDRP_INNOPHY_PU_DRV_DQ15_8	(DDR_PHY_OFFSET + 0x54c)	//0x153
 #define DDRP_INNOPHY_PBDS_A0		(DDR_PHY_OFFSET + 0xd00)
 #define DDRP_INNOPHY_PBDS_A1		(DDR_PHY_OFFSET + 0xd04)
 #define DDRP_INNOPHY_PBDS_A2		(DDR_PHY_OFFSET + 0xd08)

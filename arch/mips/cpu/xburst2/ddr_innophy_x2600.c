@@ -79,6 +79,31 @@ static void dump_ddrp_register(void)
 
 
 
+
+
+
+static void ddrp_set_dq_odt(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ7_0);
+	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ15_8);
+	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ7_0);
+	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ15_8);
+
+}
+static void ddrp_set_dq_drv(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ7_0);
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ15_8);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ7_0);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ15_8);
+}
+static void ddrp_set_cmd_ck_drv(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CK);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CK);
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CMD);
+}
 /*
 
 	该函数的作用主要用于校准 drv 和 odt 的pull up/down电阻.
@@ -114,6 +139,10 @@ static void dump_ddrp_register(void)
 static void ddrp_zq_calibration(void)
 {
 	unsigned tmp;
+	unsigned int pu_drv = 0;
+	unsigned int pd_drv = 0;
+	unsigned int pu_odt = 0;
+	unsigned int pd_odt = 0;
 
 	ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
 	ddr_writel(1 << 5, DDRP_INNOPHY_ZQ_CALIB_EN);
@@ -123,30 +152,49 @@ static void ddrp_zq_calibration(void)
 
 	ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
 
-	ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AL);
-	ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AH);
-	tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD);
-	tmp |= 1 << 7;
-	ddr_writel(tmp, DDRP_INNOPHY_ZQ_CALIB_CMD);	//Choose CMD pull up/down resistance. choose ZQCALIB value.
+	pd_drv = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C);
+	pu_drv = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D);
+	pd_odt = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E);
+	pu_odt = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F);
+
+#if 1
+	if(1) {
+
+		// Choose ZQCAL value?
+		ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AL);
+		ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AH);
+		tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD);
+		tmp |= 1 << 7;
+		ddr_writel(tmp, DDRP_INNOPHY_ZQ_CALIB_CMD);	//Choose CMD pull up/down resistance. choose ZQCALIB value.
+
+	} else {
+
+		// Register value, 怎么补偿的？
+
+		ddrp_set_dq_odt(pu_odt, pd_odt);
+		ddrp_set_dq_drv(pu_drv, pd_drv);
+		ddrp_set_cmd_ck_drv(pu_drv, pd_drv);
+	}
+#endif
 
 	debug("DRP_INNOPHY_ZQ_CALIB_DONE : %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE));
 	printf("DRP_INNOPHY_ZQ_CALIB_AL: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AL));
 	printf("DRP_INNOPHY_ZQ_CALIB_AH: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AH));
-	printf("DRP_INNOPHY_ZQ_CALIB_PD_DRV: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV));
-	printf("DRP_INNOPHY_ZQ_CALIB_PU_DRV: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV));
-	printf("DRP_INNOPHY_ZQ_CALIB_PD_ODT: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT));
-	printf("DRP_INNOPHY_ZQ_CALIB_PU_ODT: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT));
+	printf("DRP_INNOPHY_ZQ_CALIB_PD_DRV_6C: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C));
+	printf("DRP_INNOPHY_ZQ_CALIB_PU_DRV_6D: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D));
+	printf("DRP_INNOPHY_ZQ_CALIB_PD_ODT_6E: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E));
+	printf("DRP_INNOPHY_ZQ_CALIB_PU_ODT_6F: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F));
 	printf("DRP_INNOPHY_ZQ_CALIB_CMD: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD));
 
-	debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
-	debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
-	debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
-	debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
-	debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
-	debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
-	debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
+	printf("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
+	printf("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
+	printf("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	printf("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
+	printf("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	printf("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
+	printf("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
+	printf("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
+	printf("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 }
 
 void ddrp_wl_calibration(void)
@@ -635,6 +683,7 @@ void ddrp_auto_calibration(void)
 	//ddrp_zq_calibration();
 	ddrp_wl_calibration();
 	ddrp_rx_dqs_auto_calibration();
+
 
 }
 
