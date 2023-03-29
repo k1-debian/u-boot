@@ -97,12 +97,16 @@ static void ddrp_set_dq_drv(unsigned int pu, unsigned int pd)
 	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ7_0);
 	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ15_8);
 }
-static void ddrp_set_cmd_ck_drv(unsigned int pu, unsigned int pd)
+static void ddrp_set_cmd_drv(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CMD);
+}
+
+static void ddrp_set_ck_drv(unsigned int pu, unsigned int pd)
 {
 	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CK);
 	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CK);
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
-	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CMD);
 }
 /*
 
@@ -151,7 +155,6 @@ static void ddrp_zq_calibration(void)
 	}while(tmp != 1);
 
 	ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
-
 	pd_drv = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C);
 	pu_drv = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D);
 	pd_odt = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E);
@@ -163,6 +166,7 @@ static void ddrp_zq_calibration(void)
 		// Choose ZQCAL value?
 		ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AL);
 		ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AH);
+
 		tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD);
 		tmp |= 1 << 7;
 		ddr_writel(tmp, DDRP_INNOPHY_ZQ_CALIB_CMD);	//Choose CMD pull up/down resistance. choose ZQCALIB value.
@@ -171,9 +175,15 @@ static void ddrp_zq_calibration(void)
 
 		// Register value, 怎么补偿的？
 
+		unsigned int test_odt = 0x8;
+		unsigned int test_drv = 0x14;
+		unsigned int test_ck_drv = 0x14;
+		pu_odt = pd_odt = test_odt;
+		pu_drv = pd_drv = test_drv;
 		ddrp_set_dq_odt(pu_odt, pd_odt);
 		ddrp_set_dq_drv(pu_drv, pd_drv);
-		ddrp_set_cmd_ck_drv(pu_drv, pd_drv);
+		ddrp_set_cmd_drv(pu_drv, pd_drv);
+		ddrp_set_ck_drv(test_ck_drv, test_ck_drv);
 	}
 #endif
 
