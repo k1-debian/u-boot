@@ -331,6 +331,15 @@
 #define CONFIG_SFC_V20
 #define CONFIG_JZ_SFC_PD
 
+/* sfc ota config */
+#ifdef CONFIG_OTA_VERSION30
+#ifdef CONFIG_SPL_SFC_NAND
+#define CONFIG_KUNPENG_OTA_VERSION20
+#elif CONFIG_JZ_MMC_MSC2
+#define CONFIG_JZSD_OTA_VERSION20
+#endif
+#endif /*end of ota*/
+
 #define CONFIG_SFC_RATE			48000000
 
 #ifdef CONFIG_SPL_SFC_NOR
