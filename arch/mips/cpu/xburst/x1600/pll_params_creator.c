@@ -183,7 +183,7 @@ static void gen_sys_div(struct pll_setting *setting,struct div_setting *div)
 		unsigned int h2_pdiv = find_min_div(h2_freq,MAX_P_CLK);
 		unsigned int p_freq = h2_freq / h2_pdiv;
 		div->pdiv = pll_freq[periph_pll] / p_freq - 1;
-		if((div->pdiv < 0) && (div->pdiv > 0xf))
+		if((div->pdiv < 0) || (div->pdiv > 0xf))
 			out_error("pdiv[%d] is out of range.",div->pdiv);
 	}
 }
