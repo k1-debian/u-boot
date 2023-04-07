@@ -4,7 +4,6 @@
 #include <asm/arch/spinand.h>
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
-#include <ubi_uboot.h>
 
 /*
 HYF1GQ4UDACAE:HYF2GQ4UAACAE:HYF2GQ4UADCAE:
@@ -129,22 +128,15 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	switch(device_id) {
 		case 0x21:
 		case 0x52:
-                case 0xD4:
+		case 0xD4:
 			switch((ecc_status >> 4) & 0x3) {
-					case 0x0:
-					ret = 0;
-					break;
-				case 0x1:
-					ret = 0x1;
-					break;
 				case 0x2:
-					ret = -EBADMSG;
-					break;
 				case 0x3:
-					ret = 0x4;
+					ret = -EBADMSG;
 					break;
 				default:
 					ret = 0;
+					break;
 			}
 			break;
 		default:

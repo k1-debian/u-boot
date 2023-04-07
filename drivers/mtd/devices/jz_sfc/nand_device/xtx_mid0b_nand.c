@@ -124,49 +124,24 @@ retry:
 	switch(device_id) {
 		case 0xF2:
 			switch((ecc_status >> 4) & 0x3) {
-			    case 0x02:
-				    ret = -EBADMSG;
-				    break;
-			    case 0x03:
-				    ret = 0x8;
-				    break;
-			    default:
-				    ret = 0;
-			}
-			break;
-
-		case 0x11:
-		case 0x12:
-			switch((ecc_status >> 4) & 0xf) {
-				case 0x01:
-					ret = 0x1;
-					break;
-				case 0x02:
-					ret = 0x2;
-					break;
-				case 0x03:
-					ret = 0x3;
-					break;
-				case 0x04:
-					ret = 0x4;
-					break;
-				case 0x05:
-					ret = 0x5;
-					break;
-				case 0x06:
-					ret = 0x6;
-					break;
-				case 0x07:
-					ret = 0x7;
-					break;
-				case 0x08:
-					ret = 0x8;
-					break;
-				case 0x0f:
+				case 0x2:
+				case 0x3:
 					ret = -EBADMSG;
 					break;
 				default:
 					ret = 0;
+					break;
+			}
+			break;
+		case 0x11:
+		case 0x12:
+			switch((ecc_status >> 4) & 0xf) {
+				case 0xf:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
 

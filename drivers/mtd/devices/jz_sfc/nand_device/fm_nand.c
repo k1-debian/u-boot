@@ -99,11 +99,13 @@ retry:
 		case 0xE4:
 		case 0xE5:
 			switch((ret = ((ecc_status >> 4) & 0x3))) {
-				case 0x0 ... 0x1:
-					ret = 0;
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
 					break;
 				default:
-					ret = -EBADMSG;
+					ret = 0;
+					break;
 			}
 			break;
 		default:

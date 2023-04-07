@@ -66,17 +66,14 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 
 	switch(device_id) {
 		case 0x21:
-			switch((ecc_status >> 0x4) & 0x3) {
-			    case 0x0:
-			    case 0x1:
-				    ret = 0;
-				    break;
-			    case 0x2:
-				    ret = -EBADMSG;
-				    break;
-			    default:
-				   printf("it is flash Unknown state, device_id: 0x%02x\n", device_id);
-				    ret = -EIO;
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
 		default:

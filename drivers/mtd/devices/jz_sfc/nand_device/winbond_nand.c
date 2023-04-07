@@ -247,15 +247,15 @@ retry:
 
 	switch(device_id) {
 		case 0xAA21:
+		case 0xAB21:
 			switch((ecc_status >> 4) & 0x3) {
-			    case 0x0:
-				    ret = 0;
-				    break;
-			    case 0x01:
-				    ret = 0x4;
-				    break;
-			    default:
-				    ret = -EBADMSG;
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
 		default:

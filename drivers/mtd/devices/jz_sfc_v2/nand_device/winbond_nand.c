@@ -33,7 +33,7 @@ static struct jz_sfcnand_base_param winbond_param = {
 	.tBE = TBE,
 
 	.plane_select = 0,
-	.ecc_max = 0x4,//0x3,
+	.ecc_max = 0x4,
 	.need_quad = 1,
 
 };
@@ -64,14 +64,14 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	int ret = 0;
 	switch(device_id) {
 		case 0xAA21:
-			switch((ecc_status >> 4) & 0x3)
-			{
-				case 0x02:
-				case 0x03:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x2:
+				case 0x3:
 					ret = -EBADMSG;
 					break;
 				default:
 					ret = 0;
+					break;
 			}
 			break;
 		default:

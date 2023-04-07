@@ -138,24 +138,6 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0xa1:
 		case 0xb1:
 			switch((ecc_status >> 4) & 0x3) {
-				case 0x0:
-					if((ret = xcsp_get_f0_register_value(flash)) < 0)
-						return ret;
-					ret = (ret >> 4) & 0x3;
-					break;
-				case 0x1:
-					if((ret = xcsp_get_f0_register_value(flash)) < 0)
-						return ret;
-					ret = ((ret >> 4) & 0x3) + 0x4;
-					break;
-				case 0x2:
-					if((ret = xcsp_get_f0_register_value(flash)) < 0)
-						return ret;
-					if(((ret >> 4) & 0x3) == 0)
-						ret = 0x8;
-					else
-						ret = -EBADMSG;
-					break;
 				case 0x3:
 					ret = -EBADMSG;
 					break;

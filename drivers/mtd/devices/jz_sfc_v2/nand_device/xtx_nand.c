@@ -115,14 +115,13 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0xE1 ... 0xE2:
 		case 0xC1:
 			switch((ecc_status >> 4) & 0x3) {
-			    case 0x02:
-				    ret = -EBADMSG;
-				    break;
-			    case 0x03:
-				    ret = 0x8;
-				    break;
-			    default:
-				    ret = 0;
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
 		default:

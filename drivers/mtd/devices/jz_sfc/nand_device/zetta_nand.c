@@ -37,11 +37,11 @@ static struct jz_sfcnand_base_param zetta_param[ZETTA_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-		/*ZD35Q1GA*/
+		/*ZD35Q2GA*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024,
+		.flashsize = 2 * 1024 * 64 * 2048,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
@@ -104,14 +104,13 @@ retry:
 		case 0x71:
 		case 0x72:
 			switch((ecc_status >> 4) & 0x3) {
-			    case 0x01:
-				    ret = 0x4;
-				    break;
-			    case 0x02:
-				    ret = -EBADMSG;
-				    break;
-			    default:
-				    ret = 0;
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
 

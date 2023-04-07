@@ -70,10 +70,10 @@ static cdt_params_t *fm_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 	switch(device_id) {
 		case 0xE4:
 		case 0xE5:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &fm_nand->cdt_params;
@@ -88,11 +88,13 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0xE4:
 		case 0xE5:
 			switch((ret = ((ecc_status >> 4) & 0x3))) {
-				case 0x0 ... 0x1:
-					ret = 0;
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
 					break;
 				default:
-					ret = -EBADMSG;
+					ret = 0;
+					break;
 			}
 			break;
 		default:

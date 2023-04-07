@@ -7,9 +7,9 @@
 #include <ubi_uboot.h>
 
 #define	YHY_MIDC9_DEVICES_NUM         2
-#define TSETUP		2
-#define THOLD		4
-#define	TSHSL_R		20
+#define TSETUP		20
+#define THOLD		20
+#define	TSHSL_R		50
 #define	TSHSL_W		50
 
 #define TRD		200
@@ -34,7 +34,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 0x1,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 
@@ -54,7 +54,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 0x1,
+		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 
@@ -105,14 +105,13 @@ retry:
 		case 0x21:
 		case 0x52:
 			switch((ecc_status >> 4) & 0x3) {
-				case 0x00:
-					ret = 0;
-					break;
-				case 0x01:
-					ret = 0x1;
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
 					break;
 				default:
-					ret = -EBADMSG;
+					ret = 0;
+					break;
 			}
 			break;
 		default:

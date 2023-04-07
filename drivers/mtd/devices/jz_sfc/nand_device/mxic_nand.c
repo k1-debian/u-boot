@@ -186,38 +186,16 @@ retry:
 	switch(device_id) {
 		case 0x12:
 		case 0x22:
-			switch((ecc_status >> 0x4) & 0x3) {
-			    case 0x0:
-				    ret = 0;
-				    break;
-			    case 0x1:
-				    if((ret = get_ecc_value(flash)) > 0x4)
-					    ret = -EBADMSG;
-				    break;
-			    case 0x2:
-				    ret = -EBADMSG;
-				    break;
-			    default:
-				    printf("it is flash Unknown state, device_id: 0x%02x\n", device_id);
-				    ret = -EIO;
-			}
-			break;
 		case 0x26:
 		case 0x37:
-			switch((ecc_status >> 0x4) & 0x3) {
-			    case 0x0:
-				    ret = 0;
-				    break;
-			    case 0x1:
-				    if((ret = get_ecc_value(flash)) > 0x8)
-					    ret = -EBADMSG;
-				    break;
-			    case 0x2:
-				    ret = -EBADMSG;
-				    break;
-			    default:
-				    printf("it is flash Unknown state, device_id: 0x%02x\n", device_id);
-				    ret = -EIO;
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
 		default:

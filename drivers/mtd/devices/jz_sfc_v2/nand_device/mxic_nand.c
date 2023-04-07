@@ -98,7 +98,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.plane_select = 0,
 		.ecc_max = 0x8,
 		.need_quad = 1,
-	},	
+	},
 	[4] = {
 	/*MX35UF2GE4AD*/
 		.pagesize = 2 * 1024,
@@ -194,74 +194,19 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	switch(device_id) {
 		case 0x12:
 		case 0x22:
-			switch((ecc_status >> 0x4) & 0x3) {
-				case 0x2:
-					ret = -EBADMSG;
-					break;
-				case 0x1:
-					if((ret = get_ecc_value(flash)) > 0x4)
-						ret = -EBADMSG;
-					break;
-				case 0x0:
-					ret = 0;
-					break;
-				default:
-					pr_err("it is flash Unknown state, device_id: 0x%02x\n", device_id);
-					ret = -EIO;
-			}
-			break;
 		case 0x26:
 		case 0x37:
-			switch((ecc_status >> 0x4) & 0x3) {
-			    case 0x0:
-				    ret = 0;
-				    break;
-			    case 0x1:
-				    if((ret = get_ecc_value(flash)) > 0x8)
-					    ret = -EBADMSG;
-				    break;
-			    case 0x2:
-				    ret = -EBADMSG;
-				    break;
-			    default:
-				    printf("it is flash Unknown state, device_id: 0x%02x\n", device_id);
-				    ret = -EIO;
+		case 0xA6:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x2:
+				case 0x3:
+					ret = -EBADMSG;
+					break;
+				default:
+					ret = 0;
+					break;
 			}
 			break;
-		case 0xA6:
-			switch((ecc_status >>4) &0x15){
-				case 0:
-					ret =0;
-					break ;
-				case 1:
-					ret = 1;
-					break;
-				case 2:
-					ret = 2;
-					break;
-				case 3:
-					ret = 3;
-					break;
-				case 4:
-					ret = 4;
-					break;
-				case 5:
-					ret = 5;
-					break;
-				case 6:
-					ret = 6;
-					break;
-				case 7:
-					ret = 7;
-					break;
-				case 8:
-					ret = 8;
-					break;
-				default :
-					ret  = -EBADMSG;
-				}
-			break;
-
 		default:
 			pr_err("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			ret = -EIO;

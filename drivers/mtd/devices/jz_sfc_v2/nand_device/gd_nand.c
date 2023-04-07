@@ -391,131 +391,32 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	switch(device_id) {
 		case 0xA1:
 		case 0xB1 ... 0xB4:
+		case 0x61:
+		case 0xB468:
 			switch((ecc_status >> 4) & 0x7) {
 				case 0x7:
 					ret = -EBADMSG;
 					break;
-				case 0x6:
-					ret = 0x8;
-					break;
-				case 0x5:
-					ret = 0x7;
-					break;
 				default:
 					ret = 0;
+					break;
 			}
 			break;
 		case 0xD1 ... 0xD4:
-			switch((ecc_status >> 4) & 0x3) {
-				case 0x3:
-					ret = 0x8;
-					break;
-				case 0x2:
-					ret = -EBADMSG;
-					break;
-				case 0x1:
-					if((ret = gd_get_f0_register_value(flash)) < 0)
-						return ret;
-					if(((ret >> 4) & 0x3) == 0x3)
-						ret = 0x7;
-					break;
-				default:
-					ret = 0;
-					break;
-			}
-			break;
 		case 0x51:
 		case 0x55:
-			switch((ecc_status >> 4) & 0x3) {
-				case 0x3:
-				case 0x0:
-					ret = 0x0;
-					break;
-				case 0x1:
-					ret = 0x4;
-					break;
-				default:
-					ret = -EBADMSG;
-			}
-			break;
 		case 0x52:
 		case 0x32:
 		case 0x92:
-			switch((ecc_status >> 4) & 0x3) {
-				case 0x1:
-					if((ret = gd_get_f0_register_value(flash)) < 0)
-						return ret;
-					switch((ret >> 4) & 0x3) {
-						case 0x0:
-							ret = 0x1;
-							break;
-						case 0x1:
-							ret = 0x2;
-							break;
-						case 0x2:
-							ret = 0x3;
-							break;
-						case 0x3:
-							ret = 0x4;
-							break;
-						default:
-							break;
-					}
-					break;
-				case 0x2:
-					ret = -EBADMSG;
-					break;
-				default:
-					ret = 0x0;
-					break;
-			}
-			break;
 		case 0x91:
 			switch((ecc_status >> 4) & 0x3) {
-				case 0x1:
-					if((ret = gd_get_f0_register_value(flash)) < 0)
-						return ret;
-					switch((ret >> 4) & 0x3) {
-						case 0x0:
-							ret = 0x4;
-							break;
-						case 0x1:
-							ret = 0x5;
-							break;
-						case 0x2:
-							ret = 0x6;
-							break;
-						case 0x3:
-							ret = 0x7;
-							break;
-						default:
-							break;
-					}
-					break;
 				case 0x2:
-					ret = -EBADMSG;
-					break;
 				case 0x3:
-					ret = 0x8;
-					break;
-				default:
-					ret = 0x0;
-					break;
-			}
-			break;
-		 case 0xB468:
-		          switch((ecc_status >> 4) & 0x7) {
-				case 0x7:
 					ret = -EBADMSG;
-					break;
-				case 0x6:
-					ret = 0x8;
-					break;
-				case 0x5:
-					ret = 0x7;
 					break;
 				default:
 					ret = 0;
+					break;
 			}
 			break;
 		default:
