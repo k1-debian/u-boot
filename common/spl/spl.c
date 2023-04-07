@@ -125,6 +125,25 @@ void spl_parse_image_header(const struct image_header *header)
 	}
 }
 
+void spl_parse_image_info(const struct image_header *header, struct image_info *info)
+{
+	info->type = image_get_type(header);
+	info->comp = image_get_comp(header);
+	info->os = image_get_os(header);
+
+	info->end = image_get_image_end(header);
+	info->load = image_get_load(header);
+
+	info->image_start = image_get_data(header);
+	info->image_len = image_get_data_size(header);
+
+	if (info->type == IH_TYPE_KERNEL_NOLOAD) {
+		info->load = info->image_start;
+		spl_image.entry_point += info->load;
+	}
+	info->start = (ulong)header;
+}
+
 __weak void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);

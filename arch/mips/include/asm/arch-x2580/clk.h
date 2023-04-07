@@ -36,6 +36,8 @@ enum clk_id {
 	SFC,
 	CIM0,
 	ISP,
+	ISPA,
+	ISPS,
 	CGU_CNT,
 	CPU = CGU_CNT,
 	H2CLK,

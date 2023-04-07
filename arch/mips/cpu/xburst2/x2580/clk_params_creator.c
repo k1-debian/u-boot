@@ -31,6 +31,8 @@ struct cgu cgu_clk_sel[CGU_CNT] = {
 	[SFC] = {1, CPM_SFCCDR, 30, APLL, {APLL, MPLL, VPLL}, 29, 28, 27}, /* TODO */
 	[CIM0] = {1, CPM_CIM0CDR, 30, APLL, {APLL, MPLL, VPLL, EPLL}, 29, 28, 27},
 	[ISP] = {1, CPM_ISPCDR, 30, APLL, {APLL, MPLL, VPLL}, 29, 28, 27},
+	[ISPA] = {1, CPM_ISPACDR, 30, MPLL, {APLL, MPLL, VPLL}, 29, 28, 27},
+	[ISPS] = {1, CPM_ISPSCDR, 30, MPLL, {APLL, MPLL, VPLL}, 29, 28, 27},
 };
 
 static void gen_cgu_params(struct clk_cgu_setting *cgusetting)

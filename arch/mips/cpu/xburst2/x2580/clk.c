@@ -352,6 +352,10 @@ void clk_init(void)
 #ifdef CONFIG_JZ_SCBOOT
 		| CPM_CLKGR_HASH
 #endif
+#ifdef CONFIG_JZ_HARDLZMA
+		| CPM_CLKGR1_LZMA
+		| CPM_CLKGR1_IVDC
+#endif
 		;
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR1);

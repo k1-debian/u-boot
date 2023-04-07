@@ -584,7 +584,10 @@ extern int secure_scboot (void *, void *);
 void spl_load_kernel(long offset)
 {
 	struct image_header *header;
-
+	struct image_info info;
+	int ret;
+	void *load_buf, *image_buf;
+	int image_len;
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	int ret;
 	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
@@ -609,7 +612,30 @@ void spl_load_kernel(long offset)
 	sfc_read_data(offset, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
+#ifdef CONFIG_JZ_HARDLZMA
+	sfc_read_data(offset, spl_image.size, (unsigned char *)CONFIG_SYS_TEXT_BASE);
+
+	spl_parse_image_info(header, &info);
+
+	load_buf = map_sysmem(info.load, info.image_len);
+	image_buf = map_sysmem(info.image_start, info.image_len);
+	image_len = info.image_len;
+
+	if (info.comp == IH_COMP_HARDLZMA) {
+		printf("Uncompressing LZMA Hardware ... \n");
+/*lzma 硬件解压*/
+		flush_cache_all();
+		ret = jz_lzma_decompress(image_buf, image_len, load_buf, CONFIG_HARD_LZMA_CHANNEL);
+		flush_cache_all();
+		if(ret <= 0) {
+			printf("lzam hardware decompress uImage failed \n");
+			hang();
+		}
+ 	} else
+		printf("The kernel compression type is incorrect\n");
+#else
 	sfc_read_data(offset, spl_image.size, (unsigned char *)spl_image.load_addr);
+#endif
 #endif
 }
 
