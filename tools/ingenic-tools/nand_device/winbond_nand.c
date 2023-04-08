@@ -4,11 +4,11 @@
 #define WINBOND_MID			    0xEF
 #define WINBOND_NAND_DEVICD_COUNT	    2
 
-static unsigned char winbond_xgv[] = {0x2, 0x3};
+static unsigned char winbond_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0xAA21, 2048, 2, 4, 2, 2, winbond_xgv),
-	DEVICE_STRUCT(0xAB21, 2048, 2, 4, 2, 2, winbond_xgv),
+	DEVICE_STRUCT(0xAA21, 2048, 2, 4, 2, 2, winbond_eccerr),
+	DEVICE_STRUCT(0xAB21, 2048, 2, 4, 2, 2, winbond_eccerr),
 };
 
 static struct nand_desc winbond_nand = {

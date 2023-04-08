@@ -3,7 +3,6 @@
 #include <linux/mtd/partitions.h>
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
-#include <ubi_uboot.h>
 
 #define MXIC_DEVICES_NUM         5
 #define MXIC_CMD_GET_ECC	0x7c

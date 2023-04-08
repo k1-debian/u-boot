@@ -5,10 +5,10 @@
 
 #define XTX_2C_NAND_DEVICD_COUNT	    1
 
-static unsigned char xtx_2c_xaw[] = {0x02};
+static unsigned char xtx_2c_eccerr[] = {0x2};
 
 static struct device_struct device[XTX_2C_NAND_DEVICD_COUNT] = {
-	DEVICE_STRUCT(0x24, 2048, 2, 4, 3, 1, xtx_2c_xaw),
+	DEVICE_STRUCT(0x24, 2048, 2, 4, 3, 1, xtx_2c_eccerr),
 };
 
 static struct nand_desc xtx_2c_nand = {

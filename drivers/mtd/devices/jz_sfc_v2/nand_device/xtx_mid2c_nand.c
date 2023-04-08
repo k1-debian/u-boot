@@ -3,7 +3,6 @@
 #include <linux/mtd/partitions.h>
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
-#include <ubi_uboot.h>
 
 #define XTX_MID2C_DEVICES_NUM         1
 #define TSETUP		4

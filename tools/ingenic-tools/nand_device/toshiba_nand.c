@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include "nand_common.h"
 
-#define TOSHIBA_MID              0X98
+#define TOSHIBA_MID              0x98
 
 #define TOSHIBA_NAND_DEVICE_COUNT	    1
 
 
-static unsigned char toshiba_nand_xaw[] = {0x2};
+static unsigned char toshiba_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[TOSHIBA_NAND_DEVICE_COUNT] = {
-        DEVICE_STRUCT(0xed, 4096, 2, 4, 2, 1, toshiba_nand_xaw),
+        DEVICE_STRUCT(0xed, 4096, 2, 4, 2, 1, toshiba_eccerr),
  };
 
 

@@ -161,6 +161,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
+		.plane_select = 0,
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
@@ -340,7 +341,6 @@ static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 	    case 0x51 ... 0x55:
 	    case 0x32:
 	    case 0x92:
-		    break;
 	    case 0x91:
 		    break;
 	    case 0xB468:

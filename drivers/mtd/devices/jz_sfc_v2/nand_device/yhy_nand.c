@@ -106,7 +106,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 static struct device_id_struct device_id[YHY_MIDC9_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x21, "HYF1GQ4U", &yhy_midc9_param[0]),
 	DEVICE_ID_STRUCT(0x52, "HYF2GQ4U", &yhy_midc9_param[1]),
-        DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
+	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
 };
 
 static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
@@ -140,7 +140,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 			}
 			break;
 		default:
-			printf("device_id err, it maybe don`t support this device, check your         device id: device_id = 0x%02x\n", device_id);
+			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			ret = -EIO;
 	}
 	return ret;

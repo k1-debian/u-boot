@@ -4,15 +4,15 @@
 #define MXIC_MID		    0xC2
 #define MXIC_NAND_DEVICE_COUNT	    5
 
-static unsigned char mxic_xge4ab[] = {0x2};
+static unsigned char mxic_eccerr[] = {0x2, 0x3};
 
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x12, 2048, 2, 4, 2, 1,  mxic_xge4ab),
-	DEVICE_STRUCT(0x22, 2048, 2, 4, 2, 1,  mxic_xge4ab),
-	DEVICE_STRUCT(0x26, 2048, 2, 4, 2, 1,  mxic_xge4ab),
-	DEVICE_STRUCT(0x37, 4096, 2, 4, 2, 1,  mxic_xge4ab),
-	DEVICE_STRUCT(0xA6, 2048, 2, 4, 2, 1,  mxic_xge4ab),
+	DEVICE_STRUCT(0x12, 2048, 2, 4, 2, 1,  mxic_eccerr),
+	DEVICE_STRUCT(0x22, 2048, 2, 4, 2, 1,  mxic_eccerr),
+	DEVICE_STRUCT(0x26, 2048, 2, 4, 2, 1,  mxic_eccerr),
+	DEVICE_STRUCT(0x37, 4096, 2, 4, 2, 1,  mxic_eccerr),
+	DEVICE_STRUCT(0xA6, 2048, 2, 4, 2, 1,  mxic_eccerr),
 };
 
 static struct nand_desc mxic_nand = {

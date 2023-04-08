@@ -4,11 +4,11 @@
 #define FM_MID			    0xA1
 #define FM_NAND_DEVICD_COUNT	    2
 
-static unsigned char fm_xaw[] = {0x2, 0x3};
+static unsigned char fm_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[FM_NAND_DEVICD_COUNT] = {
-	DEVICE_STRUCT(0xE4, 2048, 2, 4, 2, 2, fm_xaw),
-	DEVICE_STRUCT(0xE5, 2048, 2, 4, 2, 2, fm_xaw),
+	DEVICE_STRUCT(0xE4, 2048, 2, 4, 2, 2, fm_eccerr),
+	DEVICE_STRUCT(0xE5, 2048, 2, 4, 2, 2, fm_eccerr),
 };
 
 static struct nand_desc fm_nand = {

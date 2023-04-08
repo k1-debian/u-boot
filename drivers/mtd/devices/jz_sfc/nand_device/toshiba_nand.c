@@ -15,7 +15,6 @@
 #define TPP		600
 #define TBE		7
 
-static struct jz_sfcnand_device *toshiba_nand;
 static struct jz_sfcnand_base_param toshiba_param[TOSHIBA_DEVICES_NUM] = {
 
 	[0] = {
@@ -43,20 +42,42 @@ static struct device_id_struct device_id[TOSHIBA_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xed, "TC58CVG2S0HRAIJ", &toshiba_param[0]),
 };
 
-static cdt_params_t *toshiba_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
-	CDT_PARAMS_INIT(toshiba_nand->cdt_params);
-	switch(device_id) {
-		case 0xed:
-			break;
-		default:
-			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-			return NULL;
-	}
-	return &toshiba_nand->cdt_params;
-}
+static int32_t toshiba_get_read_feature(struct flash_operation_message *op_info) {
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
-	int ret = 0;
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	struct sfc_transfer transfer;
+	uint16_t device_id = nand_info->id_device;
+	uint8_t ecc_status = 0;
+	int32_t ret = 0;
+
+retry:
+	ecc_status = 0;
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
+
+	transfer.cmd_info.cmd = SPINAND_CMD_GET_FEATURE;
+	transfer.sfc_mode = TM_STD_SPI;
+
+	transfer.addr = SPINAND_ADDR_STATUS;
+	transfer.addr_len = 1;
+
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.data = &ecc_status;
+	transfer.len = 1;
+	transfer.direction = GLB_TRAN_DIR_READ;
+
+	transfer.data_dummy_bits = 0;
+	transfer.ops_mode = CPU_OPS;
+
+	if(sfc_sync(flash->sfc, &transfer)) {
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+
+	if(ecc_status & SPINAND_IS_BUSY)
+		goto retry;
+
 	switch(device_id) {
 		case 0xed:
 			switch((ecc_status >> 4) & 0x3) {
@@ -77,6 +98,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 }
 
 static int toshiba_nand_init(void) {
+	struct jz_sfcnand_device *toshiba_nand;
 	toshiba_nand = kzalloc(sizeof(*toshiba_nand), GFP_KERNEL);
 	if(!toshiba_nand) {
 		pr_err("alloc toshiba_nand struct fail\n");
@@ -86,9 +108,8 @@ static int toshiba_nand_init(void) {
 	toshiba_nand->id_manufactory = 0x98;
 	toshiba_nand->id_device_list = device_id;
 	toshiba_nand->id_device_count = TOSHIBA_DEVICES_NUM;
-	toshiba_nand->ops.get_cdt_params = toshiba_get_cdt_params;
-	toshiba_nand->ops.deal_ecc_status = deal_ecc_status;
-	toshiba_nand->ops.get_feature = NULL;
+
+	toshiba_nand->ops.nand_read_ops.get_feature = toshiba_get_read_feature;
 	return jz_sfcnand_register(toshiba_nand);
 }
 SPINAND_MOUDLE_INIT(toshiba_nand_init);

@@ -15,7 +15,6 @@
 #define TPP		600
 #define TBE		8
 
-static struct jz_sfcnand_device *xcsp_nand;
 static struct jz_sfcnand_base_param xcsp_param[XCSP_DEVICES_NUM] = {
 
 	[0] = {
@@ -34,7 +33,6 @@ static struct jz_sfcnand_base_param xcsp_param[XCSP_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.plane_select = 0,
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
@@ -55,7 +53,6 @@ static struct jz_sfcnand_base_param xcsp_param[XCSP_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.plane_select = 0,
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
@@ -76,7 +73,6 @@ static struct jz_sfcnand_base_param xcsp_param[XCSP_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.plane_select = 0,
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
@@ -89,49 +85,42 @@ static struct device_id_struct device_id[XCSP_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xb1, "XCSP4AAWH ", &xcsp_param[2]),
 };
 
-static cdt_params_t *xcsp_nand_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
-	CDT_PARAMS_INIT(xcsp_nand->cdt_params);
-	switch(device_id) {
-		case 0x01:
-		case 0xa1:
-		case 0xb1:
-			break;
-		default:
-			pr_err("device_id err, please check your device id: device_id = 0x%02x\n", device_id);
-			return NULL;
-	}
-	return &xcsp_nand->cdt_params;
-}
+static int32_t xcsp_get_read_feature(struct flash_operation_message *op_info) {
 
-static int32_t xcsp_get_f0_register_value(struct sfc_flash *flash)
-{
-	struct sfc_cdt_xfer xfer;
-	uint32_t buf = 0;
+	struct sfc_flash *flash = op_info->flash;
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	struct sfc_transfer transfer;
+	uint16_t device_id = nand_info->id_device;
+	uint8_t ecc_status = 0;
+	int32_t ret = 0;
 
-	memset(&xfer, 0, sizeof(xfer));
+retry:
+	ecc_status = 0;
+	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
 
-	/*set index*/
-	xfer.cmd_index = NAND_GET_FEATURE;
+	transfer.cmd_info.cmd = SPINAND_CMD_GET_FEATURE;
+	transfer.sfc_mode = TM_STD_SPI;
 
-	/* set addr */
-	xfer.staaddr0 = 0xf0;
+	transfer.addr = SPINAND_ADDR_STATUS;
+	transfer.addr_len = 1;
 
-	/* set transfer config */
-	xfer.dataen = ENABLE;
-	xfer.config.datalen = 1;
-	xfer.config.data_dir = GLB_TRAN_DIR_READ;
-	xfer.config.ops_mode = CPU_OPS;
-	xfer.config.buf = (uint8_t *)&buf;
+	transfer.cmd_info.dataen = ENABLE;
+	transfer.data = &ecc_status;
+	transfer.len = 1;
+	transfer.direction = GLB_TRAN_DIR_READ;
 
-	if(sfc_sync_cdt(flash->sfc, &xfer)){
-		pr_err("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+	transfer.data_dummy_bits = 0;
+	transfer.ops_mode = CPU_OPS;
+
+	if(sfc_sync(flash->sfc, &transfer)) {
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
-	return buf;
-}
 
-static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
-	int ret = 0;
+	if(ecc_status & SPINAND_IS_BUSY)
+		goto retry;
+
 	switch(device_id) {
 		case 0x01:
 		case 0xa1:
@@ -153,18 +142,18 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 }
 
 static int xcsp_nand_init(void) {
+	struct jz_sfcnand_device *xcsp_nand;
 	xcsp_nand = kzalloc(sizeof(*xcsp_nand), GFP_KERNEL);
 	if(!xcsp_nand) {
 		pr_err("alloc xcsp_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	xcsp_nand->id_manufactory = 0x9c;
+	xcsp_nand->id_manufactory = 0x9C;
 	xcsp_nand->id_device_list = device_id;
 	xcsp_nand->id_device_count = XCSP_DEVICES_NUM;
-	xcsp_nand->ops.get_cdt_params = xcsp_nand_get_cdt_params;
-	xcsp_nand->ops.deal_ecc_status = deal_ecc_status;
-	xcsp_nand->ops.get_feature = NULL;
+
+	xcsp_nand->ops.nand_read_ops.get_feature = xcsp_get_read_feature;
 	return jz_sfcnand_register(xcsp_nand);
 }
 SPINAND_MOUDLE_INIT(xcsp_nand_init);

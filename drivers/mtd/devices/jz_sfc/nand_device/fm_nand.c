@@ -98,7 +98,7 @@ retry:
 	switch(device_id) {
 		case 0xE4:
 		case 0xE5:
-			switch((ret = ((ecc_status >> 4) & 0x3))) {
+			switch((ecc_status >> 4) & 0x3) {
 				case 0x2:
 				case 0x3:
 					ret = -EBADMSG;

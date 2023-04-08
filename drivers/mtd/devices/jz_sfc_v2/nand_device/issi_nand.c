@@ -24,8 +24,8 @@ static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
-		.tHOLD  = THOLD,
-		.tSETUP = TSETUP,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
@@ -42,12 +42,9 @@ static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
 static struct device_id_struct device_id[ISSI_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x21, "IS37SML01G1", &issi_param[0]),
 };
-
-
 static cdt_params_t *issi_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(issi_nand->cdt_params);
-
 	switch(device_id) {
 	    case 0x21:
 		    break;
@@ -55,15 +52,12 @@ static cdt_params_t *issi_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
 		    return NULL;
 	}
-
 	return &issi_nand->cdt_params;
 }
-
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	int ret = 0;
-
 	switch(device_id) {
 		case 0x21:
 			switch((ecc_status >> 4) & 0x3) {

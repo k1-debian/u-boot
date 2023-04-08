@@ -4,11 +4,11 @@
 #define ZETTA_MID		    0xBA
 #define ZETTA_NAND_DEVICD_COUNT	    2
 
-static unsigned char zetta_xaw[] = {0x2};
+static unsigned char zetta_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x71, 2048, 2, 4, 2, 1, zetta_xaw),
-	DEVICE_STRUCT(0x72, 2048, 2, 4, 2, 1, zetta_xaw),
+	DEVICE_STRUCT(0x71, 2048, 2, 4, 2, 1, zetta_eccerr),
+	DEVICE_STRUCT(0x72, 2048, 2, 4, 2, 1, zetta_eccerr),
 };
 
 static struct nand_desc zetta_nand = {

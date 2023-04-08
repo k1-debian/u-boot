@@ -78,7 +78,8 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.plane_select = 0,
 		.ecc_max = 0x1,
 		.need_quad = 1,
-	}
+	},
+
 };
 
 static struct device_id_struct device_id[FS_DEVICES_NUM] = {
@@ -94,7 +95,6 @@ static cdt_params_t *fs_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 
 	switch(device_id) {
 		case 0xA1:
-			break;
 		case 0x71:
 		case 0x72:
 			break;

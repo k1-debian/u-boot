@@ -5,27 +5,27 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define TC_DEVICES_NUM         1
-#define TSETUP		5
-#define THOLD		5
-#define	TSHSL_R		100
-#define	TSHSL_W		100
+#define ISSI_DEVICES_NUM         1
+#define THOLD	    5
+#define TSETUP	    5
+#define TSHSL_R	    100
+#define TSHSL_W	    100
 
-#define TRD		30
-#define TPP		360
-#define TBE		2
+#define TRD	    100
+#define TPP	    400
+#define TBE	    10
 
-static struct jz_sfcnand_base_param tc_param[TC_DEVICES_NUM] = {
 
+static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
 	[0] = {
-		/*TC58CVG0S3HRAIG*/
+		/*IS37SML01G1*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
@@ -33,17 +33,17 @@ static struct jz_sfcnand_base_param tc_param[TC_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 0x8,
-		.need_quad = 0, // unsupport quad
+		.ecc_max = 0x1,
+		.need_quad = 1,
 	},
-
 };
 
-static struct device_id_struct device_id[TC_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xC2, "TC58CVG0S3HRAIG", &tc_param[0]),
+static struct device_id_struct device_id[ISSI_DEVICES_NUM] = {
+	DEVICE_ID_STRUCT(0x21, "IS37SML01G1", &issi_param[0]),
 };
 
-static int32_t tc_get_read_feature(struct flash_operation_message *op_info) {
+static int32_t issi_get_read_feature(struct flash_operation_message *op_info)
+{
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -80,7 +80,7 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0xC2:
+		case 0x21:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x2:
 				case 0x3:
@@ -94,24 +94,25 @@ retry:
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			ret = -EIO;   //notice!!!
-
 	}
 	return ret;
 }
 
-static int tc_nand_init(void) {
-	struct jz_sfcnand_device *tc_nand;
-	tc_nand = kzalloc(sizeof(*tc_nand), GFP_KERNEL);
-	if(!tc_nand) {
-		pr_err("alloc tc_nand struct fail\n");
+
+static int issi_nand_init(void) {
+	struct jz_sfcnand_device *issi_nand;
+	issi_nand = kzalloc(sizeof(*issi_nand), GFP_KERNEL);
+	if(!issi_nand) {
+		pr_err("alloc issi_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	tc_nand->id_manufactory = 0x98;
-	tc_nand->id_device_list = device_id;
-	tc_nand->id_device_count = TC_DEVICES_NUM;
+	issi_nand->id_manufactory = 0xC8;
+	issi_nand->id_device_list = device_id;
+	issi_nand->id_device_count = ISSI_DEVICES_NUM;
 
-	tc_nand->ops.nand_read_ops.get_feature = tc_get_read_feature;
-	return jz_sfcnand_register(tc_nand);
+	issi_nand->ops.nand_read_ops.get_feature = issi_get_read_feature;
+	return jz_sfcnand_register(issi_nand);
 }
-SPINAND_MOUDLE_INIT(tc_nand_init);
+
+SPINAND_MOUDLE_INIT(issi_nand_init);

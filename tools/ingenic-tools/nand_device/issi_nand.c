@@ -4,10 +4,10 @@
 #define ISSI_MID			    0xC8
 #define ISSI_NAND_DEVICD_COUNT	    1
 
-static unsigned char issi_xaw[] = {0x2};
+static unsigned char issi_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 1, issi_xaw),
+	DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 1, issi_eccerr),
 };
 
 static struct nand_desc issi_nand = {
