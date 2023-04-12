@@ -226,6 +226,8 @@ static void ddrc_reset_phy(void)
 #endif
 
 static struct jzsoc_ddr_hook *ddr_hook = NULL;
+void (*ddrp_post_init)(void) = NULL;
+
 void register_ddr_hook(struct jzsoc_ddr_hook * hook)
 {
 	ddr_hook = hook;
@@ -260,6 +262,7 @@ void ddrc_dfi_init(enum ddr_type type)
 	udelay(500);
 	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
 	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
+	udelay(500);
 #endif
 
 
@@ -374,6 +377,7 @@ void ddrc_dfi_init(enum ddr_type type)
 		break;
 
 	case DDR3:
+		mdelay(1);
 #define DDRC_LMR_MR(n)								\
 		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |           \
 			((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |       \
@@ -439,7 +443,7 @@ static void ddrc_prev_init(void)
 	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
 	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
 	mem_remap();
-	
+
 	/* 初始化时，关闭DDR自刷新功能. */
 	ddr_writel(0, DDRC_AUTOSR_EN);
 	ddr_writel(0, DDRC_AUTOSR_CNT);
@@ -591,12 +595,16 @@ void sdram_init(void)
 	mdelay(1);
 	ddrp_cfg(global_reg_value, rate);
 #else
-	ddr_writel(1 << 20, DDRC_CTRL);  /* ddrc_reset_phy */
+	ddr_writel(0x1 << 20 | 1 << 23, DDRC_CTRL);  /* ddrc_reset_phy , keep dfi_rst_n low*/
+	mdelay(1);
+
 	ddrp_cfg(global_reg_value);
 
 	reg_val = ddr_readl(DDRC_CTRL);
 	reg_val &= ~ (1 << 20);
 	ddr_writel(reg_val, DDRC_CTRL); /*ddrc_reset_phy clear*/
+	mdelay(1);
+
 
 	ddrp_pll_init();
 #endif
@@ -619,18 +627,23 @@ void sdram_init(void)
 #endif
 
 	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/
-
-	if(ddr_hook && ddr_hook->post_ddr_init)
-		ddr_hook->post_ddr_init(type);
-
-//	get_dynamic_calib_value(rate);/*reserved*/
-
 	if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
 		/* ddr_writel(DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT); */
 		ddr_writel(1, DDRC_AUTOSR_EN);
 	} else {
 		ddr_writel(0, DDRC_AUTOSR_EN);
 	}
+
+
+	if(ddr_hook && ddr_hook->post_ddr_init)
+		ddr_hook->post_ddr_init(type);
+
+	if(ddrp_post_init) {
+		ddrp_post_init();
+	}
+
+//	get_dynamic_calib_value(rate);/*reserved*/
+
 
 	dump_ddrc_register();
 
