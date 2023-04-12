@@ -467,6 +467,12 @@ static void ddrc_post_init(void)
 	reg |= global_reg_value->DDRC_CTRL_VALUE & (0xf << 12);
 	ddr_writel(reg, DDRC_CTRL);
 
+#ifdef CONFIG_X2600
+	reg = ddr_readl(DDRC_DWCFG);
+	reg |= (1 << 5);	//PORT_OB_EN, 优化选项.
+	ddr_writel(reg, DDRC_DWCFG);
+#endif
+
 	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
 	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
 
