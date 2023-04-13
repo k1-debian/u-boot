@@ -718,6 +718,7 @@ void rx_soft_training1()
 
 void ddrp_pll_init(void)
 {
+	ddr_writel(20, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 
 	ddr_writel(0x0, DDRP_INNOPHY_PLL_FBDIV);
 	ddr_writel(0x6, DDRP_INNOPHY_PLL_FBDIV_H);
@@ -794,7 +795,7 @@ static void ddrp_rx_dqs_auto_calibration(void)
 	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
 	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
 
-	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
+	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x3) == 3) && --timeout) {
 
 		udelay(1);
 		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
@@ -807,12 +808,12 @@ static void ddrp_rx_dqs_auto_calibration(void)
 
 	debug("ddrp_auto_calibration success!\n");
 
-	printf("DDRP_INNOPHY_CALIB_DONE: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
-	printf("DDRP_INNOPHY_CALIB_ERR:	%X\n", ddr_readl(DDRP_INNOPHY_CALIB_ERR));
-	printf("DDRP_INNOPHY_CALIB_L_C: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_C));
-	printf("DDRP_INNOPHY_CALIB_L_DO: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_DO));
-	printf("DDRP_INNOPHY_CALIB_R_C: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_C));
-	printf("DDRP_INNOPHY_CALIB_R_DO: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_DO));
+	printf("DDRP_INNOPHY_CALIB_DONE_61: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+	printf("DDRP_INNOPHY_CALIB_ERR_69:	%X\n", ddr_readl(DDRP_INNOPHY_CALIB_ERR));
+	printf("DDRP_INNOPHY_CALIB_L_C_9b: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_C));
+	printf("DDRP_INNOPHY_CALIB_L_DO_9c: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_DO));
+	printf("DDRP_INNOPHY_CALIB_R_C_9d: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_C));
+	printf("DDRP_INNOPHY_CALIB_R_DO_9e: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_DO));
 
 	if(ddr_readl(DDRP_INNOPHY_CALIB_ERR) & (1 << 6)) {
 		printf("ddr pass but with error!\n");
@@ -830,7 +831,7 @@ static int do_whole_chip_scan(void)
 {
 	int i = 0;
 	unsigned int *p = 0xa0000000;
-	
+
 	for(i = 0; i < 16*1024*1024/4; i++) {
 		//p[i] = &p[i];
 		p[i] = 0x01010101;
@@ -899,14 +900,14 @@ static void _ddrp_training_invdelay(void)
 	/*TODO:*/
 	for(i = 15; i < 0x1f; i++) {
 		ddr_writel(i, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
-		
+
 		printf("--- loop: %d\n", i);
 
 		ret = do_whole_chip_scan();
 		if(!ret) {
 			printf("pass!\n");
 			pass_invdelay[count++] = i;
-			
+
 			if(count >= 0x1f) {
 				printf("pass_invdelay overflow, force done\n");
 				break;
@@ -923,7 +924,7 @@ static void _ddrp_training_invdelay(void)
 		printf("passed delay: %d\n", pass_invdelay[i]);
 	}
 
-	ddr_writel(pass_invdelay[count / 2], DDRP_INNOPHY_INVDELAYSEL_DQCMD);
+	//ddr_writel(pass_invdelay[count / 2], DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 	//ddr_writel(20, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 }
 
@@ -936,7 +937,6 @@ static void _ddrp_post_init(void)
 		20 可能是一个比较合适的值.
 	实际应用应该根据不同的开发板training 出一个范围，选择一个合适的值.
 	*/
-	ddr_writel(20, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 
 
 	// after ddrc and phy initial.
