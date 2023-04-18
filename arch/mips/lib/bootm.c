@@ -198,6 +198,9 @@ static void linux_params_init(ulong start, char *line)
 		for(i = 0; i < linux_argc; i++) {
 			char *s = linux_argv[i];
 
+			if(!s) {
+				continue;
+			}
 			/*found mem= str*/
 			if(s[0] == 'm' && s[1] == 'e' && s[2] == 'm' && s[3] == '=') {
 				found_mem = 1;
