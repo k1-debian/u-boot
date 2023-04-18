@@ -585,6 +585,9 @@ void sdram_init(void)
 
 	debug("sdram init start\n");
 	soc_ddr_init();
+
+	ddrp_post_init = NULL;
+
 	get_ddr_params();
 	type = get_ddr_type();
 	clk_set_rate(DDR, global_reg_value->h.freq);
