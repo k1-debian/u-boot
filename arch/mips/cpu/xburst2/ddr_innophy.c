@@ -635,6 +635,10 @@ void sdram_init(void)
 	ddrc_post_init();
 #endif
 
+	if(ddrp_post_init) {
+		ddrp_post_init();
+	}
+
 	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/
 	if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
 		/* ddr_writel(DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT); */
@@ -643,13 +647,9 @@ void sdram_init(void)
 		ddr_writel(0, DDRC_AUTOSR_EN);
 	}
 
-
 	if(ddr_hook && ddr_hook->post_ddr_init)
 		ddr_hook->post_ddr_init(type);
 
-	if(ddrp_post_init) {
-		ddrp_post_init();
-	}
 
 //	get_dynamic_calib_value(rate);/*reserved*/
 
