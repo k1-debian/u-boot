@@ -387,8 +387,6 @@ static void tx_soft_training_set_pb_cmd_skew(unsigned int cmd_skew)
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE1);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK1);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_TX_DM0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_TX_DM1);
 }
 
 static void tx_soft_training_set_pb_dq_skew(unsigned int dq_skew)
@@ -462,11 +460,14 @@ void tx_soft_training()
 	char selected_dq_skew = 0;
 	char selected_cmd_skew = 0;
 
+	int left_cmd_skew = 0;
+	int right_cmd_skew = 0;
+
 
 #if DEBUG_TX_RX_TRAINING
 	printf("=============tx pb deskew from 0 to 63 ==============\n");
 #endif
-	for(cmd_skew = 0;  cmd_skew < 0x3f; cmd_skew ++) {
+	for(cmd_skew = 0;  cmd_skew < 0x3f; cmd_skew++) {
 
 		/* 每次修改 cmd_skew之后，需要做wl leveling使 cmd 和DQS 对齐.*/
 		tx_soft_training_set_pb_cmd_skew(cmd_skew);
@@ -507,32 +508,35 @@ void tx_soft_training()
 		}
 
 
-#if 0
-		for(j = 0; j < left_dq; j++) {
-			putchar('0');
-		}
-		for(j = left_dq; j < right_dq; j++) {
-			putchar('1');
-		}
-		for(j = right_dq; j < 0x3f; j++) {
-			putchar('0');
-		}
+		int count = right_dq - left_dq;
+
+		if(count != 0 && left_cmd_skew == 0) {
+			left_cmd_skew = cmd_skew;
+#if DEBUG_TX_RX_TRAINING
+			printf(" -> * ");
 #endif
+		} else if(count > max_pass_count) {
+
+#if DEBUG_TX_RX_TRAINING
+			printf(" * <- ");
+#endif
+
+			right_cmd_skew = cmd_skew;
+
+			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
+			max_pass_count = count;
+		}
+
 #if DEBUG_TX_RX_TRAINING
 		putchar('\n');
 #endif
-		int count = right_dq - left_dq;
-		if(count > max_pass_count) {
-			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
-			max_pass_count = count;
-			selected_cmd_skew = cmd_skew;
-		}
 
 	}
 
 	if(max_pass_count == 0) {
 		printf("tx deskew tuning error, no skew found!\n");
 	} else {
+		selected_cmd_skew = left_cmd_skew + (right_cmd_skew - left_cmd_skew) / 2;
 		tx_soft_training_set_pb_cmd_skew(selected_cmd_skew);
 		ddrp_wl_calibration();
 
@@ -696,6 +700,128 @@ static void rx_soft_training_set_pb_dq_skew(int dq_skew)
 }
 
 
+static int check_pb_dq_pattern(int dq)
+{
+	unsigned int *p = 0xa0000000;
+
+	int i = 0;
+	unsigned int val = 0;
+	unsigned int short data_low = 0;
+	unsigned int short data_high = 0;
+	// 1 个burst 的数据.
+
+	//p[i] == 0xffff0000 is pass.
+
+	for(i = 0; i < 16; i++) {
+		//val = p[i];
+
+		data_low = p[i] & 0xffff;
+		data_high = (p[i] >> 16) & 0xffff;
+
+		if(!!(data_low & (1 << dq)) == 1) {
+			return -1;
+		}
+
+		if(!!(data_high & (1 << dq)) == 0) {
+			return -1;
+		}
+	}
+
+#if 0
+	printf("dq%d: %x\n", dq, p[0]);
+
+	printf("p[0] & (1 << dq): %d\n", p[0] & (1 << dq));
+#endif
+
+	return 0;
+
+}
+
+static void rx_soft_training_pb_dqx(unsigned int reg_dqx, int dq)
+{
+	/*调整每个DQ，使DQ 和DQS 处于最佳采样点. 窗口最大,
+	这种tuning效率太低. 但是带来的稳定性相对较高.*/
+
+	int i = 0;
+
+	int left_dq = 0;
+	int right_dq = 0;
+	int pass = 0;
+	int selected_dq_skew = 0;
+	int count = 0;
+
+
+#if DEBUG_TX_RX_TRAINING
+	if(dq < 10) {
+		printf("DQ: 0%d ", dq);
+	} else {
+		printf("DQ: %d ", dq);
+	}
+#endif
+
+	for(i = 0; i < 0x3f; i++) {
+
+		/*1. 调整pb_dq的值.*/
+		ddr_writel(i, reg_dqx);
+
+		int check_ret = check_pb_dq_pattern(dq);
+
+		if(!check_ret && (pass == 0)) {
+			left_dq = i;
+			pass = 1;
+		} else if(check_ret && (pass == 1)) {
+			right_dq = i;
+			pass = 0;
+		}
+
+		if(pass) {
+			count ++;
+		}
+
+#if DEBUG_TX_RX_TRAINING
+		if(!check_ret) {
+			putchar('1');
+		} else {
+			putchar('0');
+		}
+#endif
+
+	}
+
+	selected_dq_skew = left_dq + count / 2;
+#if DEBUG_TX_RX_TRAINING
+	printf(" - pass: %d, dq_skew: %d\n", count, selected_dq_skew);
+#endif
+
+	ddr_writel(selected_dq_skew, reg_dqx);
+}
+
+static void rx_soft_training_pb_dq_all(int dqs_skew)
+{
+
+#if DEBUG_TX_RX_TRAINING
+	printf("============tuning dq @ dqs_skew: %d\n", dqs_skew);
+#endif
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ0, 0);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ1, 1);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ2, 2);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ3, 3);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ4, 4);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ5, 5);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ6, 6);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ7, 7);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ8, 8);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ9, 9);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ10, 10);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ11, 11);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ12, 12);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ13, 13);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ14, 14);
+	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ15, 15);
+}
+
+
+
 static inline void ddr3_enable_mpr(int enable)
 {
 	unsigned int mr3 = global_reg_value->DDR_MR3_VALUE;
@@ -707,22 +833,16 @@ static inline void ddr3_enable_mpr(int enable)
 	tmp1 = tmp & ~(0xf << 4);
 	ddr_writel(tmp1, DDRC_CGUC1);
 
-	printf("---DDRC_CGUC0: %x\n", ddr_readl(DDRC_CGUC0));
-	printf("---DDRC_CGUC1: %x\n", ddr_readl(DDRC_CGUC1));
-
 	mr3 = DDRC_LMR_START | DDRC_LMR_CMD_LMR	\
 		| ((mr3 & 0xffff | (!!enable << 2)) << DDRC_LMR_DDR_ADDR_BIT) \
 		| (((mr3 >> 16) & 0x7) << DDRC_LMR_BA_BIT) ;
 
 	printf("---- mr3: %x\n", mr3);
 	ddr_writel(mr3, DDRC_LMR);
-	udelay(1);
-	printf("MR3: %x\n", ddr_readl(DDRC_LMR));
-	printf("MR3: %x\n", ddr_readl(DDRC_LMR));
-	printf("MR3: %x\n", ddr_readl(DDRC_LMR));
+	udelay(5);
 
 	// restore.
-//	ddr_writel(tmp, DDRC_CGUC1);
+	ddr_writel(tmp, DDRC_CGUC1);
 }
 
 static int print_read_pattern(int dq_skew)
@@ -741,12 +861,21 @@ static int check_read_pattern(void)
 	unsigned int *p = 0xa0000000;
 	int i = 0;
 
-	for(i = 0; i < 32; i++) {
-		if(p[i] != 0xffff0000) {
+	if((p[0] == 0xffff0000) && (p[1] == 0xffff0000)  && (p[2] == 0xffff0000) && (p[3] == 0xffff0000)) {
+		return 0;
+	} else {
+		return -1;
+	}
+
+#if 0
+	for(i = 0; i < 4; i++) {
+		unsigned int d = p[i];
+		if(d != 0xffff0000) {
 			return -1;
 		}
 	}
 	return 0;
+#endif
 }
 
 
@@ -763,9 +892,14 @@ static void rx_soft_training(void)
 
 	int left_dq = 0;
 	int right_dq = 0;
+
 	int max_pass_count = 0;
 	char selected_dq_skew = 0;
 	char selected_dqs_skew = 0;
+
+	int left_dqs = 0;
+	int right_dqs = 0;
+
 
 
 	ddr3_enable_mpr(1);
@@ -786,26 +920,37 @@ static void rx_soft_training(void)
 		} else {
 			printf("dqs_skew:%d ", dqs_skew);
 		}
+
+
 #endif
 		for(i = 0; i < 0x3f; i++) {
 			//这里假定了所有的DQ skew 相同.
 			rx_soft_training_set_pb_dq_skew(i);
 
-			if(!check_read_pattern() && (pass == 0)) {
+			/*
+				pass windows:
+				ffff0000	->	0000ffff	偏移了一个cycle.
+				0000ffff	->	ffff0000	从错误到正确，不可能偏移两个cycle.
+			*/
+
+			int check_ret = check_read_pattern();
+
+			if(!check_ret && (pass == 0)) {
 				left_dq = i;
 				pass = 1;
-			} else if(check_read_pattern() && (pass == 1)) {
+			} else if(check_ret && (pass == 1)) {
 				right_dq = i;
 				pass = 0;
 			}
 
-			//print_read_pattern(i);
 #if DEBUG_TX_RX_TRAINING
-			if(pass) {
+			if(!check_ret) {
 				putchar('1');
 			} else {
 				putchar('0');
 			}
+
+//			print_read_pattern(i);
 #endif
 		}
 
@@ -820,28 +965,36 @@ static void rx_soft_training(void)
 			putchar('0');
 		}
 #endif
+		int count = right_dq - left_dq;
+		if(count != 0 && left_dqs == 0) {
+			left_dqs = dqs_skew;
+
+#if DEBUG_TX_RX_TRAINING
+			printf(" -> * ");
+#endif
+		} else if(count > max_pass_count) {
+
+			right_dqs = dqs_skew;
+			/* count 从小到大.*/
+			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
+			max_pass_count = count;
+#if DEBUG_TX_RX_TRAINING
+			printf(" * <- ");
+#endif
+
+//			selected_dqs_skew = dqs_skew;
+		} else {
+
+#if DEBUG_TX_RX_TRAINING
+			//printf(" -> * ");
+#endif
+			/* count 从大到小变化, dqs 开始偏移. 结束tuning*/
+//			break;
+		}
+
 #if DEBUG_TX_RX_TRAINING
 		putchar('\n');
 #endif
-
-		if(left_dq > 0) {
-			/*
-				接收的数据一定是 0xffff0000，如果left_dq > 0 ，说明数据开始向 0x0000ffff 变化，
-				有可能错了一个cycle。
-			*/
-			//break;
-		}
-
-		//printf("--- left_dq: %d, right_dq: %d\n", left_dq, right_dq);
-		int count = right_dq - left_dq;
-		if(count > max_pass_count) {
-			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
-			max_pass_count = count;
-			selected_dqs_skew = dqs_skew;
-		}
-
-
-
 		//printf("---found pass count %d @ dqs deskew: %d, max_pass_count: %d, selected_dq_skew: %d, selected_dqs_skew: %d\n", count, dqs_skew, max_pass_count, selected_dq_skew, selected_dqs_skew);
 
 	}
@@ -849,9 +1002,41 @@ static void rx_soft_training(void)
 	if(max_pass_count == 0) {
 		printf("rx deskew tuning error, no skew found!\n");
 	} else {
-		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		selected_dqs_skew = left_dqs + (right_dqs - left_dqs) / 2;
+
+		// 选定一个dqs，重新tuning dq的窗口.
 		rx_soft_training_set_pb_dqs_skew(selected_dqs_skew, selected_dqs_skew);
-		printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
+
+		//
+
+#if 0
+	// 一起，重新tuning 一遍.
+
+		pass = 0;
+		left_dq = 0;
+		right_dq = 0;
+		for(i = 0; i < 0x3f; i++) {
+			rx_soft_training_set_pb_dq_skew(i);
+
+			int check_ret = check_read_pattern();
+
+			if(!check_ret && (pass == 0)) {
+				left_dq = i;
+				pass = 1;
+			} else if(check_ret && (pass == 1)) {
+				right_dq = i;
+				pass = 0;
+			}
+		}
+
+		//selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
+		//rx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		//printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
+#else
+		// 每个DQ 重新tuning一遍.
+		rx_soft_training_pb_dq_all(selected_dqs_skew);
+#endif
+
 	}
 
 	ddr3_enable_mpr(0);
