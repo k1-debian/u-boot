@@ -545,14 +545,14 @@ void tx_soft_training()
 
 //		selected_cmd_skew = 0;
 		tx_soft_training_set_pb_cmd_skew(selected_cmd_skew);
-		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
 
 		ddrp_wl_calibration();
 
 		printf("DDRP_INNOPHY_WL_L: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
 		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
 
-		printf("tx deskew tuning done, %d found, tuned tx cmd_skew: %d, tx_dq_skew: %d\n", max_pass_count, selected_cmd_skew, selected_dq_skew);
+		printf("tx deskew tuning done, %d found, tuned tx dq_skew: %d, tx_cmd_skew: %d\n", max_pass_count, selected_dq_skew, selected_cmd_skew);
 	}
 
 
@@ -837,9 +837,6 @@ static inline void ddr3_enable_mpr(int enable)
 	unsigned int tmp, tmp1;
 
 	// clear before load MR registers.
-	tmp = ddr_readl(DDRC_CGUC1);
-	tmp1 = tmp & ~(0xf << 4);
-	ddr_writel(tmp1, DDRC_CGUC1);
 
 	mr3 = DDRC_LMR_START | DDRC_LMR_CMD_LMR	\
 		| ((mr3 & 0xffff | (!!enable << 2)) << DDRC_LMR_DDR_ADDR_BIT) \
@@ -847,10 +844,11 @@ static inline void ddr3_enable_mpr(int enable)
 
 	printf("---- mr3: %x\n", mr3);
 	ddr_writel(mr3, DDRC_LMR);
-	udelay(5);
+	udelay(10);
 
 	// restore.
-	ddr_writel(tmp, DDRC_CGUC1);
+	//ddr_writel(tmp, DDRC_CGUC1);
+	//udelay(10);
 }
 
 static int print_read_pattern(int dq_skew)
@@ -916,7 +914,7 @@ static void rx_soft_training(void)
 	printf("==============rx dq pb deskew from 0 to 63 ============\n");
 #endif
 	for(dqs_skew = 0; dqs_skew < 0x3f; dqs_skew++) {
-		//这里假定了所有的DQS skew 相同.
+		//这里假定了所有的DQS skew 相同, 找到最大的pass区间.
 		rx_soft_training_set_pb_dqs_skew(dqs_skew, dqs_skew);
 
 		pass = 0;
@@ -1017,9 +1015,8 @@ static void rx_soft_training(void)
 
 		//
 
-#if 0
+#if 1
 	// 一起，重新tuning 一遍.
-
 		pass = 0;
 		left_dq = 0;
 		right_dq = 0;
@@ -1037,9 +1034,9 @@ static void rx_soft_training(void)
 			}
 		}
 
-		//selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
-		//rx_soft_training_set_pb_dq_skew(selected_dq_skew);
-		//printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
+		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
+		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
 #else
 		// 每个DQ 重新tuning一遍.
 		rx_soft_training_pb_dq_all(selected_dqs_skew);
