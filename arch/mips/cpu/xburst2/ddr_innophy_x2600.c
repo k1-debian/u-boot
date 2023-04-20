@@ -510,12 +510,16 @@ void tx_soft_training()
 
 		int count = right_dq - left_dq;
 
+#if 0
 		if(count != 0 && left_cmd_skew == 0) {
 			left_cmd_skew = cmd_skew;
+			max_pass_count = count;
 #if DEBUG_TX_RX_TRAINING
 			printf(" -> * ");
 #endif
-		} else if(count > max_pass_count) {
+		} else
+#endif
+		if(count > max_pass_count) {
 
 #if DEBUG_TX_RX_TRAINING
 			printf(" * <- ");
@@ -525,6 +529,7 @@ void tx_soft_training()
 
 			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
 			max_pass_count = count;
+			selected_cmd_skew = cmd_skew;
 		}
 
 #if DEBUG_TX_RX_TRAINING
@@ -536,14 +541,17 @@ void tx_soft_training()
 	if(max_pass_count == 0) {
 		printf("tx deskew tuning error, no skew found!\n");
 	} else {
-		selected_cmd_skew = left_cmd_skew + (right_cmd_skew - left_cmd_skew) / 2;
+//		selected_cmd_skew = left_cmd_skew + (right_cmd_skew - left_cmd_skew) / 2;
+
+//		selected_cmd_skew = 0;
 		tx_soft_training_set_pb_cmd_skew(selected_cmd_skew);
+		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
+
 		ddrp_wl_calibration();
 
 		printf("DDRP_INNOPHY_WL_L: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
 		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
-		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
 		printf("tx deskew tuning done, %d found, tuned tx cmd_skew: %d, tx_dq_skew: %d\n", max_pass_count, selected_cmd_skew, selected_dq_skew);
 	}
 
