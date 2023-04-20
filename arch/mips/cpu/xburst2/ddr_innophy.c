@@ -473,8 +473,6 @@ static void ddrc_post_init(void)
 	ddr_writel(reg, DDRC_DWCFG);
 #endif
 
-	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
-	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
 
 	FUNC_EXIT();
 }
@@ -638,6 +636,10 @@ void sdram_init(void)
 	if(ddrp_post_init) {
 		ddrp_post_init();
 	}
+
+	/*在完全初始化完ddr phy之后，再开启自动时钟控制.*/
+	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
+	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
 
 	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/
 	if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
