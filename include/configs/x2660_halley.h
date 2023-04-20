@@ -43,7 +43,12 @@
 #define CONFIG_SYS_AHB0_FREQ		300000000
 #define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
 
-
+/* Device Tree Configuration*/
+/*#define CONFIG_OF_LIBFDT 1*/
+#ifdef CONFIG_OF_LIBFDT
+#define IMAGE_ENABLE_OF_LIBFDT  1
+#define CONFIG_LMB
+#endif
 
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
@@ -168,10 +173,19 @@
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " ip=192.168.10.207:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/pzqi/rootfs-tst rw"
   #elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw flashtype=nor"
+    #ifdef CONFIG_OF_LIBFDT
+        /* Device tree not compiled into kernel support*/
+	    #define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock3 rw flashtype=nor"
+    #else
+	    #define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw flashtype=nor"
+    #endif
   #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw flashtype=nand"
-	/*#define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=3 root=ubi0:rootfs ubi.mtd=4 rootfstype=ubifs rw"*/ /*dtb support*/
+    #ifdef CONFIG_OF_LIBFDT
+        /* Device tree not compiled into kernel support*/
+        #define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=3 root=ubi0:rootfs ubi.mtd=4 rootfstype=ubifs rw flashtype=nand"
+    #else
+	    #define CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw flashtype=nand"
+    #endif
   #else
     #define CONFIG_BOOTARGS BOOTARGS_COMMON " ubi.mtd=1 root=ubi0:root rootfstype=ubifs rw"
   #endif
@@ -206,10 +220,19 @@
     #define CONFIG_BOOTCOMMAND "mmc dev 0; mmc read 0x80a00000 0x1800 0x3000; bootm 0x80a00000"
     /*#define CONFIG_BOOTCOMMAND "set dtb 0x83000000; set uImage 0x80600000; mmc dev 0;mmc read ${uImage} 0x1800 0x2800; mmc read ${dtb} 0x5800 0x100; bootm ${uImage} - ${dtb}"*/ /*dtb support*/
   #elif defined(CONFIG_SPL_SFC_NOR)
-	#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x600000 0x80a00000 ;bootm 0x80a00000"
+    #ifdef CONFIG_OF_LIBFDT
+        /* Device tree not compiled into kernel support*/
+	    #define CONFIG_BOOTCOMMAND "set uImage 0x80a00000; set dtb 0x83000000; sfcnor read 0x40000 0x600000 $(uImage); sfcnor read 0x640000 0x20000 $(dtb); bootm $(uImage) - ${dtb}"
+    #else
+	    #define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x600000 0x80a00000 ;bootm 0x80a00000"
+    #endif
   #elif defined(CONFIG_SPL_SFC_NAND)
-	#define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x600000 0x80a00000 ;bootm 0x80a00000"
-	/*#define CONFIG_BOOTCOMMAND "set uImage 0x80600000; set dtb 0x83000000; sfcnand read 0x100000 0x500000 $(uImage); sfcnand read 0x900000 0x20000 $(dtb); bootm $(uImage) - ${dtb}"*/  /*dtb support*/
+    #ifdef CONFIG_OF_LIBFDT
+        /* Device tree not compiled into kernel support*/
+	    #define CONFIG_BOOTCOMMAND "set uImage 0x80a00000; set dtb 0x83000000; sfcnand read 0x100000 0x600000 $(uImage); sfcnand read 0x900000 0x20000 $(dtb); bootm $(uImage) - ${dtb}"
+    #else
+	    #define CONFIG_BOOTCOMMAND "sfcnand read 0x100000 0x600000 0x80a00000 ;bootm 0x80a00000"
+    #endif
   #else
     #define CONFIG_BOOTCOMMAND						\
 	"mtdparts default; ubi part system; ubifsmount ubi:boot; "	\
