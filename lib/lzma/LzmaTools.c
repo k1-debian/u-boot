@@ -174,7 +174,9 @@ int jz_lzma_decompress(unsigned char *src, size_t size, unsigned char *dst, unsi
 	/* open clk gate */
 	//printf("lzma config clk\n");
 	/* config clk */
+#ifdef CONFIG_X2580
 	clk_set_rate(ISPA, 600000000);
+#endif
 	lzma_base = LZMA_START_ADDRESS(index);
 
 	//printf("ingenic lzma%d base:0x%x decompress(0x%x:0x%x)\n",index, lzma_base, (unsigned int)src, (unsigned int)dst);
