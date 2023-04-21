@@ -461,7 +461,7 @@ static int check_wr_data()
 void tx_soft_training()
 {
 	unsigned int cmd_skew = 0;
-	int pass = 0;
+	int pass = -1;
 	int i = 0;
 	int j = 0;
 	int left_dq = 0;
@@ -499,7 +499,7 @@ void tx_soft_training()
 		// DQS 使用默认值0x7. 可能不是最佳值.
 //		for(dqs_skew = 0; dqs_skew < 0x3f; dqs_skew++) {
 
-		pass = 0;
+		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
 
@@ -516,7 +516,7 @@ void tx_soft_training()
 		for(i = 0; i < 0x3f; i++) {
 			tx_soft_training_set_pb_dq_skew(i);
 			int check_wr = check_wr_data();
-			if(!check_wr && (pass == 0)) {
+			if(!check_wr && (pass == -1)) {
 				left_dq = i;
 				pass = 1;
 
@@ -528,20 +528,18 @@ void tx_soft_training()
 
 #if DEBUG_TX_RX_TRAINING
 			if(!check_wr) {
-				putchar('1');
+				if(pass) {
+					putchar('1');
+				} else {
+					putchar('x'); // 读写测试通过，但是没有被选中，可能处于边缘，不稳定.
+				}
 			} else {
 				putchar('0');
 			}
 #endif
 		}
-//		putchar('\n');
-
-//		}
-
 
 		int count = right_dq - left_dq;
-
-
 		if(count != 0 && left_cmd_skew == -1) {
 			left_cmd_skew = cmd_skew;
 			right_cmd_skew = cmd_skew;
@@ -585,14 +583,14 @@ void tx_soft_training()
 		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
 		//4. 重新校准一次 perbit DQ skew，找到左右窗口的中心点作为最终值.
-		pass = 0;
+		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
 
 		for(i = 0; i < 0x3f; i++) {
 			tx_soft_training_set_pb_dq_skew(i);
 			int check_wr = check_wr_data();
-			if(!check_wr && (pass == 0)) {
+			if(!check_wr && (pass == -1)) {
 				left_dq = i;
 				pass = 1;
 
@@ -991,7 +989,7 @@ static void rx_soft_training(void)
 		//这里假定了所有的DQS skew 相同, 找到最大的pass区间.
 		rx_soft_training_set_pb_dqs_skew(dqs_skew, dqs_skew);
 
-		pass = 0;
+		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
 #if DEBUG_TX_RX_TRAINING
@@ -1015,7 +1013,11 @@ static void rx_soft_training(void)
 
 			int check_ret = check_read_pattern();
 
-			if(!check_ret && (pass == 0)) {
+			/* 禁止出现 PFP 的情况
+			   只查找 FPF的情况.
+			   如果left_dq < right_dq 了，说明right_
+			*/
+			if(!check_ret && (pass == -1)) {
 				left_dq = i;
 				pass = 1;
 			} else if(check_ret && (pass == 1)) {
@@ -1025,7 +1027,11 @@ static void rx_soft_training(void)
 
 #if DEBUG_TX_RX_TRAINING
 			if(!check_ret) {
-				putchar('1');
+				if(pass) {
+					putchar('1');
+				} else {
+					putchar('x');
+				}
 			} else {
 				putchar('0');
 			}
@@ -1098,7 +1104,7 @@ static void rx_soft_training(void)
 
 #if 1
 	// 一起，重新tuning 一遍.
-		pass = 0;
+		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
 		for(i = 0; i < 0x3f; i++) {
@@ -1106,7 +1112,7 @@ static void rx_soft_training(void)
 
 			int check_ret = check_read_pattern();
 
-			if(!check_ret && (pass == 0)) {
+			if(!check_ret && (pass == -1)) {
 				left_dq = i;
 				pass = 1;
 			} else if(check_ret && (pass == 1)) {
