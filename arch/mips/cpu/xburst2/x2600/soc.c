@@ -61,6 +61,12 @@ extern int dump_icache_tag(unsigned int start, unsigned int len);
 extern int debug_cache_2(void);
 extern void dump_c0_regs(void);
 
+void change_lcd_ddrc_process_priority(void)
+{
+	*(unsigned int *)0x13012024 = 0xFF404030;   //DDRC-APB-CCHC0
+	*(unsigned int *)0x13012028 = 0xFF404030;   //DDRC-APB-CCHC1
+}
+
 void board_init_f(ulong dummy)
 {
 	/* Set global data pointer */
@@ -106,6 +112,8 @@ void board_init_f(ulong dummy)
 
 	debug("SDRAM init\n");
 	sdram_init();
+
+	change_lcd_ddrc_process_priority();
 
 #ifdef CONFIG_DDR_AUTO_REFRESH_TEST
 	ddr_test_refresh(0xa0000000, 0xa1000000);
