@@ -35,6 +35,7 @@ extern struct ddr_reg_value supported_ddr_reg_values[];
 
 
 #define DEBUG_TX_RX_TRAINING	0
+#define OPTIMIZE_TX_RX_TRAINING 0	// save training time.
 
 /*#define CONFIG_DWC_DEBUG 0*/
 #define ddr_hang() do{						\
@@ -231,10 +232,10 @@ static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_d
 void ddrp_wl_calibration(void)
 {
 	unsigned tmp = 0;
-
-
+	int wl_count = 0;
 
 	unsigned int mr1 = global_reg_value->DDR_MR1_VALUE;
+
 
 	mr1 = ((mr1 >> 16) & 0x7) << 13 | (mr1 & 0x1ffe); // 高三位BA2,BA1,BA0 低位地址线, 确保DLL ON， 否则后面会卡死.
 
@@ -262,6 +263,9 @@ void ddrp_wl_calibration(void)
 
 	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE2);
 
+
+retry_wl:
+	wl_count ++;
 	tmp = 2 << 6 | 1 << 2;
 	ddr_writel(tmp, DDRP_INNOPHY_TRAINING_CTRL);
 
@@ -269,9 +273,29 @@ void ddrp_wl_calibration(void)
 		tmp = ddr_readl(DDRP_INNOPHY_WL_DONE);
 	}while(tmp != 0x3);
 
-	ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
+#if 1
+//	ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
+#endif
 
+#if 0
+#define MAX_WL_RETRY_CNT	3
+	if(((ddr_readl(DDRP_INNOPHY_WL_L) == 0x3f) || (ddr_readl(DDRP_INNOPHY_WL_H) == 0x3f)) && wl_count <= MAX_WL_RETRY_CNT) {
+		/* 不一定是错，这里进行 retry，只是在调试阶段debug使用.*/
+		printf("***ERROR WL FOUND retry <%d/%d>**** ", wl_count, MAX_WL_RETRY_CNT);
+		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
+		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+		goto retry_wl;
+	}
+#endif
+
+#if 0
+	if(ddr_readl(DDRP_INNOPHY_WL_L) == 0x3f) {
+		printf("******** ");
+	}
+		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
+		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+#endif
 
 }
 
@@ -351,6 +375,12 @@ int tx_re_training(unsigned int cmd_skew)
 }
 
 
+static void tx_soft_training_set_pb_ck_skew(unsigned int ck_skew)
+{
+	ddr_writel(ck_skew, DDRP_INNOPHY_PBDS_CK0);
+	ddr_writel(ck_skew, DDRP_INNOPHY_PBDS_CKB0);
+}
+
 static void tx_soft_training_set_pb_cmd_skew(unsigned int cmd_skew)
 {
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A0);
@@ -376,8 +406,10 @@ static void tx_soft_training_set_pb_cmd_skew(unsigned int cmd_skew)
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA2);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BG1);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE);
+#if 0
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK0);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB0);
+#endif
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB0);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT0);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RESETN);
@@ -385,8 +417,10 @@ static void tx_soft_training_set_pb_cmd_skew(unsigned int cmd_skew)
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB1);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT1);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE1);
+#if 0
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK1);
 	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB1);
+#endif
 }
 
 static void tx_soft_training_set_pb_dq_skew(unsigned int dq_skew)
@@ -417,11 +451,16 @@ static void tx_soft_training_set_pb_dq_skew(unsigned int dq_skew)
 #endif
 }
 
-static void tx_soft_training_set_pb_dqs_skew(unsigned int dqs_skew)
+static void tx_soft_training_set_pb_dqs0_skew(unsigned int dqs_skew)
 {
 
 	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQS0);
 	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQSB0);
+}
+
+static void tx_soft_training_set_pb_dqs1_skew(unsigned int dqs_skew)
+{
+
 	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQS1);
 	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQSB1);
 }
@@ -436,21 +475,20 @@ static void ddrp_wl_bypass()
 }
 
 
-static int check_wr_data()
+static int check_wr_data(int start)
 {
+	//unsigned int *p = 0xa5a5a5a0;
 	unsigned int *p = 0xa0000000;
 	int i = 0;
-
 	unsigned int pattern = 0;
 
+
+
 	for(i = 0; i < 16; i++) {
-		pattern = i << 0 | i << 8 | i << 16 | i << 24;
-		p[i] = pattern;
+		p[i] = 0xffff0000; //pattern;
 	}
 	for(i = 0; i < 16; i++) {
-		pattern = i << 0 | i << 8 | i << 16 | i << 24;
-		//printf("read: %x - pattern: %x\n", p[i], pattern);
-		if(p[i] != pattern) {
+		if(p[i] != 0xffff0000) {
 			return -1;
 		}
 	}
@@ -460,7 +498,7 @@ static int check_wr_data()
 
 void tx_soft_training()
 {
-	unsigned int cmd_skew = 0;
+	int cmd_skew = 0;
 	int pass = -1;
 	int i = 0;
 	int j = 0;
@@ -480,13 +518,26 @@ void tx_soft_training()
 #if DEBUG_TX_RX_TRAINING
 	printf("=============tx pb deskew from 0 to 63 ==============\n");
 #endif
-	for(cmd_skew = 0;  cmd_skew < 0x3f; cmd_skew++) {
-
-		/* 每次修改 cmd_skew之后，需要做wl leveling使 cmd 和DQS 对齐.*/
+	for(cmd_skew = 0;  cmd_skew <= 0x3F; cmd_skew++) {
+//	for(cmd_skew = 0x3f;  cmd_skew >= 0; cmd_skew--) {
+		/* 1. 每次修改 cmd_skew之后，需要做wl leveling使 cmd 和DQS 对齐.*/
+		tx_soft_training_set_pb_ck_skew(cmd_skew);
 		tx_soft_training_set_pb_cmd_skew(cmd_skew);
-		ddrp_wl_calibration();
 
+		/* 2. 做一次 wl ，对齐 DQS 和 CMD */
+		ddrp_wl_calibration();
+		/*3. 将 wl 设置为bypass，使 tx dqs skew 可以使用 bypass 的值. */
 		ddrp_wl_bypass();
+
+		/*4. 将 wl 的结果，写入 tx dqs skew. */
+		unsigned int wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
+		tx_soft_training_set_pb_dqs0_skew(wl_l);
+		unsigned int wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
+		tx_soft_training_set_pb_dqs1_skew(wl_l);
+
+#if DEBUG_TX_RX_TRAINING
+		printf("WL_L(DQS0):%x, WL_H(DQS1):%x ",wl_l, wl_h);
+#endif
 
 #if DEBUG_TX_RX_TRAINING
 		if(cmd_skew < 10) {
@@ -495,7 +546,6 @@ void tx_soft_training()
 			printf("cmd_skew:%d ", cmd_skew);
 		}
 #endif
-
 		// DQS 使用默认值0x7. 可能不是最佳值.
 //		for(dqs_skew = 0; dqs_skew < 0x3f; dqs_skew++) {
 
@@ -515,7 +565,10 @@ void tx_soft_training()
 
 		for(i = 0; i < 0x3f; i++) {
 			tx_soft_training_set_pb_dq_skew(i);
-			int check_wr = check_wr_data();
+
+			*(volatile unsigned int *)0xb0000000;
+
+			int check_wr = check_wr_data(i);
 			if(!check_wr && (pass == -1)) {
 				left_dq = i;
 				pass = 1;
@@ -523,7 +576,6 @@ void tx_soft_training()
 			} else if(check_wr && (pass == 1)) {
 				right_dq = i;
 				pass = 0;
-
 			}
 
 #if DEBUG_TX_RX_TRAINING
@@ -540,7 +592,7 @@ void tx_soft_training()
 		}
 
 		int count = right_dq - left_dq;
-		if(count != 0 && left_cmd_skew == -1) {
+		if(count >= 5 && left_cmd_skew == -1) {
 			left_cmd_skew = cmd_skew;
 			right_cmd_skew = cmd_skew;
 
@@ -551,8 +603,13 @@ void tx_soft_training()
 			printf(" -> * ");
 #endif
 		}
+#if 0
+else if(count == 0){
+			//break; // TEST.
+		}
+#endif
 
-		if((first_left_dq == left_dq) && (count > max_pass_count)) {
+		if((first_left_dq == left_dq) && (count >= max_pass_count)) {
 
 #if DEBUG_TX_RX_TRAINING
 			printf(" * <- ");
@@ -570,16 +627,36 @@ void tx_soft_training()
 	if(max_pass_count == 0) {
 		printf("tx deskew tuning error, no skew found!\n");
 	} else {
+
+#define RIGHT_CMD_SKEW_ADJUST	3	// 去掉右侧可能出现的假PASS。
+
+		right_cmd_skew -= right_cmd_skew > RIGHT_CMD_SKEW_ADJUST ? RIGHT_CMD_SKEW_ADJUST : 0;
 		selected_cmd_skew = left_cmd_skew + (right_cmd_skew - left_cmd_skew) / 2;
 
 		//1. 找到合适的cmd_skew， 重新设置到.
+		tx_soft_training_set_pb_ck_skew(selected_cmd_skew);
 		tx_soft_training_set_pb_cmd_skew(selected_cmd_skew);
+
 		//2. 重新做一次 wl_calibration，使DQS 和 CMD 对齐.
 		ddrp_wl_calibration();
 		//3. 设置wl 为bypass 模式，此时PHY 会使用 wl result 作为DQS tx perbit skew value.
+		//ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
 		ddrp_wl_bypass();
 
-		printf("DDRP_INNOPHY_WL_L: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+		unsigned int wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
+		tx_soft_training_set_pb_dqs0_skew(wl_l);
+		unsigned int wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
+		tx_soft_training_set_pb_dqs1_skew(wl_h);
+
+
+		printf("================== Final TX deskew Result ===============\n");
+		printf("DDRP_INNOPHY_TRAINING_CTRL: %x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
+		printf("TX_DQS0 deskew: %x ",ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS0));
+		printf("TX_DQSB0 deskew: %x \n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB0));
+		printf("TX_DQS1 deskew: %x ", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS1));
+		printf("TX_DQSB1 deskew: %x\n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB1));
+
+		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
 		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
 		//4. 重新校准一次 perbit DQ skew，找到左右窗口的中心点作为最终值.
@@ -587,9 +664,10 @@ void tx_soft_training()
 		left_dq = 0;
 		right_dq = 0;
 
-		for(i = 0; i < 0x3f; i++) {
+		for(i = 0; i <= 0x3f; i++) {
 			tx_soft_training_set_pb_dq_skew(i);
-			int check_wr = check_wr_data();
+			*(volatile unsigned int *)0xb0000000;
+			int check_wr = check_wr_data(i);
 			if(!check_wr && (pass == -1)) {
 				left_dq = i;
 				pass = 1;
@@ -616,6 +694,7 @@ void tx_soft_training()
 		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
 
 		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		*(volatile unsigned int *)0xb0000000;
 
 		printf("tx deskew tuning done, %d found, tuned tx dq_skew: %d, tx_cmd_skew: %d\n", max_pass_count, selected_dq_skew, selected_cmd_skew);
 	}
@@ -907,14 +986,15 @@ static inline void ddr3_enable_mpr(int enable)
 		| ((mr3 & 0xffff | (!!enable << 2)) << DDRC_LMR_DDR_ADDR_BIT) \
 		| (((mr3 >> 16) & 0x7) << DDRC_LMR_BA_BIT) ;
 
-	printf("---- mr3: %x\n", mr3);
 	ddr_writel(mr3, DDRC_LMR);
-	udelay(10);
+	udelay(1);
+#if 0
 	int i = 0;
 	unsigned int *p = 0xa0000000;
 	for(i = 0; i < 4; i++) {
 		printf("%x\n", p[i]);
 	}
+#endif
 
 	// restore.
 	//ddr_writel(tmp, DDRC_CGUC1);
@@ -985,10 +1065,9 @@ static void rx_soft_training(void)
 #if DEBUG_TX_RX_TRAINING
 	printf("==============rx dq pb deskew from 0 to 63 ============\n");
 #endif
-	for(dqs_skew = 0; dqs_skew < 0x3f; dqs_skew++) {
+	for(dqs_skew = 0; dqs_skew <= 0x3f; dqs_skew++) {
 		//这里假定了所有的DQS skew 相同, 找到最大的pass区间.
 		rx_soft_training_set_pb_dqs_skew(dqs_skew, dqs_skew);
-
 		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
@@ -1001,9 +1080,12 @@ static void rx_soft_training(void)
 
 
 #endif
-		for(i = 0; i < 0x3f; i++) {
+		for(i = 0; i <= 0x3f; i++) {
 			//这里假定了所有的DQ skew 相同.
 			rx_soft_training_set_pb_dq_skew(i);
+			*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
+
+
 
 			/*
 				pass windows:
@@ -1107,8 +1189,10 @@ static void rx_soft_training(void)
 		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
-		for(i = 0; i < 0x3f; i++) {
+		for(i = 0; i <= 0x3f; i++) {
 			rx_soft_training_set_pb_dq_skew(i);
+
+			*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
 
 			int check_ret = check_read_pattern();
 
@@ -1119,14 +1203,29 @@ static void rx_soft_training(void)
 				right_dq = i;
 				pass = 0;
 			}
+
+#if DEBUG_TX_RX_TRAINING
+			if(!check_ret) {
+				putchar('1');
+			} else {
+				putchar('0');
+			}
+#endif
+
 		}
+
+#if DEBUG_TX_RX_TRAINING
+		putchar('\n');
+#endif
 
 		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
 		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
 		printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
 #else
 		// 每个DQ 重新tuning一遍.
 		rx_soft_training_pb_dq_all(selected_dqs_skew);
+		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
 #endif
 
 	}
@@ -1351,12 +1450,6 @@ static void _ddrp_training_invdelay(void)
 static void _ddrp_post_init(void)
 {
 
-	/*
-	    tx 依赖写数据，需要先进行rx_soft_training
-	    进行tx_soft_training时，控制器的auto refresh功能需要开启，而auto self refresh 功能需要关闭.
-	    防止在进行training的时候，控制器让颗粒进入了auto-self-refresh状态，从而导致training失败.
-	*/
-	tx_soft_training();
 }
 
 extern void (*ddrp_post_init)(void);
@@ -1367,10 +1460,25 @@ void ddrp_auto_calibration(void)
 
 	//ddrp_zq_calibration(1, 0xe, 0x14, 0x14, 0x5);	 // 0xe, 0x14, 0x14, 0x5 is default value.
 	ddrp_zq_calibration(1, 0xc, 0xc, 0xc, 0x2);	// 1, bypass. drv:0xc 38.4 欧姆, odt:0x2, 282 欧姆.
-	ddrp_wl_calibration();
 	ddrp_rx_dqs_auto_calibration();
+
+#if 0
+	//ddrp_wl_calibration();	// 低频可以只做WL. 不做tx rx training.
+#else
+	/*如果频率低，可以不用tx rx training， 以减少启动时间.*/
+
+
 	/* 利用了DDR3 的固定pattern 做training，不依赖写数据，为了防止dfi 的影响，在auto refresh之前进行rx training.*/
 	rx_soft_training();
+	/*
+	说明:
+	tx_soft_training 过程中有 write_leveling过程 和 数据读写过程.
+	write_leveling 过程 不能开启ddrc auto refresh 功能，否则对结果有影响.
+	数据读写过程理论上又要求控制器的auto refresh 功能打开，否则读写的数据可能不能保持.
+		--> 如果读写的数据量很小的情况下，CPU 的频率足够块，理论上可以维持数据.
+	*/
+	tx_soft_training();
+#endif
 }
 
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
