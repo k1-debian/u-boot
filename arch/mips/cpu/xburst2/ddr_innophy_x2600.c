@@ -46,6 +46,12 @@ extern struct ddr_reg_value supported_ddr_reg_values[];
 DECLARE_GLOBAL_DATA_PTR;
 extern struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
+static char tx_pass_cmd_skew[0x3f];
+static char tx_rx_pass_dqs_skew[0x3f];
+static char tx_rx_left_dq[0x3f];
+static char tx_rx_right_dq[0x3f];
+
+
 #ifdef  CONFIG_DWC_DEBUG
 #define FUNC_ENTER() debug("%s enter.\n",__FUNCTION__);
 #define FUNC_EXIT() debug("%s exit.\n",__FUNCTION__);
@@ -79,11 +85,6 @@ static void dump_ddrp_register(void)
 #define dump_ddrc_register()
 #define dump_ddrp_register()
 #endif
-
-
-
-
-
 
 static void ddrp_set_dq_odt(unsigned int pu, unsigned int pd)
 {
@@ -510,9 +511,10 @@ void tx_soft_training()
 
 	int left_cmd_skew = -1;
 	int right_cmd_skew = -1;
-	int dqs_skew = 0;
 
 	int first_left_dq = -1;
+
+	int pass_index = 0;
 
 
 #if DEBUG_TX_RX_TRAINING
@@ -533,7 +535,7 @@ void tx_soft_training()
 		unsigned int wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
 		tx_soft_training_set_pb_dqs0_skew(wl_l);
 		unsigned int wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
-		tx_soft_training_set_pb_dqs1_skew(wl_l);
+		tx_soft_training_set_pb_dqs1_skew(wl_h);
 
 #if DEBUG_TX_RX_TRAINING
 		printf("WL_L(DQS0):%x, WL_H(DQS1):%x ",wl_l, wl_h);
@@ -546,22 +548,11 @@ void tx_soft_training()
 			printf("cmd_skew:%d ", cmd_skew);
 		}
 #endif
-		// DQS 使用默认值0x7. 可能不是最佳值.
-//		for(dqs_skew = 0; dqs_skew < 0x3f; dqs_skew++) {
 
 		pass = -1;
 		left_dq = 0;
 		right_dq = 0;
 
-#if 0
-		if(dqs_skew < 10) {
-		printf("dqs_skew:0%d ", dqs_skew);
-		} else {
-		printf("dqs_skew:%d ", dqs_skew);
-
-		}
-#endif
-		//tx_soft_training_set_pb_dqs_skew(dqs_skew);
 
 		for(i = 0; i < 0x3f; i++) {
 			tx_soft_training_set_pb_dq_skew(i);
@@ -616,6 +607,11 @@ else if(count == 0){
 #endif
 			right_cmd_skew = cmd_skew;
 			max_pass_count = count;
+
+			tx_pass_cmd_skew[pass_index]	= cmd_skew;
+			tx_rx_left_dq[pass_index] 	= left_dq;
+			tx_rx_right_dq[pass_index] 	= right_dq;
+			pass_index++;
 		}
 
 #if DEBUG_TX_RX_TRAINING
@@ -624,14 +620,29 @@ else if(count == 0){
 
 	}
 
+	left_dq = tx_rx_left_dq[pass_index / 2];
+	right_dq = tx_rx_right_dq[pass_index / 2];
+	max_pass_count = tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1];
+
+	selected_dq_skew = left_dq + (right_dq - left_dq) - max_pass_count / 2;
+	selected_cmd_skew = tx_pass_cmd_skew[pass_index / 2];
+
+	printf("selected tx cmd: %d\n", tx_pass_cmd_skew[pass_index / 2]);
+	printf("selected tx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
+	printf("max pass tx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
+	printf("selected dq: %d\n", selected_dq_skew);
+
+
 	if(max_pass_count == 0) {
 		printf("tx deskew tuning error, no skew found!\n");
 	} else {
 
 #define RIGHT_CMD_SKEW_ADJUST	3	// 去掉右侧可能出现的假PASS。
 
+#if 0
 		right_cmd_skew -= right_cmd_skew > RIGHT_CMD_SKEW_ADJUST ? RIGHT_CMD_SKEW_ADJUST : 0;
 		selected_cmd_skew = left_cmd_skew + (right_cmd_skew - left_cmd_skew) / 2;
+#endif
 
 		//1. 找到合适的cmd_skew， 重新设置到.
 		tx_soft_training_set_pb_ck_skew(selected_cmd_skew);
@@ -659,6 +670,11 @@ else if(count == 0){
 		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
 		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
+		// 4. 使用上面扫描记录中的最佳dq_skew.
+		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		*(volatile unsigned int *)0xb0000000;
+
+#if 0
 		//4. 重新校准一次 perbit DQ skew，找到左右窗口的中心点作为最终值.
 		pass = -1;
 		left_dq = 0;
@@ -697,6 +713,8 @@ else if(count == 0){
 		*(volatile unsigned int *)0xb0000000;
 
 		printf("tx deskew tuning done, %d found, tuned tx dq_skew: %d, tx_cmd_skew: %d\n", max_pass_count, selected_dq_skew, selected_cmd_skew);
+
+#endif
 	}
 
 
@@ -1037,6 +1055,8 @@ static int check_read_pattern(void)
 }
 
 
+
+
 static void rx_soft_training(void)
 {
 	unsigned int i, j, n, m = 0, finish = 0, de_skew;
@@ -1058,6 +1078,8 @@ static void rx_soft_training(void)
 	int right_dqs = -1;
 
 	int first_left_dq = -1;
+
+	int pass_index = 0;
 
 
 	ddr3_enable_mpr(1);
@@ -1122,17 +1144,6 @@ static void rx_soft_training(void)
 #endif
 		}
 
-#if 0
-		for(j = 0; j < left_dq; j++) {
-			putchar('0');
-		}
-		for(j = left_dq; j < right_dq; j++) {
-			putchar('1');
-		}
-		for(j = right_dq; j < 0x3f; j++) {
-			putchar('0');
-		}
-#endif
 		int count = right_dq - left_dq;
 
 /*
@@ -1142,7 +1153,6 @@ static void rx_soft_training(void)
 		if(count >= DQS_MIN_PASS_COUNT && left_dqs == -1) {
 			left_dqs = dqs_skew;
 			first_left_dq = left_dq;
-
 #if DEBUG_TX_RX_TRAINING
 			printf(" -> * ");
 #endif
@@ -1153,6 +1163,12 @@ static void rx_soft_training(void)
 			/* count 从小到大.*/
 			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
 			max_pass_count = count;
+
+			tx_rx_pass_dqs_skew[pass_index]	= dqs_skew;
+			tx_rx_left_dq[pass_index] 	= left_dq;
+			tx_rx_right_dq[pass_index] 	= right_dq;
+			pass_index++;
+
 #if DEBUG_TX_RX_TRAINING
 			printf(" * <- ");
 #endif
@@ -1174,9 +1190,28 @@ static void rx_soft_training(void)
 
 	}
 
+	selected_dqs_skew = tx_rx_pass_dqs_skew[pass_index / 2];
+	left_dq = tx_rx_left_dq[pass_index / 2];
+	right_dq = tx_rx_right_dq[pass_index / 2];
+	max_pass_count = tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1];
+
+	selected_dq_skew = left_dq + (right_dq - left_dq) - max_pass_count / 2;
+
+	printf("selected rx dqs: %d\n", tx_rx_pass_dqs_skew[pass_index / 2]);
+	printf("selected rx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
+	printf("max pass rx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
+	printf("selected dq: %d\n", selected_dq_skew);
+
 	if(max_pass_count == 0) {
 		printf("rx deskew tuning error, no skew found!\n");
 	} else {
+
+		rx_soft_training_set_pb_dqs_skew(selected_dqs_skew, selected_dqs_skew);
+		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
+		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
+
+
+#if 0
 		selected_dqs_skew = left_dqs + (right_dqs - left_dqs) / 2;
 
 		// 选定一个dqs，重新tuning dq的窗口.
@@ -1217,7 +1252,6 @@ static void rx_soft_training(void)
 #if DEBUG_TX_RX_TRAINING
 		putchar('\n');
 #endif
-
 		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
 		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
 		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
@@ -1228,6 +1262,7 @@ static void rx_soft_training(void)
 		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
 #endif
 
+#endif
 	}
 
 	ddr3_enable_mpr(0);
