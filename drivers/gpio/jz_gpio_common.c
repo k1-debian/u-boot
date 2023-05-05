@@ -178,6 +178,7 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x2? 0 : pins, base + PXPAT1C);
 	writel(func & 0x1? 0 : pins, base + PXPAT0C);
 
+/* pull up */
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
  #if defined(CONFIG_X1000)
 	writel(func & 0x10? pins : 0, base + PXPEC);
@@ -186,16 +187,38 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x10? pins : 0, base + PXPES);
 	writel(func & 0x10? 0 : pins, base + PXPEC);
  #endif
-#elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
+#elif defined(PXPUS) && defined(PXPUC) && defined(PXPU)
 	writel(func & 0x10? pins : 0, base + PXPUS);
 	writel(func & 0x10? 0 : pins, base + PXPUC);
-#elif defined(PXPD) && defined(PXPDC) && defined(PXPDS)
- #if defined(CONFIG_X2580)
-	writel(func & 0x20? 0 : pins, base + PXPDENC);
-	writel(func & 0x20? pins : 0, base + PXPDENS);
+#elif defined(PXPEHS) && defined(PXPEHC) && defined(PXPE_PULLUP)
+	if (func & 0x10)
+		gpio_set_driver_state(n, pins, PXPE_PULLUP);
+#endif
+
+/* pull down */
+#if defined(PXPDS) && defined(PXPDC) && defined(PXPD)
+	writel(func & 0x20? pins : 0, base + PXPDS);
+	writel(func & 0x20? 0 : pins, base + PXPDC);
+#elif defined(PXPELS) && defined(PXPELC) && defined(PXPE_PULLDN)
+	if (func & 0x20)
+		gpio_set_driver_state(n, pins, PXPE_PULLDN);
+#endif
+
+/* pull hiz */
+#if defined(PXPES) && defined(PXPEC) && defined(PXPE)
+ #if defined(CONFIG_X1000)
+	writel(func & 0x40? pins : 0, base + PXPES);
+	writel(func & 0x40? 0 : pins, base + PXPEC);
+ #else
+	writel(func & 0x40? pins : 0, base + PXPEC);
+	writel(func & 0x40? 0 : pins, base + PXPES);
  #endif
-#elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
-	gpio_set_driver_state(n, pins, PXPE_PULLUP);
+#elif defined(PXPDS) && defined(PXPDC) && defined(PXUS) && defined(PXUC)
+	writel(func & 0x40? pins : 0, base + PXPUC);
+	writel(func & 0x40? pins : 0, base + PXPDC);
+#elif defined(PXPEHC) && defined(PXPELC) && defined(PXPE_PULLHZ)
+	if (func & 0x40)
+		gpio_set_driver_state(n, pins, PXPE_PULLHZ);
 #endif
 
 #if 0 //defined(PXDSL) && defined(PXDSH)
@@ -317,7 +340,7 @@ void gpio_enable_pull(unsigned gpio)
 	unsigned pin = gpio % 32;
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
 	writel(1 << pin, GPIO_PXPEC(port));
-#elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
+#elif defined(PXPUS) && defined(PXPUC) && defined(PXPU)
 	writel(1 << pin, GPIO_PXPUC(port));
 #elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
 	gpio_set_driver_state(port, pin, PXPE_PULLUP);
@@ -332,7 +355,7 @@ void gpio_disable_pull(unsigned gpio)
 	unsigned pin = gpio % 32;
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
 	writel(1 << pin, GPIO_PXPES(port));
-#elif defined(PXPU) && defined(PXPUC) && defined(PXPUS)
+#elif defined(PXPUS) && defined(PXPUC) && defined(PXPU)
         writel(1 << pin, GPIO_PXPUS(port));
 #elif defined(PXPEL) && defined(PXPEH) && defined(PXPE_PULLUP)
 	gpio_set_driver_state(port, pin, PXPE_PULLHZ);
