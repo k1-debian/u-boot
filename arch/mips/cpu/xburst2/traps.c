@@ -42,7 +42,8 @@ char *get_exception(int num)
 
 void dump_task()
 {
-	int i,*p;
+	int i;
+	unsigned int *p;
 	struct task_info_regs *regs = *((unsigned int *)0x80000004);
 	p = (int *)(*((volatile unsigned int *)(0x80000004)) + PT_LEN);
 
@@ -51,19 +52,42 @@ void dump_task()
 	printf("cause:%x\n",read_c0_cause());
 
 	printf("\ndump regs:\n");
-	printf("ra[%x] fp[%x] t9[%x] t8[%x]\n", regs->ra,regs->fp,regs->t9,regs->t8);
-	printf("s7[%x] s6[%x] s5[%x] s4[%x]\n", regs->s7,regs->s6,regs->s5,regs->s4);
-	printf("s3[%x] s2[%x] s1[%x] s0[%x]\n", regs->s3,regs->s2,regs->s1,regs->s0);
-	printf("t7[%x] t6[%x] t5[%x] t4[%x]\n", regs->t7,regs->t6,regs->t5,regs->t4);
-	printf("t3[%x] t2[%x] t1[%x] t0[%x]\n", regs->t3,regs->t2,regs->t1,regs->t0);
-	printf("a3[%x] a2[%x] a1[%x] a0[%x]\n", regs->a3,regs->a2,regs->a1,regs->a0);
-	printf("v0[%x] v1[%x] lo[%x] hi[%x]\n", regs->v0,regs->v1,regs->lo,regs->hi);
-	printf("\nsp:%x",p);
-	for(i=0;i<32;i++) {
-		if(i%4 == 0) printf("\naddr %x:  ",&p[i]);
-		printf("%x ",p[i]);
+	printf("ra[%08x] fp[%08x] t9[%08x] t8[%08x]\n", regs->ra,regs->fp,regs->t9,regs->t8);
+	printf("s7[%08x] s6[%08x] s5[%08x] s4[%08x]\n", regs->s7,regs->s6,regs->s5,regs->s4);
+	printf("s3[%08x] s2[%08x] s1[%08x] s0[%08x]\n", regs->s3,regs->s2,regs->s1,regs->s0);
+	printf("t7[%08x] t6[%08x] t5[%08x] t4[%08x]\n", regs->t7,regs->t6,regs->t5,regs->t4);
+	printf("t3[%08x] t2[%08x] t1[%08x] t0[%08x]\n", regs->t3,regs->t2,regs->t1,regs->t0);
+	printf("a3[%08x] a2[%08x] a1[%08x] a0[%08x]\n", regs->a3,regs->a2,regs->a1,regs->a0);
+	printf("v0[%08x] v1[%08x] lo[%08x] hi[%08x]\n", regs->v0,regs->v1,regs->lo,regs->hi);
+
+	printf("\nsp:%08x \n",p);
+	printf("================dump stack==============\n");
+	for(i=0; i < 32; i++) {
+		if(i%4 == 0) printf("\naddr 0x%08x:  ",&p[i]);
+		printf("%08x ",p[i]);
 	}
 	printf("\n\n=====================================================\n\n");
+
+	p = read_c0_epc();
+#define DUMP_CODE_SIZE	128
+	unsigned int *up = (unsigned int) p | 0xa0000000;
+	if(p < 0x80000000 || p >= 0x90000000) {
+		printf("invalid epc value!\n");
+	} else {
+		printf("================dump code(cache)===============\n");
+		for(i = 0; i < DUMP_CODE_SIZE; i++) {
+			if(i%4 == 0) printf("\naddr 0x%08x:  ",&p[i]);
+			printf("%08x ",p[i]);
+		}
+
+		printf("\n================dump code(uncache)===============\n");
+		for(i = 0; i < DUMP_CODE_SIZE; i++) {
+			if(i%4 == 0) printf("\naddr 0x%08x:  ",&up[i]);
+			printf("%08x ", up[i]);
+		}
+		printf("\n");
+	}
+	printf("==============done=============\n");
 }
 
 void __attribute__ ((noreturn)) print_exp(void)
