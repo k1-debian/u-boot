@@ -1,5 +1,5 @@
 #
-# Ingenic x2660 configuration
+# Ingenic x2670 configuration
 # Copyright (c) 2023 Ingenic Semiconductor Co.,Ltd
 # Author: cxtan <chenxi.tan@ingenic.cn>
 #

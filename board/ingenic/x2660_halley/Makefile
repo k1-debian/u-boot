@@ -1,7 +1,7 @@
 #
-# Ingenic X2000 makefile
+# Ingenic X2660 makefile
 #
-# Copyright (c) 2016 Ingenic Semiconductor Co.,Ltd
+# Copyright (c) 2023 Ingenic Semiconductor Co.,Ltd
 # Author: cxtan <chenxi.tan@ingenic.cn>
 #
 # This program is free software; you can redistribute it and/or

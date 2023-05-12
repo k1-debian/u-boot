@@ -1,5 +1,5 @@
 /*
- * Ingenic x2660 setup code
+ * Ingenic x2670 setup code
  *
  * Copyright (c) 2023 Ingenic Semiconductor Co.,Ltd
  * Author: cxtan <chenxi.tan@ingenic.cn>
@@ -108,7 +108,7 @@ int spl_start_uboot(void)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: x2660_halley (Ingenic XBurst2 X2660 SoC)\n");
+	puts("Board: x2670_halley (Ingenic XBurst2 X2670 SoC)\n");
 	return 0;
 }
 

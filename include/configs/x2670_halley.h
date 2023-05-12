@@ -1,5 +1,5 @@
 /*
- * Ingenic X2660 configuration
+ * Ingenic X2670 configuration
  *
  * Copyright (c) 2016 Ingenic Semiconductor Co.,Ltd
  * Author: cxtan <chenxi.tan@ingenic.cn>
@@ -19,8 +19,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __X2660_HALLEY_H_
-#define	__X2660_HALLEY_H_
+#ifndef __X2670_HALLEY_H_
+#define	__X2670_HALLEY_H_
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
@@ -688,4 +688,4 @@
 /* #define CONFIG_JZ_CKEYAES */
 /* #define CONFIG_JZ_SECURE_SUPPORT */
 
-#endif/*END OF __X2660_HALLEY_H_ */
+#endif/*END OF __X2670_HALLEY_H_ */
