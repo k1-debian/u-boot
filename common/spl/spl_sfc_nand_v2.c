@@ -641,6 +641,46 @@ static char *spl_sfc_nand_os_ota_load(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_MCU_RTOS_BOOT
+#ifdef CONFIG_X2600
+#include "x2600_spl_mcu_rtos_boot_back.h"
+#endif
+
+
+void spl_nand_mcu_rtos_boot(void)
+{
+    unsigned int riscv_offset;
+    struct lep_header riscv;
+
+    struct jz_sfcnand_partition_param *partitions = get_partitions();
+
+    struct jz_sfcnand_partition *riscv_part = get_part_by_name(partitions, "riscv");
+    if (!riscv_part) {
+        printf("not found riscv\n");
+        return;
+    }
+
+    riscv_offset = riscv_part->offset;
+    sfc_nand_load(riscv_offset, sizeof(riscv), (unsigned int)(&riscv));
+    if (riscv.tag != LEP_TAG) {
+        printf("lep header is bad: 0x%x, not 0x%x\n", riscv.tag, LEP_TAG);
+        return;
+    }
+
+    riscv.img_start = CKSEG0ADDR(riscv.img_start);
+    riscv.img_end = CKSEG0ADDR(riscv.img_end);
+
+    sfc_nand_load(riscv_offset, riscv.img_end - riscv.img_start, riscv.img_start);
+
+    flush_cache_all();
+
+    lep_stop();
+
+    lep_start(riscv.entry);
+}
+
+#endif
+
 #ifdef CONFIG_OTA_VERSION30
 static struct ota_ops ota_ops = {
 	.flash_init = sfc_init,
@@ -670,6 +710,10 @@ char* spl_sfc_nand_load_image(void)
 #ifdef CONFIG_SPL_RISCV
 	spl_nand_load_riscv();
 	spl_start_riscv();
+#endif
+
+#ifdef CONFIG_SPL_MCU_RTOS_BOOT
+    spl_nand_mcu_rtos_boot();
 #endif
 	return NULL;
 #elif defined(CONFIG_SPL_RTOS_BOOT)
