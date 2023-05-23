@@ -68,7 +68,7 @@ static inline void LVDDR_W9464L6KH_init(void *data)
 
 	c->DDR_BL = 4;
 	c->DDR_RL = DDR__tck(RL);
-	c->DDR_WL = DDR__tck(RL - 1);
+	c->DDR_WL = DDR__tck(1);  // DDR__tck(RL - 1) memory test fail.
 
 	c->DDR_tCKE = DDR__tck(2);
 	c->DDR_tXSR = DDR__tck(200);
