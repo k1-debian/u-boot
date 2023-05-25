@@ -61,7 +61,7 @@
  * uart setting
  */
 #ifndef CONFIG_SYS_UART_INDEX
-#define CONFIG_SYS_UART_INDEX		0
+#define CONFIG_SYS_UART_INDEX		2
 #endif
 
 #ifndef CONFIG_BAUDRATE
