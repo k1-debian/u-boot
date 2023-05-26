@@ -85,8 +85,38 @@ void reallocate_cache(void)
 			::"r" (0xa0000000));
 }
 
+static inline void zboost_is_run()
+{
+    __asm__ volatile (
+        ".set push     \n\t"
+        ".set mips32r2 \n\t"
+        "sync \n\t"
+        "nop \n\t"
+        "li      $2, 0xb0000008 \n\t"
+        "lw      $3, 0($2) \n\t"
+        "andi    $4, $3, 0x2 \n\t"
+        "bne     $4, 0, _start_boot \n\t"
+        "nop \n\t"
+        "andi    $4, $3, (0x1<<4) \n\t"            /* FASTBOOT and HR(hibernate reset) */
+        "beq     $4, (0x1<<4), _fastboot \n\t"     /*if only fastboot !=0*/
+        "nop \n\t"
+        "bne     $4, (0x1<<4), _start_boot \n\t"  /*if WR && PR && FASTBOOT = 0*/
+        "nop \n\t"
+        "_fastboot: \n\t"
+        "li      $4, 0xb0004000 \n\t"          /* RTC Reserved Memory 4KBytes. */
+        "jalr.hb $4 \n\t"
+        "nop \n\t"
+        "_start_boot:\n\t"
+        "nop \n\t"
+		"lw $0,0(%0)   \n\t"
+        ".set pop      \n\t"
+		::"r" (0xa0000000));
+}
+
 void board_init_f(ulong dummy)
 {
+	zboost_is_run();
+
 	/* Set global data pointer */
 	gd = &gdata;
 
