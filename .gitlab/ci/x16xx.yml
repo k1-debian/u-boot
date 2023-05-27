@@ -1,0 +1,85 @@
+# --
+build-halley6_uImage_msc0-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: halley6_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+# --
+build-halley6_uImage_msc1-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: halley6_uImage_msc1
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+# --
+build-halley6_uImage_sfc_nor-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: halley6_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+# --
+build-halley6_uImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: halley6_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+build-burner_x1600-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: burner_x1600
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/spl/u-boot-spl.bin
+

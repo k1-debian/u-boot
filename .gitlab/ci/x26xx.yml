@@ -1,0 +1,129 @@
+# --
+build-x2670_base_xImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: x2670_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+    - make O=$BUILD_DIR uImage
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+# --
+build-x2670_halley_uImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: x2670_halley_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+    - make O=$BUILD_DIR uImage
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+# --
+build-x2670_halley_uImage_sfc_nor-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: x2670_halley_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+    - make O=$BUILD_DIR uImage
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+
+# --
+build-x2670_halley_xImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: x2670_halley_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+    - make O=$BUILD_DIR uImage
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/spl/u-boot-spl-pad.bin
+
+# --
+build-x2670_halley_xImage_sfc_nand_ota-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: x2670_halley_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+    - make O=$BUILD_DIR uImage
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/spl/u-boot-spl-pad.bin
+
+
+# --
+build-x2670_halley_xImage_sfc_nor-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: x2670_halley_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+    - make O=$BUILD_DIR uImage
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/spl/u-boot-spl-pad.bin
+
+build-burner_x2600-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  variables:
+    BUILD_CONFIG: burner_x2600
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - mkdir -p $BUILD_DIR
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG
+
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/spl/u-boot-spl.bin
+
