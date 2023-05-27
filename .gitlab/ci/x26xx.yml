@@ -8,7 +8,6 @@ build-x2670_base_xImage_sfc_nand-job:       # This job runs in the build stage, 
     - echo "开始编译 <$BUILD_CONFIG>..."
     - mkdir -p $BUILD_DIR
     - make O=$BUILD_DIR -C . $BUILD_CONFIG
-    - make O=$BUILD_DIR uImage
 
   artifacts:
     paths:
@@ -26,7 +25,6 @@ build-x2670_halley_uImage_sfc_nand-job:       # This job runs in the build stage
     - echo "开始编译 <$BUILD_CONFIG>..."
     - mkdir -p $BUILD_DIR
     - make O=$BUILD_DIR -C . $BUILD_CONFIG
-    - make O=$BUILD_DIR uImage
 
   artifacts:
     paths:
@@ -44,7 +42,6 @@ build-x2670_halley_uImage_sfc_nor-job:       # This job runs in the build stage,
     - echo "开始编译 <$BUILD_CONFIG>..."
     - mkdir -p $BUILD_DIR
     - make O=$BUILD_DIR -C . $BUILD_CONFIG
-    - make O=$BUILD_DIR uImage
 
   artifacts:
     paths:
@@ -62,7 +59,6 @@ build-x2670_halley_xImage_sfc_nand-job:       # This job runs in the build stage
     - echo "开始编译 <$BUILD_CONFIG>..."
     - mkdir -p $BUILD_DIR
     - make O=$BUILD_DIR -C . $BUILD_CONFIG
-    - make O=$BUILD_DIR uImage
 
   artifacts:
     paths:
@@ -81,7 +77,6 @@ build-x2670_halley_xImage_sfc_nand_ota-job:       # This job runs in the build s
     - echo "开始编译 <$BUILD_CONFIG>..."
     - mkdir -p $BUILD_DIR
     - make O=$BUILD_DIR -C . $BUILD_CONFIG
-    - make O=$BUILD_DIR uImage
 
   artifacts:
     paths:
@@ -101,7 +96,6 @@ build-x2670_halley_xImage_sfc_nor-job:       # This job runs in the build stage,
     - echo "开始编译 <$BUILD_CONFIG>..."
     - mkdir -p $BUILD_DIR
     - make O=$BUILD_DIR -C . $BUILD_CONFIG
-    - make O=$BUILD_DIR uImage
 
   artifacts:
     paths:
