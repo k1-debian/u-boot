@@ -1273,9 +1273,9 @@ void ddrp_pll_init(void)
 	ddr_writel(20, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 
 	ddr_writel(0x0, DDRP_INNOPHY_PLL_FBDIV);
-	ddr_writel(0x6, DDRP_INNOPHY_PLL_FBDIV_H);
+	ddr_writel(0x86, DDRP_INNOPHY_PLL_FBDIV_H);
 	ddr_writel(0x41, DDRP_INNOPHY_PLL_PDIV);
-	ddr_writel(0x0, DDRP_INNOPHY_PLL_CTRL);
+	ddr_writel(0x20, DDRP_INNOPHY_PLL_CTRL);
 
 	while(! (ddr_readl(DDRP_INNOPHY_PLL_LOCK) & (1 << 2)));
 
@@ -1504,7 +1504,7 @@ void ddrp_auto_calibration(void)
 
 
 	/* 利用了DDR3 的固定pattern 做training，不依赖写数据，为了防止dfi 的影响，在auto refresh之前进行rx training.*/
-	rx_soft_training();
+	//rx_soft_training();
 	/*
 	说明:
 	tx_soft_training 过程中有 write_leveling过程 和 数据读写过程.
@@ -1512,7 +1512,8 @@ void ddrp_auto_calibration(void)
 	数据读写过程理论上又要求控制器的auto refresh 功能打开，否则读写的数据可能不能保持.
 		--> 如果读写的数据量很小的情况下，CPU 的频率足够块，理论上可以维持数据.
 	*/
-	tx_soft_training();
+	//tx_soft_training();
+	rx_soft_training_set_pb_dq_skew(0x3);
 #endif
 }
 
