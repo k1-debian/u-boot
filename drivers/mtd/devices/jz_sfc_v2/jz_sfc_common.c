@@ -124,6 +124,7 @@ static void dump_data(unsigned char *buf,size_t len)
 
 void sfc_init(struct sfc *sfc)
 {
+	unsigned int tmp;
 	int n;
 	for(n = 0; n < N_MAX; n++) {
 		sfc_writel(sfc, SFC_TRAN_CONF0(n), 0);
@@ -142,6 +143,11 @@ void sfc_init(struct sfc *sfc)
 	sfc_writel(sfc, SFC_INTC, 0);
 	sfc_writel(sfc, SFC_CGE, 0);
 	sfc_writel(sfc, SFC_RM_DR, 0);
+
+	tmp = sfc_readl(sfc, SFC_GLB);
+	tmp &= ~(3);
+	tmp |= 2;
+	sfc_writel(sfc, SFC_GLB, tmp);
 }
 
 void sfc_stop(struct sfc*sfc)
