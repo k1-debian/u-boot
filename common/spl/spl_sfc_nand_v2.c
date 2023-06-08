@@ -145,6 +145,27 @@ static int sfc_read_data(unsigned int *data, unsigned int length)
 	return 0;
 }
 
+static void sfc_do_erase_blk(unsigned int page_addr)
+{
+    unsigned int read_buf = 0;
+    struct jz_sfc sfc;
+    memset(&sfc, 0, sizeof(sfc));
+
+    /* write enable */
+    SFC_SEND_COMMAND(&sfc, SPINAND_CMD_WREN, 0, 0, 0, 0, 0, 0);
+    clear_end();
+
+    /* erase block */
+    SFC_SEND_COMMAND(&sfc, SPINAND_CMD_ERASE_128K, 0, page_addr, 3, 0, 0, 0);
+    clear_end();
+
+    /* get feature */
+    do {
+        SFC_SEND_COMMAND(&sfc, SPINAND_CMD_GET_FEATURE, 1, SPINAND_ADDR_STATUS, 1, 0, 1, 0);
+        sfc_read_data(&read_buf, 1);
+    }while(read_buf & 0x1);
+}
+
 static void sfc_controler_init(void)
 {
 	unsigned int tmp;
@@ -424,6 +445,32 @@ void spl_load_kernel(long offset)
 	sfc_nand_load(offset, spl_image.size, spl_image.load_addr);
 #endif
 
+}
+
+void sfc_erase_data(unsigned int addr, unsigned int len)
+{
+    unsigned int end;
+    unsigned int page_addr;
+    unsigned int blocksize = 0x20000;   /* CONFIG_SPI_NAND_BPP * CONFIG_SPI_NAND_PPB */
+
+
+    if ((blocksize-1) & addr) {
+        printf("erase error: address isn't aligned with blocks_size.\n");
+        hang();
+    }
+
+    if ((blocksize-1) & len) {
+        printf("erase error: len must be times of blocks_size.\n");
+        hang();
+	}
+
+
+    end = addr + len;
+    while (addr < end) {
+        page_addr = addr / 2048;      /* CONFIG_SPI_NAND_BPP */
+        sfc_do_erase_blk(page_addr);
+        addr += blocksize;
+    }
 }
 
 static volatile int sfc_is_inited = 0;
