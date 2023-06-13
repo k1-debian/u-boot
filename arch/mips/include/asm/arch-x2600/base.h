@@ -45,6 +45,7 @@
 #define	UART4_BASE	0xb0034000
 
 #define OTG_BASE        0xb3500000
+#define OTGPHY_BASE	0xb0078000
 
 #define G_OST_BASE	0xb2000000
 

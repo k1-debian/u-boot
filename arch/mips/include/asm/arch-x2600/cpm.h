@@ -87,6 +87,7 @@
 #define CPM_CLKGR0  (0x20)
 #define CPM_OPCR    (0x24)
 #define CPM_CLKGR1  (0x28)
+#define CPM_SRBC	(0xC4)
 
 /**********CLKGR0 0x20**************/
 #define CPM_CLKGR_NEMC	(1 << 31)

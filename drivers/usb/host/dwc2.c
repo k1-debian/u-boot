@@ -16,6 +16,7 @@
 #include <wait_bit.h>
 #include <asm/io.h>
 //#include <power/regulator.h>
+#include <asm/jz_cache.h>
 
 #include "dwc2.h"
 
@@ -874,16 +875,26 @@ static int transfer_chunk(struct dwc2_hc_regs *hc_regs, void *aligned_buffer,
 
 	if (xfer_len) {
 		if (in) {
-			invalidate_dcache_range(
+#if 0
+			invalid_dcache_range(
 					(uintptr_t)aligned_buffer,
 					(uintptr_t)aligned_buffer +
 					roundup(xfer_len, ARCH_DMA_MINALIGN));
+#endif
+
+			flush_invalid_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
+
+//			dma_cache_sync(NULL, aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN), DMA_FROM_DEVICE);
 		} else {
 			memcpy(aligned_buffer, buffer, xfer_len);
+			//dma_cache_sync(NULL, aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN), DMA_TO_DEVICE);
+			flush_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
+#if 0
 			flush_dcache_range(
 					(uintptr_t)aligned_buffer,
 					(uintptr_t)aligned_buffer +
 					roundup(xfer_len, ARCH_DMA_MINALIGN));
+#endif
 		}
 	}
 
@@ -908,10 +919,13 @@ static int transfer_chunk(struct dwc2_hc_regs *hc_regs, void *aligned_buffer,
 
 	if (in) {
 		xfer_len -= sub;
+#if 0
 
-		invalidate_dcache_range((unsigned long)aligned_buffer,
+		invalid_dcache_range((unsigned long)aligned_buffer,
 					(unsigned long)aligned_buffer +
 					roundup(xfer_len, ARCH_DMA_MINALIGN));
+#endif
+		flush_invalid_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
 
 		memcpy(buffer, aligned_buffer, xfer_len);
 	}

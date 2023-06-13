@@ -201,19 +201,6 @@ static struct usb_endpoint_descriptor acm_fs_notify_desc = {
 	.bInterval =		GS_NOTIFY_INTERVAL_MS,
 };
 
-static struct usb_descriptor_header *gser_fs_function[] = {
-	(struct usb_descriptor_header *) &acm_iad_descriptor,
-	(struct usb_descriptor_header *) &acm_control_interface_desc,
-	(struct usb_descriptor_header *) &acm_header_desc,
-	(struct usb_descriptor_header *) &acm_call_mgmt_descriptor,
-	(struct usb_descriptor_header *) &acm_descriptor,
-	(struct usb_descriptor_header *) &acm_union_desc,
-	(struct usb_descriptor_header *) &acm_fs_notify_desc,
-	(struct usb_descriptor_header *) &acm_data_interface_desc,
-	(struct usb_descriptor_header *) &acm_fs_in_desc,
-	(struct usb_descriptor_header *) &acm_fs_out_desc,
-	NULL,
-};
 
 static struct usb_descriptor_header *gser_hs_function[] = {
 	(struct usb_descriptor_header *) &acm_iad_descriptor,
@@ -447,7 +434,7 @@ static int gser_bind(struct usb_configuration *c, struct usb_function *f)
 	acm_hs_notify_desc.bEndpointAddress = acm_fs_notify_desc.bEndpointAddress;
 
 
-	status = usb_assign_descriptors(f, gser_fs_function, gser_hs_function,
+	status = usb_assign_descriptors(f, NULL, gser_hs_function,
 			NULL);
 
 	debug ("%s---%d, inep_addr = 0x%x, inep_name = %c%c%c%c\n",
@@ -471,7 +458,6 @@ static int gser_bind(struct usb_configuration *c, struct usb_function *f)
 	return 0;
 
 fail:
-	printf("%s---%d, failed\n", __func__, __LINE__);
 	return status;
 }
 
@@ -481,15 +467,15 @@ static void gser_unbind(struct usb_configuration *c, struct usb_function *f)
 	int			status;
 	status = usb_ep_disable(gser->epnotify);
 	if(status)
-		printk("%s---%d, failed\n", __func__, __LINE__);
+		printf("%s---%d, failed\n", __func__, __LINE__);
 
 	status = usb_ep_disable(gser->epout);
 	if(status)
-		printk("%s---%d, failed\n", __func__, __LINE__);
+		printf("%s---%d, failed\n", __func__, __LINE__);
 
 	status = usb_ep_disable(gser->epin);
 	if(status)
-		printk("%s---%d, failed\n", __func__, __LINE__);
+		printf("%s---%d, failed\n", __func__, __LINE__);
 }
 
 int gser_bind_config(struct usb_configuration *c)
@@ -574,7 +560,7 @@ static void gser_epout_data_complete(struct usb_ep *ep, struct usb_request *req)
 	if(req->actual != req->length)
 		printf("%s: Error in usb_transfer!!! req->actual = %d, req->length = %d\n", __func__, req->actual, req->length);
 
-	/* sfc_nor_write(q->offset, req->actual, req->buf); */
+//	sfc_nor_write(q->offset, req->actual, req->buf);
 	req->complete = gser_epout_cmd_complete;
 	req->length = sizeof(struct jz_acm_param);
 	ret = usb_ep_queue(ep, req, 0);
@@ -632,7 +618,7 @@ static void gser_epout_cmd_complete(struct usb_ep *ep, struct usb_request *req)
 			printf("MAGIC_ERASE,p-----.size = %d , offset = %d, actual = %d\n", p->size, p->offset, req->actual);
 			echo_flag = 1;
 			gser->magic = p->magic;
-			/* sfc_nor_erase(p->offset, p->size); */
+//			sfc_nor_erase(p->offset, p->size);
 			break;
 		case  MAGIC_SHOW:
 			printf("MAGIC_show\n");
@@ -666,7 +652,6 @@ int gser_process_handle(struct f_gser *gser)
 	}
 
 	gser->context = dataout_context;
-
 	gser->datain_req = usb_ep_alloc_request(gser->epin, 0);
 	if (!gser->datain_req){
 		printf("%s--%d, error\n", __func__, __LINE__);

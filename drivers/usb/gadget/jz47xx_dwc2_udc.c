@@ -19,7 +19,8 @@
  * MA 02111-1307 USA
  */
 
-/* #define DWC2_DEBUG */
+//#define DWC2_DEBUG
+#define DEBUG_RXFIFO	0x0	//0 : off 1 : epnum 0 2: epnum 1 3:ep_num 0,1
 
 #include <common.h>
 #include <malloc.h>
@@ -69,15 +70,6 @@ static void dwc_otg_core_reset(void)
         }
         /* wait for 3 phy clocks */
         udelay(100);
-	cnt = 0;
-        while (udc_test_reg(1,GINT_STS)) {
-                if (cnt++ > 100000) {
-			pr_err("HANG! wait device mode timeout.\n");
-                        return;
-                }
-                udelay(10);
-        }
-        udelay(100);
 }
 
 static void dwc_otg_core_init(void)
@@ -94,9 +86,9 @@ static void dwc_otg_core_init(void)
 	if (!(gusbcfg | USBCFG_16BIT_PHY) ||
 			(gusbcfg | USBCFG_PHY_INF_UPLI))
 		reset = 1;
-	gusbcfg |= USBCFG_16BIT_PHY | USBCFG_TRDTIME(5);
-	udc_write_reg(gusbcfg,GUSB_CFG);
-
+	udc_set_reg(USBCFG_HNP_EN|USBCFG_SRP_EN|USBCFG_PHY_SEL_USB1|
+			USBCFG_TRDTIME_MASK|USBCFG_PHY_INF_UPLI,
+			USBCFG_16BIT_PHY|USBCFG_TRDTIME(5),GUSB_CFG);
 	if (reset) {
 		dwc_otg_core_reset();
 		udc_write_reg(AHBCFG_GLOBLE_INTRMASK, GAHB_CFG);
@@ -114,7 +106,7 @@ static void dwc2_otg_flush_tx_fifo(unsigned char txf_num)
 	/*Set globle nak*/
 	if (udc_test_reg(GINTSTS_GINNAK_EFF,GINT_STS))
 	{
-		udc_set_reg(0,DCTL_SET_GNPINNAK,OTG_DCTL);
+		udc_set_reg(0,GINTSTS_GINNAK_EFF,OTG_DCTL);
 		while(!(udc_read_reg(GINT_STS) & GINTSTS_GINNAK_EFF) && --timeout)
 			udelay(1);
 		if (!timeout) pr_warn("flush fifo globle in nak set timeout\n");
@@ -123,6 +115,9 @@ static void dwc2_otg_flush_tx_fifo(unsigned char txf_num)
 	timeout = 10000;
 	while(!(udc_test_reg(RSTCTL_AHB_IDLE,GRST_CTL)) && --timeout);
 	if (!timeout) pr_warn("flush fifo ahb idle timeout\n");
+	/*Check fifo is not in flushing*/
+	timeout = 10000;
+	while(!(udc_test_reg(RSTCTL_TXFIFO_FLUSH,GRST_CTL)) && --timeout);
 	/*Flush fifo*/
 	udc_set_reg(0,(txf_num << 6),GRST_CTL);
 	udc_set_reg(0,RSTCTL_TXFIFO_FLUSH ,GRST_CTL);
@@ -136,7 +131,7 @@ static void dwc2_otg_flush_tx_fifo(unsigned char txf_num)
 void handle_rxfifo_nempty(struct dwc2_udc *dwc, int flush_fifo);
 void dwc2_otg_flush_rx_fifo(void)
 {
-	printf("dwc flush rx fifo\n");
+	pr_info("dwc flush rx fifo\n");
 	pr_warn_start();
 	udc_set_reg(0, DCTL_SET_GONAK,OTG_DCTL);
 	while(!(udc_read_reg(GINT_STS) & GINTSTS_GOUTNAK_EFF)) {
@@ -164,9 +159,9 @@ static void dwc_fifo_allocate(void)
 	udc_write_reg((DTXFIFO1_SIZE << 16) | start_addr, DIEPTXF(1));
 	/* txfifo2 size */
 	start_addr += DTXFIFO1_SIZE;
-	/* udc_write_reg((DTXFIFO2_SIZE << 16) | start_addr, DIEPTXF(2)); */
+	udc_write_reg((DTXFIFO2_SIZE << 16) | start_addr, DIEPTXF(2));
 	/*ep info size*/
-	/* start_addr += DTXFIFO2_SIZE; */
+	start_addr += DTXFIFO2_SIZE;
 	gdfifocfg = (udc_read_reg(GHW_CFG3) >> 16) | (start_addr << 16);
 	udc_write_reg(gdfifocfg,GDFIFO_CFG);
 
@@ -187,33 +182,12 @@ static void dwc_otg_device_init(void)
 	return;
 }
 
-static void dwc_enable_common_interrupts(void)
-{
-	u32 intmsk;
-
-	/* Clear any pending OTG Interrupts */
-	udc_write_reg(0xffffffff, GOTG_INTR);
-	/* Clear any pending interrupts */
-	udc_write_reg(0xffffffff, GINT_STS);
-
-	/* Enable the interrupts in the GINTMSK */
-	intmsk = GINTSTS_MODEMIS | GINTSTS_OTGINT;
-
-	intmsk |= GINTSTS_WKUPINT | GINTSTS_USBSUSP |
-		GINTSTS_SESSREQINT | GINTSTS_CONIDSTSCHNG;
-
-	udc_write_reg(intmsk, GINT_MASK);
-}
 
 static int dwc_udc_init(struct dwc2_udc *dev)
 {
-	int i = 0;
-	u8 reg;
-	if (enum_done_speed_detect(dev))
-		return -1;
 #ifndef CONFIG_BURNER
-	int otgctl;
-	otg_phy_init(DEVICE_ONLY_MODE,CONFIG_SYS_EXTAL);
+
+	otg_phy_init(DEVICE_ONLY_MODE);
 
 	dwc_otg_core_reset();
 
@@ -221,11 +195,10 @@ static int dwc_udc_init(struct dwc2_udc *dev)
 
 	dwc_fifo_allocate();
 
-	udc_set_reg(0, GOTGCTL_OTGVER, GOTG_CTL);
-
 	dwc_otg_device_init();
-
 #else
+	int i = 0;
+
 	if (enum_done_speed_detect(dev))
 		return -1;
 
@@ -237,20 +210,6 @@ static int dwc_udc_init(struct dwc2_udc *dev)
 	udc_set_reg(0, DEPMSK_XFERCOMLMSK|DEPMSK_TXFIFOEMTMSK|DEPMSK_TIMEOUTMSK,
 			DIEP_MASK);
 
-#if defined(CONFIG_X2000_V12) && defined(CONFIG_BURNER)
-#define usb_phy_readb(addr)        readb((addr))
-#define usb_phy_writeb(val, addr)  writeb(val,(addr))
-#define PHY_BASE                   (0xb0078000)
-#define PHY_RX_SQU_TRI             (0x64)
-#define PHY_RX_SQU_TRI_125MV       (0x8)
-
-	reg = usb_phy_readb(PHY_BASE + PHY_RX_SQU_TRI);
-	reg &= ~(0xf << 3);
-	reg |= PHY_RX_SQU_TRI_125MV << 3;
-	usb_phy_writeb(reg, PHY_BASE + PHY_RX_SQU_TRI);
-#endif
-
-#endif
 	for (i = 0; i < DWC2_MAX_ENDPOINTS; i++)
 	{
 		struct dwc2_ep *dep = &dev->ep_attr[i];
@@ -258,6 +217,22 @@ static int dwc_udc_init(struct dwc2_udc *dev)
 	}
 	udc_set_reg(DIEPCTL_TX_FIFO_NUM_MASK, DIEPCTL_TX_FIFO_NUM(1), DIEP_CTL(1));
 
+#if defined(CONFIG_X2000_V12) && defined(CONFIG_BURNER)
+#define usb_phy_readb(addr)        readb((addr))
+#define usb_phy_writeb(val, addr)  writeb(val,(addr))
+#define PHY_BASE                   (0xb0078000)
+#define PHY_RX_SQU_TRI             (0x64)
+#define PHY_RX_SQU_TRI_125MV       (0x8)
+
+	u8 reg;
+	reg = usb_phy_readb(PHY_BASE + PHY_RX_SQU_TRI);
+	reg &= ~(0xf << 3);
+	reg |= PHY_RX_SQU_TRI_125MV << 3;
+	usb_phy_writeb(reg, PHY_BASE + PHY_RX_SQU_TRI);
+#endif
+
+#endif
+	return 0;
 }
 
 static int jz_ep_enable(struct usb_ep *ep,
@@ -742,6 +717,7 @@ int jz_udc_probe(void)
 			"jz_dwc2_udc_v1.1");
 	printf("jz_dwc2_udc_v1.1\n");
 	the_controller->gadget.is_dualspeed = 1;
+	the_controller->gadget.speed = USB_SPEED_HIGH;
 	the_controller->gadget.ops = &jz_udc_ops;
 	the_controller->gadget.name = the_controller->name;
 	dwc2_init_endpoint(the_controller, 0);
@@ -1095,7 +1071,7 @@ int in_xfer_timeout_detect(struct dwc2_ep *dep) {
 
 void handle_inep_intr(struct dwc2_udc *dev)
 {
-	u32 ep_intr, intr;
+        u32 ep_intr, intr;
 	u32 ep_msk;
 	u32 ep_pending;
         int epnum;
@@ -1206,10 +1182,10 @@ void outepx_transfer_complete(struct dwc2_ep *dep)
 
 int handle_outep_intr(struct dwc2_udc *dev)
 {
-    u32 ep_intr, intr;
+        u32 ep_intr, intr;
 	u32 ep_msk;
 	u32 ep_pending;
-	int epnum;
+        int epnum;
 	struct dwc2_ep *dep = NULL;
 
 	for (epnum = 0, intr = (udc_read_reg(OTG_DAINT)& DAINT_OUT_MASK)>>DAINT_OUT_BIT;
