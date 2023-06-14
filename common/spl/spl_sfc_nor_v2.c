@@ -32,6 +32,7 @@
 
 struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);
 struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);
+struct spi_nor_cmd_info sector_erase;
 
 /* Prevent cur_r_cmd from being overwritten when the firmware is too large */
 unsigned int cur_r_cmd;
@@ -439,12 +440,13 @@ static void params_to_cdt(struct mini_spi_nor_info *params, struct sfc_cdt *cdt)
 	MK_CMD(cdt[NOR_WRITE_QUAD_ENABLE], params->wr_en, 1, DEFAULT_ADDRMODE, DISABLE);
 	MK_CMD(cdt[NOR_WRITE_QUAD], params->write_quad, 1, ROW_ADDR, ENABLE);
 	MK_ST(cdt[NOR_WRITE_QUAD_FINISH], params->busy, 0, DEFAULT_ADDRMODE, 0, ENABLE, DISABLE, TM_STD_SPI);
-
+#endif
 	/* 8. nor erase */
 	MK_CMD(cdt[NOR_ERASE_WRITE_ENABLE], params->wr_en, 1, DEFAULT_ADDRMODE, DISABLE);
-	MK_CMD(cdt[NOR_ERASE], params->sector_erase, 1, ROW_ADDR, DISABLE);
+	MK_CMD(cdt[NOR_ERASE], sector_erase, 1, ROW_ADDR, DISABLE);
 	MK_ST(cdt[NOR_ERASE_FINISH], params->busy, 0, DEFAULT_ADDRMODE, 0, ENABLE, DISABLE, TM_STD_SPI);
-#endif
+
+
 
 	/* 9. quad mode */
 	if(params->quad_ops_mode){
@@ -672,6 +674,7 @@ void copy_to_mini_info(struct spi_nor_info *s, struct mini_spi_nor_info *m)
 
 void sfc_init(void)
 {
+	unsigned int erase_cmd_offset;
 	struct mini_spi_nor_info *spi_nor_info;
 #ifdef CONFIG_SFC_NOR_INIT_RATE
 	clk_set_rate(SFC, CONFIG_SFC_NOR_INIT_RATE);
@@ -699,9 +702,10 @@ void sfc_init(void)
 	sfc_threshold(flash->sfc);
 
 	unsigned int nor_id = sfc_nor_read_id();
-
 	/* get nor flash params */
+	erase_cmd_offset = offsetof(struct burner_params, spi_nor_info.sector_erase);
 	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), (unsigned char *)&flash->g_nor_info, sizeof(struct mini_spi_nor_info));
+	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + erase_cmd_offset, (unsigned char *)&sector_erase, sizeof(struct spi_nor_cmd_info));
 #ifdef CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
 	if (nor_id != flash->g_nor_info.id) {
 		struct spi_nor_info_tag tag;
@@ -761,6 +765,45 @@ void sfc_init(void)
 		}
 	}
 	cur_r_cmd = flash->cur_r_cmd;
+}
+
+static void sfc_do_erase_blk(unsigned int addr)
+{
+    struct sfc_cdt_xfer xfer;
+    memset(&xfer, 0, sizeof(xfer));
+
+    /* set Index */
+    xfer.cmd_index = NOR_ERASE_WRITE_ENABLE;
+
+    /* set addr */
+    xfer.rowaddr = addr;
+
+    /* set transfer config */
+    xfer.dataen = DISABLE;
+
+    sfc_sync_cdt(&xfer);
+}
+
+void sfc_erase_data(unsigned int addr, unsigned int len)
+{
+    unsigned int end;
+    unsigned int erasesize = flash->g_nor_info.erase_size;
+
+    if ((erasesize-1) & addr) {
+        printf("erase error: address isn't aligned with block_size.\n");
+        hang();
+    }
+
+    if ((erasesize-1) & len) {
+        printf("erase error: len must be times of blocks_size.\n");
+        hang();
+	}
+
+    end = addr + len;
+    while (addr < end) {
+        sfc_do_erase_blk(addr);
+        addr += erasesize;
+    }
 }
 
 static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned int len)
