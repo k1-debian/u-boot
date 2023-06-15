@@ -121,6 +121,7 @@ SPLTREE		:= $(OBJTREE)/spl
 SRCTREE		:= $(CURDIR)
 TOPDIR		:= $(SRCTREE)
 LNDIR		:= $(OBJTREE)
+SPL_SOURCE_DIR := $(shell pwd)/out_spl_source
 export	TOPDIR SRCTREE OBJTREE SPLTREE
 
 MKCONFIG	:= $(SRCTREE)/mkconfig
@@ -842,6 +843,13 @@ xmldocs pdfdocs psdocs htmldocs mandocs: tools/kernel-doc/docproc
 tools-all: easylogo env gdb $(VERSION_FILE) $(TIMESTAMP_FILE)
 	$(MAKE) -C tools HOST_TOOLS_ALL=y
 
+spl-source:	$(obj)u-boot-with-spl.bin
+	make -C $(TOPTREE)tools/ingenic-tools/ spl_tools_source
+	python $(TOPTREE)make_spl/copy_spl.py $(shell pwd) $(SPL_SOURCE_DIR)
+
+
+
+
 .PHONY : CHANGELOG
 CHANGELOG:
 	git log --no-merges U-Boot-1_1_5.. | \
@@ -908,6 +916,7 @@ clean:
 	@rm -f $(obj)include/generated/asm-offsets.h
 	@rm -f $(obj)$(CPUDIR)/$(SOC)/asm-offsets.s
 	@rm -f $(TIMESTAMP_FILE) $(VERSION_FILE)
+	@rm -rf $(SPL_SOURCE_DIR)
 	@$(MAKE) -s -C doc/DocBook/ cleandocs
 	@$(MAKE) -s -C $(TOPTREE)tools/ingenic-tools/ clean
 	@find $(OBJTREE) -type f \
