@@ -232,31 +232,55 @@ $(obj)mmc_params:	mmc_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
+fixer_var:=
 ifeq ($(if $(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100),y,n),y)
-$(obj)spl_params_fixer:	spl_params_fixer_x2000_v12.c
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
-	$(HOSTSTRIP) $@
+	fixer_var:=spl_params_fixer_x2000_v12.c
 else ifeq ($(if $(CONFIG_X2500),y,n),y)
-$(obj)spl_params_fixer:	spl_params_fixer_x2500.c
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
-	$(HOSTSTRIP) $@
+	fixer_var:=spl_params_fixer_x2500.c
 else ifeq ($(if $(CONFIG_X1600),y,n),y)
-$(obj)spl_params_fixer:	spl_params_fixer_x1600.c
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
-	$(HOSTSTRIP) $@
+	fixer_var:=spl_params_fixer_x1600.c
 else ifeq ($(if $(CONFIG_X2580),y,n),y)
-$(obj)spl_params_fixer:	spl_params_fixer_x2580.c
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
-	$(HOSTSTRIP) $@
+	fixer_var:=spl_params_fixer_x2580.c
 else ifeq ($(if $(CONFIG_X2600),y,n),y)
-$(obj)spl_params_fixer:	spl_params_fixer_x2600.c
-	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
-	$(HOSTSTRIP) $@
+	fixer_var:=spl_params_fixer_x2600.c
 else
-$(obj)spl_params_fixer:	spl_params_fixer.c
+	fixer_var:=spl_params_fixer.c
+endif
+
+$(obj)spl_params_fixer:	$(fixer_var)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
+
+
+spl_source_list:=
+ifeq ($(if $(CONFIG_SPL_PARAMS_FIXER),y,n),y)
+	spl_source_list += $(fixer_var)
 endif
+
+ifeq ($(if $(CONFIG_SPI_SPL_CHECK),y,n),y)
+	spl_source_list += spi_checksum.c
+endif
+
+ifeq ($(if $(CONFIG_MMC_SPL_PARAMS),y,n),y)
+	spl_source_list += mmc_params.c
+endif
+
+ifeq ($(if $(CONFIG_SPL_PAD_TO_BLOCK),y,n),y)
+	spl_source_list +=  spl_pad_to_block.c
+endif
+
+ifeq ($(if $(CONFIG_NOR_BUILTIN_PARAMS),y,n),y)
+	spl_source_list += sfc_nor_builtin_params.c sfc_builtin_params/nor_device.c
+endif
+
+ifeq ($(if $(CONFIG_NAND_BUILTIN_PARAMS),y,n),y)
+	spl_source_list += sfc_nand_builtin_params.c sfc_builtin_params/nand_device.c
+endif
+
+spl_tools_source:
+	echo "$(spl_source_list)" > .spl_source_tools_depend
+
+
 
 $(obj)sfc_timing_params: sfc_timing_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
@@ -300,7 +324,8 @@ clean:
 		$(obj)sfc_nand_params \
 		$(obj)sfc_timing_params \
 		$(obj)sfc_nor_builtin_params \
-		$(obj)sfc_nand_builtin_params
+		$(obj)sfc_nand_builtin_params \
+		$(TOPDIR)/tools/ingenic-tools/.spl_source_tools_depend
 
 distclean:	clean
 
