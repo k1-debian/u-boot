@@ -129,6 +129,7 @@
 
 #define CONFIG_CMD_EFUSE	/*efuse*/
 #define	CONFIG_JZ_EFUSE
+#define CONFIG_JZ_SCBOOT
 
 /**
  * Serial download configuration

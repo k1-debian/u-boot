@@ -266,6 +266,7 @@ int otp_init(void)
 	int ret;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
+	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 	secall(args, SC_FUNC_INIT, 0, 1);
 
 	efuse_en_gpio = efuse_args->efuse_en_gpio;

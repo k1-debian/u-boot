@@ -53,6 +53,5 @@ int init_seboot(void)
 	boot_up_mcu();
 	udelay(50 * 1000);
 	ret = otp_init();
-	ret = secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 	return ret;
 }

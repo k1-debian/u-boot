@@ -36,16 +36,21 @@
 #include "cloner/cloner_log.h"
 
 #ifdef CONFIG_JZ_SCBOOT
-#ifdef CONFIG_X1600
-#include "../../scboot/jz_sec_v3/otp.h"
-#include "../../scboot/jz_sec_v3/secure.h"
-#include "../../scboot/jz_sec_v3/aes.h"
-#include "../../scboot/jz_sec_v3/spi_checksum.h"
-#elif defined(CONFIG_X2000_V12)
+#if defined(CONFIG_X2000_V12) || defined(CONFIG_X2100) || defined(CONFIG_M300)
 #include "../../scboot/jz_sec_v2/otp.h"
 #include "../../scboot/jz_sec_v2/secure.h"
 #include "../../scboot/jz_sec_v2/aes.h"
 #include "../../scboot/jz_sec_v2/spi_checksum.h"
+#elif defined(CONFIG_X1600)
+#include "../../scboot/jz_sec_v3/otp.h"
+#include "../../scboot/jz_sec_v3/secure.h"
+#include "../../scboot/jz_sec_v3/aes.h"
+#include "../../scboot/jz_sec_v3/spi_checksum.h"
+#elif defined(CONFIG_X2600)
+#include "../../scboot/jz_sec_v4/otp.h"
+#include "../../scboot/jz_sec_v4/secure.h"
+#include "../../scboot/jz_sec_v4/aes.h"
+#include "../../scboot/jz_sec_v4/spi_checksum.h"
 #else
 #include "../../scboot/jz_sec_v1/otp.h"
 #include "../../scboot/jz_sec_v1/secure.h"

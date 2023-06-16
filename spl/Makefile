@@ -89,18 +89,14 @@ LIBS-$(CONFIG_SPL_USBETH_SUPPORT) += drivers/usb/gadget/libusb_gadget.o
 LIBS-$(CONFIG_JZ_WATCHDOG) += drivers/watchdog/jz_wdt.o
 
 ifdef CONFIG_JZ_SCBOOT
-ifeq ($(if $(CONFIG_X2600),y,n),y)
+ifneq ($(findstring y, $(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)),)
+LIBS-y += drivers/scboot/jz_sec_v2/libscboot.o
+else ifeq ($(CONFIG_X1600),y)
+LIBS-y += drivers/scboot/jz_sec_v3/libscboot.o
+else ifeq ($(CONFIG_X2600),y)
 LIBS-y += drivers/scboot/jz_sec_v4/libscboot.o
 else
-ifdef CONFIG_X1600
-LIBS-y += drivers/scboot/jz_sec_v3/libscboot.o
-else
-ifeq ($(if $(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100),y,n),y)
-LIBS-y += drivers/scboot/jz_sec_v2/libscboot.o
-else
 LIBS-y += drivers/scboot/jz_sec_v1/libscboot.o
-endif
-endif
 endif
 endif
 
