@@ -690,7 +690,7 @@ static char *spl_sfc_nand_os_ota_load(void)
 
 #ifdef CONFIG_SPL_MCU_RTOS_BOOT
 #ifdef CONFIG_X2600
-#include "x2600_spl_mcu_rtos_boot_back.h"
+#include "x2600_spl_mcu_rtos_boot.h"
 #endif
 
 
@@ -723,7 +723,7 @@ void spl_nand_mcu_rtos_boot(void)
 
     lep_stop();
 
-    lep_start(riscv.entry);
+    lep_start(&riscv);
 }
 
 #endif

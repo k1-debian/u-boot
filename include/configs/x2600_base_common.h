@@ -533,7 +533,7 @@
 
 #ifndef CONFIG_ROOTFS_DEV
 
-#ifdef CONFIG_RTOS_CONN_WITH_OS
+#if defined(CONFIG_RTOS_CONN_WITH_OS) || defined(CONFIG_SPL_MCU_RTOS_BOOT)
 #define CONFIG_CLK_IGNORE_UNUSED " clk_ignore_unused "
 #else
 #define CONFIG_CLK_IGNORE_UNUSED " "

@@ -68,12 +68,17 @@
 
 
 struct lep_header {
-    unsigned int resvert;
-    unsigned int tag;
-    unsigned int img_start;
-    unsigned int entry;
-    unsigned int img_end;
-    unsigned int version;
+    unsigned long code;
+    unsigned long tag;
+    unsigned long img_start;
+    unsigned long entry;
+    unsigned long img_end;
+    unsigned long version;
+
+    unsigned long ring_mem_for_host_write;
+    unsigned long ring_mem_for_host_read;
+    unsigned long uncache_addr;
+    unsigned long uncache_size;
 };
 
 
@@ -162,13 +167,13 @@ static inline void lep_stop(void)
     set_bit_field_v(x2600_CCU_CFCR, CFCR_LEP_Reset, 1);
 }
 
-static inline void lep_start(unsigned long entry)
+static inline void lep_start(struct lep_header *header)
 {
     *x2600_CCU_INTC_MASK_L = 0;
     *x2600_CCU_INTC_MASK_H = 0;
     *x2600_CCU_FROM_HOST   = 0;
     *x2600_CCU_TO_HOST     = 0;
-    *x2600_CCU_CRER = entry;
+    *x2600_CCU_CRER = header->entry;
 
     unsigned long ccsr = *x2600_CCU_CCSR;
     ccsr = set_bit_field(ccsr, CCSR_Timer_en, 0);
@@ -176,36 +181,49 @@ static inline void lep_start(unsigned long entry)
     ccsr = set_bit_field(ccsr, CCSR_IE, 1);
     *x2600_CCU_CCSR = ccsr;
 
+
     unsigned long cfg0 = 0;
-    cfg0 = set_bit_field(cfg0, PMA_CFG_R, 1);
-    cfg0 = set_bit_field(cfg0, PMA_CFG_W, 1);
-    cfg0 = set_bit_field(cfg0, PMA_CFG_X, 1);
-    cfg0 = set_bit_field(cfg0, PMA_CFG_C, 1);
-    cfg0 = set_bit_field(cfg0, PMA_CFG_A, ADDR_TOR);
+    if (header->uncache_size) {
+        cfg0 = set_bit_field(cfg0, PMA_CFG_R, 1);
+        cfg0 = set_bit_field(cfg0, PMA_CFG_W, 1);
+        cfg0 = set_bit_field(cfg0, PMA_CFG_X, 1);
+        cfg0 = set_bit_field(cfg0, PMA_CFG_C, 0);
+        cfg0 = set_bit_field(cfg0, PMA_CFG_A, ADDR_NAPOT);
+    }
+
+    unsigned long uncache_start = header->uncache_addr;
+    unsigned long uncache_end = header->uncache_addr + header->uncache_size;
     *x2600_CCU_PMA_CFG_0 = cfg0;
-    *x2600_CCU_PMA_ADR_0 = pma_addr_tor(256*1024*1024);
+    *x2600_CCU_PMA_ADR_0 = pma_addr_napot(uncache_start, uncache_end);
 
     unsigned long cfg1 = 0;
     cfg1 = set_bit_field(cfg1, PMA_CFG_R, 1);
     cfg1 = set_bit_field(cfg1, PMA_CFG_W, 1);
     cfg1 = set_bit_field(cfg1, PMA_CFG_X, 1);
-    cfg1 = set_bit_field(cfg1, PMA_CFG_C, 0);
+    cfg1 = set_bit_field(cfg1, PMA_CFG_C, 1);
     cfg1 = set_bit_field(cfg1, PMA_CFG_A, ADDR_NAPOT);
     *x2600_CCU_PMA_CFG_1 = cfg1;
-    *x2600_CCU_PMA_ADR_1 = pma_addr_napot(256*1024*1024, 512*1024*1024);
+    *x2600_CCU_PMA_ADR_1 = pma_addr_napot(0, 256*1024*1024);
 
     unsigned long cfg2 = 0;
     cfg2 = set_bit_field(cfg2, PMA_CFG_R, 1);
     cfg2 = set_bit_field(cfg2, PMA_CFG_W, 1);
     cfg2 = set_bit_field(cfg2, PMA_CFG_X, 1);
     cfg2 = set_bit_field(cfg2, PMA_CFG_C, 0);
-    cfg2 = set_bit_field(cfg2, PMA_CFG_A, ADDR_TOR);
+    cfg2 = set_bit_field(cfg2, PMA_CFG_A, ADDR_NAPOT);
     *x2600_CCU_PMA_CFG_2 = cfg2;
-    *x2600_CCU_PMA_ADR_2 = pma_addr_tor(2048*1024*1024ul);
+    *x2600_CCU_PMA_ADR_2 = pma_addr_napot(256*1024*1024, 512*1024*1024);
+
+    unsigned long cfg3 = 0;
+    cfg3 = set_bit_field(cfg3, PMA_CFG_R, 1);
+    cfg3 = set_bit_field(cfg3, PMA_CFG_W, 1);
+    cfg3 = set_bit_field(cfg3, PMA_CFG_X, 1);
+    cfg3 = set_bit_field(cfg3, PMA_CFG_C, 0);
+    cfg3 = set_bit_field(cfg3, PMA_CFG_A, ADDR_TOR);
+    *x2600_CCU_PMA_CFG_3 = cfg3;
+    *x2600_CCU_PMA_ADR_3 = pma_addr_tor(2048*1024*1024ul);
 
     cfg0 = 0;
-    *x2600_CCU_PMA_CFG_2 = cfg0;
-    *x2600_CCU_PMA_CFG_3 = cfg0;
     *x2600_CCU_PMA_CFG_4 = cfg0;
     *x2600_CCU_PMA_CFG_5 = cfg0;
     *x2600_CCU_PMA_CFG_6 = cfg0;
