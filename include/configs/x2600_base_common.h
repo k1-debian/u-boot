@@ -95,7 +95,12 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR3
 	/* #define CONFIG_DDR3_TSD34096M1333C9_E_FPG */
-	#define CONFIG_DDR3_W631GU6NG
+#ifdef CONFIG_X2670_DDR
+  #define CONFIG_DDR3_W631GU6NG
+#endif
+#ifdef CONFIG_X2600E_DDR
+	#define CONFIG_DDR3L_W632GU6QG_11
+#endif
 #endif
 
 #ifdef CONFIG_DDR_TYPE_LPDDR3
@@ -346,7 +351,7 @@
 #define CONFIG_CMD_SAVEENV
 
 #else
-#if defined(CONFIG_X2670_DDR)
+#if defined(CONFIG_X2670_DDR) || defined(CONFIG_X2600E_DDR)
 /* nand Environment variables */
 #define CONFIG_SYS_REDUNDAND_ENVIRONMENT
 #define CONFIG_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE /* 128K */
