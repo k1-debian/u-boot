@@ -35,7 +35,6 @@
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
 
-
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		400000000	/*If EPLL not use mast be set 0*/
@@ -86,6 +85,7 @@
 #define CONFIG_DDR_INNOPHY
 #define CONFIG_DDR_TYPE_VARIABLE
 
+/*#define CONFIG_DDR_DRVODT_DEBUG*/
 /**
  * Environment
  **/

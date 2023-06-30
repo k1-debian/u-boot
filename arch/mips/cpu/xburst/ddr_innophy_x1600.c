@@ -27,6 +27,7 @@
 #include <common.h>
 #include <ddr/ddr_common.h>
 #include <asm/arch/clk.h>
+#include <asm/arch/cpm.h>
 #include <asm/io.h>
 #include "ddr_innophy.h"
 #include "ddr_debug.h"
@@ -47,6 +48,66 @@ struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
 extern struct ddr_reg_value supported_ddr_reg_values[];
 
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+#include <asm/spl.h>
+#include <netdev.h>
+#include <command.h>
+#include <asm/reboot.h>
+#include <asm/mipsregs.h>
+#include <asm/cacheops.h>
+#include <asm/arch/wdt.h>
+#include <asm/jz_cache.h>
+int slpc = 0;
+int pass_value=0;
+char drv_value = 0;
+char odt_value = 0;
+char restart_count = 0;
+char fail_flag = 0;
+unsigned int pass_count = 0;
+
+void drv_odt_value_ergodic(void){
+	drv_value = (slpc & 0xff);
+	odt_value = (slpc >> 8) & 0xff;
+	pass_value = 0;
+	printf("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
+	odt_value += 1;
+
+	if(odt_value > 0x1f){
+		drv_value += 1;
+		odt_value = 0;
+	}
+	if(drv_value <= 0x1f) {
+		restart_count = 0;
+		slpc = drv_value | (odt_value << 8) | (restart_count << 16);
+		cpm_outl(slpc,CPM_SLPC);
+	}
+}
+
+void  _machine_restart(void){
+	if(fail_flag == -1){
+		drv_odt_value_ergodic();
+	}
+
+        int time = RTC_FREQ / WDT_DIV * RESET_DELAY_MS / 1000;
+
+	if(time > 65535)
+		time = 65535;
+	writel(TSCR_WDTSC, TCU_BASE + TCU_TSCR);
+
+	writel(0, WDT_BASE + WDT_TCNT);
+	writel(time, WDT_BASE + WDT_TDR);
+	writel(TCSR_PRESCALE | TCSR_RTC_EN
+#if (defined(CONFIG_X1600))
+			| TCSR_CLRZ
+#endif
+			, WDT_BASE + WDT_TCSR);
+	writel(0,WDT_BASE + WDT_TCER);
+
+	/*printf("reset in %dms\n", RESET_DELAY_MS);*/
+	writel(TCER_TCEN,WDT_BASE + WDT_TCER);
+	mdelay(1000);
+}
+#endif
 
 int current_ddr_type;
 
@@ -57,7 +118,6 @@ extern void reset_dll(void);
 #define BYPASS_DISABLE      0
 #define IS_BYPASS_MODE(x)     (((x) & 1) == BYPASS_ENABLE)
 #define DDR_TYPE_MODE(x)     (((x) >> 1) & 0xf)
-
 
 /*#define CONFIG_DWC_DEBUG*/
 #ifdef  CONFIG_DWC_DEBUG
@@ -135,6 +195,62 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 void dump_generated_reg(struct ddr_reg_value *reg){}
 #endif
 
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+#define DDRP_INNOPHY_PD_DRV_CMD         (DDR_PHY_OFFSET + (0xb0<<2))        //0x130
+#define DDRP_INNOPHY_PU_DRV_CMD         (DDR_PHY_OFFSET + (0xb1<<2))        //0x131
+#define DDRP_INNOPHY_PD_ODT_DQ7_0       (DDR_PHY_OFFSET + (0xc0<<2))        //0x140
+#define DDRP_INNOPHY_PU_ODT_DQ7_0       (DDR_PHY_OFFSET + (0xc1<<2))        //0x141
+#define DDRP_INNOPHY_PD_DRV_DQ7_0       (DDR_PHY_OFFSET + (0xc2<<2))        //0x142
+#define DDRP_INNOPHY_PU_DRV_DQ7_0       (DDR_PHY_OFFSET + (0xc3<<2))        //0x143
+#define DDRP_INNOPHY_PD_ODT_DQ15_8      (DDR_PHY_OFFSET + (0xd0<<2))        //0X150
+#define DDRP_INNOPHY_PU_ODT_DQ15_8      (DDR_PHY_OFFSET + (0xd1<<2))        //0x151
+#define DDRP_INNOPHY_PD_DRV_DQ15_8      (DDR_PHY_OFFSET + (0xd2<<2))        //0x152
+#define DDRP_INNOPHY_PU_DRV_DQ15_8      (DDR_PHY_OFFSET + (0xd3<<2))        //0x153
+
+static void ddrp_set_dq_odt(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ7_0);
+	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ15_8);
+	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ7_0);
+	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ15_8);
+
+}
+static void ddrp_set_dq_drv(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ7_0);
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ15_8);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ7_0);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ15_8);
+}
+static void ddrp_set_cmd_drv(unsigned int pu, unsigned int pd)
+{
+	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
+	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CMD);
+}
+
+static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_drv, char dq_odt)
+{
+	unsigned tmp;
+	unsigned int pu_drv = 0;
+	unsigned int pd_drv = 0;
+	unsigned int pu_odt = 0;
+	unsigned int pd_odt = 0;
+	ddrp_set_dq_odt(dq_odt, dq_odt);
+	ddrp_set_dq_drv(dq_drv, dq_drv);
+	ddrp_set_cmd_drv(cmd_drv, cmd_drv);
+#if 0
+	printf("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
+	printf("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
+	printf("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	printf("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
+	printf("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	printf("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
+	printf("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
+	printf("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
+	printf("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
+#endif
+}
+#endif
 void ddrp_pll_init(void)
 {
 	unsigned int val;
@@ -268,11 +384,13 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 	debug("ddr_readl(DDRP_INNOPHY_CWL)  %x\n", ddr_readl(DDRP_INNOPHY_CWL));
 	debug("ddr_readl(DDRP_INNOPHY_AL)   %x\n", ddr_readl(DDRP_INNOPHY_AL));
 }
-
 void ddrp_auto_calibration(void)
 {
 	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	unsigned int timeout = 0xffffff;
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+	timeout = 0x500;
+#endif
 	unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA;
 	unsigned int al, ah;
 
@@ -283,12 +401,18 @@ void ddrp_auto_calibration(void)
 	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x13) == 3) && --timeout) {
 
 		udelay(1);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
 		printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
 		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+#endif
 	}
 
 	if(!timeout) {
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+		fail_flag = -1;
+		_machine_restart();
+#endif
 		debug("ddrp_auto_calibration failed!\n");
 	}
 	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
@@ -330,11 +454,121 @@ void ddrp_auto_calibration(void)
 		tmp |= 1 << 6;
 		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
 	}
-
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 	printf("ddr calib finish\n");
-
+#endif
 }
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+static int do_whole_chip_scan(void)
+{
+	int i = 0;
+	unsigned int *p = 0x81000000;
 
+//	printf("doing whole chip w/r test!\n");
+
+#define MAX_WR_TEST_SIZE	(4*1024*1024/4)
+	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
+		p[i] = &p[i];
+		//p[i] = 0x01010101;
+	}
+	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
+		p[i] = &p[i];
+		//p[i] = 0x12345a5a;
+
+		//p[i] = (i&0xff) | (i&0xff) << 8 | (i&0xff) << 16 | (i&0xff) << 24;//(i&0xff) | ((i << 8) & 0xff) | ((i << 16)& 0xff) | ((i << 24) & 0xff);
+
+	}
+	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
+
+		if(p[i] != &p[i]) {
+			printf("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
+			return -1;
+		}
+	}
+	pass_count ++;
+	return 0;
+}
+void debug_date_eye(void) {
+#ifdef CONFIG_BURNER
+        cpm_outl(0,CPM_SLPC);
+#else
+	int i,j=0;
+	pass_count = 0;
+	int mem_count = 1;
+	int restart_count_max = 3;
+
+	slpc = cpm_inl(CPM_SLPC);
+	drv_value = (slpc & 0xff);
+	odt_value = (slpc >> 8) & 0xff;
+	restart_count = (slpc >> 16) & 0xff;
+
+	if(restart_count >= 0 && restart_count < restart_count_max) {
+		if(drv_value <= 0x1f && odt_value <= 0x1f){
+			ddrp_zq_calibration(1, drv_value,drv_value, drv_value, odt_value);
+			ddrp_auto_calibration();
+
+			for(i = 0;i < mem_count;i++){
+				do_whole_chip_scan();
+				if(pass_count != 1){
+					pass_value = 0;
+					restart_count = 0;
+					printf("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
+					odt_value += 1;
+					if(odt_value > 0x1f){
+						drv_value += 1;
+						odt_value = 0;
+					}
+					if(drv_value <= 0x1f) {
+						slpc = drv_value | (odt_value << 8) | (restart_count << 16);
+						cpm_outl(slpc,CPM_SLPC);
+						_machine_restart();
+					}else {
+						/*inno phy default drv value is 0x6 odt value is 0x5*/
+						ddrp_zq_calibration(1, 0x6,0x6, 0x6, 0x5);
+						ddrp_auto_calibration();
+						slpc = drv_value | (odt_value << 8) | (restart_count << 16);
+						cpm_outl(slpc,CPM_SLPC);
+						_machine_restart();
+					}
+					pass_count = 0;
+				}
+				if(drv_value <= 0x1f){
+					drv_value = (slpc & 0xff);
+					odt_value = (slpc >> 8) & 0xff;
+					restart_count = (slpc >> 16) & 0xff;
+					restart_count += 1;
+					slpc = drv_value | (odt_value << 8) | (restart_count << 16);
+					cpm_outl(slpc,CPM_SLPC);
+					_machine_restart();
+				}
+			}
+		}
+	}else {
+		odt_value = (slpc >> 8) & 0xff;
+		pass_value = 1;
+		printf("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
+		odt_value += 1;
+		if(odt_value > 0x1f){
+			drv_value += 1;
+			odt_value = 0;
+		}
+		if(drv_value <= 0x1f) {
+			restart_count = 0;
+			slpc = drv_value | (odt_value << 8) | (restart_count << 16);
+			cpm_outl(slpc,CPM_SLPC);
+			_machine_restart();
+		} else {
+			/*inno phy default drv value is 0x6 odt value is 0x5*/
+			ddrp_zq_calibration(1, 0x6,0x6, 0x6, 0x5);
+			ddrp_auto_calibration();
+			drv_value = (slpc & 0xff);
+			odt_value = (slpc >> 8) & 0xff;
+		}
+	}
+
+#endif
+}
+#endif
 static void mem_remap(void)
 {
 	int i;
@@ -404,7 +638,9 @@ void ddrc_dfi_init(void)
 	writel(0, DDR_APB_PHY_INIT); //start low
 	while(!(readl(DDR_APB_PHY_INIT) & (1<<1))); //polling dfi init comp
 #ifndef CONFIG_FASTBOOT
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 	printf("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
+#endif
 #endif
 
 	reg = ddr_readl(DDRC_CTRL);
@@ -465,11 +701,13 @@ void ddrc_dfi_init(void)
 		mdelay(1);
 		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
 		mdelay(1);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
 		printf("mr2 = 0x%x\n", DDRC_LMR_MR(2));
 		printf("mr3 = 0x%x\n", DDRC_LMR_MR(3));
 		printf("mr10 = 0x%x\n", DDRC_LMR_MR(10));
 		printf("mr63 = 0x%x\n", DDRC_LMR_MR(63));
+#endif
 #undef DDRC_LMR_MR
 	} else {
 		/*DDR2*/
@@ -546,7 +784,7 @@ int get_ddr_type(void)
 	type = global_reg_value->h.type;
 
 	switch(global_reg_value->h.type){
-
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		case DDR3:
 			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
 			break;
@@ -566,6 +804,7 @@ int get_ddr_type(void)
 			type = UNKOWN;
 			printf("unsupport ddr type!\n");
 			ddr_hang();
+#endif
 	}
 
 	return type;
@@ -790,6 +1029,9 @@ void sdram_init(void)
 	 * auto training, 是phy本身的行为，与ddr控制器,dfi接口无关，并且必须保持dfi静默。
 	 * 在进行auto training 之前，需要关闭ddr 控制器的auto refresh, auto self refresh等会自动发命令的功能.
 	*/
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+	debug_date_eye();
+#endif
 	ddrp_auto_calibration();
 	ddrc_post_init();
 #endif

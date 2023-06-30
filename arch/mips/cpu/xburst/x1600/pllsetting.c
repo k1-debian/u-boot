@@ -46,15 +46,21 @@ static void pll_sets(void)
 {
 	if(APLL_EN_VALUE) {
 		pll_set(CPM_CPAPCR);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		printf("CPA_CPAPCR:%x\n",cpm_inl(CPM_CPAPCR));
+#endif
 	}
 	if(MPLL_EN_VALUE){
 		pll_set(CPM_CPMPCR);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		printf("CPM_CPMPCR:%x\n",cpm_inl(CPM_CPMPCR));
+#endif
 	}
 	if(EPLL_EN_VALUE){
 		pll_set(CPM_CPEPCR);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		printf("CPM_CPEPCR:%x\n",cpm_inl(CPM_CPEPCR));
+#endif
 	}
 }
 static void cpccr_default(void)
@@ -84,7 +90,9 @@ static void cpccr_sets(void)
 		(PDIV_REG_VALUE <<  16);
 	cpm_outl(val,CPM_CPCCR);
 	while((cpm_inl(CPM_CPCSR) & 0xf0000000) != 0xf0000000);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 	printf("CPM_CPCCR:%x\n",cpm_inl(CPM_CPCCR));
+#endif
 }
 int pll_init(void)
 {

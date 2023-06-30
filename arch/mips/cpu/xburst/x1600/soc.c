@@ -99,9 +99,9 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_GPIO_SPI_TO_UART
 	gpio_spi_to_uart_init();
 #endif
-
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 	printf("ERROR EPC %x\n", read_c0_errorepc());
-
+#endif
 #ifndef CONFIG_FPGA
 	debug("Timer init\n");
 	timer_init();

@@ -300,8 +300,9 @@ static int spinand_probe_id(struct jz_sfc* sfc)
 			please add it\n");
 		return -ENODEV;
 	}
-
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 	printf("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]);
+#endif
 	return 0;
 }
 
