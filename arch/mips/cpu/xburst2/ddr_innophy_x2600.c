@@ -50,7 +50,9 @@ static char tx_pass_cmd_skew[0x3f];
 static char tx_rx_pass_dqs_skew[0x3f];
 static char tx_rx_left_dq[0x3f];
 static char tx_rx_right_dq[0x3f];
-
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+unsigned int pass_count = 0;
+#endif
 
 #ifdef  CONFIG_DWC_DEBUG
 #define FUNC_ENTER() debug("%s enter.\n",__FUNCTION__);
@@ -1341,7 +1343,9 @@ static void ddrp_rx_dqs_auto_calibration(void)
 {
 	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	unsigned int timeout = 0xffffff;
-
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+	timeout =0x50;
+#endif
 	printf("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
 
 	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
@@ -1351,12 +1355,16 @@ static void ddrp_rx_dqs_auto_calibration(void)
 	while(!((ddr_readl(DDRP_INNOPHY_CALIB_DONE) & 0x3) == 3) && --timeout) {
 
 		udelay(1);
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+#endif
 	}
 
 	if(!timeout) {
 		debug("ddrp_auto_calibration failed!\n");
+#ifndef CONFIG_DDR_DRVODT_DEBUG
 		while(1);
+#endif
 	}
 
 	debug("ddrp_auto_calibration success!\n");
@@ -1486,13 +1494,141 @@ static void _ddrp_post_init(void)
 {
 
 }
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+static int do_whole_chip_test(void)
+{
+	int i = 0;
+	unsigned int *p = 0x81000000;
 
+//	printf("doing whole chip w/r test!\n");
+
+#define MAX_WR_TEST_SIZE	(4*1024*1024/4)
+
+	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
+		p[i] = &p[i];
+		//p[i] = 0x01010101;
+	}
+
+	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
+		p[i] = &p[i];
+		//p[i] = 0x12345a5a;
+		//p[i] = (i&0xff) | (i&0xff) << 8 | (i&0xff) << 16 | (i&0xff) << 24;//(i&0xff) | ((i << 8) & 0xff) | ((i << 16)& 0xff) | ((i << 24) & 0xff);
+
+	}
+
+	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
+
+		if(p[i] != &p[i]) {
+			printf("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
+			return -1;
+		}
+
+	}
+	pass_count ++;
+	return 0;
+}
+struct debug_param {
+	unsigned int drv_value;
+	unsigned int odt_value;
+	unsigned int restart_count;
+	unsigned int debug_value;
+	unsigned char date_eye[32][32];
+};
+struct debug_param *debug_drvodt = (struct debug_param *) 0xb2400000;
+void debug_date_eye(void) {
+#ifdef CONFIG_BURNER
+        int x=0,y=0;
+	debug_drvodt ->drv_value = 0;
+	debug_drvodt -> odt_value = 0;
+	debug_drvodt -> debug_value = 1;
+	for(x=0;x<32;x++){
+		for(y=0;y<32;y++){
+			debug_drvodt->date_eye[x][y]=1;
+		}
+	}
+#else
+	int mem_count = 2;
+	int restart_count_max = 2;
+	int i=0;
+	printf("drv_value  is %x odt_value is %x\n",debug_drvodt->drv_value,debug_drvodt->odt_value);
+	ddrp_zq_calibration(1, debug_drvodt->drv_value,debug_drvodt->drv_value, debug_drvodt->drv_value, debug_drvodt->odt_value);
+	ddrp_rx_dqs_auto_calibration();
+	int j=0;
+	pass_count = 0;
+        if (debug_drvodt->debug_value > 0){
+		debug_drvodt->restart_count = 0;
+		debug_drvodt->debug_value = 0;
+		_machine_restart();
+	} else if(debug_drvodt->debug_value == 0) {
+		unsigned int restart_count = 0;
+		unsigned int drv_value = 0;
+		unsigned int odt_value = 0;
+
+		restart_count = debug_drvodt->restart_count;
+
+		if(restart_count < restart_count_max){
+
+			for(i = 0;i < mem_count;i++){
+				do_whole_chip_test();
+			}
+
+			if(pass_count != mem_count){
+				debug_drvodt->date_eye[debug_drvodt->drv_value][debug_drvodt->odt_value] = 0;
+				restart_count = restart_count_max ;
+			}
+			restart_count += 1;
+			debug_drvodt->restart_count = restart_count;
+			_machine_restart();
+		}else {
+			odt_value = debug_drvodt->odt_value;
+			odt_value += 1;
+			debug_drvodt->odt_value = odt_value;
+			if(debug_drvodt->odt_value > 0x1f){
+				drv_value = debug_drvodt->drv_value;
+				drv_value += 1;
+				debug_drvodt->drv_value  = drv_value;
+			        debug_drvodt->odt_value = 0;
+			}
+			debug_drvodt->debug_value = 1;
+		}
+		if(debug_drvodt->drv_value <= 0x1f) {
+			_machine_restart();
+		}else{
+			/*ddr inno phy default drv_value is 0x14,odt_value is 0x5*/
+			drv_value = 0x14;
+			odt_value = 0x5;
+			ddrp_zq_calibration(1,drv_value,drv_value,drv_value,odt_value);
+		}
+	}
+#endif
+}
+void debug_date_eye_printf(void) {
+	int i=0;
+	int j=0;
+        for(i=0;i<32;i++){
+		  if(i<10){
+		  printf("drv is %d                     ",i);
+		  }
+		  else{
+		  printf("drv is %d                    ",i);
+		  }
+	          for(j=0;j<32;j++){
+			printf("%d",debug_drvodt->date_eye[i][j]);
+		  }
+		  printf("\n");
+	}
+}
+#endif
 extern void (*ddrp_post_init)(void);
 void ddrp_auto_calibration(void)
 {
 
 	ddrp_post_init = _ddrp_post_init;
 
+#ifdef CONFIG_DDR_DRVODT_DEBUG
+	debug_date_eye();
+	debug_date_eye_printf();
+#endif
 	//ddrp_zq_calibration(1, 0xe, 0x14, 0x14, 0x5);	 // 0xe, 0x14, 0x14, 0x5 is default value.
 	ddrp_zq_calibration(1, 0xc, 0xc, 0xc, 0x2);	// 1, bypass. drv:0xc 38.4 欧姆, odt:0x2, 282 欧姆.
 	ddrp_rx_dqs_auto_calibration();
