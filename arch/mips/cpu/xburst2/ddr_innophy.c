@@ -384,17 +384,24 @@ void ddrc_dfi_init(enum ddr_type type)
 			(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
 
 		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
-		udelay(5);
+		udelay(10);
 		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
-		udelay(5);
+		udelay(10);
 		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR1
-		udelay(5);
+		udelay(10);
 		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
-		udelay(5);
-#ifdef CONFIG_X2600
+		udelay(10);
+
+#if CONFIG_DDR_CS0
 		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
 		mdelay(1);
 #endif
+
+#if CONFIG_DDR_CS1
+		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS1, DDRC_LMR); //ZQCL
+		mdelay(1);
+#endif
+
 #undef DDRC_LMR_MR
 		break;
 
