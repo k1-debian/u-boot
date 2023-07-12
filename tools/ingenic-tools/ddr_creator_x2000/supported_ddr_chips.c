@@ -40,6 +40,10 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_DDR3L_GDP1BFLM_CB
 	DDR3L_GDP1BFLM_CB,
 #endif
+
+#ifdef CONFIG_DDR2_W9751V6NG
+	DDR2_W9751V6NG,
+#endif
 };
 
 

@@ -55,6 +55,10 @@
 #include "chips-v2/DDR2_W971GV6NG.h"
 #endif
 
+#ifdef CONFIG_DDR2_W9751V6NG
+#include "chips-v2/DDR2_W9751V6NG.h"
+#endif
+
 #ifdef CONFIG_DDR2_W975116NG18I
 #include "chips-v2/DDR2_W975116NG18I.h"
 #endif

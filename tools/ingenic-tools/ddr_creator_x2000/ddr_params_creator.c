@@ -787,6 +787,11 @@ int main(int argc, char *argv[])
 #ifdef CONFIG_DDR_TYPE_DDR3
 	ddr3_creator_init();
 #endif
+
+#ifdef CONFIG_DDR_TYPE_DDR2
+	ddr2_creator_init();
+#endif
+
 	generated_reg_values = malloc(ddr_nums * sizeof(struct ddr_reg_value));
 
 	create_supported_ddr_params(generated_reg_values);

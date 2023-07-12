@@ -25,6 +25,10 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 	}
 	if(p->cl >= 2 && p->cl <= 7) // debug default 6.
 		p->mr0.ddr2.CL = p->cl;
+	else if(p->cl == 8)
+		p->mr0.ddr2.CL = 1;
+	else if(p->cl == 9)
+		p->mr0.ddr2.CL = 0;
 	else{
 		out_error("DDR_CL(%d) error,it should be between 2 and 6. check %s,%d\n",p->cl,__FILE__,__LINE__);
 		assert(1);
@@ -45,33 +49,34 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 #endif
 
 #ifdef CONFIG_DDR_CHIP_ODT
-	p->mr1.ddr2.RTT2 = CONFIG_DDR_CHIP_ODT; /* Effective resistance of ODT RZQ/4 */
+	p->mr1.ddr2.RTT2 = CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_2; /* Effective resistance of ODT RZQ/4 */
+	p->mr1.ddr2.RTT6 = CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_6; /* Effective resistance of ODT RZQ/4 */
 #endif
 	p->mr1.ddr2.BA = 0x1;
 
 }
 #endif
 
-static void fill_in_params_ddr2(struct ddr_params *ddr_params)
+static void fill_in_params_ddr2(struct ddr_params *ddr_params, struct ddr_chip_info *chip)
 {
 	struct ddr2_params *params = &ddr_params->private_params.ddr2_params;
 	if(params->RL == -1  || params->WL == -1) {
 		out_error("lpddr cann't surpport auto mode!\n");
 		assert(1);
 	}
-	params->tMRD = DDR_tMRD;
-	params->tXSNR = DDR_tXSNR;
-	params->tXARD = DDR_tXARD;
-	params->tXARDS = DDR_tXARDS;
-	params->tXSRD = DDR_tXSRD;
-	params->tCL = DDR_CL;
-	params->tCKESR = DDR_tCKESR;
-	params->tCCD = DDR_tCCD;
-	params->tFAW = DDR_tFAW;
-	params->tRTP = DDR_tRTP;
-#ifdef CONFIG_DDR_INNOPHY
+	params->tMRD = chip->DDR_tMRD;
+	params->tXSNR = chip->DDR_tXSNR;
+	params->tXARD = chip->DDR_tXARD;
+	params->tXARDS = chip->DDR_tXARDS;
+	params->tXSRD = chip->DDR_tXSRD;
+	params->tCL = chip->DDR_CL;
+	params->tCKESR = chip->DDR_tCKESR;
+	params->tCCD = chip->DDR_tCCD;
+	params->tFAW = chip->DDR_tFAW;
+	params->tRTP = chip->DDR_tRTP;
+	ddr_params->cl = chip->DDR_CL;
+
 	fill_mr_params_ddr2(ddr_params);
-#endif
 }
 
 static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p)
@@ -123,12 +128,12 @@ static void ddrc_params_creator_ddr2(struct ddrc_reg *ddrc, struct ddr_params *p
 	/* ASSERT_MASK(tmp,2); */
 	/* ddrc->timing4.b.tMRD = tmp; */
 
-	/* tmp = MAX(ps2cycle_ceil(params->tXSNR,4), */
-	/* 		  ps2cycle_ceil(params->tXSRD,4)); */
+	tmp = MAX(ps2cycle_ceil(params->tXSNR,4),
+	 		  ps2cycle_ceil(params->tXSRD,4));
 
-	/* tmp = tmp / 4; */
-	/* ASSERT_MASK(tmp,8); */
-	/* ddrc->timing6.b.tXSRD = tmp; */
+	tmp = tmp / 4;
+	ASSERT_MASK(tmp,8);
+	ddrc->timing5.b.tXS = tmp;
 
 	tmp = ps2cycle_ceil(params->tCKESR,8) / 8 - 1 ;
 	if(tmp < 0)
@@ -160,6 +165,10 @@ static void ddrp_params_creator_ddr2(struct ddrp_reg *ddrp, struct ddr_params *p
 	}
 	if(p->cl >= 2 && p->cl <= 7) // debug default 6.
 		ddrp->mr0.ddr2.CL = p->cl;
+	else if(p->cl == 8)
+		p->mr0.ddr2.CL = 1;
+	else if(p->cl == 9)
+		p->mr0.ddr2.CL = 0;
 	else{
 		out_error("DDR_CL(%d) error,it should be between 2 and 6. check %s,%d\n",p->cl,__FILE__,__LINE__);
 		assert(1);
