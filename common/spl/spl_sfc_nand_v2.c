@@ -18,6 +18,53 @@
 
 static struct spl_nand_param *curr_device;
 
+#ifdef CONFIG_X2580
+/* nand 未经测试 */
+static int x2580_sfc_change_io_function(int is_quad)
+{
+	if (!is_quad)
+		return 0;
+
+	/*
+	 * 解决X2580 SFC quad模式读写异常
+	 * 更改SFC0控制器 CLK/D0~D3 output0,再将恢复为func1功能, CE管脚不操作
+	 *
+	 * PA23 : SFC_DT_IO0
+	 * PA24 : SFC_DR_IO1
+	 * PA25 : SFC_HOLD_IO4
+	 * PA26 : SFC_WP_IO2
+	 * PA27 : SFC_CLK
+	 * PA28 : SFC_CE
+	 *            0x10  0x20  0x30  0x40
+	 *            INT   MASK  PAT1  PAT0
+	 * func1       0     0     0     1
+	 * output0     0     1     0     0
+	 */
+	gpio_set_func(0, GPIO_OUTPUT0, 0x1f << 23);
+	gpio_set_func(0, GPIO_FUNC_1, 0x1f << 23);
+
+	return 0;
+}
+/* nand 未经测试 */
+static int ingenic_sfc_gpio_slew_driver_strength(void)
+{
+	unsigned int base = GPIO_BASE + 0x1000 * 0;
+	/*
+	 * SFC: PA23 ~ PA28
+	 * Slew : 0x10010160  ===> 1 : Fast mode
+	 * Driver strength
+	 * DS1 DS0
+	 *  0   0    ===> 2mA
+	 *  0   1    ===> 4mA
+	 *  1   0    ===> 8mA
+	 *  1   1    ===> 12mA
+	 */
+	writel(0x1F800000, base + PXPSLWS);  /* Slew===> 1 */
+	writel(0x1F800000, base + PXPDS0S);  /* DS0 ===> 1 */
+	writel(0x1F800000, base + PXPDS1C);  /* DS1 ===> 0 */
+}
+#endif
+
 static inline void sfc_writel(unsigned int value, unsigned short offset)
 {
 	writel(value, SFC_BASE + offset);
@@ -181,6 +228,10 @@ static void sfc_controler_init(void)
 	tmp |= (THRESHOLD << GLB_THRESHOLD_OFFSET);
 	sfc_writel(tmp, SFC_GLB);
 
+#ifdef CONFIG_X2580
+	ingenic_sfc_gpio_slew_driver_strength();
+#endif
+
 	/* default: tSH--5cycle, tSETUP--1/2cycle, tHOLD--1/2cycle */
 	set_flash_timing();
 }
@@ -235,6 +286,9 @@ read_oob:
 		column |= (((page >> 6) & 1) << 12);
 
 #ifdef CONFIG_SFC_QUAD
+	#ifdef CONFIG_X2580
+	x2580_sfc_change_io_function(1);
+	#endif
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_RDCH_X4, len, column, curr_device->addrlen, 8, 1, 0);
 #else
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_FRCH, len, column, curr_device->addrlen, 8, 1, 0);

@@ -36,6 +36,8 @@ enum gpio_function {
 	GPIO_FUNC_1     = 0x01,  //0001, GPIO as function 1 / device 1
 	GPIO_FUNC_2     = 0x02,  //0010, GPIO as function 2 / device 2
 	GPIO_FUNC_3     = 0x03,  //0011, GPIO as function 3 / device 3
+	GPIO_OUTPUT0    = 0x04,  //0100, GPIO output low  level
+	GPIO_OUTPUT1    = 0x05,  //0101, GPIO output high level
 	GPIO_INPUT      = 0x06,	 //0110, GPIO as input
 	GPIO_PULL	    = 0x10,
 	GPIO_PULL_DOWN  = 0X20,
