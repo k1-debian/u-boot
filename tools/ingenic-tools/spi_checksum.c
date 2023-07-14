@@ -152,7 +152,8 @@ u8 crc7(u8 crc, u8 *buffer, int len)
 
 int main(int argc, char *argv[])
 {
-	int fd, count;
+	int count;
+	FILE * fd;
 	int bytes_read;
 	u8 buffer[BUFFER_SIZE];
 	volatile int t = 0;
@@ -163,15 +164,15 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	fd = open(argv[1], O_RDWR);
-	if (fd < 0) {
+	fd = fopen(argv[1], "rb+");
+	if (fd == NULL) {
 		printf("Open %s Error\n", argv[1]);
 		return 1;
 	}
 
 	count = 0;
 
-	while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+	while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, fd)) > 0) {
 		if (t >= SKIP_SIZE) {
 			crc = crc7(crc, buffer, bytes_read);
 		} else {
@@ -184,19 +185,19 @@ int main(int argc, char *argv[])
 	printf("spi spl crc7 = 0x%x \n", crc);
 
 	/*set crc*/
-	lseek( fd, CRC_POSITION, SEEK_SET);
+	fseek( fd, CRC_POSITION, SEEK_SET);
 
-	if ((t = write(fd, &crc, 1)) != 1) {
+	if ((t = fwrite(&crc, 1, 1, fd)) != 1) {
 		printf("Write %s Error\n",argv[1]);
 		return 1;
 	}
 
 	/*set spl len*/
-	lseek( fd, SPL_LENGTH_POSITION, SEEK_SET);
+	fseek( fd, SPL_LENGTH_POSITION, SEEK_SET);
 #if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X1600) || defined(CONFIG_X2600))
-	if ((t = write(fd, &count, 2)) != 2) {
+	if ((t = fwrite(&count, 2, 1, fd)) != 1) {
 #else
-	if ((t = write(fd, &count, 4)) != 4) {
+	if ((t = fwrite(&count, 4, 1, fd)) != 1) {
 #endif
 		printf("Check: Write %s Error\n",argv[1]);
 		return 1;
@@ -204,42 +205,42 @@ int main(int argc, char *argv[])
 
 #if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X1600) || defined(CONFIG_X2600))
 	/* set env crc */
-	lseek(fd, 0x100, SEEK_SET);
+	fseek(fd, 0x100, SEEK_SET);
 
 	memset(buffer, 0, BUFFER_SIZE);
-	if ((t = read(fd, buffer, 256) < 0)) {
+	if ((t = fread(buffer, 1, 256, fd)) < 0) {
 		printf("read %d \n",t);
 	}
 
 	crc = crc7(0, buffer, 256);
 
-	lseek(fd, 0xe, SEEK_SET);
+	fseek(fd, 0xe, SEEK_SET);
 
-	if ((t = write(fd, &crc, 1)) != 1) {
+	if ((t = fwrite(&crc, 1, 1, fd)) != 1) {
 		printf("crc: Write %s Error\n",argv[1]);
 		return 1;
 	}
 
 
 	/* set spl head crc */
-	lseek(fd, 0, SEEK_SET);
+	fseek(fd, 0, SEEK_SET);
 
 	memset(buffer, 0, BUFFER_SIZE);
-	if ((t = read(fd, buffer, 15) < 0)) {
+	if ((t = fread(buffer, 15, 1, fd)) < 0) {
 		printf("read %d \n",t);
 	}
 
 	crc = crc7(0, buffer, 15);
 
-	lseek(fd, 0xf, SEEK_SET);
+	fseek(fd, 0xf, SEEK_SET);
 
-	if ((t = write(fd, &crc, 1)) != 1) {
+	if ((t = fwrite(&crc, 1, 1, fd)) != 1) {
 		printf("crc: Write %s Error\n",argv[1]);
 		return 1;
 	}
 #endif
 
-	close(fd);
+	fclose(fd);
 
 	return 0;
 }
@@ -250,7 +251,8 @@ int main(int argc, char *argv[])
  */
 int main(int argc, char *argv[])
 {
-	int fd, count;
+	int count;
+	FILE * fd;
 	int bytes_read;
 	char buffer[BUFFER_SIZE];
 	unsigned int check = 0;
@@ -261,7 +263,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	fd = open(argv[1], O_RDWR);
+	fd = fopen(argv[1], "rb+");
 	if (fd < 0) {
 		printf("Open %s Error\n", argv[1]);
 		return 1;
@@ -269,7 +271,7 @@ int main(int argc, char *argv[])
 
 	count = 0;
 
-	while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+	while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, fd)) > 0) {
 		if (t >= SKIP_SIZE)
 			check += *((unsigned int *)buffer);
 		else
@@ -280,19 +282,19 @@ int main(int argc, char *argv[])
 	printf("spi spl count = %d \n", count);
 	printf("spi spl check = %#x \n", check);
 
-	lseek( fd, 8, SEEK_SET);
+	fseek( fd, 8, SEEK_SET);
 
-	if ((t = write(fd, &count, 4)) != 4) {
+	if ((t = fwrite(&count, 4, 1, fd)) != 1) {
 		printf("Write %s Error\n",argv[1]);
 		return 1;
 	}
 
 	check = 0 - check;
-	if ((t = write(fd, &check, 4)) != 4) {
+	if ((t = fwrite(&check, 4, 1, fd)) != 1) {
 		printf("Check: Write %s Error\n",argv[1]);
 		return 1;}
 
-	close(fd);
+	fclose(fd);
 
 	return 0;
 }
