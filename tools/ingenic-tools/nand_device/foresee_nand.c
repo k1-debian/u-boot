@@ -2,7 +2,7 @@
 #include "nand_common.h"
 
 #define FS_MID			    0xCD
-#define FS_NAND_DEVICD_COUNT	    7
+#define FS_NAND_DEVICD_COUNT	    8
 
 static unsigned char fs_eccerr[] = {0x2,0x3};
 static unsigned char fs_eccerr1[] = {0x7};
@@ -15,6 +15,7 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0x71, 2048, 2, 4, 2, 2, fs_eccerr),
 	DEVICE_STRUCT(0x70, 2048, 2, 4, 2, 2, fs_eccerr),
 	DEVICE_STRUCT(0x72, 2048, 2, 4, 2, 2, fs_eccerr),
+	DEVICE_STRUCT(0x53, 4096, 2, 4, 3, 1, fs_eccerr1),
 };
 
 static struct nand_desc fs_nand = {
