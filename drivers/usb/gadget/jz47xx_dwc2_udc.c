@@ -187,7 +187,7 @@ static int dwc_udc_init(struct dwc2_udc *dev)
 {
 #ifndef CONFIG_BURNER
 
-	otg_phy_init(DEVICE_ONLY_MODE);
+	otg_phy_init(DEVICE_ONLY_MODE,CONFIG_SYS_EXTAL);
 
 	dwc_otg_core_reset();
 

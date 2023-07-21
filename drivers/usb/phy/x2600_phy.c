@@ -4,7 +4,7 @@
 #define CLKGR0_GATE_OTG_CLK_BIT	4
 #define SRBC_USB_SR	14
 
-void otg_phy_init(enum otg_mode_t mode) {
+void otg_phy_init(enum otg_mode_t mode,unsigned extclk) {
 	unsigned int value;
 	/*open clk*/
 	cpm_clear_bit(CLKGR0_GATE_OTG_CLK_BIT, CPM_CLKGR0);
