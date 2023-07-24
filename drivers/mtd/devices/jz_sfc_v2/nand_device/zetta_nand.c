@@ -92,21 +92,22 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0x71:
 		case 0x72:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;   //notice!!!
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 

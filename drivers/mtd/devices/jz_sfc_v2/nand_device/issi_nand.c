@@ -18,7 +18,7 @@ struct jz_sfcnand_device *issi_nand;
 
 static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
 	[0] = {
-	/*IS37SML01G1*/
+		/*IS37SML01G1*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -57,24 +57,24 @@ static cdt_params_t *issi_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
 	switch(device_id) {
 		case 0x21:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 1;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-		ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 
@@ -86,7 +86,7 @@ static int issi_nand_init(void) {
 		return -ENOMEM;
 	}
 
-	issi_nand->id_manufactory = 0xc8;
+	issi_nand->id_manufactory = 0xC8;
 	issi_nand->id_device_list = device_id;
 	issi_nand->id_device_count = ISSI_DEVICES_NUM;
 

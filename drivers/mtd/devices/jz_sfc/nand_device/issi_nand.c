@@ -24,8 +24,8 @@ static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
-		.tHOLD  = THOLD,
-		.tSETUP = TSETUP,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
@@ -82,20 +82,21 @@ retry:
 	switch(device_id) {
 		case 0x21:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 1;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;   //notice!!!
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 

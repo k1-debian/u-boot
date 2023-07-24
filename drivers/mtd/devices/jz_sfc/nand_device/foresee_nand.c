@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define FS_DEVICES_NUM         7
+#define FS_DEVICES_NUM         8
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -149,7 +149,26 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 
 		.ecc_max = 0x1,
 		.need_quad = 1,
-	}
+	},
+	[7] = {
+		/*FS35SQA004G*/
+		.pagesize = 2 * 2 * 1024,
+		.blocksize = 2 * 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 105,
+		.tPP = 830,
+		.tBE = 10,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[FS_DEVICES_NUM] = {
@@ -160,6 +179,7 @@ static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x71, "F35SQA001G",   &fs_param[4]),
 	DEVICE_ID_STRUCT(0x70, "F35SQA512M",   &fs_param[5]),
 	DEVICE_ID_STRUCT(0x72, "F35SQA002G",   &fs_param[6]),
+	DEVICE_ID_STRUCT(0x53, "F35SQA004G", &fs_param[3]),
 };
 
 static int32_t fs_get_read_feature(struct flash_operation_message *op_info) {
@@ -202,11 +222,13 @@ retry:
 		case 0xA1:
 		case 0xB1:
 			switch((ecc_status >> 4) & 0x7) {
+				case 0x0:
+					return 0;
+				case 0x1 ... 0x4:
+					return ((ecc_status >> 4) & 0x7);
 				case 0x7:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
@@ -216,21 +238,34 @@ retry:
 		case 0xEB:
 		case 0xEA:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 1;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
+					break;
+			}
+			break;
+		case 0x53:
+			switch((ecc_status >> 4) & 0x7) {
+				case 0x0:
+					return 0;
+				case 0x1 ... 0x6:
+					return ((ecc_status >> 4) & 0x7) + 2;
+				case 0x7:
+					return -EBADMSG;
+				default:
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;   //notice!!!
+			break;
 
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int fs_nand_init(void) {

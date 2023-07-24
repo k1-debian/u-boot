@@ -114,7 +114,7 @@ static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint16_t 
 	switch(device_id) {
 		case 0x21:
 		case 0x52:
-                case 0xD4:
+		case 0xD4:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -130,26 +130,27 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0x52:
 		case 0xD4:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int yhy_midc9_nand_init(void) {
 	yhy_midc9_nand = kzalloc(sizeof(*yhy_midc9_nand), GFP_KERNEL);
 	if(!yhy_midc9_nand) {
-		pr_err("alloc yhy_midc9_nand struct fail\n");
+		pr_err("alloc yhy_nand struct fail\n");
 		return -ENOMEM;
 	}
 

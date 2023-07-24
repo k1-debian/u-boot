@@ -21,13 +21,14 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[XTX_MID2C_DEVICES_NUM] = {
 
 	[0] = {
 		/*XT26G02E */
+		/*NM5A02G01A*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 2048,
 
-		.tHOLD   = THOLD,
 		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
@@ -101,20 +102,23 @@ retry:
 	switch(device_id) {
 		case 0x24:
 			switch((ecc_status >> 4) & 0x7) {
+				case 0x0:
+				case 0x1:
+					return 0;
 				case 0x2:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
+				case 0x3:
+				case 0x5:
+					return 8;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
-
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static void xtx_mid2c_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {

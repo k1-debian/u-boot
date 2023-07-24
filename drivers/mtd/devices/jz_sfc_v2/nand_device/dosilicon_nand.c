@@ -78,7 +78,7 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[3] = {
-	/*DS35M1GAXXX-1.8V*/
+		/*DS35M1GAXXX-1.8V*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -172,40 +172,42 @@ static cdt_params_t *dosilicon_get_cdt_params(struct sfc_flash *flash, uint16_t 
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
-
 	switch(device_id) {
 		case 0x71:
 		case 0x72:
 		case 0x21:
 		case 0x22:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		case 0xF2:
 		case 0xF1:
 			switch((ecc_status >> 4) & 0x7) {
+				case 0x0:
+					return 0;
 				case 0x2:
-					ret = -EBADMSG;
+					return -EBADMSG;
 					break;
+				case 0x3:
+				case 0x5:
+					return 8;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
-
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 

@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define TC_DEVICES_NUM         1
+#define TC_DEVICES_NUM         2
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		100
@@ -33,14 +33,33 @@ static struct jz_sfcnand_base_param tc_param[TC_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 0x8,
+		.ecc_max = 0x4,
 		.need_quad = 0, // unsupport quad
 	},
+	[1] = {
+		/*TC58CVG2S0HRAIJ */
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 4 * 1024 * 64 * 2048,
 
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 300,
+		.tPP = 600,
+		.tBE = 7,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[TC_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xC2, "TC58CVG0S3HRAIG", &tc_param[0]),
+	DEVICE_ID_STRUCT(0xed, "TC58CVG2S0HRAIJ", &tc_param[1]),
 };
 
 static int32_t tc_get_read_feature(struct flash_operation_message *op_info) {
@@ -82,21 +101,37 @@ retry:
 	switch(device_id) {
 		case 0xC2:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 8;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
+					break;
+			}
+			break;
+		case 0xed:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					ret = nand_get_ecc_conf(flash, 0x30);
+					if (ret < 0)
+						return ret;
+					ret >>= 4;
+					return ret;
+				case 0x2:
+					return -EBADMSG;
+				default:
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;   //notice!!!
-
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int tc_nand_init(void) {

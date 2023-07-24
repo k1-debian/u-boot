@@ -5,7 +5,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_MID0B_DEVICES_NUM         3
+#define XTX_MID0B_DEVICES_NUM         4
 #define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
@@ -18,6 +18,26 @@
 static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 
 	[0] = {
+		/*XT26G01A */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+
+	[1] = {
 		/*XT26G02B */
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
@@ -37,7 +57,7 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 
-	[1] = {
+	[2] = {
 		/*XT26G01C */
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
@@ -57,7 +77,7 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 
-	[2] = {
+	[3] = {
 		/*XT26G02C */
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
@@ -80,9 +100,10 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 };
 
 static struct device_id_struct device_id[XTX_MID0B_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[0]),
-	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[1]),
-	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[2]),
+	DEVICE_ID_STRUCT(0xE1, "XT26G01A ", &xtx_mid0b_param[0]),
+	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[1]),
+	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[2]),
+	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[3]),
 };
 
 static int32_t xtx_mid0b_get_read_feature(struct flash_operation_message *op_info) {
@@ -122,35 +143,50 @@ retry:
 		goto retry;
 
 	switch(device_id) {
+		case 0xE1:
+			switch((ecc_status >> 2) & 0xf) {
+				case 0x0 ... 0x4:
+					return 0;
+				case 0x5 ... 0x8:
+					return 8;
+				case 0xf:
+					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
 		case 0xF2:
 			switch((ecc_status >> 4) & 0x3) {
-				case 0x2:
+				case 0x0:
+					return 0;
+				case 0x1:
 				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return 4;
+				case 0x2:
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		case 0x11:
 		case 0x12:
 			switch((ecc_status >> 4) & 0xf) {
+				case 0x0 ... 0x4:
+					return 0;
+				case 0x5 ... 0x8:
+					return 8;
 				case 0xf:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
-
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int xtx_mid0b_nand_init(void) {

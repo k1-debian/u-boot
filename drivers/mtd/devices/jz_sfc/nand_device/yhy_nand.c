@@ -6,7 +6,7 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
-#define	YHY_MIDC9_DEVICES_NUM         2
+#define	YHY_MIDC9_DEVICES_NUM         3
 #define TSETUP		20
 #define THOLD		20
 #define	TSHSL_R		50
@@ -58,11 +58,32 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 
+    [2] = {
+		/*HYF4GQ4U */
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 256,
+		.flashsize = 4 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+
 };
 
 static struct device_id_struct device_id[YHY_MIDC9_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x21, "HYF1GQ4U", &yhy_midc9_param[0]),
 	DEVICE_ID_STRUCT(0x52, "HYF2GQ4U", &yhy_midc9_param[1]),
+	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
 };
 
 static int32_t yhy_midc9_get_read_feature(struct flash_operation_message *op_info) {
@@ -104,22 +125,25 @@ retry:
 	switch(device_id) {
 		case 0x21:
 		case 0x52:
+		case 0xD4:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
 				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		default:
-			printf("device_id err, it maybe don`t support this device, check your         device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
+
 static int yhy_midc9_nand_init(void) {
 	struct jz_sfcnand_device *yhy_midc9_nand;
 	yhy_midc9_nand = kzalloc(sizeof(*yhy_midc9_nand), GFP_KERNEL);

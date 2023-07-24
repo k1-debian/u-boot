@@ -22,6 +22,7 @@ static struct jz_sfcnand_base_param fm_param[FM_DEVICES_NUM] = {
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
+
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
@@ -99,21 +100,22 @@ retry:
 		case 0xE4:
 		case 0xE5:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 1;
 				case 0x2:
 				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return -EBADMSG;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;   //notice!!!
-
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int fm_nand_init(void) {
@@ -127,6 +129,7 @@ static int fm_nand_init(void) {
 	fm_nand->id_manufactory = 0xA1;
 	fm_nand->id_device_list = device_id;
 	fm_nand->id_device_count = FM_DEVICES_NUM;
+
 	fm_nand->ops.nand_read_ops.get_feature = fm_get_read_feature;
 	return jz_sfcnand_register(fm_nand);
 }

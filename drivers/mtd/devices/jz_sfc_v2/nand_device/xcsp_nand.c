@@ -103,53 +103,28 @@ static cdt_params_t *xcsp_nand_get_cdt_params(struct sfc_flash *flash, uint16_t 
 	return &xcsp_nand->cdt_params;
 }
 
-static int32_t xcsp_get_f0_register_value(struct sfc_flash *flash)
-{
-	struct sfc_cdt_xfer xfer;
-	uint32_t buf = 0;
-
-	memset(&xfer, 0, sizeof(xfer));
-
-	/*set index*/
-	xfer.cmd_index = NAND_GET_FEATURE;
-
-	/* set addr */
-	xfer.staaddr0 = 0xf0;
-
-	/* set transfer config */
-	xfer.dataen = ENABLE;
-	xfer.config.datalen = 1;
-	xfer.config.data_dir = GLB_TRAN_DIR_READ;
-	xfer.config.ops_mode = CPU_OPS;
-	xfer.config.buf = (uint8_t *)&buf;
-
-	if(sfc_sync_cdt(flash->sfc, &xfer)){
-		pr_err("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
-	return buf;
-}
-
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
 	int ret = 0;
 	switch(device_id) {
 		case 0x01:
 		case 0xa1:
 		case 0xb1:
-			switch((ecc_status >> 4) & 0x3) {
+			ret = nand_get_ecc_conf(flash, 0xf0);
+			switch((ret >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+				case 0x2:
+					return 8;
 				case 0x3:
-					ret = -EBADMSG;
-					break;
-				default:
-					ret = 0;
-					break;
+					return -EBADMSG;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int xcsp_nand_init(void) {
@@ -159,7 +134,7 @@ static int xcsp_nand_init(void) {
 		return -ENOMEM;
 	}
 
-	xcsp_nand->id_manufactory = 0x9c;
+	xcsp_nand->id_manufactory = 0x9C;
 	xcsp_nand->id_device_list = device_id;
 	xcsp_nand->id_device_count = XCSP_DEVICES_NUM;
 	xcsp_nand->ops.get_cdt_params = xcsp_nand_get_cdt_params;

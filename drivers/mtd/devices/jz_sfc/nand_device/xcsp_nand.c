@@ -125,20 +125,22 @@ retry:
 		case 0x01:
 		case 0xa1:
 		case 0xb1:
-			switch((ecc_status >> 4) & 0x3) {
+			ret = nand_get_ecc_conf(flash, 0xf0);
+			switch((ret >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+				case 0x2:
+					return 8;
 				case 0x3:
-					ret = -EBADMSG;
-					break;
-				default:
-					ret = 0;
-					break;
+					return -EBADMSG;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int xcsp_nand_init(void) {

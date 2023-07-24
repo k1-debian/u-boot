@@ -19,7 +19,7 @@ static struct jz_sfcnand_device *mxic_nand;
 
 static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 	[0] = {
-	/*MX35LF1GE4AB*/
+		/*MX35LF1GE4AB*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -193,24 +193,41 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	switch(device_id) {
 		case 0x12:
 		case 0x22:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
+				case 0x2:
+					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
 		case 0x26:
 		case 0x37:
 		case 0xA6:
-			switch((ecc_status >> 4) & 0x3) {
-				case 0x2:
-				case 0x3:
-					ret = -EBADMSG;
-					break;
-				default:
-					ret = 0;
-					break;
+			switch((ecc_status >> 0x4) & 0x3) {
+			    case 0x0:
+				    return 0;
+			    case 0x1:
+				    ret = get_ecc_value(flash);
+					if (ret < 0)
+					    return ret;
+					else if(ret > 8)
+						return -EBADMSG;
+					return ret;
+			    case 0x2:
+				    return -EBADMSG;
+			    default:
+				    break;
 			}
 			break;
 		default:
 			pr_err("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 static int mxic_nand_init(void) {

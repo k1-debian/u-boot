@@ -111,26 +111,28 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	int ret = 0;
 
 	switch(device_id) {
-		case 0xE1 ... 0xE2:
+		case 0xE1:
+		case 0xE2:
 		case 0xC1:
 			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+				case 0x1:
+					return 0;
 				case 0x2:
+					return -EBADMSG;
 				case 0x3:
-					ret = -EBADMSG;
-					break;
+					return 8;
 				default:
-					ret = 0;
 					break;
 			}
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
-			ret = -EIO;   //notice!!!
+			break;
 
 	}
-	return ret;
+	return -EINVAL;
 }
-
 
 static int xtx_nand_init(void) {
 
