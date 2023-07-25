@@ -82,8 +82,9 @@ retry:
 			return 0;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
-			return -EIO;   //notice!!!
+			break;
 	}
+	return -EINVAL;
 }
 
 static int ato_nand_init(void) {

@@ -185,10 +185,10 @@ static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xB1, "FS35ND01G-V2", &fs_param[1]),
 	DEVICE_ID_STRUCT(0xEB, "FS35ND02G",    &fs_param[2]),
 	DEVICE_ID_STRUCT(0xEA, "FS35ND01G-S1", &fs_param[3]),
-	DEVICE_ID_STRUCT(0x71, "F35SQA001G",   &fs_param[4]),
-	DEVICE_ID_STRUCT(0x70, "F35SQA512M",   &fs_param[5]),
-	DEVICE_ID_STRUCT(0x72, "F35SQA002G",   &fs_param[6]),
-	DEVICE_ID_STRUCT(0x53, "F35SQA004G", &fs_param[3]),
+	DEVICE_ID_STRUCT(0x71, "FS35SQA001G",  &fs_param[4]),
+	DEVICE_ID_STRUCT(0x70, "FS35SQA512M",  &fs_param[5]),
+	DEVICE_ID_STRUCT(0x72, "FS35SQA002G",  &fs_param[6]),
+	DEVICE_ID_STRUCT(0x53, "FS35SQA004G",  &fs_param[7]),
 };
 
 
@@ -217,7 +217,6 @@ static cdt_params_t *fs_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
 
 	switch(device_id) {
 		case 0xA1:

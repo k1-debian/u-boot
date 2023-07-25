@@ -26,11 +26,10 @@ static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
-		.tSETUP  =TSETUP,
-		.tHOLD   =THOLD,
-		.tSHSL_R =TSHSL_R,
-		.tSHSL_W =TSHSL_W,
-
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
 
 		.tRD = TRD,
 		.tPP = TPP,

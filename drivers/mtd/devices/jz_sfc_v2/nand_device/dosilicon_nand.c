@@ -18,7 +18,7 @@ struct jz_sfcnand_device *dosilicon_nand;
 
 static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 	[0] = {
-	/*DS35X1GAXXX*/
+		/*DS35Q1GAXXX*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -38,7 +38,7 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-	/*DS35Q2GAXXX*/
+		/*DS35Q2GAXXX*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -58,7 +58,7 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[2] = {
-	/*DS35Q2GBXXX*/
+		/*DS35Q2GBXXX*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -98,7 +98,7 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[4] = {
-	/*DS35Q2GAXXX-1V8*/
+		/*DS35Q2GAXXX-1V8*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -118,7 +118,7 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[5] = {
-	/*DS35X1GBXXX*/
+		/*DS35X1GBXXX*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -143,7 +143,7 @@ static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x71, "DS35Q1GAXXX", &dosilicon_param[0]),
 	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[1]),
 	DEVICE_ID_STRUCT(0xF2, "DS35Q2GBXXX", &dosilicon_param[2]),
-	DEVICE_ID_STRUCT(0x21, "DS35M1GAXXX", &dosilicon_param[3]),
+	DEVICE_ID_STRUCT(0x21, "DS35M1GAXXX-1V8", &dosilicon_param[3]),
 	DEVICE_ID_STRUCT(0x22, "DS35Q2GAXXX-1V8", &dosilicon_param[4]),
 	DEVICE_ID_STRUCT(0xF1, "DS35X1GBXXX", &dosilicon_param[5]),
 };
@@ -154,16 +154,16 @@ static cdt_params_t *dosilicon_get_cdt_params(struct sfc_flash *flash, uint16_t 
 	CDT_PARAMS_INIT(dosilicon_nand->cdt_params);
 
 	switch(device_id) {
-	    case 0x71:
-	    case 0x72:
-	    case 0xF2:
-	    case 0x21:
-	    case 0x22:
-	    case 0xF1:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+		case 0x71:
+		case 0x72:
+		case 0xF2:
+		case 0x21:
+		case 0x22:
+		case 0xF1:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &dosilicon_nand->cdt_params;

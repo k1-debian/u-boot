@@ -104,7 +104,7 @@ static cdt_params_t *xcsp_nand_get_cdt_params(struct sfc_flash *flash, uint16_t 
 }
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status) {
-	int ret = 0;
+
 	switch(device_id) {
 		case 0x01:
 		case 0xa1:

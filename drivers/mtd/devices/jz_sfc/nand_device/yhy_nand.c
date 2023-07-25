@@ -58,7 +58,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 
-    [2] = {
+	[2] = {
 		/*HYF4GQ4U */
 		.pagesize = 4 * 1024,
 		.blocksize = 4 * 1024 * 64,

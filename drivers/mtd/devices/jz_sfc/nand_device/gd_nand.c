@@ -42,7 +42,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-		/*GD5F2GQ4UB*/
+		 /*GD5F2GQ4UB*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -159,7 +159,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 	},
 #endif
       [6] = {
-		/*GD5F1GQ4RF9IG*/
+		/*GD5F1GQ4RF*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -293,7 +293,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[13] = {
-		/*GD5F2GQ5UE*/
+		/*GD5F2GQ5UExxH*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -309,7 +309,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x4,
-		.need_quad = 1,	
+		.need_quad = 1,
 	},
 };
 

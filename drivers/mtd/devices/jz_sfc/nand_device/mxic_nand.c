@@ -37,7 +37,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-	/*MX35LF2GE4AB*/
+		/*MX35LF2GE4AB*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -56,7 +56,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[2] = {
-	/*MX35LF2GE4AD*/
+		/*MX35LF2GE4AD*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -75,7 +75,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[3] = {
-	/*MX35LF4GE4AD*/
+		/*MX35LF4GE4AD*/
 		.pagesize = 4 * 1024,
 		.blocksize = 4 * 1024 * 64,
 		.oobsize = 128,
@@ -94,7 +94,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[4] = {
-	/*MX35UF2GE4AD*/
+		/*MX35UF2GE4AD*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2	* 1024 * 64,
 		.oobsize = 64,

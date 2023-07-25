@@ -72,12 +72,12 @@ static cdt_params_t *zetta_get_cdt_params(struct sfc_flash *flash, uint16_t devi
 	CDT_PARAMS_INIT(zetta_nand->cdt_params);
 
 	switch(device_id) {
-	    case 0x71:
-	    case 0x72:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+		case 0x71:
+		case 0x72:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &zetta_nand->cdt_params;
@@ -86,7 +86,6 @@ static cdt_params_t *zetta_get_cdt_params(struct sfc_flash *flash, uint16_t devi
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
 
 	switch(device_id) {
 		case 0x71:

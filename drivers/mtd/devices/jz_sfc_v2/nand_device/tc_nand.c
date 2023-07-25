@@ -73,10 +73,10 @@ static cdt_params_t *tc_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 	switch(device_id) {
 		case 0xC2:
 		case 0xed:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &tc_nand->cdt_params;

@@ -52,10 +52,10 @@ static cdt_params_t *zb_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 
 	switch(device_id) {
 		case 0x41:
-		    break;
-	    default:
-		    printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+			break;
+		default:
+			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &zb_nand->cdt_params;
@@ -64,7 +64,6 @@ static cdt_params_t *zb_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
 	switch(device_id) {
 		case 0x41:
 			switch((ecc_status >> 4) & 0x3) {

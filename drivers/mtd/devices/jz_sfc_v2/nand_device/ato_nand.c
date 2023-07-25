@@ -61,15 +61,14 @@ static cdt_params_t *ato_get_cdt_params(struct sfc_flash *flash, uint16_t device
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
 	switch(device_id) {
 		case 0x12:
 			return 0;
 		default:
 			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
-			return -EIO;   //notice!!!
+			break;
 	}
-	return ret;
+	return -EINVAL;
 }
 
 

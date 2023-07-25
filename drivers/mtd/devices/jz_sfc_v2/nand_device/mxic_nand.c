@@ -39,7 +39,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[1] = {
-	/*MX35LF2GE4AB*/
+		/*MX35LF2GE4AB*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -59,7 +59,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[2] = {
-	/*MX35LF2GE4AD*/
+		/*MX35LF2GE4AD*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -79,7 +79,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[3] = {
-	/*MX35LF4GE4AD*/
+		/*MX35LF4GE4AD*/
 		.pagesize = 4 * 1024,
 		.blocksize = 4 * 1024 * 64,
 		.oobsize = 128,
@@ -99,7 +99,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[4] = {
-	/*MX35UF2GE4AD*/
+		/*MX35UF2GE4AD*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2	* 1024 * 64,
 		.oobsize = 64,
@@ -138,15 +138,15 @@ static cdt_params_t *mxic_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 	CMD_INFO(mxic_nand->cdt_params.ecc_r, MXIC_CMD_GET_ECC, 8, 0, TM_STD_SPI);
 
 	switch(device_id) {
-	    case 0x12:
-	    case 0x22:
-	    case 0x26:
-	    case 0x37:
-	    case 0xA6:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+		case 0x12:
+		case 0x22:
+		case 0x26:
+		case 0x37:
+		case 0xA6:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &mxic_nand->cdt_params;

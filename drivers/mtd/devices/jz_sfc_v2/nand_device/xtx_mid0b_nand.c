@@ -116,14 +116,14 @@ static cdt_params_t *xtx_mid0b_get_cdt_params(struct sfc_flash *flash, uint16_t 
 	CDT_PARAMS_INIT(xtx_mid0b_nand->cdt_params);
 
 	switch(device_id) {
-	    case 0xE1:
-	    case 0xF2:
-	    case 0x11:
-	    case 0x12:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+		case 0xE1:
+		case 0xF2:
+		case 0x11:
+		case 0x12:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &xtx_mid0b_nand->cdt_params;
@@ -132,7 +132,6 @@ static cdt_params_t *xtx_mid0b_get_cdt_params(struct sfc_flash *flash, uint16_t 
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
-	int ret = 0;
 
 	switch(device_id) {
 		case 0xE1:

@@ -167,7 +167,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 	},
 #endif
       [6] = {
-		/*GD5F1GQ4RF9IG*/
+		/*GD5F1GQ4RF*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -308,7 +308,7 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.need_quad = 1,
 	},
 	[13] = {
-		/*GD5F2GQ5UE*/
+		/*GD5F2GQ5UExxH*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -351,22 +351,22 @@ static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 	CDT_PARAMS_INIT(gd_nand->cdt_params);
 
 	switch(device_id) {
-	    case 0xB1 ... 0xB4:
-	    case 0xA1:
+		case 0xB1 ... 0xB4:
+		case 0xA1:
 		case 0x61:
-	    case 0xB468:
-		    gd_nand->cdt_params.standard_r.addr_nbyte = 3;
-		    gd_nand->cdt_params.quad_r.addr_nbyte = 3;
-		    break;
-	    case 0xD1 ... 0xD4:
-	    case 0x51 ... 0x55:
-	    case 0x32:
-	    case 0x92:
-	    case 0x91:
-		    break;
-	    default:
-		    pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
-		    return NULL;
+		case 0xB468:
+			gd_nand->cdt_params.standard_r.addr_nbyte = 3;
+			gd_nand->cdt_params.quad_r.addr_nbyte = 3;
+			break;
+		case 0xD1 ... 0xD4:
+		case 0x51 ... 0x55:
+		case 0x32:
+		case 0x92:
+		case 0x91:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
 	}
 
 	return &gd_nand->cdt_params;
