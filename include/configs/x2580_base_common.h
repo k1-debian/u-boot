@@ -368,7 +368,13 @@
 /* X2580 */
 #define CONFIG_DDR_TYPE_DDR3
 #define CONFIG_DDR_DW32                        0       /* 1-32bit-width, 0-16bit-width */
+#ifdef CONFIG_X2580_DDR
 #define CONFIG_DDR3_W631GU6NG
+#endif
+
+#ifdef CONFIG_X2580E_DDR
+#define CONFIG_DDR3L_W632GU6QG_11
+#endif
 
 #define CONFIG_DDR_INNOPHY
 /*#define CONFIG_DDR_DLL_OFF*/
