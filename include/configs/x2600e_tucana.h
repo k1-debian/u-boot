@@ -19,8 +19,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-#ifndef __X2600_TUCANA_H_
-#define	__X2600_TUCANA_H_
+#ifndef __X2600E_TUCANA_H_
+#define	__X2600E_TUCANA_H_
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
@@ -103,8 +103,8 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR3
 	/* #define CONFIG_DDR3_TSD34096M1333C9_E_FPG */
-	#define CONFIG_DDR3_W631GU6NG
-	/* #define CONFIG_DDR3L_W632GU6QG_11 */
+	/* #define CONFIG_DDR3_W631GU6NG */
+	#define CONFIG_DDR3L_W632GU6QG_11
 
 
 
@@ -190,7 +190,7 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0"
+#define BOOTARGS_COMMON "console=ttyS2,115200 mem=256M@0x0"
 
 
 #ifdef CONFIG_BOOT_ANDROID
