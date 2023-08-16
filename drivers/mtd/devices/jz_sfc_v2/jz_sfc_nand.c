@@ -242,6 +242,11 @@ static int jz_sfcnand_write_oob(struct mtd_info *mtd, loff_t addr, struct mtd_oo
 	uint32_t oob_addr = (uint32_t)addr;
 	int32_t ret;
 
+#ifdef CONFIG_FLASH_RESERVED_PART
+	if(check_partition_is_writable(flash, oob_addr, (uint32_t)ops->len))
+		return -EROFS;
+#endif
+
 	debug("write oob_addr %x, datalen %d ooboff %d, ooblen %d\n", oob_addr, ops->len, ops->ooboffs, ops->ooblen);
 
 	if(ops->datbuf && ops->len) {
@@ -289,6 +294,11 @@ static int sfcnand_block_markbad(struct mtd_info *mtd,loff_t ofs)
 static int jz_sfcnand_erase(struct mtd_info *mtd, struct erase_info *instr)
 {
 	int ret;
+#ifdef CONFIG_FLASH_RESERVED_PART
+	if(check_partition_is_writable(flash, (uint32_t)instr->addr, (uint32_t)instr->len))
+		return -EROFS;
+#endif
+
 	if((ret = jz_sfc_nand_erase(mtd, instr))) {
 		printf("WARNING: block %d erase fail !\n",(uint32_t)instr->addr / mtd->erasesize);
 		if((ret = jz_sfcnand_block_markbad(mtd, instr->addr))) {
@@ -386,6 +396,11 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 	uint32_t columnaddr;
 	uint32_t wlen;
 	int32_t ret;
+
+#ifdef CONFIG_FLASH_RESERVED_PART
+	if(check_partition_is_writable(flash, (uint32_t)to, (uint32_t)len))
+		return -EROFS;
+#endif
 
 	while(len) {
 		pageaddr = (uint32_t)to / pagesize;
@@ -997,6 +1012,26 @@ int32_t jz_sfc_nand_init()
 
 	mtd_sfcnand_init(mtd);
 	nand_register(0);
+
+#ifdef CONFIG_FLASH_RESERVED_PART
+	/*
+	 * Note that this feature may conflict with flash based BBT
+	 */
+	ret = reserved_part_init(flash);
+	if (ret) {
+		printf("failed to init reserved partitions\n");
+		ret = -EIO;
+		goto failed;
+	}
+	ret = scan_reserved_part(flash, \
+			flash_info->partition.partition, flash_info->partition.num_partition);
+	if(ret) {
+		printf("failed to scan reserved partitions\n");
+		ret = -EIO;
+		goto failed;
+	}
+#endif
+
 	return ret;
 
 failed:
@@ -1076,10 +1111,32 @@ int32_t mtd_sfcnand_probe_burner()
 	chip = mtd->priv;
 	chip->scan_bbt(mtd);
 	chip->options |= NAND_BBT_SCANNED;
-	/*0: none 1, force-erase, force erase contain creat bbt*/
-	if (spi_args->spi_erase == 1)
-		if((ret = run_command("nand erase.chip -y", 0)))
-			return ret;
+
+	/* Normal 0: none 1, force-erase, force erase contain creat bbt*/
+	/* If reserved partition is enable,
+	 * 0: none,
+	 * 1: force-erase without reserved partition,
+	 * 2: force-erase with reserved partition,
+	 * 3: force-erase with bad block,
+	 * each force-erase contain creat bbt*/
+
+	switch(spi_args->spi_erase){
+		case 1:
+#ifdef CONFIG_FLASH_RESERVED_PART
+			if((ret = flash_erase_skip_reserved_part(flash, ((struct jz_sfcnand_flashinfo*)flash->flash_info)->partition.partition,
+						((struct jz_sfcnand_flashinfo*)flash->flash_info)->partition.num_partition)))
+				return ret;
+			break;
+		case 2:
+#endif
+			if((ret = run_command("nand erase.chip -y", 0)))
+				return ret;
+			break;
+		case 3:
+			if((ret = run_command("nand scrub.chip -y", 0)))
+				return ret;
+			break;
+	}
 
 	if(chip->bbt)
 		free(chip->bbt);
@@ -1088,5 +1145,17 @@ int32_t mtd_sfcnand_probe_burner()
 	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num,
 			(void *)&param->partition/*This is a structure rather than a pointer in burner*/);
 	return 0;
+}
+#endif
+
+#ifdef CONFIG_FLASH_RESERVED_PART
+void nand_enable_reserved_part_writable()
+{
+	modify_reserved_part_rw_mode(flash, RESERVED_PART_RW);
+}
+
+void nand_disable_reserved_part_writable()
+{
+	modify_reserved_part_rw_mode(flash, RESERVED_PART_R_ONLY);
 }
 #endif

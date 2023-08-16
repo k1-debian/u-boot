@@ -76,7 +76,7 @@ int spinand_read(struct cloner *cloner)
 	return ret;
 }
 
-int spinand_program(struct cloner *cloner)
+int sfc_nand_program(struct cloner *cloner)
 {
 	u32 length = cloner->cmd->write.length;
 	u32 full_size = cloner->full_size;
@@ -212,4 +212,5 @@ void sfcnand_add_info_to_flash(char *buf)
 	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
 		*(volatile unsigned int *)(buf + 512) = 0x1111;
 }
-#endif
+
+#endif /*CONFIG_MTD_SFCNAND*/

@@ -2,6 +2,9 @@
 #define SFC_COMMON_H
 
 #include <asm/arch/sfc.h>
+#ifdef CONFIG_FLASH_RESERVED_PART
+#include "reserved_part.h"
+#endif
 
 void sfc_start(struct sfc *sfc);
 void sfc_flush_fifo(struct sfc *sfc);

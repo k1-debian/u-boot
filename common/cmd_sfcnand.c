@@ -19,24 +19,33 @@ static int do_sfcnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	char command[X_COMMAND_LENGTH];
 	int ret;
 
-	cmd = argv[1];
+	if(!strcmp(argv[1],"read")){
 
-	if(argc != 5)
-	{
-		printf("ERROR: argv error,please check the param of cmd !!!\n");
-		return CMD_RET_USAGE;
+		cmd = argv[1];
+
+		if(argc != 5)
+		{
+			printf("ERROR: argv error,please check the param of cmd !!!\n");
+			return CMD_RET_USAGE;
+		}
+
+		offset = (unsigned int)simple_strtoul(argv[2], NULL, 16);
+		len = (unsigned int)simple_strtoul(argv[3], NULL, 16);
+		dst_addr = (unsigned int)simple_strtoul(argv[4], NULL, 16);
+
+		memset(command,0,X_COMMAND_LENGTH);
+		sprintf(command,"nand %s.jffs2 0x%x 0x%x 0x%x",cmd,dst_addr,offset,len);
+
+		ret = run_command(command,0);
+		if(ret)
+			printf("do sfcnand read error ! please check your param !!\n");
 	}
-
-	offset = (unsigned int)simple_strtoul(argv[2], NULL, 16);
-	len = (unsigned int)simple_strtoul(argv[3], NULL, 16);
-	dst_addr = (unsigned int)simple_strtoul(argv[4], NULL, 16);
-
-	memset(command,0,X_COMMAND_LENGTH);
-	sprintf(command,"nand %s.jffs2 0x%x 0x%x 0x%x",cmd,dst_addr,offset,len);
-
-	ret = run_command(command,0);
-	if(ret)
-		printf("do sfcnand read error ! please check your param !!\n");
+#ifdef CONFIG_FLASH_RESERVED_PART
+	else if(!strcmp(argv[1],"enable_reserved_part_writable"))
+		nand_enable_reserved_part_writable();
+	else if(!strcmp(argv[1],"disable_reserved_part_writable"))
+		nand_disable_reserved_part_writable();
+#endif
 
 	return CMD_RET_SUCCESS;
 }
@@ -63,4 +72,8 @@ void sfc_nand_init(void)
 U_BOOT_CMD(sfcnand, 5, 1, do_sfcnand,
 		"sfcnand    - SFC_NAND sub-system\n",
 		"sfcnand read from(offs) size dst_addr\n"
+#ifdef CONFIG_FLASH_RESERVED_PART
+		"sfcnor enable_reserved_part_writable -- make reserved partitions writeable\n"
+		"sfcnor disable_reserved_part_writable\n"
+#endif
 		);

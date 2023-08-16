@@ -13,16 +13,6 @@ int sfc_reset()
 	return sfc_nor_reset();
 }
 
-int sfc_erase()
-{
-	int ret = jz_sfc_chip_erase();
-	if (ret < 0)
-		printf("sfc chip erese failed!\n");
-	else
-		printf("sfc chip erase ok\n");
-	return ret;
-}
-
 static void sfcnor_add_info_to_flash(unsigned char *buf)
 {
 	struct legacy_params *l_params;
@@ -68,7 +58,7 @@ int sfcnor_read(struct cloner *cloner)
 	return ret;
 }
 
-int sfc_program(struct cloner *cloner)
+int sfc_nor_program(struct cloner *cloner)
 {
 	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
 	unsigned int cs = CONFIG_SF_DEFAULT_CS;
@@ -153,4 +143,5 @@ int sfc_program(struct cloner *cloner)
 	}
 	return ret;
 }
-#endif
+
+#endif /*CONFIG_MTD_SFCNOR*/

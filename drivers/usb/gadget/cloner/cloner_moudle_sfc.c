@@ -62,13 +62,8 @@ int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 	}
 
 #ifdef CONFIG_MTD_SFCNOR
-	if(policy_args->use_sfc_nor){
+	if(policy_args->use_sfc_nor)
 		ret = norflash_get_params_from_burner();
-		if (spi_args->spi_erase) {
-			sfc_erase();
-		}
-	}
-
 #endif
 #ifdef CONFIG_MTD_SFCNAND
 	if(policy_args->use_sfc_nand){
@@ -107,16 +102,30 @@ int clmd_sfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 #endif
 #ifdef CONFIG_MTD_SFCNOR
 		case SFC_NOR:
-			ret = sfc_program(cloner);
+			ret = sfc_nor_program(cloner);
 			break;
 #endif
-#if defined(CONFIG_MTD_SPINAND) || defined(CONFIG_MTD_SFCNAND)
+#ifdef CONFIG_MTD_SPINAND
 		case SPI_NAND:
-		case SFC_NAND:
 			ret = spinand_program(cloner);
+#endif
+#ifdef CONFIG_MTD_SFCNAND
+		case SFC_NAND:
+			ret = sfc_nand_program(cloner);
 			break;
 #endif
-
+#if (defined CONFIG_FLASH_RESERVED_PART) && (defined CONFIG_BURNER)
+		case SFC_NAND_RESERVED_WRITE:
+			nand_enable_reserved_part_writable();
+			ret = sfc_nand_program(cloner);
+			nand_disable_reserved_part_writable();
+			break;
+		case SFC_NOR_RESERVED_WRITE:
+			nor_enable_reserved_part_writable();
+			ret = sfc_nor_program(cloner);
+			nor_disable_reserved_part_writable();
+			break;
+#endif
 #ifdef CONFIG_JZ_SPINAND_SN
 		case SFC_NAND_SN_WRITE:
 			ret = spinand_sn_program(cloner);

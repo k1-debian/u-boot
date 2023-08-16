@@ -56,7 +56,12 @@ static int do_sfcnor(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		sfc_nor_erase(src_addr,count);
 		printf("sfcnor erase ok!\n");
 		return 0;
-
+#ifdef CONFIG_FLASH_RESERVED_PART
+	}else if(!strcmp(argv[1],"enable_reserved_part_writable")){
+		nor_enable_reserved_part_writable();
+	}else if(!strcmp(argv[1],"disable_reserved_part_writable")){
+		nor_disable_reserved_part_writable();
+#endif
 	}else
 		return CMD_RET_USAGE;
 
@@ -69,4 +74,8 @@ U_BOOT_CMD(
 	"sfcnor read   [src:nor flash addr] [bytes:0x..] [dst:ddr address]\n"
 	"sfcnor write  [dst:nor flash addr] [bytes:0x..] [src:ddr address] [force erase:1, no erase:0]\n"
 	"sfcnor erase  [src:nor flash addr] [bytes:0x..]\n "
+#ifdef CONFIG_FLASH_RESERVED_PART
+	"sfcnor enable_reserved_part_writable --make reserved partitions writable\n"
+	"sfcnor disable_reserved_part_writable\n"
+#endif
 );
