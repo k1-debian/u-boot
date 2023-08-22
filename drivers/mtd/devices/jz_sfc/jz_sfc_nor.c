@@ -984,6 +984,16 @@ int norflash_get_params_from_burner()
 		printf("p[%d].offset=%x\n", i, nor_info->norflash_partitions->nor_partition[i].offset);
 	}
 #endif
+
+	if (spi_args->spi_erase) {
+		int ret = jz_sfc_chip_erase();
+		if (ret < 0)
+			printf("sfc chip erese failed!\n");
+		else
+			printf("sfc chip erase ok\n");
+		return ret;
+	}
+
 	return 0;
 }
 

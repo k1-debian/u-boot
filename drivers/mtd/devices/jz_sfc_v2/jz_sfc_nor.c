@@ -428,6 +428,10 @@ struct legacy_params *params_compatibility()
 
 int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
+#ifdef CONFIG_FLASH_RESERVED_PART
+	if(check_partition_is_writable(flash, to, len))
+		return 0;
+#endif
 	sfc_nor_page_write(to, len, buf);
 
 	return 0;
@@ -438,6 +442,11 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	int ret;
 	uint32_t end;
 	int erasesize;
+
+#ifdef CONFIG_FLASH_RESERVED_PART
+	if(check_partition_is_writable(flash, addr, len))
+		return 0;
+#endif
 
 	struct spi_nor_info *spi_nor_info;
 
@@ -707,7 +716,23 @@ int sfc_nor_flash_init(void)
 
 	sfc_nor_do_special_func();
 
-#else
+#ifdef CONFIG_FLASH_RESERVED_PART
+	/*
+	 * * Note that this feature may conflict with flash based BBT
+	 */
+	if(reserved_part_init(flash)) {
+		printf("failed to init reserved partitions\n");
+		return -EIO;
+	}
+	if(scan_reserved_part(flash, \
+				flash->norflash_partitions->nor_partition, flash->norflash_partitions->num_partition_info))
+	{
+		printf("failed to scan reserved partitions\n");
+		return -EIO;
+	}
+#endif
+
+#else /* define CONFIG_BURNER */
 	flash->g_nor_info = malloc(sizeof(struct spi_nor_info));
 	flash->norflash_partitions = malloc(sizeof(struct norflash_partitions));
 #endif
@@ -959,7 +984,7 @@ static void dump_mini_cloner_params()
 
 int norflash_get_params_from_burner()
 {
-	unsigned int chip_id ,chipnum,i;
+	unsigned int chip_id ,chipnum, i, ret;
 	struct spi_nor_info *spi_nor_info;
 	struct mini_spi_nor_info *mini_spi_nor_info;
 	unsigned int id_len = 3;
@@ -1004,7 +1029,53 @@ int norflash_get_params_from_burner()
 		printf("p[%d].offset=%x\n", i, flash->norflash_partitions->nor_partition[i].offset);
 	}
 #endif
+
+#ifdef CONFIG_FLASH_RESERVED_PART
+	/*
+	 * * Note that this feature may conflict with flash based BBT
+	 *             */
+	ret = reserved_part_init(flash);
+	if (ret) {
+		printf("failed to init reserved partitions\n");
+		return -EIO;
+	}
+	ret = scan_reserved_part(flash, \
+			flash->norflash_partitions->nor_partition, flash->norflash_partitions->num_partition_info);
+	if (ret) {
+		printf("failed to scan reserved partitions\n");
+		return -EIO;
+	}
+#endif
+
+	switch(spi_args->spi_erase){
+		case 1:
+#ifdef CONFIG_FLASH_RESERVED_PART
+			if((ret = flash_erase_skip_reserved_part(flash, \
+							flash->norflash_partitions->nor_partition, flash->norflash_partitions->num_partition_info)))
+				return ret;
+			break;
+		case 2:
+#endif
+			if(ret = jz_sfc_chip_erase())
+				return ret;
+			break;
+	}
+        if(ret == 0)
+        printf("sfc chip erase ok\n");
+
 	return 0;
 }
 
+#endif
+
+#ifdef CONFIG_FLASH_RESERVED_PART
+void nor_enable_reserved_part_writable()
+{
+	modify_reserved_part_rw_mode(flash, RESERVED_PART_RW);
+}
+
+void nor_disable_reserved_part_writable()
+{
+	modify_reserved_part_rw_mode(flash, RESERVED_PART_R_ONLY);
+}
 #endif
