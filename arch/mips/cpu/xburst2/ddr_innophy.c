@@ -406,6 +406,11 @@ void ddrc_dfi_init(enum ddr_type type)
 		break;
 
 	case DDR2:
+
+		udelay(200);
+		ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
 #define DDRC_LMR_MR(n)											\
 		global_reg_value->DDRC_DLMR_VALUE | 1 << 1 | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
 			((global_reg_value->DDR_MR##n##_VALUE & 0x1fff) << DDRC_LMR_DDR_ADDR_BIT) |		\
@@ -428,6 +433,16 @@ void ddrc_dfi_init(enum ddr_type type)
 		udelay(5);
 		ddr_writel(0x43, DDRC_LMR);
 		udelay(5 * 1000);
+
+		udelay(200);
+		ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
+		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
+		udelay(100);
+		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
+		udelay(100);
+
 #undef DDRC_LMR_MR
 		break;
 
