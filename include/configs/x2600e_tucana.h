@@ -429,35 +429,8 @@
 #define CONFIG_NETMASK          255.255.255.0
 #define CONFIG_ETHADDR          00:11:22:33:44:55
 
-
-#define GMAC_PHY_RMII   2//4
-#define CONFIG_SYS_RX_ETH_BUFFER 64
-
-#define CONFIG_NET_X2600
-#ifdef CONFIG_NET_X2600
-#define CONFIG_MAC_AHB_BUS
-
-/* Select GMAC Controller */
-#define CONFIG_GMAC0
-/* Select GMAC Interface mode */
-
-#define CONFIG_NET_GMAC_PHY_MODE GMAC_PHY_RMII
-
-#ifdef CONFIG_GMAC0
-#define CONFIG_HALLEY6_MAC_POWER_EN
-#define CONFIG_GAMAC_MODE_CTRL_ADDR	0xb00000e4
-#define JZ_GMAC_BASE			0xb34b0000
-#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_B
-#define CONFIG_GMAC_CRLT_PORT_PINS (0x3ff << 19)
-#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_1
-#define CONFIG_GMAC_PHY_RESET	GPIO_PB(31)
-#define CONFIG_GMAC_TX_CLK_DELAY 0x3f
-#define CONFIG_GMAC_RX_CLK_DELAY 0
-#endif
-
-#define CONFIG_GMAC_CRTL_PORT_SET_FUNC GPIO_INPUT
-#define CONFIG_GMAC_PHY_RESET_ENLEVEL	0
-#endif /* CONFIG_NET_X2600 */
+/* TODO: X2600 uboot net */
+#undef CONFIG_NET_X2600
 
 /* GPIO */
 #define CONFIG_JZ_GPIO
@@ -477,7 +450,9 @@
 #define CONFIG_CMD_LOADS	/* loads			*/
 #define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop mtest */
 #define CONFIG_CMD_MISC		/* Misc functions like sleep etc*/
+#ifdef CONFIG_NET_X2600
 #define CONFIG_CMD_NET		/* networking support			*/
+#endif
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_RUN		/* run command in env variable	*/
 #define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
