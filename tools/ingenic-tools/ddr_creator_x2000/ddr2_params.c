@@ -41,6 +41,7 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 	p->mr0.ddr2.WR = tmp - 1;
 
 	p->mr0.ddr2.BA = 0;
+	p->mr0.ddr2.DR = 1;
 
 #ifdef DDR2_CHIP_DRIVER_OUT_STRENGTH
 	p->mr1.ddr2.DIC = DDR2_CHIP_DRIVER_OUT_STRENGTH;

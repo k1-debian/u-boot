@@ -34,7 +34,7 @@
 #define CONFIG_DDR_CL	7
 #elif((CONFIG_DDR_DATA_RATE > 1066000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 1333000000))
-#define CONFIG_DDR_CL	8
+#define CONFIG_DDR_CL	9
 #else
 #define CONFIG_DDR_CL	-1
 #endif
@@ -83,7 +83,7 @@ static inline void DDR2_W9751V6NG_init(void *data)
 
 	c->DDR_tXSNR = (c->DDR_tRFC + DDR__ns(10));
 	c->DDR_tXSRD = DDR__tck(200);
-	c->DDR_tREFI = DDR__ns(7800);
+	c->DDR_tREFI = DDR__ns(3900);
 
 	c->DDR_CLK_DIV = 1;
 }
