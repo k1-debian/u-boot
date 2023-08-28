@@ -98,6 +98,9 @@
 #ifdef CONFIG_X2670_DDR
   #define CONFIG_DDR3_W631GU6NG
 #endif
+#ifdef CONFIG_X2600_DDR
+  #define CONFIG_DDR3_W631GU6NG
+#endif
 #ifdef CONFIG_X2600E_DDR
 	#define CONFIG_DDR3L_W632GU6QG_11
 #endif
