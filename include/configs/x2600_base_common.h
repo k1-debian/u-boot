@@ -424,6 +424,9 @@
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	82 /* 17k + 24k (17KB GPT offset and spl size CONFIG_SPL_PAD_TO) */
 #define CONFIG_CMD_SAVEENV  /* saveenv */
 /*#define CONFIG_SPL_JZ_MSC_BUS_8BIT	//only for emmc*/
+  #ifdef CONFIG_SPL_JZ_MSC_BUS_8BIT
+  #define CONFIG_JZ_MMC_MSC0_PE
+  #endif
   #ifdef CONFIG_SPL_JZMMC_SUPPORT
 	#define CONFIG_SPL_JZSDHCI
   #endif
