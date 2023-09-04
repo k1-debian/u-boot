@@ -1060,8 +1060,8 @@ int norflash_get_params_from_burner()
 				return ret;
 			break;
 	}
-        if(ret == 0)
-        printf("sfc chip erase ok\n");
+	if(ret == 0 && spi_args->spi_erase != 0)
+		printf("sfc chip erase ok\n");
 
 	return 0;
 }
