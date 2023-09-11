@@ -35,7 +35,6 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 		tmp = 8;
 	BETWEEN(tmp,2,9);  // debug, BETWEEN(tmp,2,6)
 	p->mr0.ddr2.WR = tmp - 1;
-
 	p->mr0.ddr2.BA = 0;
 
 #ifdef DDR2_CHIP_DRIVER_OUT_STRENGTH
@@ -48,6 +47,18 @@ static void fill_mr_params_ddr2(struct ddr_params *p)
 	p->mr1.ddr2.RTT2 = CONFIG_DDR_CHIP_ODT; /* Effective resistance of ODT RZQ/4 */
 #endif
 	p->mr1.ddr2.BA = 0x1;
+
+#ifdef  CONFIG_DDR_DLL_OFF
+	p->mr1.ddr2.DE = 0x1;
+#else
+	p->mr1.ddr2.DE = 0x0;
+#endif
+
+#ifdef CONFIG_DDR_DLL_RESET_EN
+	p->mr0.ddr2.DR = 0x1;
+#else
+	p->mr0.ddr2.DR = 0x0;
+#endif
 
 }
 #endif

@@ -732,9 +732,9 @@ void ddrc_dfi_init(void)
 			mdelay(1);
 		}
 		else{
-			ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
-			mdelay(1);
 			ddr_writel(DDRC_LMR_MR(1), DDRC_LMR);
+			mdelay(1);
+			ddr_writel(DDRC_LMR_MR(0), DDRC_LMR);
 			mdelay(1);
 		}
 		/*MR 寄存器设置完成之后，需要All Bank Precharge.*/
