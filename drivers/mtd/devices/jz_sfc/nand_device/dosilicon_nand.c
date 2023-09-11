@@ -213,6 +213,7 @@ retry:
 		case 0xF1:
 			switch((ecc_status >> 4) & 0x7) {
 				case 0x0:
+				case 0x1:
 					return 0;
 				case 0x2:
 					return -EBADMSG;
