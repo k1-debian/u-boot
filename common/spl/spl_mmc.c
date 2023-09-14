@@ -239,11 +239,6 @@ static void mmc_load_rtos_boot(struct mmc *mmc)
 		hang();
 }
 
-void *spl_rtos_get_spl_image_info(void)
-{
-	return NULL;
-}
-
 #endif /* CONFIG_SPL_RTOS_BOOT */
 
 #ifdef CONFIG_JZSD_OTA_VERSION20

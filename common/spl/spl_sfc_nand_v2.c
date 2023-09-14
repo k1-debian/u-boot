@@ -8,6 +8,7 @@
 #include <generated/sfc_timing_val.h>
 #include <generated/sfc_nand_params.h>
 #include "spl_rtos.h"
+#include "spl_rtos_argument.h"
 #include "spl_riscv.h"
 
 #ifdef CONFIG_OTA_VERSION30
@@ -15,6 +16,9 @@
 #endif
 
 #define SPINAND_PARAM_SIZE			1024
+
+static struct spl_rtos_argument spl_rtos_args;
+static struct rtos_boot_os_args os_boot_args;
 
 static struct spl_nand_param *curr_device;
 
@@ -561,7 +565,7 @@ void spl_sfc_nand_os_load(void)
 }
 #endif
 
-#ifdef CONFIG_SPL_RTOS_BOOT
+#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
 
 struct rtos_header rtos_header;
 
@@ -622,6 +626,9 @@ static int spl_sfc_rtos_load(struct rtos_header *rtos, unsigned int offset)
 	return 0;
 }
 
+#endif
+
+#ifdef CONFIG_SPL_RTOS_BOOT
 static void spl_sfc_rtos_boot(void)
 {
 	unsigned int rtos_offset = CONFIG_RTOS_OFFSET;
@@ -677,9 +684,102 @@ static void spl_sfc_rtos_boot(void)
 #endif
 }
 
-void *spl_rtos_get_spl_image_info(void)
+#endif
+
+#ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
+
+static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitions, char *kernel_name)
 {
-	return NULL;
+	unsigned int img_addr = 0;
+	img_addr = get_part_offset_by_name(partitions, kernel_name);
+	if (img_addr == -1) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+	debug("kernel:%s %x\n", kernel_name, img_addr);
+
+	struct image_header *header;
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
+	sfc_nand_load(offset, sizeof(struct image_header) + sizeof(int), CONFIG_SYS_TEXT_BASE);
+#else
+	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+	sfc_nand_load(img_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+#endif
+
+	header->ih_name[IH_NMLEN - 1] = 0;
+	spl_parse_image_header(header);
+
+	/* 由RTOS 加载OS镜像, SPL等待OS加载完成, 并由SPL完成后续引导 */
+	os_boot_args.magic = 0x53475241;  /* ARGS */
+	os_boot_args.offset = img_addr;
+	os_boot_args.size = spl_image.size;
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	os_boot_args.load_addr = spl_image.load_addr - 2048;
+#else
+	os_boot_args.load_addr = spl_image.load_addr;
+#endif
+
+	spl_rtos_args.os_boot_args = &os_boot_args;
+}
+
+/* not support rtos boot on second cpu */
+static char *spl_sfc_nand_boot_rtos_load_os(void)
+{
+	struct jz_sfcnand_partition_param *partitions;
+	const char *kernel_name = CONFIG_SPL_OS_NAME;
+	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
+	char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+
+	sfc_init();
+
+	partitions = get_partitions();
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	unsigned int ota_addr = 0;
+	ota_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
+	if (ota_addr != -1) {
+		char buf[128];
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_nand_load(ota_addr, sizeof(buf), (unsigned int)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			kernel_name = CONFIG_SPL_OS_NAME2;
+			rtos_name = CONFIG_SPL_RTOS_NAME2;
+			cmdargs = CONFIG_SYS_SPL_ARGS_ADDR2;
+		}
+	}
+#endif
+
+	spl_sfc_nand_cfg_os_args(partitions, kernel_name);
+
+	unsigned int rtos_offset = 0;
+	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
+	if (rtos_offset == -1) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		rtos_offset = CONFIG_RTOS_OFFSET;
+	}
+	debug("rtos:%s %x\n", rtos_name, rtos_offset);
+
+	if (spl_sfc_rtos_load(&rtos_header, rtos_offset))
+		hang();
+
+	flush_cache_all();
+
+	rtos_raw_start(&rtos_header, &spl_rtos_args);
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	int ret = 0;
+	ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
+	if (ret) {
+		printf("Error spl secure load kernel.\n");
+		hang();
+	}
+#endif
+
+	return cmdargs;
 }
 
 #endif
@@ -795,6 +895,13 @@ static struct ota_ops ota_ops = {
 
 char* spl_sfc_nand_load_image(void)
 {
+	spl_rtos_args.os_boot_args = NULL;
+	spl_rtos_args.card_params = NULL;
+
+#ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
+	return spl_sfc_nand_boot_rtos_load_os();
+#endif
+
 #if CONFIG_SPL_RTOS_BOOT
 	spl_sfc_rtos_boot();
 #endif

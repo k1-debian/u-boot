@@ -277,13 +277,6 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		hang();
 	}
 
-#ifdef CONFIG_SPL_RTOS_BOOT
-	/* RTOS只完成引导,但没有启动 */
-	if (spl_rtos_get_spl_image_info()) {
-		memcpy(&spl_image, spl_rtos_get_spl_image_info(), sizeof(struct rtos_boot_os_args) );
-	}
-#endif
-
 	switch (spl_image.os) {
 	case IH_OS_U_BOOT:
 		debug("Jumping to U-Boot\n");

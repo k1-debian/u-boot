@@ -1455,7 +1455,7 @@ static struct jzsd_ota_ops jzsd_ota_ops = {
 };
 #endif
 
-#ifdef CONFIG_SPL_RTOS_BOOT
+#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
 
 struct rtos_header rtos_header;
 
@@ -1591,6 +1591,10 @@ end:
 	return -1;
 }
 
+#endif
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+
 static void mmc_load_rtos_boot(void)
 {
 	int ret;
@@ -1641,18 +1645,6 @@ static void mmc_load_rtos_boot(void)
 	mmc_rtos_load_rtosdata_partition(&rtos_header);
 	#endif
 
-
-#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_RTOS_CONN_WITH_OS)
-	/* 由RTOS 加载OS镜像, SPL等待OS加载完成，并由SPL完成后续引导 */
-	os_boot_args.magic = 0x53475241;  /* ARGS */
-	os_boot_args.boot_type = SPL_RTOS_TYPE_LOAD_OS;
-	os_boot_args.is_loading = 0;
-	os_boot_args.command_line = CONFIG_SYS_SPL_ARGS_ADDR;
-	spl_get_built_in_gpt_partition(CONFIG_SPL_OS_NAME, &os_boot_args.offset_sector, &os_boot_args.size_sector);
-
-	spl_rtos_args.os_boot_args = &os_boot_args;
-#endif
-
 #ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
 	start_second_cpu();
 #else
@@ -1661,14 +1653,114 @@ static void mmc_load_rtos_boot(void)
 #endif
 }
 
-void *spl_rtos_get_spl_image_info(void)
-{
-	return os_boot_args.spl_image_info;
-}
-
 #endif
 
+#ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
 
+static void spl_mmc_cfg_os_args(char *kernel_name)
+{
+	int ret;
+	unsigned int offset_sector = 0;
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OS_NAME, &offset_sector, NULL);
+	if (ret) {
+		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		hang();
+	}
+	debug("kernel:%s %x\n", kernel_name, offset_sector);
+
+	u32 image_size_sectors;
+	struct image_header *header;
+
+	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE -
+					 sizeof(struct image_header));
+
+	/* read image header to find the image size & load address */
+	ret = mmc_block_read(offset_sector, 1, header);
+	if (ret < 0)
+		hang();
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE -
+					 sizeof(struct image_header));
+#endif
+
+	header->ih_name[IH_NMLEN - 1] = 0;
+	spl_parse_image_header(header);
+
+	/* convert size to sectors - round up */
+	image_size_sectors = (spl_image.size + 0x200 - 1) / 0x200;
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	spl_image.load_addr -= 2048;
+#endif
+
+	/* 由RTOS 加载OS镜像, SPL等待OS加载完成, 并由SPL完成后续引导 */
+	os_boot_args.magic = 0x53475241;  /* ARGS */
+	os_boot_args.offset = offset_sector * 0x200;
+	os_boot_args.size = image_size_sectors * 0x200;
+	os_boot_args.load_addr = spl_image.load_addr;
+
+	spl_rtos_args.os_boot_args = &os_boot_args;
+}
+
+/* not support rtos boot on second cpu */
+static char *mmc_boot_rtos_load_os(void)
+{
+	int ret;
+	const char *kernel_name = CONFIG_SPL_OS_NAME;
+	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
+	char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	unsigned int ota_offset = 0;
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OTA_NAME, &ota_offset, NULL);
+	if (!ret) {
+		const char *buf = (const char *)(CONFIG_SYS_TEXT_BASE);
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		mmc_block_read(ota_offset, 1, (u32 *)buf);
+		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			kernel_name = CONFIG_SPL_OS_NAME2;
+			rtos_name = CONFIG_SPL_RTOS_NAME2;
+			cmdargs = CONFIG_SYS_SPL_ARGS_ADDR2;
+		}
+	}
+#endif
+
+	spl_mmc_cfg_os_args(kernel_name);
+
+	unsigned int rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
+	ret = spl_get_built_in_gpt_partition(rtos_name, &rtos_offset, NULL);
+	if (ret) {
+		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		printf("rtos use default offset sector:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
+		rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
+	}
+	debug("rtos:%s %x\n", rtos_name, rtos_offset);
+
+	/* RTOS镜像加载 */
+	if (mmc_rtos_load(&rtos_header, rtos_offset))
+		hang();
+
+	flush_cache_all();
+
+	/* RTOS-Linux 映射文件系统加载 */
+	#ifdef CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME
+	mmc_rtos_load_rtosdata_partition(&rtos_header);
+	#endif
+
+	rtos_raw_start(&rtos_header, &spl_rtos_args);
+
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
+	if (ret) {
+		printf("Error spl secure load kernel.\n");
+		hang();
+	}
+#endif
+
+	return cmdargs;
+}
+#endif
 
 char *spl_mmc_load_image(void)
 {
@@ -1683,6 +1775,10 @@ char *spl_mmc_load_image(void)
 #endif
 
 	jzmmc_init();
+
+#ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
+	return mmc_boot_rtos_load_os();
+#endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
 	mmc_load_rtos_boot();
@@ -1699,16 +1795,8 @@ char *spl_mmc_load_image(void)
 	register_jzsd_ota_ops(&jzsd_ota_ops);
 	return spl_jzsd_ota_load_image();
 #else
-	if (os_boot_args.boot_type == SPL_RTOS_TYPE_LOAD_OS) {
-		/* 等待RTOS加载镜像文件 */
-		while (!os_boot_args.is_loading) {
-			mdelay(10);
-		}
-	} else {
-		/* 正常加载 */
-		mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
-	}
-
+	/* 正常加载 */
+	mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
 #endif
 #else
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
