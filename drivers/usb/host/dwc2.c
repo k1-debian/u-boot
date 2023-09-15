@@ -884,10 +884,8 @@ static int transfer_chunk(struct dwc2_hc_regs *hc_regs, void *aligned_buffer,
 
 			flush_invalid_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
 
-//			dma_cache_sync(NULL, aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN), DMA_FROM_DEVICE);
 		} else {
 			memcpy(aligned_buffer, buffer, xfer_len);
-			//dma_cache_sync(NULL, aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN), DMA_TO_DEVICE);
 			flush_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
 #if 0
 			flush_dcache_range(
@@ -925,7 +923,7 @@ static int transfer_chunk(struct dwc2_hc_regs *hc_regs, void *aligned_buffer,
 					(unsigned long)aligned_buffer +
 					roundup(xfer_len, ARCH_DMA_MINALIGN));
 #endif
-		flush_invalid_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
+//		flush_invalid_cache(aligned_buffer, roundup(xfer_len, ARCH_DMA_MINALIGN));
 
 		memcpy(buffer, aligned_buffer, xfer_len);
 	}
