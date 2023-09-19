@@ -211,6 +211,8 @@
 #define cpm_clear_bit(val,off)	do{cpm_outl((cpm_inl(off) & ~(1<<(val))),off);}while(0)
 #define cpm_set_bit(val,off)	do{cpm_outl((cpm_inl(off) |  (1<<val)),off);}while(0)
 #define cpm_test_bit(val,off)	(cpm_inl(off) & (0x1<<val))
+#define cpm_writel(val,off)   writel(val,CPM_BASE + (off))
+#define cpm_readl(off)        readl(CPM_BASE + (off))
 
 /* CPM scratch pad protected register(CPSPPR) */
 #define CPSPPR_CPSPR_WRITABLE   (0x00005a5a)
