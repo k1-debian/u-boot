@@ -167,15 +167,15 @@ static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_d
 	unsigned int pu_odt = 0;
 	unsigned int pd_odt = 0;
 
-	printf("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
-	printf("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
-	printf("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	printf("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
-	printf("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	printf("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
-	printf("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
-	printf("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
-	printf("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
+	debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
+	debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
+	debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
+	debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
+	debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
+	debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
+	debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 
 
 
@@ -212,24 +212,24 @@ static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_d
 	}
 
 
-	printf("DRP_INNOPHY_ZQ_CALIB_DONE : %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE));
-	printf("DRP_INNOPHY_ZQ_CALIB_AL: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AL));
-	printf("DRP_INNOPHY_ZQ_CALIB_AH: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AH));
-	printf("DRP_INNOPHY_ZQ_CALIB_PD_DRV_6C: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C));
-	printf("DRP_INNOPHY_ZQ_CALIB_PU_DRV_6D: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D));
-	printf("DRP_INNOPHY_ZQ_CALIB_PD_ODT_6E: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E));
-	printf("DRP_INNOPHY_ZQ_CALIB_PU_ODT_6F: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F));
-	printf("DRP_INNOPHY_ZQ_CALIB_CMD: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD));
+	debug("DRP_INNOPHY_ZQ_CALIB_DONE : %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE));
+	debug("DRP_INNOPHY_ZQ_CALIB_AL: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AL));
+	debug("DRP_INNOPHY_ZQ_CALIB_AH: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AH));
+	debug("DRP_INNOPHY_ZQ_CALIB_PD_DRV_6C: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C));
+	debug("DRP_INNOPHY_ZQ_CALIB_PU_DRV_6D: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D));
+	debug("DRP_INNOPHY_ZQ_CALIB_PD_ODT_6E: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E));
+	debug("DRP_INNOPHY_ZQ_CALIB_PU_ODT_6F: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F));
+	debug("DRP_INNOPHY_ZQ_CALIB_CMD: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD));
 
-	printf("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
-	printf("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
-	printf("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	printf("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
-	printf("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	printf("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
-	printf("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
-	printf("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
-	printf("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
+	debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
+	debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
+	debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
+	debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
+	debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
+	debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
+	debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 }
 
 void ddrp_wl_calibration(void)
@@ -1281,11 +1281,11 @@ void ddrp_pll_init(void)
 
 	while(! (ddr_readl(DDRP_INNOPHY_PLL_LOCK) & (1 << 2)));
 
-	printf("DDRP_INNOPHY_PLL_FBDIV_50	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV));
-	printf("DDRP_INNOPHY_PLL_FBDIV_H_51	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV_H));
-	printf("DDRP_INNOPHY_PLL_CTRL_53	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_CTRL));
-	printf("DDRP_INNOPHY_PLL_PDIV_52	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_PDIV));
-	printf("DDRP_INNOPHY_PLL_LOCK_60	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_LOCK));
+	debug("DDRP_INNOPHY_PLL_FBDIV_50	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV));
+	debug("DDRP_INNOPHY_PLL_FBDIV_H_51	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV_H));
+	debug("DDRP_INNOPHY_PLL_CTRL_53	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_CTRL));
+	debug("DDRP_INNOPHY_PLL_PDIV_52	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_PDIV));
+	debug("DDRP_INNOPHY_PLL_LOCK_60	0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_LOCK));
 }
 
 
@@ -1346,7 +1346,7 @@ static void ddrp_rx_dqs_auto_calibration(void)
 #ifdef CONFIG_DDR_DRVODT_DEBUG
 	timeout =0x50;
 #endif
-	printf("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
+	debug("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
 
 	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
 	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
@@ -1356,7 +1356,7 @@ static void ddrp_rx_dqs_auto_calibration(void)
 
 		udelay(1);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+		debug("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
 #endif
 	}
 
@@ -1369,13 +1369,13 @@ static void ddrp_rx_dqs_auto_calibration(void)
 
 	debug("ddrp_auto_calibration success!\n");
 
-	printf("DDRP_INNOPHY_CALIB_DONE_61: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
-	printf("DDRP_INNOPHY_CALIB_ERR_69:	%X\n", ddr_readl(DDRP_INNOPHY_CALIB_ERR));
-	printf("DDRP_INNOPHY_CALIB_L_C_9b: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_C));
-	printf("DDRP_INNOPHY_CALIB_L_DO_9c: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_DO));
-	printf("DDRP_INNOPHY_CALIB_R_C_9d: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_C));
-	printf("DDRP_INNOPHY_CALIB_R_DO_9e: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_DO));
-	printf("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
+	debug("DDRP_INNOPHY_CALIB_DONE_61: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+	debug("DDRP_INNOPHY_CALIB_ERR_69:	%X\n", ddr_readl(DDRP_INNOPHY_CALIB_ERR));
+	debug("DDRP_INNOPHY_CALIB_L_C_9b: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_C));
+	debug("DDRP_INNOPHY_CALIB_L_DO_9c: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_L_DO));
+	debug("DDRP_INNOPHY_CALIB_R_C_9d: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_C));
+	debug("DDRP_INNOPHY_CALIB_R_DO_9e: %x\n", ddr_readl(DDRP_INNOPHY_CALIB_R_DO));
+	debug("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
 
 	if(ddr_readl(DDRP_INNOPHY_CALIB_ERR) & (1 << 6)) {
 		printf("ddr pass but with error!\n");
