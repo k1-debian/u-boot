@@ -54,7 +54,7 @@ void clk_prepare(void)
 
 	/*设置时钟到最大分频，防止PLL升频后，各外设时钟过高，工作不正常.*/
 
-	printf("---- size: %d\n", size);
+	debug("---- size: %d\n", size);
 	for (i = 0; i < size; i++) {
 
 		/* MSC的时钟使能需要在MSC控制器中设置相关bit，此处跳过.*/
@@ -86,7 +86,7 @@ void clk_prepare(void)
 #endif
 	}
 
-	printf("clk prepare done !!\n");
+	debug("clk prepare done !!\n");
 	asm volatile ("ssnop");
 	asm volatile ("ssnop");
 }

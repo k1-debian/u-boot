@@ -213,7 +213,12 @@
 #define CONFIG_CMD_SFC_NOR
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SPI_SPL_CHECK
+#ifdef  CONFIG_QUICK_START
+#define CONFIG_SFC_NOR_INIT_RATE 300000000
+#define CONFIG_SFC_NOR_RATE	300000000	/* value <= 400000000(sfc 100Mhz)*/
+#else
 #define CONFIG_SFC_NOR_RATE	200000000	/* value <= 400000000(sfc 100Mhz)*/
+#endif
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 #define CONFIG_SPI_NORFLASH_PART_OFFSET		0x5874
@@ -227,7 +232,12 @@
 
 /* sfc nand config */
 #ifdef  CONFIG_SPL_SFC_NAND
+#ifdef  CONFIG_QUICK_START
+#define CONFIG_SFC_NAND_INIT_RATE 300000000
+#define CONFIG_SFC_NAND_RATE    300000000	/* value <= 400000000(sfc 100Mhz)*/
+#else
 #define CONFIG_SFC_NAND_RATE    200000000	/* value <= 400000000(sfc 100Mhz)*/
+#endif
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
@@ -423,7 +433,7 @@
 #if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	82 /* 17k + 24k (17KB GPT offset and spl size CONFIG_SPL_PAD_TO) */
 #define CONFIG_CMD_SAVEENV  /* saveenv */
-/*#define CONFIG_SPL_JZ_MSC_BUS_8BIT	//only for emmc*/
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT	//only for emmc
   #ifdef CONFIG_SPL_JZ_MSC_BUS_8BIT
   #define CONFIG_JZ_MMC_MSC0_PE
   #endif
