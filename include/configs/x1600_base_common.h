@@ -552,10 +552,17 @@
 #endif
 
 #ifndef CONFIG_ROOTFS_DEV
-#if defined(CONFIG_SPL_MMC_SUPPORT)
-#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
+
+#if defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
+#define CONFIG_CLK_IGNORE_UNUSED " clk_ignore_unused "
 #else
-#define CONFIG_ROOTFS_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro2"
+#define CONFIG_CLK_IGNORE_UNUSED " "
+#endif
+
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+#define CONFIG_ROOTFS_DEV CONFIG_CLK_IGNORE_UNUSED "root=/dev/mmcblk0p2 rootwait"
+#else
+#define CONFIG_ROOTFS_DEV CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " "root=/dev/mtdblock_bbt_ro2"
 #endif
 #endif
 
@@ -590,6 +597,18 @@
 #endif
 
 #define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " ARGS_MEM_RESERVED " " CONFIG_ARGS_EXTRA
+
+#ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
+#ifndef CONFIG_SPL_RTOS_BOOT
+#define CONFIG_SPL_RTOS_BOOT 1
+#endif
+#ifndef CONFIG_SPL_OS_BOOT
+#define CONFIG_SPL_OS_BOOT 1
+#endif
+#ifndef CONFIG_RTOS_CAN_RETURN
+#define CONFIG_RTOS_CAN_RETURN 1
+#endif
+#endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
 
