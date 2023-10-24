@@ -83,6 +83,10 @@
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
 #include "jz_gpio/a1_gpio.c"
+#elif defined (CONFIG_AD100)
+#undef JZGPIO_GROUP_OFFSET
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/ad100_gpio.c"
 #elif defined (CONFIG_X2580)
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)

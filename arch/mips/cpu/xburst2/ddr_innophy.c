@@ -85,7 +85,7 @@ static void dump_ddrc_register(void)
 	debug("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
 	debug("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
 	debug("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
-#ifdef CONFIG_X2600
+#if defined(CONFIG_X2600) || defined(CONFIG_AD100)
 	debug("DDRC_REMAP6         0x%x\n", ddr_readl(DDRC_REMAP(6)));
 #endif
 	debug("DDRC_DWCFG          0x%x\n", ddr_readl(DDRC_DWCFG));
@@ -489,12 +489,11 @@ static void ddrc_post_init(void)
 	reg |= global_reg_value->DDRC_CTRL_VALUE & (0xf << 12);
 	ddr_writel(reg, DDRC_CTRL);
 
-#ifdef CONFIG_X2600
+#if defined(CONFIG_X2600) || defined(CONFIG_AD100)
 	reg = ddr_readl(DDRC_DWCFG);
 	reg |= (1 << 5);	//PORT_OB_EN, 优化选项.
 	ddr_writel(reg, DDRC_DWCFG);
 #endif
-
 
 	FUNC_EXIT();
 }

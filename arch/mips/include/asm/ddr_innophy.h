@@ -86,7 +86,7 @@
 #define DDRC_CGUC1			(DDRC_APB_OFFSET + 0x68)
 #define DDRC_PREGPRO		(DDRC_APB_OFFSET + 0x6c)
 #define DDRC_BUFCFG	    	(DDRC_APB_OFFSET + 0x70)
-#elif defined(CONFIG_X2600)
+#elif defined(CONFIG_X2600) || defined(CONFIG_AD100)
 #define DDRC_STATUS			0x0
 #define DDRC_CFG			0x8
 #define DDRC_CTRL			0x10
@@ -207,7 +207,7 @@
 #define DDRP_INNOPHY_CALIB_DONE     (DDR_PHY_OFFSET + 0x184)
 #define DDRP_INNOPHY_INIT_COMP      (DDR_PHY_OFFSET + 0x110)
 
-#elif defined (CONFIG_X2600)
+#elif defined (CONFIG_X2600) || defined(CONFIG_AD100)
 #define DDRP_INNOPHY_DQ_WIDTH       (DDR_PHY_OFFSET + 0x034)
 #define DDRP_INNOPHY_DQ_WIDTH_H     (DDR_PHY_OFFSET + 0x030)
 #define DDRP_INNOPHY_WL_MODE1       (DDR_PHY_OFFSET + 0x00c)
@@ -352,7 +352,7 @@
 #if defined(CONFIG_X1600)
 #define DDRP_INNOPHY_RXDLL_DELAY_AL		(DDR_PHY_OFFSET + (0x58 << 2))
 #define DDRP_INNOPHY_RXDLL_DELAY_AH		(DDR_PHY_OFFSET + (0x68 << 2))
-#elif defined (CONFIG_X2600)
+#elif defined (CONFIG_X2600) || defined(CONFIG_AD100)
 #define DDRP_INNOPHY_RXDLL_DELAY_AL     (DDR_PHY_OFFSET + (0x15 << 2))
 #define DDRP_INNOPHY_RXDLL_DELAY_AH     (DDR_PHY_OFFSET + (0x16 << 2))
 #else
@@ -654,7 +654,7 @@ struct ddr_reg_value {
 	unsigned int DDR_CHIP_1_SIZE;
 	unsigned int REMMAP_ARRAY[5];
 };
-#elif defined CONFIG_X2600
+#elif defined(CONFIG_X2600) ||defined(CONFIG_AD100)
 struct ddr_reg_value {
 	struct ddr_reg_header h;
 	unsigned int DDRC_CFG_VALUE;

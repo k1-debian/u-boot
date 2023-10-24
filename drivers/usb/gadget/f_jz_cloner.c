@@ -46,7 +46,7 @@
 #include "../../scboot/jz_sec_v3/secure.h"
 #include "../../scboot/jz_sec_v3/aes.h"
 #include "../../scboot/jz_sec_v3/spi_checksum.h"
-#elif defined(CONFIG_X2600)
+#elif defined(CONFIG_X2600) || defined(CONFIG_AD100)
 #include "../../scboot/jz_sec_v4/otp.h"
 #include "../../scboot/jz_sec_v4/secure.h"
 #include "../../scboot/jz_sec_v4/aes.h"

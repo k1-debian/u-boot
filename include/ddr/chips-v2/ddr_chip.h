@@ -101,6 +101,4 @@ enum {
 
 #include <asm/ddr_innophy.h>
 
-
-
 #endif

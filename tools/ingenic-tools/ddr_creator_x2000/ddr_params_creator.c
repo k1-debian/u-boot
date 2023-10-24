@@ -21,7 +21,7 @@
  */
 #include "ddr_params_creator.h"
 
-#ifdef CONFIG_X2600
+#if (defined(CONFIG_X2600) || defined(CONFIG_AD100))
 #define REMAP_ARR_SIZE 6
 #else
 #define REMAP_ARR_SIZE 5
@@ -51,7 +51,7 @@ union ddrc_refcnt {
 		unsigned clk_div:3;
 		unsigned reserved4_15:12;
 		unsigned con:8;
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 		unsigned reserved24_31:8;
 #else
 		unsigned rfc:6;
@@ -73,7 +73,7 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 
 	tmp = ps2cycle_floor(p->private_params.ddr_base_params.tREFI);
 	/* TODO: x2000 need??*/
-#if ((!defined CONFIG_X2000_V12) && (!defined CONFIG_M300) && (!defined CONFIG_X2100) && (!defined CONFIG_X2500) && (!defined CONFIG_X2600))
+#if ((!defined CONFIG_X2000_V12) && (!defined CONFIG_M300) && (!defined CONFIG_X2100) && (!defined CONFIG_X2500) && (!defined CONFIG_X2600) && (!defined CONFIG_AD100))
 	tmp -= 16; // controller is add 16 cycles.
 #endif
 	if(tmp < 0){
@@ -95,7 +95,7 @@ static void get_refcnt_value(struct ddr_params *p, unsigned int *rfc, unsigned i
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tRFC,2) / 2;
 	if(tmp < 0)
 		tmp = 0;
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 	ASSERT_MASK(tmp, 8);
 #else
 	ASSERT_MASK(tmp, 6);
@@ -120,7 +120,7 @@ static void get_dynamic_refcnt(struct ddr_params *p)
 
 		drefcnt.refcnt.clk_div = clk_div;
 		drefcnt.refcnt.con = con;
-#if ((!defined CONFIG_X2000_V12) && (!defined CONFIG_M300) && (!defined CONFIG_X2600))
+#if ((!defined CONFIG_X2000_V12) && (!defined CONFIG_M300) && (!defined CONFIG_X2600) && (!defined CONFIG_AD100))
 		drefcnt.refcnt.rfc = rfc;
 #endif
 /*		printf("#define DDRC_REFCNT_VALUE_%d		0x%08x\n", div, drefcnt.d32); */
@@ -213,7 +213,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 {
 	int tmp;
 	int div;
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 	unsigned int rfc;
 #endif
 	/* tWTR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
@@ -248,7 +248,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	 */
 	DDRC_TIMING_SET(4,ddr_base_params,tRAS,6);
 	DDRC_TIMING_SET(4,ddr_base_params,tRRD,6);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 	DDRC_TIMING_SET(4,ddr_base_params,tRC,7);
 #else
 	DDRC_TIMING_SET(4,ddr_base_params,tRC,6);
@@ -259,7 +259,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	 * timing5
 	 */
 	tmp = ps2cycle_ceil(p->private_params.ddr_base_params.tCKE,1);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 	ASSERT_MASK(tmp,4);
 #else
 	ASSERT_MASK(tmp,3);
@@ -280,13 +280,13 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	/* tFAW is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	/* tXSR is differ in lpddr & lpddr2 & ddr2 & ddr3*/
 	{
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 		unsigned int con, clk_div;
 #else
 		unsigned int rfc, con, clk_div;
 #endif
 		get_refcnt_value(p, &rfc, &con, &clk_div);
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 		ddrc->refcnt = (con << DDRC_REFCNT_CON_BIT)
 			| (clk_div << DDRC_REFCNT_CLK_DIV_BIT)
 			| DDRC_REFCNT_REF_EN
@@ -331,7 +331,7 @@ static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_pa
 	/* ddrc->refcnt |= tmp << DDRC_REFCNT_TRFC_BIT; */
 
 
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 	ddrc->autosr_cnt = (rfc << 24) | CONFIG_DDR_AUTO_SELF_REFRESH_CNT;
 #else
 	ddrc->autosr_cnt = CONFIG_DDR_AUTO_SELF_REFRESH_CNT;
@@ -476,7 +476,7 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 		case D:				\
 			ddrp->memcfg.b.memsel = P;\
 			break
-#ifndef CONFIG_X2600
+#if ((!defined CONFIG_X2600) && (!defined CONFIG_AD100))
 		_CASE(LPDDR2, 3);
 		_CASE(LPDDR3, 2);
 		_CASE(DDR2, 1);
@@ -496,7 +496,7 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 		ddrp->memcfg.b.brusel = 0;
 	else if(p->bl == 8)
 		ddrp->memcfg.b.brusel = 1;
-#ifdef CONFIG_X2600
+#if (defined CONFIG_X2600) || (defined CONFIG_AD100)
 	ddrp->memcfg.b.reserved6_7= 2;
 #endif
 
@@ -547,7 +547,7 @@ static void fill_mem_remap(struct ddr_reg_value *reg, struct ddr_params *p)
 	 * count address space bits for swap.
 	 */
 	swap_bits = bank_bits + (CONFIG_DDR_CS0 + CONFIG_DDR_CS1 - 1);
-#ifdef CONFIG_X2600
+#if ((defined CONFIG_X2600) || (defined CONFIG_AD100))
 	startA = bit_width + p->col > 8 ? bit_width + p->col : 8;
 
 	startB = address_bits - swap_bits - 8;

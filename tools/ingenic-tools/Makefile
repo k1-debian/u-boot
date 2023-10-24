@@ -76,7 +76,7 @@ TOOLS := $(TOOLS) gpt_partitions_to_c
 endif
 
 DDR_CREATOR_DIR := ddr_creator
-ifeq ($(if $(CONFIG_X2000)$(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)$(CONFIG_X2500)$(CONFIG_X2600),y,n),y)
+ifeq ($(if $(CONFIG_X2000)$(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)$(CONFIG_X2500)$(CONFIG_X2600)$(CONFIG_AD100),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x2000
 else ifeq ($(if $(CONFIG_X1600),y,n),y)
 DDR_CREATOR_DIR := ddr_creator_x1600
@@ -243,6 +243,8 @@ else ifeq ($(if $(CONFIG_X2580),y,n),y)
 	fixer_var:=spl_params_fixer_x2580.c
 else ifeq ($(if $(CONFIG_X2600),y,n),y)
 	fixer_var:=spl_params_fixer_x2600.c
+else ifeq ($(if $(CONFIG_AD100),y,n),y)
+	fixer_var:=spl_params_fixer_ad100.c
 else
 	fixer_var:=spl_params_fixer.c
 endif
