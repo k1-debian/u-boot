@@ -56,6 +56,11 @@ endif
 COBJS	:= $(sort $(COBJS-y))
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS-y))
+ifdef CONFIG_SPL_MCU_RTOS_BOOT
+ifdef CONFIG_X2600
+OBJS	+= x2600_riscv.hex
+endif
+endif
 
 all:	$(obj).depend $(LIB)
 

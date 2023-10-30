@@ -845,14 +845,12 @@ static char *spl_sfc_nand_os_ota_load(void)
 
 #ifdef CONFIG_SPL_MCU_RTOS_BOOT
 #ifdef CONFIG_X2600
-#include "x2600_spl_mcu_rtos_boot.h"
+#include "x2600_riscv.h"
 #endif
-
 
 void spl_nand_mcu_rtos_boot(void)
 {
     unsigned int riscv_offset;
-    struct lep_header riscv;
 
     struct jz_sfcnand_partition_param *partitions = get_partitions();
 
@@ -862,23 +860,11 @@ void spl_nand_mcu_rtos_boot(void)
         return;
     }
 
-    riscv_offset = riscv_part->offset;
-    sfc_nand_load(riscv_offset, sizeof(riscv), (unsigned int)(&riscv));
-    if (riscv.tag != LEP_TAG) {
-        printf("lep header is bad: 0x%x, not 0x%x\n", riscv.tag, LEP_TAG);
-        return;
-    }
-
-    riscv.img_start = CKSEG0ADDR(riscv.img_start);
-    riscv.img_end = CKSEG0ADDR(riscv.img_end);
-
-    sfc_nand_load(riscv_offset, riscv.img_end - riscv.img_start, riscv.img_start);
+    spl_load_riscv(sfc_nand_load, riscv_part->offset);
 
     flush_cache_all();
 
-    lep_stop();
-
-    lep_start(&riscv);
+    riscv_reset();
 }
 
 #endif
