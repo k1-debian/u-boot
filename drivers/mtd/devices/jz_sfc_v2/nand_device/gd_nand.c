@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          14
+#define GD_DEVICES_NUM          15
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -323,7 +323,28 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.tPP = TPP_Q5,
 		.tBE = TBE,
 
+		.plane_select = 0,
 		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+	[14] = {
+		/*GD5F4GM8UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 4096,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP_Q5,
+		.tBE = 10,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
 };
@@ -343,6 +364,7 @@ static struct device_id_struct device_id[GD_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x92, "GD5F2GM7UE",&gd_param[11]),
 	DEVICE_ID_STRUCT(0x91, "GD5F1GM7UE",&gd_param[12]),
 	DEVICE_ID_STRUCT(0x32, "GD5F2GQ5UExxH",&gd_param[13]),
+	DEVICE_ID_STRUCT(0x95, "GD5F4GM8UE",&gd_param[14]),
 };
 
 
@@ -363,6 +385,7 @@ static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 		case 0x32:
 		case 0x92:
 		case 0x91:
+		case 0x95:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -406,6 +429,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0xD1 ... 0xD4:
 		case 0x92:
 		case 0x91:
+		case 0x95:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;

@@ -5,10 +5,10 @@
 #include "nand_common.h"
 
 #define ZB_DEVICES_NUM         1
-#define TSETUP		20
-#define THOLD		20
-#define	TSHSL_R		100
-#define	TSHSL_W		100
+#define TSETUP		5
+#define THOLD		5
+#define	TSHSL_R		20
+#define	TSHSL_W		20
 
 #define TRD		400
 #define TPP		1000
@@ -68,9 +68,12 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0x41:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
-					return 0;
 				case 0x1:
-					return 8;
+					ret = 0x0;
+					break;
+				case 0x3:
+					ret = 0x8;
+					break;
 				case 0x2:
 					return -EBADMSG;
 				default:

@@ -5,27 +5,27 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define ZB_DEVICES_NUM         1
+#define KOWIN_DEVICES_NUM         1
 #define TSETUP		5
 #define THOLD		5
-#define	TSHSL_R		20
-#define	TSHSL_W		20
+#define	TSHSL_R		30
+#define	TSHSL_W		30
 
-#define TRD		400
-#define TPP		1000
-#define TBE		5
+#define TRD		250
+#define TPP		600
+#define TBE		10
 
-static struct jz_sfcnand_base_param zb_param[ZB_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param kowin_param[KOWIN_DEVICES_NUM] = {
 
 	[0] = {
-		/*ZB35Q01A*/
+		/*KANY1D4S2WD*/
 		.pagesize = 2 * 1024,
-		.oobsize = 64,
 		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
 		.flashsize = 2 * 1024 * 64 * 1024,
 
-		.tSETUP = TSETUP,
-		.tHOLD  = THOLD,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
@@ -33,18 +33,16 @@ static struct jz_sfcnand_base_param zb_param[ZB_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 8,
+		.ecc_max = 4,
 		.need_quad = 1,
 	},
-
 };
 
-static struct device_id_struct device_id[ZB_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x41, "ZB35Q01A", &zb_param[0]),
+static struct device_id_struct device_id[KOWIN_DEVICES_NUM] = {
+	DEVICE_ID_STRUCT(0x15, "KANY1D4S2WD", &kowin_param[0]),
 };
 
-static int32_t zb_get_read_feature(struct flash_operation_message *op_info)
-{
+static int32_t kowin_get_read_feature(struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -71,6 +69,7 @@ retry:
 	transfer.data_dummy_bits = 0;
 	transfer.ops_mode = CPU_OPS;
 
+	/*wait poll time*/
 	if(sfc_sync(flash->sfc, &transfer)) {
 	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
@@ -80,40 +79,41 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0x41:
+		case 0x15:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
+					return 0;
 				case 0x1:
-					return 0x0;
-				case 0x3:
-					return 0x8;
+					return 2;
 				case 0x2:
+					return 4;
+				case 0x3:
 					return -EBADMSG;
 				default:
 					break;
 			}
 			break;
 		default:
-			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
+			pr_err("device_id err,it maybe don`t support this device, please check your device id: device_id = 0x%02x\n", device_id);
 			break;
 	}
 	return -EINVAL;
 }
 
-static int zb_nand_init(void) {
-	struct jz_sfcnand_device *zb_nand;
-	zb_nand = kzalloc(sizeof(*zb_nand), GFP_KERNEL);
-	if(!zb_nand) {
-		pr_err("alloc zb_nand struct fail\n");
+static int kowin_nand_init(void) {
+	struct jz_sfcnand_device *kowin_nand;
+	kowin_nand = kzalloc(sizeof(*kowin_nand), GFP_KERNEL);
+	if(!kowin_nand) {
+		pr_err("alloc kowin_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	zb_nand->id_manufactory = 0x5E;
-	zb_nand->id_device_list = device_id;
-	zb_nand->id_device_count = ZB_DEVICES_NUM;
+	kowin_nand->id_manufactory = 0x01;
+	kowin_nand->id_device_list = device_id;
+	kowin_nand->id_device_count = KOWIN_DEVICES_NUM;
 
-	zb_nand->ops.nand_read_ops.get_feature = zb_get_read_feature;
-	return jz_sfcnand_register(zb_nand);
+	kowin_nand->ops.nand_read_ops.get_feature = kowin_get_read_feature;
+	return jz_sfcnand_register(kowin_nand);
 }
 
-SPINAND_MOUDLE_INIT(zb_nand_init);
+SPINAND_MOUDLE_INIT(kowin_nand_init);
