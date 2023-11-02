@@ -69,7 +69,7 @@
 #define CONFIG_SYS_CACHELINE_SIZE	(32)
 /* A switch to configure whether cpu has a 2nd level cache */
 #define CONFIG_BOARD_SCACHE
-#define CONFIG_SYS_SCACHE_SIZE		(512 * 1024)
+#define CONFIG_SYS_SCACHE_SIZE		(256 * 1024)
 #define CONFIG_SYS_SCACHELINE_SIZE	(64)
 #define CONFIG_SYS_SCACHE_WAYS		(8)
 
