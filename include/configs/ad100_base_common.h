@@ -21,6 +21,11 @@
 #define CONFIG_SYS_AHB0_FREQ		360000000
 #define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
 
+#ifdef CONFIG_QUICK_START
+#define CONFIG_SPL_RTOS_LOAD_KERNEL
+#define CONFIG_RTOS_SIZE_MB 32
+#endif
+
 /* Device Tree Configuration*/
 /*#define CONFIG_OF_LIBFDT 1*/
 #ifdef CONFIG_OF_LIBFDT
@@ -82,8 +87,11 @@
 /* #define CONFIG_DDR_TYPE_LPDDR3 */
 /* #define CONFIG_DDR_TYPE_LPDDR2 */
 
-/* #define CONFIG_DDR_TYPE_DDR3 */
-#define CONFIG_DDR_TYPE_DDR2
+#ifdef CONFIG_AD100_DDR_SAMPLE
+  #define CONFIG_DDR_TYPE_DDR3  /* sample */
+#else
+  #define CONFIG_DDR_TYPE_DDR2
+#endif
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
@@ -96,8 +104,11 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR3
 	/* #define CONFIG_DDR3_TSD34096M1333C9_E_FPG */
+#ifdef CONFIG_AD100_DDR_SAMPLE /* sample */
+	#define CONFIG_DDR3L_W632GU6QG_11
+#else
 	#define CONFIG_DDR3_W631GU6NG
-
+#endif
 #endif
 
 #ifdef CONFIG_DDR_TYPE_LPDDR3
