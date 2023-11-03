@@ -46,7 +46,7 @@ static int x2580_sfc_change_io_function(int is_quad)
 
 	/*
 	 * 解决X2580 SFC quad模式读写异常
-	 * 更改SFC0控制器 CLK/D0~D3 output0,再将恢复为func1功能, CE管脚不操作
+	 * 更改SFC0控制器 CLK/D0~D3 output1-output0-input,再将恢复为func1功能, CE管脚不操作
 	 *
 	 * PA23 : SFC_DT_IO0
 	 * PA24 : SFC_DR_IO1
@@ -59,7 +59,9 @@ static int x2580_sfc_change_io_function(int is_quad)
 	 * func1       0     0     0     1
 	 * output0     0     1     0     0
 	 */
+	gpio_set_func(0, GPIO_OUTPUT1, 0x1f << 23);
 	gpio_set_func(0, GPIO_OUTPUT0, 0x1f << 23);
+	gpio_set_func(0, GPIO_INPUT, 0x1f << 23);
 	gpio_set_func(0, GPIO_FUNC_1, 0x1f << 23);
 
 	return 0;
