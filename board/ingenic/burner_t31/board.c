@@ -78,7 +78,7 @@ int board_mmc_init(bd_t *bd)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: burner_t31 (Ingenic XBurst T31 SoC)\n");
+	puts("Ingenic SoC Burner\n");
 	return 0;
 }
 

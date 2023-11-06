@@ -232,7 +232,7 @@ int cloner_sfc_init(void)
 	clmd->check = NULL;
 	clmd->reset = clmd_sfc_reset;
 	clmd->data = NULL;
-	printf("cloner sfc register\n");
+//	printf("cloner sfc register\n");
 	return register_cloner_moudle(clmd);
 }
 CLONER_MOUDLE_INIT(cloner_sfc_init);

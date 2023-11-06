@@ -59,7 +59,7 @@ int cloner_efuse_init(void)
 	clmd->read = clmd_efuse_read;
 	clmd->check = NULL;
 	clmd->data = NULL;
-	printf("cloner efuse register\n");
+//	printf("cloner efuse register\n");
 	return register_cloner_moudle(clmd);
 }
 CLONER_MOUDLE_INIT(cloner_efuse_init);

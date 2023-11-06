@@ -95,7 +95,7 @@ int board_eth_init(bd_t *bis)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: burner_a1 (Ingenic XBurst2 A1 SoC)\n");
+	puts("Ingenic SoC Burner\n");
 	return 0;
 }
 

@@ -84,7 +84,7 @@ int board_eth_init(bd_t *bis)
 /* U-Boot common routines */
 int checkboard(void)
 {
-	puts("Board: burner_jz4780 (Ingenic XBurst JZ4780 SoC)\n");
+	puts("Ingenic SoC Burner\n");
 	return 0;
 }
 

@@ -258,11 +258,12 @@ void handle_args(struct usb_ep *ep,struct usb_request *req)
 			|| ((char*)p > ((char*)global_args + CLONER_ARGS_LEN))) {
 			break;
 		}
-
+#if 0
 		printf("magic=");
 		for(i=3; i>=0; i--)
 			printf("%c", ((char*)&p->magic)[i]);
 		printf("\n");
+#endif
 		switch(p->magic)
 		{
 			case MAGIC_POLICY:
