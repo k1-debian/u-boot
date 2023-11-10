@@ -71,6 +71,10 @@
 #include "chips-v2/DDR3L_W632GU6QG-11.h"
 #endif
 
+#ifdef CONFIG_DDR3L_W634GU6QG_11
+#include "chips-v2/DDR3L_W634GU6QG-11.h"
+#endif
+
 #ifdef CONFIG_DDR3L_W634GU6QB_11
 #include "chips-v2/DDR3L_W634GU6QB-11.h"
 #endif
