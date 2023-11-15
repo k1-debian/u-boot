@@ -633,6 +633,38 @@ unsigned int get_part_size_by_name(struct norflash_partitions partition, char *n
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
+extern int is_security_boot(void);
+
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+#define LOAD_ROOTFS_ADDR 0x82000000
+static void secure_check_hash_rootfs(struct norflash_partitions partitions)
+{
+	unsigned int signature_offset;
+	unsigned int rootfs_offset;
+	unsigned int code_len;
+	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
+	int ret;
+
+	signature_offset = get_part_offset_by_name(partitions, CONFIG_SPL_SIG_NAME);
+	rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME);
+
+	if (signature_offset == -1 || rootfs_offset == -1){
+		printf("sig or rootfs part not found\n");
+		hang();
+	}
+
+	sfc_read_data(signature_offset, 2048, LOAD_ROOTFS_ADDR - 2048);
+	code_len = ptr[128];
+
+	sfc_read_data(rootfs_offset, code_len, LOAD_ROOTFS_ADDR);
+
+	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
+	if(ret) {
+		printf("Error check rootfs hash\n");
+		hang();
+	}
+}
+#endif
 #endif
 
 void spl_load_kernel(long offset)
@@ -643,7 +675,6 @@ void spl_load_kernel(long offset)
 	void *load_buf, *image_buf;
 	int image_len;
 #ifdef CONFIG_JZ_SECURE_SUPPORT
-	int ret;
 	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
 
 	sfc_read_data(offset, sizeof(struct image_header) + sizeof(int), (unsigned char *)CONFIG_SYS_TEXT_BASE);
@@ -655,9 +686,9 @@ void spl_load_kernel(long offset)
 
 	flush_scache_range(spl_image.load_addr, spl_image.load_addr + spl_image.size);
 
-	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
+	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr + 2048);
 	if(ret) {
-		printf("Error spl secure load kernel.\n");
+		printf("Error spl secure load kernel\n");
 		hang();
 	}
 #else
@@ -846,12 +877,12 @@ void sfc_erase_data(unsigned int addr, unsigned int len)
     unsigned int erasesize = flash->g_nor_info.erase_size;
 
     if ((erasesize-1) & addr) {
-        printf("erase error: address isn't aligned with block_size.\n");
+        printf("erase error: address isn't aligned with block_size\n");
         hang();
     }
 
     if ((erasesize-1) & len) {
-        printf("erase error: len must be times of blocks_size.\n");
+        printf("erase error: len must be times of blocks_size\n");
         hang();
 	}
 
@@ -998,13 +1029,13 @@ static int spl_sfc_nor_rtos_load(struct rtos_header *rtos, unsigned int offset)
 		return -1;
 
 	int size = rtos->img_end - rtos->img_start;
-	printf("size = %d tag = 0x%x 0x%x\n",size,rtos->tag,offset);
+	debug("size = %d tag = 0x%x 0x%x\n",size,rtos->tag,offset);
 #ifdef CONFIG_JZ_SCBOOT
 	int start = rtos->img_end + 4096;
 	sfc_read_data(offset, size, start);
 	int ret = secure_scboot((void *)(start + sizeof(struct rtos_header)), (void*)rtos->img_start);
 	if(ret) {
-		printf("Error spl secure load freertos.\n");
+		printf("Error spl secure load freertos\n");
 		return -1;
 	}
 #else
@@ -1088,7 +1119,7 @@ static void spl_sfc_nor_cfg_os_args(struct norflash_partitions partitions, char 
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
-	sfc_read_data(offset, sizeof(struct image_header) + sizeof(int), (unsigned char *)CONFIG_SYS_TEXT_BASE);
+	sfc_read_data(img_addr, sizeof(struct image_header) + sizeof(int), (unsigned char *)CONFIG_SYS_TEXT_BASE);
 #else
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 	sfc_read_data(img_addr, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
@@ -1136,12 +1167,15 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	}
 #endif
 
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	secure_check_hash_rootfs(partitions);
+#endif
 	spl_sfc_nor_cfg_os_args(partitions, kernel_name);
 
 	unsigned int rtos_offset = 0;
 	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
 	if (rtos_offset == -1) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
 		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_offset = CONFIG_RTOS_OFFSET;
 	}
@@ -1158,7 +1192,7 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	int ret = 0;
 	ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
 	if (ret) {
-		printf("Error spl secure load kernel.\n");
+		printf("Error spl secure load kernel\n");
 		hang();
 	}
 #endif

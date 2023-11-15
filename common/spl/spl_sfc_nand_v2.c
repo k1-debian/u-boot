@@ -475,6 +475,38 @@ struct jz_sfcnand_partition *get_part_by_name(struct jz_sfcnand_partition_param 
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
+extern int is_security_boot(void);
+
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+#define LOAD_ROOTFS_ADDR 0x82000000
+static void secure_check_hash_rootfs(struct jz_sfcnand_partition_param *partitions)
+{
+	unsigned int signature_offset;
+	unsigned int rootfs_offset;
+	unsigned int code_len;
+	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
+	int ret;
+
+	signature_offset = get_part_offset_by_name(partitions, CONFIG_SPL_SIG_NAME);
+	rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME);
+
+	if (signature_offset == -1 || rootfs_offset == -1){
+		printf("sig or rootfs partitions not found\n");
+		hang();
+	}
+
+	sfc_nand_load(signature_offset, 2048, LOAD_ROOTFS_ADDR - 2048);
+	code_len = ptr[128];
+
+	sfc_nand_load(rootfs_offset, code_len, LOAD_ROOTFS_ADDR);
+
+	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
+	if(ret) {
+		printf("Error check rootfs hash.\n");
+		hang();
+	}
+}
+#endif
 #endif
 
 void spl_load_kernel(long offset)
@@ -623,8 +655,16 @@ static int spl_sfc_rtos_load(struct rtos_header *rtos, unsigned int offset)
 	if (rtos_check_header(rtos))
 		return -1;
 
+#ifdef CONFIG_JZ_SECURE_SUPPORT
 	sfc_nand_load(offset, rtos->img_end - rtos->img_start, rtos->img_start);
-
+	int ret = secure_scboot(rtos->img_start + sizeof(struct rtos_header), rtos->img_start);
+	if(ret) {
+		printf("Error rtos decryption.\n");
+		hang();
+	}
+#else
+	sfc_nand_load(offset, rtos->img_end - rtos->img_start, rtos->img_start);
+#endif
 	return 0;
 }
 
@@ -704,7 +744,7 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
-	sfc_nand_load(offset, sizeof(struct image_header) + sizeof(int), CONFIG_SYS_TEXT_BASE);
+	sfc_nand_load(img_addr, sizeof(struct image_header) + sizeof(int), CONFIG_SYS_TEXT_BASE);
 #else
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 	sfc_nand_load(img_addr, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
@@ -754,6 +794,9 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 	}
 #endif
 
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	secure_check_hash_rootfs(partitions);
+#endif
 	spl_sfc_nand_cfg_os_args(partitions, kernel_name);
 
 	unsigned int rtos_offset = 0;
