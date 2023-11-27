@@ -540,43 +540,40 @@
 #endif
 
 /* LCD */
-/*#define CONFIG_LCD */
+/* #define CONFIG_LCD */
 #define CONFIG_GPIO_PWR_WAKE		GPIO_PB(31)
 #define CONFIG_GPIO_PWR_WAKE_ENLEVEL	0
 #define CONFIG_SYS_DCACHE_OFF
 
 #ifdef CONFIG_LCD
-/*#define CONFIG_LCD_FORMAT_X8B8G8R8*/
+#define CONFIG_LCD_FORMAT_X8B8G8R8
 #define LCD_BPP             5
-#define CONFIG_GPIO_LCD_PWM     GPIO_PC(25)
 
 #define CONFIG_LCD_LOGO
 /*#define CONFIG_LCD_INFO_BELOW_LOGO      	//display the console info on lcd panel for debugg*/
 #define CONFIG_SYS_WHITE_ON_BLACK
-#define CONFIG_SYS_PWM_PERIOD       10000	/* Pwm period in ns */
+#define CONFIG_SYS_PWM_PERIOD       10000 	/* Pwm period in ns */
 #define CONFIG_SYS_PWM_CHN      0		/* Pwm channel ok*/
 #define CONFIG_SYS_PWM_FULL     256
-#define CONFIG_SYS_BACKLIGHT_LEVEL  80		/* Backlight brightness is (80 / 256) */
-#define CONFIG_JZ_LCD_V15
+#define CONFIG_SYS_BACKLIGHT_LEVEL  200		/* Backlight brightness is (80 / 256) */
+#define CONFIG_JZ_LCD_V14
 #define CONFIG_JZ_PWM
+
+#define CONFIG_VIDEO_FW050
+#ifdef CONFIG_VIDEO_FW050
+#define CONFIG_JZ_MIPI_DSI
+#endif
+
+#ifdef CONFIG_VIDEO_FW050
+#define CONFIG_GPIO_LCD_VDD     GPIO_PC(11)
+#define CONFIG_GPIO_LCD_PWM     GPIO_PC(14)
+#define CONFIG_GPIO_LCD_RST     GPIO_PC(10)
+#endif
+
 #define CONFIG_SYS_CONSOLE_INFO_QUIET
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV
-#define CONFIG_LCD_GPIO_FUNC1_SLCD
 
-#define CONFIG_VIDEO_BYD_BM8766U
-#ifdef CONFIG_VIDEO_BYD_BM8766U
-#define DEFAULT	0
-#define CONFIG_GPIO_LCD_DISP	DEFAULT
-#define CONFIG_GPIO_LCD_VSYNC	DEFAULT
-#define CONFIG_GPIO_LCD_HSYNC	DEFAULT
-#define CONFIG_GPIO_LCD_DE	DEFAULT
-#endif
-
-/* #define CONFIG_RLE_LCD_LOGO */
-
-#ifdef CONFIG_RLE_LCD_LOGO
-#define CONFIG_CMD_LOGO_RLE			/*display the logo using rle command*/
-#endif
+#define CONFIG_LCD_ENABLE_RDMA_FB
 
 #endif /* CONFIG_LCD */
 

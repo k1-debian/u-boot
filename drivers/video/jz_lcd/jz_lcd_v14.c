@@ -203,6 +203,8 @@ static void dump_dc_reg(void)
 	printf("-----------------dc_reg------------------\n");
 	printf("DC_FRM_CFG_ADDR:    %lx\n",fb_read(DC_FRM_CFG_ADDR));
 	printf("DC_FRM_CFG_CTRL:    %lx\n",fb_read(DC_FRM_CFG_CTRL));
+	printf("DC_RDMA_CHAIN_ADDR: %lx\n",fb_read(DC_RDMA_CHAIN_ADDR));
+	printf("DC_RDMA_CHAIN_CTRL: %lx\n",fb_read(DC_RDMA_CHAIN_CTRL));
 	printf("DC_CTRL:            %lx\n",fb_read(DC_CTRL));
 	printf("DC_LAYER0_CSC_MULT_YRV:    %lx\n",fb_read(DC_LAYER0_CSC_MULT_YRV));
 	printf("DC_LAYER0_CSC_MULT_GUGV:   %lx\n",fb_read(DC_LAYER0_CSC_MULT_GUGV));
@@ -242,7 +244,7 @@ static void dump_slcd_reg(void)
 	printf("SLCD_TIMING:        %lx\n",fb_read(DC_SLCD_TIMING));
 	printf("SLCD_FRM_SIZE:      %lx\n",fb_read(DC_SLCD_FRM_SIZE));
 	printf("SLCD_SLOW_TIME:     %lx\n",fb_read(DC_SLCD_SLOW_TIME));
-	printf("SLCD_CMD:           %lx\n",fb_read(DC_SLCD_CMD));
+//	printf("SLCD_CMD:           %lx\n",fb_read(DC_SLCD_CMD));
 	printf("SLCD_ST:            %lx\n",fb_read(DC_SLCD_ST));
 	printf("---------------slcd_reg------------------\n");
 }
@@ -267,6 +269,22 @@ static void dump_frm_desc_reg(void)
 	printf("LayCfgEn:	    %lx\n",fb_read(DC_FRM_DES));
 	printf("InterruptControl:   %lx\n",fb_read(DC_FRM_DES));
 	printf("--------Frame Descriptor register--------\n");
+}
+
+static void dump_rdma_desc_reg(void)
+{
+	unsigned int ctrl;
+	ctrl = fb_read(DC_CTRL);
+	ctrl |= DC_DES_CNT_RST;
+	fb_write(DC_CTRL, ctrl);
+
+	printf("--------rdma Descriptor register--------\n");
+	printf("RdmaNextCfgAddr:    %lx\n",fb_read(DC_RDMA_DES));
+	printf("FrameBufferAddr:    %lx\n",fb_read(DC_RDMA_DES));
+	printf("stride:             %lx\n",fb_read(DC_RDMA_DES));
+	printf("CfgEn:	            %lx\n",fb_read(DC_RDMA_DES));
+	printf("InterruptControl:   %lx\n",fb_read(DC_RDMA_DES));
+	printf("--------rdma Descriptor register--------\n");
 }
 
 static void dump_layer_desc_reg(void)
@@ -355,10 +373,11 @@ void dump_lay_cfg(struct jzfb_lay_cfg * lay_cfg, int index)
 
 static void dump_lcdc_registers(void)
 {
-	dump_dsi_reg();
+	dump_dsi_reg(dsi);
 	dump_dc_reg();
 	dump_tft_reg();
 	dump_slcd_reg();
+	dump_rdma_desc_reg();
 	dump_frm_desc_reg();
 	dump_layer_desc_reg();
 }
@@ -1318,6 +1337,9 @@ void lcd_enable(void)
 #endif
 	}
 
+#ifdef CONFIG_X2600
+	panel_pwm_on();
+#endif
 	lcd_enable_state = 1;
 	return;
 }

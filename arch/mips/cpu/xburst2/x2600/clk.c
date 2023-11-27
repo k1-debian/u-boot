@@ -313,7 +313,7 @@ void clk_init(void)
 		| CPM_CLKGR_MSC1
 #endif
 #ifdef CONFIG_JZ_LCD_V14
-		| CPM_CLKGR_LCD
+		| CPM_CLKGR1_LCD
 #endif
 #ifdef CONFIG_JZ_SFC
 		| CPM_CLKGR_SFC
