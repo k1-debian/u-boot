@@ -47,6 +47,7 @@ COBJS-$(CONFIG_BOOT_XIMAGE) += cmd_bootx.o
 COBJS-$(CONFIG_BOOT_ANDROID) += boot_mode.o
 COBJS-$(CONFIG_CMD_FASTBOOT) += cmd_fastboot.o
 COBJS-$(CONFIG_CMD_USBSERIAL) += cmd_usbserial.o
+COBJS-$(CONFIG_CMD_USBPRINTER) += cmd_usbprinter.o
 COBJS-$(CONFIG_CMD_BOOTM) += cmd_bootm.o
 COBJS-y += cmd_help.o
 COBJS-y += cmd_version.o

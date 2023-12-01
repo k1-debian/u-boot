@@ -577,6 +577,7 @@ static int jz_queue(struct usb_ep *ep, struct usb_request *req, gfp_t gfp_flags)
 		return -ESHUTDOWN;
 	}
 
+	INIT_LIST_HEAD(&dep->urb_list);
 	transfer_idle = list_empty(&dep->urb_list);
 
 	req->status = -EINPROGRESS;
@@ -1114,6 +1115,7 @@ void handle_inep_intr(struct dwc2_udc *dev)
 			if ((udc_read_reg(DIEP_EMPMSK) & (1 << epnum))) {
 				int status = 0;
 				dwc2_fill_tx_fifo(dep);
+#if 0
 				status  = in_xfer_timeout_detect(dep);
 				if (status) {
 					printf("%s in xfer timeout\n", dep->name);
@@ -1125,6 +1127,7 @@ void handle_inep_intr(struct dwc2_udc *dev)
 						inep0_transfer_complete(dep);
 
 				}
+#endif
 
 			}
 			udc_write_reg(DEP_TXFIFO_EMPTY, DIEP_INT(epnum));
