@@ -1657,7 +1657,7 @@ static void mmc_load_rtos_boot(void)
 
 #ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
 
-static void spl_mmc_cfg_os_args(char *kernel_name)
+static void spl_mmc_cfg_os_args(char *kernel_name, char *cmdargs)
 {
 	int ret;
 	unsigned int offset_sector = 0;
@@ -1694,11 +1694,18 @@ static void spl_mmc_cfg_os_args(char *kernel_name)
 	spl_image.load_addr -= 2048;
 #endif
 
+	cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+	cmdargs = spl_board_process_mem_bootargs(cmdargs);
+#endif
+
 	/* 由RTOS 加载OS镜像, SPL等待OS加载完成, 并由SPL完成后续引导 */
 	os_boot_args.magic = 0x53475241;  /* ARGS */
 	os_boot_args.offset = offset_sector * 0x200;
 	os_boot_args.size = image_size_sectors * 0x200;
 	os_boot_args.load_addr = spl_image.load_addr;
+	os_boot_args.cmdargs = cmdargs;
+	os_boot_args.entry_point = spl_image.entry_point;
 
 	spl_rtos_args.os_boot_args = &os_boot_args;
 }
@@ -1726,7 +1733,7 @@ static char *mmc_boot_rtos_load_os(void)
 	}
 #endif
 
-	spl_mmc_cfg_os_args(kernel_name);
+	spl_mmc_cfg_os_args(kernel_name, cmdargs);
 
 	unsigned int rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
 	ret = spl_get_built_in_gpt_partition(rtos_name, &rtos_offset, NULL);

@@ -29,6 +29,8 @@ struct rtos_boot_os_args {
     unsigned int load_addr;
     unsigned int offset; /* OS 偏移地址 单位:Byte */
     unsigned int size; /* OS 大小 单位:Byte */
+    unsigned int entry_point;
+    char *cmdargs;
 };
 
 struct spl_rtos_argument {

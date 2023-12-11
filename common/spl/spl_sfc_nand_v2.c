@@ -730,7 +730,7 @@ static void spl_sfc_rtos_boot(void)
 
 #ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
 
-static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitions, char *kernel_name)
+static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitions, char *kernel_name, char *cmdargs)
 {
 	unsigned int img_addr = 0;
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
@@ -753,10 +753,17 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
 
+	cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+	cmdargs = spl_board_process_mem_bootargs(cmdargs);
+#endif
+
 	/* 由RTOS 加载OS镜像, SPL等待OS加载完成, 并由SPL完成后续引导 */
 	os_boot_args.magic = 0x53475241;  /* ARGS */
 	os_boot_args.offset = img_addr;
 	os_boot_args.size = spl_image.size;
+	os_boot_args.cmdargs = cmdargs;
+	os_boot_args.entry_point = spl_image.entry_point;
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	os_boot_args.load_addr = spl_image.load_addr - 2048;
@@ -797,7 +804,7 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	secure_check_hash_rootfs(partitions);
 #endif
-	spl_sfc_nand_cfg_os_args(partitions, kernel_name);
+	spl_sfc_nand_cfg_os_args(partitions, kernel_name, cmdargs);
 
 	unsigned int rtos_offset = 0;
 	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
@@ -823,7 +830,6 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 		hang();
 	}
 #endif
-
 	return cmdargs;
 }
 

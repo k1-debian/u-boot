@@ -162,7 +162,7 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 	int *srcptr = (int *)(input + SC_MAGIC_SIZE + SC_KEY_SIZE);
 	int *dstptr = (int *)(output);
 
-#if 0
+#if 1
 	int newround = 1;
 	int endround = 0;
 	int pos = 0;
@@ -275,3 +275,9 @@ int secure_scboot(void *input, void *output)
 	return ret;
 }
 
+int is_security_boot(void)
+{
+#define EFUSE_REG_STAT 0xb3480008
+#define EFUSTATE_SECBOOT_EN_SFT (0x1 << 8)
+	return *(volatile unsigned int *)(EFUSE_REG_STAT) & EFUSTATE_SECBOOT_EN_SFT;
+}

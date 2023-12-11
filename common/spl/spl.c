@@ -288,7 +288,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 
 		cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
 		cmdargs = spl_board_process_bootargs(cmdargs);
-#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+#if defined(CONFIG_SPL_AUTO_PROBE_ARGS_MEM) && !defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
 		cmdargs = spl_board_process_mem_bootargs(cmdargs);
 #endif
 		debug("get cmdargs: %s.\n", cmdargs);
