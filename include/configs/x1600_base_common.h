@@ -641,6 +641,10 @@
     #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON " " ARGS_ROOTFS
     #define CONFIG_SPL_OS_NAME          "kernel" /* spi offset of xImage being loaded */
     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+    #define CONFIG_SPL_SIG_NAME         "signature"
+    #define CONFIG_SPL_ROOTFS_NAME      "rootfs"
+#endif
     #define CONFIG_BOOTX_BOOTARGS       ""
     #undef  CONFIG_BOOTCOMMAND
     #define CONFIG_BOOTCOMMAND          ""

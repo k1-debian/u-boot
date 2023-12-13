@@ -162,7 +162,7 @@ static int start_scboot(void *input, void *output, unsigned int binlen)
 	int *srcptr = (int *)(input + SC_MAGIC_SIZE + SC_KEY_SIZE);
 	int *dstptr = (int *)(output);
 
-#if 0
+#if 1
 	int newround = 1;
 	int endround = 0;
 	int pos = 0;
