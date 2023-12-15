@@ -30,12 +30,11 @@ int get_rsakeylen(void)
 
 static void gpio_output_value(int gpio, int value)
 {
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	int val = 0;
+
+	mdelay(2);		/* wait for EFUSE IO power for mdelay(1). */
 	gpio_direction_output(gpio, value);
-	if (value == 0)
-		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	else
-		udelay(10);		/* wait for EFUSE IO power for mdelay(1). */
+	mdelay(2);		/* wait for EFUSE IO power for mdelay(1). */
 }
 
 
@@ -192,11 +191,15 @@ int cpu_burn_rckey(void)
 
 //	printf("xxxxxxxxxxx func : %s\n",__func__);
 	return 0;
-	if(EFUSTATE_NKU_PRT)
+	if(EFUSTATE_NKU_PRT) {
+		printf("EFUSTATE: nku protect bit have been written\n");
 		return 0;
+	}
 
-	if(cpu_get_rn() < 0)
+	if(cpu_get_rn() < 0) {
+		printf("get rn failed!\n");
 		return -ESEC;
+	}
 
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	*reg_stat = 0;			      /* clear WR_DONE RD_DONE */
@@ -257,8 +260,15 @@ int cpu_burn_nku(void *idata,unsigned int length)
 	if(cpu_load_nku(idata, length) < 0)
 		return -ESEC;
 
-	if(cpu_wtotp(WT_OTP_NKU) < 0)
+	if(cpu_wtotp(WT_OTP_NKU) < 0){
+		printf("nku write failed!\n");
 		return -ESEC;
+	}
+
+	if(!EFUSTATE_NKU_PRT) {
+		printf("nku protect bit write failed!\n");
+		return -ESEC;
+	}
 
 	return 0;
 }
@@ -312,8 +322,10 @@ int cpu_burn_ukey(void *idata)
 
 	printf("xxxxxxxxxxx func : %s\n",__func__);
 
-	if(EFUSTATE_UK_PRT)
+	if(EFUSTATE_UK_PRT) {
+		printf("EFUSTATE: userkey protect bit have been written\n");
 		return 0;
+	}
 
 //	do_rsa(rsaukey, rsakeylen, encukey, rsakey, rsakeylen);
 //	for(iLoop = 0; iLoop < 4; iLoop++)
@@ -338,8 +350,15 @@ int cpu_burn_ukey(void *idata)
 		return -ESEC;
 	}
 
-	if(cpu_wtotp(WT_OTP_UK) < 0)
+	if(cpu_wtotp(WT_OTP_UK) < 0) {
+		printf("ukey write failed!\n");
 		return -ESEC;
+	}
+
+	if(!EFUSTATE_UK_PRT) {
+		printf("ukey protect bit write failed!\n");
+		return -ESEC;
+	}
 
 	return 0;
 }
@@ -350,6 +369,13 @@ int cpu_burn_secboot_enable(void)
 	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
 	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
 	volatile unsigned int *reg_data1 = (volatile unsigned int *)EFUSE_REG_DAT1;
+
+
+	if(!EFUSTATE_NKU_PRT || !EFUSTATE_UK_PRT) {
+		printf("nku or ukey protect bit is not set!\n");
+		return -ESEC;
+	}
+
 
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 
@@ -374,9 +400,9 @@ int cpu_burn_secboot_enable(void)
 
 	efuse_update_state();
 
-	if(!(*reg_stat & EFUSTATE_SECBOOT_EN_SFT)) {
-		printf("%s() security boot enable write failed!, reg_stat=%x\n", __func__, *reg_stat);
-		return -1;
+	if(!EFUSTATE_SECBOOT_EN) {
+		printf("secure enable write failed!, reg_stat=%x\n", *reg_stat);
+		return -ESEC;
 	}
 
 	*reg_data1 = (1 << EFUSE_PTCOFF_SCB); /* program security boot enable protected */
@@ -397,6 +423,11 @@ int cpu_burn_secboot_enable(void)
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE_2V5 down. */
 
 	efuse_update_state();
+
+	if(!EFUSTATE_SECBOOT_PRT) {
+		printf("secure protect bit write failed!\n");
+		return -ESEC;
+	}
 
 	return 0;
 }

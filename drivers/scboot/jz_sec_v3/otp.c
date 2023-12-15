@@ -18,13 +18,10 @@ static int efuse_en_active = 0;
 
 static void set_efuse_vddq(int gpio, int level)
 {
-	int val = -1;
+	mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 	gpio_direction_output(gpio, level);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio[%d] output %s\n",gpio,(val ? "high":"low"));
-	} while (val != level);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	printf("gpio[%d] output %s\n",gpio,(level ? "high":"low"));
+	mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 }
 
 static int efuse_update_state(void)
@@ -117,6 +114,10 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
 
 	efuse_update_state();
+
+	if (!EFUSTATE_SCB_PRT || !EFUSTATE_SECBOOT_EN) {
+		printf("%s %d: secure enable or protect bit write failed!\n",__func__,__LINE__);
+	}
 
 	return 0;
 }
@@ -264,17 +265,22 @@ int cpu_burn_nku(void *data,unsigned int length)
 
 
 	if (cpu_wtotp(WT_OTP_NKU) < 0) {
-		printf("%s %d: write nku failed\n",__func__,__LINE__);
+		printf("%s %d: nku write failed\n",__func__,__LINE__);
 		return -ESEC;
 	}
 
 	if (otp_w(EFUSE_PTCOFF_NKU) < 0) {
-		printf("%s %d: write nku protect bit failed\n",__func__,__LINE__);
+		printf("%s %d: nku protect bit write failed\n",__func__,__LINE__);
+		return -ESEC;
+	}
+
+	if (!EFUSTATE_NKU_PRT) {
+		printf("%s %d: nku protect bit write failed\n",__func__,__LINE__);
 		return -ESEC;
 	}
 
 	if (check_nku(data, length) < 0) {
-		printf("%s %d: check nku failed\n",__func__,__LINE__);
+		printf("%s %d: nku check failed\n",__func__,__LINE__);
 		return -ESEC;
 	}
 
@@ -296,7 +302,7 @@ int cpu_burn_ukey(void *data)
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 
 	if(EFUSTATE_UK_PRT) {
-		printf("%s %d: userkey protect bit have been written\n",__func__,__LINE__);
+		printf("%s %d: ukey protect bit have been written\n",__func__,__LINE__);
 		return 0;
 	}
 
@@ -315,19 +321,23 @@ int cpu_burn_ukey(void *data)
 	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		printf("%s %d: return 0x%08x\n", __func__,__LINE__,
+		printf("%s %d: burn ukey error, return 0x%08x\n", __func__,__LINE__,
 				*(volatile unsigned int *)(MCU_TCSM_RETVAL));
 		return -ESEC;
 	}
 
 
 	if (cpu_wtotp(WT_OTP_UK) < 0) {
-		printf("%s %d: wtotp error!\n",__func__,__LINE__);
+		printf("%s %d: ukey write failed!\n",__func__,__LINE__);
 		return -ESEC;
 	}
 
 	otp_w(EFUSE_PTCOFF_UKP);
 
+	if (!EFUSTATE_UK_PRT) {
+		printf("%s %d: ukey protect bit write failed\n",__func__,__LINE__);
+		return -ESEC;
+	}
 	return 0;
 }
 

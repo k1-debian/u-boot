@@ -260,9 +260,10 @@ void gpio_port_direction_output(int port, int pin, int value)
 {
 	writel(1 << pin, GPIO_PXINTC(port));
 	writel(1 << pin, GPIO_PXMSKS(port));
-	writel(1 << pin, GPIO_PXPAT1C(port));
 
 	gpio_port_set_value(port, pin, value);
+	writel(1 << pin, GPIO_PXPAT1C(port));
+
 }
 
 int gpio_set_value(unsigned gpio, int value)

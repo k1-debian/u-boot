@@ -43,13 +43,10 @@ int get_rsakeylen(void)
 static void efuse_1v8_output(int value)
 {
 	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
-		mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-		printf("EFUSE_EN_N gpio(%d) output %s!\n", efuse_en_gpio, value == 0 ? "low" : "high");
+		mdelay(2);		/* wait for EFUSE IO power for mdelay(1). */
 		gpio_direction_output(efuse_en_gpio, value);
-		if (value)
-			mdelay(1);
-		else
-			udelay(10);
+		printf("EFUSE_EN_N gpio(%d) output %s!\n", efuse_en_gpio, value == 0 ? "low" : "high");
+		mdelay(2);
 	}
 #ifdef CONFIG_PMU_RICOH6x
 	else {
@@ -459,6 +456,11 @@ int cpu_burn_nku(void *idata,unsigned int length)
 		return -ESEC;
 	}
 
+	if (!EFUSTATE_NKU_PRT) {
+		printf("write nku protect bit failed\n");
+		return -ESEC;
+	}
+
 	if (check_nku(idata, length) < 0) {
 		printf("check nku failed\n");
 		return -ESEC;
@@ -523,11 +525,17 @@ int cpu_burn_ukey(void *idata)
 	}
 
 	if (cpu_wtotp(WT_OTP_UK) < 0) {
-		printf("write ukey protect err\n");
+		printf("write ukey error!\n");
 		return -ESEC;
 	}
 
 	otp_w(EFUSE_PTCOFF_UKP);
+
+
+	if(!EFUSTATE_UK_PRT) {
+		printf("write ukey protect bit error!\n");
+		return -ESEC;
+	}
 
 
 	memset(ukey, 0, MCU_TCSM_KEYLEN);
@@ -560,19 +568,34 @@ int cpu_burn_ukey(void *idata)
 
 	otp_w(EFUSE_PTCOFF_UKP1);
 
+	if(!EFUSTATE_UK1_PRT) {
+		printf("write ukey1 protect bit error!\n");
+		return -ESEC;
+	}
+
 	return 0;
 }
 
 int cpu_burn_secboot_enable(void)
 {
 	printf("xxxx otp efuse state:%x\n", REG32(EFUSE_REG_STAT));
+
+	if (!EFUSTATE_UK_PRT || !EFUSTATE_UK1_PRT) {
+		printf("userkey protect bit is not set!\n");
+		return -ESEC;
+	}
+
+	if (!EFUSTATE_NKU_PRT) {
+		printf("nku protect bit is not set!\n");
+		return -ESEC;
+	}
+
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_STAT) = 0;
 
 	/* set write data :security boot enable, security boot enable protected, disable JTAG*/
-	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB)
-							 | (1 << EFUSE_PTCOFF_DJG));
+	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB) | (1 << EFUSE_PTCOFF_DJG));
 
 	/*efuse config*/
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
@@ -587,6 +610,11 @@ int cpu_burn_secboot_enable(void)
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	efuse_update_state();
+
+	if (!EFUSTATE_SCB_PRT || !EFUSTATE_SECBOOT_EN) {
+		printf("write secure enable or protect bit failed!\n");
+		return -ESEC;
+	}
 
 	return 0;
 }
