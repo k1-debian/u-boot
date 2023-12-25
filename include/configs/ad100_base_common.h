@@ -9,14 +9,24 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_AD100		/* ad100 SoC */
 
+#if ((defined CONFIG_AD101_DDR) || (defined CONFIG_AD100_DDR_SAMPLE)) 
+  #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+  #define CONFIG_SYS_MPLL_FREQ		1800000000	/*If MPLL not use mast be set 0*/
+  #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
+  #define CONFIG_CPU_SEL_PLL		APLL
+  #define CONFIG_DDR_SEL_PLL		MPLL
+  #define CONFIG_SYS_CPU_FREQ		1200000000
+  #define CONFIG_SYS_MEM_FREQ		900000000
+#else
+  #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+  #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
+  #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
+  #define CONFIG_CPU_SEL_PLL		APLL
+  #define CONFIG_DDR_SEL_PLL		MPLL
+  #define CONFIG_SYS_CPU_FREQ		1200000000
+  #define CONFIG_SYS_MEM_FREQ		600000000
+#endif
 
-#define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_CPU_SEL_PLL		APLL
-#define CONFIG_DDR_SEL_PLL		MPLL
-#define CONFIG_SYS_CPU_FREQ		1200000000
-#define CONFIG_SYS_MEM_FREQ		600000000
 
 #define CONFIG_SYS_AHB0_FREQ		360000000
 #define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
@@ -73,7 +83,6 @@
 #define CONFIG_BAUDRATE			3000000
 #endif
 
-
 /*
 #define CONFIG_DDR_TEST_CPU
 #define CONFIG_DDR_TEST
@@ -84,41 +93,27 @@
 #define CONFIG_DDR_INNOPHY
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
-/* #define CONFIG_DDR_TYPE_LPDDR3 */
-/* #define CONFIG_DDR_TYPE_LPDDR2 */
 
-#ifdef CONFIG_AD100_DDR_SAMPLE
-  #define CONFIG_DDR_TYPE_DDR3  /* sample */
+#if ((defined CONFIG_AD101_DDR) || (defined CONFIG_AD100_DDR_SAMPLE)) 
+  #define CONFIG_DDR_TYPE_DDR3
 #else
   #define CONFIG_DDR_TYPE_DDR2
 #endif
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
-/*#define CONFIG_DDR3_TSD34096M1333C9_E*/
-
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	#define CONFIG_LPDDR2_FMT4D32UAB_25LI_FPGA
-	/* #define CONFIG_LPDDR2_AD210032F_AB_FPGA */
-#endif
 
 #ifdef CONFIG_DDR_TYPE_DDR3
-	/* #define CONFIG_DDR3_TSD34096M1333C9_E_FPG */
-#ifdef CONFIG_AD100_DDR_SAMPLE /* sample */
-	#define CONFIG_DDR3L_W632GU6QG_11
+#ifdef CONFIG_AD100_DDR_SAMPLE
+  #define CONFIG_DDR3L_W632GU6QG_11
 #else
-	#define CONFIG_DDR3_W631GU6NG
+  #define CONFIG_DDR3_M15T1G1664A
 #endif
-#endif
-
-#ifdef CONFIG_DDR_TYPE_LPDDR3
-	#define CONFIG_LPDDR3_MT52L256M32D1PF_FPGA
-	/* #define CONFIG_LPDDR3_AD310032C_AB_FPGA */
-	/* #define CONFIG_LPDDR3_W63AH6NBVABI_FPGA *//* size = 128M */
 #endif
 
 #ifdef CONFIG_DDR_TYPE_DDR2
-	#define CONFIG_DDR2_W9751V6NG
+  #define CONFIG_DDR2_M14F5121632A
+  /* #define CONFIG_DDR2_M14D5121632A */
 #endif
 
 #define CONFIG_OPEN_KGD_DRIVER_STRENGTH
