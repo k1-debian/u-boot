@@ -33,7 +33,6 @@
 
 #ifdef CONFIG_QUICK_START
 #define CONFIG_SPL_RTOS_LOAD_KERNEL
-#define CONFIG_RTOS_SIZE_MB 32
 #endif
 
 /* Device Tree Configuration*/
