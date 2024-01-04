@@ -152,6 +152,14 @@
  * #define CONFIG_DDR_PHY_IMPED_PULLDOWN	0xe
  */
 
+/*#define CONFIG_CMD_USB*/		/* USB host command */
+#ifdef CONFIG_CMD_USB
+#define CONFIG_CMD_USB_LOAD
+#define CONFIG_USB_LOAD
+#define CONFIG_USB_DWC2		/* DWC2 Host Driver. */
+#define CONFIG_USB_DRV_VBUS	GPIO_PE(18)
+#endif
+
 /**
  * Boot arguments definitions.
  */

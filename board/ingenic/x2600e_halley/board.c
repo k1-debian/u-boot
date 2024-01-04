@@ -69,6 +69,24 @@ int misc_init_r(void)
 }
 
 
+#ifdef CONFIG_USB_GADGET
+void board_usb_init(void)
+{
+	printf("USB_udc_probe\n");
+	jz_udc_probe();
+}
+#endif /* CONFIG_USB_GADGET */
+
+#ifdef CONFIG_USB_DWC2
+int board_usb_init_host(void /**/)
+{
+	/*Drive VBUS always ON in host mode.*/
+	gpio_direction_output(CONFIG_USB_DRV_VBUS, 1);
+
+	otg_phy_init(HOST_ONLY_MODE, CONFIG_SYS_EXTAL);
+	return 0;
+}
+#endif	/* CONFIG_USB_DWC2 */
 
 #ifdef CONFIG_MMC
 extern void jz_mmc_init(void);

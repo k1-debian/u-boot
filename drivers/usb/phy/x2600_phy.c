@@ -3,6 +3,8 @@
 #define OPCR_GATE_USBPHY_CLK_BIT	23
 #define CLKGR0_GATE_OTG_CLK_BIT	4
 #define SRBC_USB_SR	14
+#define USBRDT_IDDIG_REG                23
+#define USBRDT_IDDIG_EN			24
 
 void otg_phy_init(enum otg_mode_t mode,unsigned extclk) {
 	/*open clk*/
@@ -23,4 +25,9 @@ void otg_phy_init(enum otg_mode_t mode,unsigned extclk) {
 	cpm_writel(0x30000000, CPM_USBPCR1);
 	udelay(800);
 
+	cpm_set_bit(USBRDT_IDDIG_EN, CPM_USBRDT);
+	if(mode == HOST_ONLY_MODE)
+		cpm_clear_bit(USBRDT_IDDIG_REG, CPM_USBRDT);
+	else if(mode == DEVICE_ONLY_MODE)
+		cpm_set_bit(USBRDT_IDDIG_REG, CPM_USBRDT);
 }
