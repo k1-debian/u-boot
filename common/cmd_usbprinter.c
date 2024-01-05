@@ -23,48 +23,34 @@
 #include <command.h>
 #include <asm/errno.h>
 
-extern int usb_gprinter_register(const char *type);
-extern int usb_gadget_handle_interrupts(void);
-extern int printer_get_connect_status(void);
-extern int printer_write(uint8_t *buffer, uint32_t len);
-extern int printer_read(uint8_t *buffer, uint32_t len);
-
-static unsigned char usb_test_buf[8192];
-static char *usb_test_char = "hello word!\r\n";
+void gprinter_read_callback(unsigned char *buf, int len)
+{
+	(void)buf;
+	printf("gprinter read %d bytes data\n",len);
+}
 
 static int do_gprinter(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *s = "gprinter";
-	int len, i;
+	int rc;
 
-	if (argc > 1)
-		return CMD_RET_USAGE;
+	if (argc <= 1)
+		return cmd_usage(cmdtp);
 
-	usb_gprinter_register(s);
-
-	while(1)
-	{
-		usb_gadget_handle_interrupts();
-		if(printer_get_connect_status()){
-			memset(usb_test_buf, 0, sizeof(usb_test_buf));
-			len = printer_read(usb_test_buf, sizeof(usb_test_buf));
-			if(len > 0){
-				printf("usb printer read %d bytes data\n",len);
-				for(i = 0; i < len; i++)
-					printf("%c", usb_test_buf[i]);
-			}
-//			printer_write(usb_test_char, strlen(usb_test_char));
-		}
+	if(strcmp(argv[1], "start") == 0){
+		usb_gprinter_register();
+	}else if(strcmp(argv[1], "stop") == 0){
+		usb_gprinter_unregister();
+	}else{
+		rc = cmd_usage(cmdtp);
 	}
-
-	return CMD_RET_SUCCESS;
+	return rc;
 }
 
 U_BOOT_CMD(
-	gprinter, 1, 1, do_gprinter,
+	gprinter, 2, 1, do_gprinter,
 	"enter gprinter mode",
-	"enter gprinter mode"
+	"start: connect gprinter to the controller.\n"
+	"gprinter stop: disconnect gprinter to the controller."
 );
-
 
 
