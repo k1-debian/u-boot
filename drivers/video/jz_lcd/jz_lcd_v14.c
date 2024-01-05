@@ -2044,7 +2044,6 @@ static int jzfb_set_par(struct jzfb_config_info *info)
 	}
 
 #endif
-	intc = DC_EOD_MSK | DC_SDA_MSK | DC_UOT_MSK | DC_SOC_MSK | DC_OOW_MSK | DC_EOW_MSK | DC_SOS_MSK | DC_STOP_SRD_ACK;
 	fb_write(DC_INTC,intc);
 
 	return 0;
