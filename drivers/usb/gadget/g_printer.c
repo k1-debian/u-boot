@@ -66,6 +66,7 @@ struct printer_dev {
 	struct device		*pdev;
 	struct usb_function	function;
 	uint8_t			connect_flag;
+	char                    *string;
 };
 
 static struct printer_dev usb_printer_gadget;
@@ -81,7 +82,6 @@ static struct printer_dev usb_printer_gadget;
 #define PRINTER_VENDOR_NUM	0x0525		/* NetChip */
 #define PRINTER_PRODUCT_NUM	0xa4a8		/* Linux-USB Printer Gadget */
 
-static char *iPNPstring;
 /* Number of requests to allocate per endpoint, not used for ep0. */
 static unsigned qlen = 2;
 
@@ -195,7 +195,7 @@ static const struct usb_descriptor_header *otg_desc[] = {
 static char				product_desc [40] = DRIVER_DESC;
 static char				serial_num [40] = "0123456789";
 static char				pnp_string [1024] =
-	"XXMFG:linux;MDL:g_printer;CLS:PRINTER;SN:1;";
+	"MFG:linux;MDL:g_printer;CLS:PRINTER;SN:1;";
 
 /* static strings, in UTF-8 */
 static struct usb_string		strings [] = {
@@ -695,6 +695,7 @@ static int printer_func_setup(struct usb_function *f,
 	u16			wIndex = le16_to_cpu(ctrl->wIndex);
 	u16			wValue = le16_to_cpu(ctrl->wValue);
 	u16			wLength = le16_to_cpu(ctrl->wLength);
+	int			len;
 
 	debug("ctrl req%02x.%02x v%04x i%04x l%d\n",
 		ctrl->bRequestType, ctrl->bRequest, wValue, wIndex, wLength);
@@ -707,10 +708,12 @@ static int printer_func_setup(struct usb_function *f,
 			if ((wIndex>>8) != dev->interface)
 				break;
 
-			value = (pnp_string[0]<<8)|pnp_string[1];
-			memcpy(req->buf, pnp_string, value);
+			value = strlen(dev->string);
+			buf[0] = (value >> 8) & 0xFF;
+			buf[1] = value & 0xFF;
+			memcpy(buf + 2, dev->string, value);
 			debug("1284 PNP String: %x %s\n", value,
-					&pnp_string[2]);
+					dev->string);
 			break;
 
 		case 1: /* Get Port Status */
@@ -882,6 +885,7 @@ static int printer_bind_config(struct usb_configuration *c)
 
 	dev = &usb_printer_gadget;
 
+	dev->string = pnp_string;
 	dev->function.name = shortname;
 	dev->function.bind = printer_func_bind;
 	dev->function.setup = printer_func_setup;
@@ -892,13 +896,6 @@ static int printer_bind_config(struct usb_configuration *c)
 	status = usb_add_function(c, &dev->function);
 	if (status)
 		return status;
-
-	if (iPNPstring)
-		strlcpy(&pnp_string[2], iPNPstring, (sizeof pnp_string)-2);
-
-	len = strlen(pnp_string);
-	pnp_string[0] = (len >> 8) & 0xFF;
-	pnp_string[1] = len & 0xFF;
 
 	usb_gadget_set_selfpowered(gadget);
 
@@ -991,7 +988,7 @@ static struct usb_composite_driver printer_driver = {
 	.unbind		= printer_unbind,
 };
 
-int usb_gprinter_register(const char *type)
+int usb_gprinter_register(void)
 {
 	int status;
 
