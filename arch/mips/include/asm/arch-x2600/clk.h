@@ -32,6 +32,7 @@ enum clk_id {
 	MSC0 = MSC,
 	MSC1,
 	SSI,
+	PWM,
 	SFC,
 	CGU_CNT,
 	CPU = CGU_CNT,

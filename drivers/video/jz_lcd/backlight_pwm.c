@@ -77,7 +77,9 @@ void lcd_set_backlight_level(int num)
 	gpio_set_func(CONFIG_GPIO_LCD_PWM / 32, GPIO_FUNC_0,1 << (CONFIG_GPIO_LCD_PWM % 32));
 #endif
 	struct pwm pwm_backlight = {CONFIG_SYS_PWM_CHN,prescaler,EXTAL,_period,_half};
+#if defined(CONFIG_JZ_PWM) || defined(CONFIG_JZ_PWM_V2)
 	pwm_init(&pwm_backlight);
+#endif
 }
 
 void lcd_close_backlight(void)

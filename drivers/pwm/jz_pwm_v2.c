@@ -47,9 +47,9 @@ int pwm_request(int num){
 void pwm_enable(int num)
 {
 	if (!pwm_request(num)){
-			pwm_writel((1 << num), PWM_ENS);
+		pwm_writel((1 << num), PWM_ENS);
 		printf("pwm_en =0x%x\n",pwm_readl(PWM_EN));
-			pwm_flag |= 1 << num;
+		pwm_flag |= 1 << num;
 	} else {
 		printf("the channel is using!\n");
 		return ;
@@ -99,7 +99,7 @@ void pwm_config(int num, int div, int full_data, int half_data)
 			pwm_writel(divreg,reg);
 	}
 #else
-	pwm_writel(div, PWM_CCFG0(num));
+	pwm_writel(div, PWM_CCFG(num));
 #endif
 	//cpu mode
 	pwm_writel(CPU_MODE << num, PWM_MS);

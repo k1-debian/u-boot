@@ -561,11 +561,11 @@
 /*#define CONFIG_LCD_INFO_BELOW_LOGO      	//display the console info on lcd panel for debugg*/
 #define CONFIG_SYS_WHITE_ON_BLACK
 #define CONFIG_SYS_PWM_PERIOD       10000 	/* Pwm period in ns */
-#define CONFIG_SYS_PWM_CHN      0		/* Pwm channel ok*/
+#define CONFIG_SYS_PWM_CHN      15		/* Pwm channel ok*/
 #define CONFIG_SYS_PWM_FULL     256
 #define CONFIG_SYS_BACKLIGHT_LEVEL  200		/* Backlight brightness is (80 / 256) */
 #define CONFIG_JZ_LCD_V14
-#define CONFIG_JZ_PWM
+#define CONFIG_JZ_PWM_V2
 
 #define CONFIG_VIDEO_FW050
 #ifdef CONFIG_VIDEO_FW050

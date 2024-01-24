@@ -342,6 +342,9 @@ void clk_init(void)
 		| CPM_CLKGR1_AES
 		| CPM_CLKGR1_PDMA
 #endif
+#ifdef CONFIG_JZ_PWM_V2
+		| CPM_CLKGR1_PWM
+#endif
 		;
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR1);

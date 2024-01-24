@@ -48,6 +48,7 @@
 #define	UART3_BASE	0xb0033000
 #define	UART4_BASE	0xb0034000
 
+#define PWM_IOBASE	0xb3610000
 #define OTG_BASE        0xb3500000
 #define OTGPHY_BASE	0xb0078000
 
