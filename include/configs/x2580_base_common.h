@@ -811,6 +811,19 @@
 #define CONFIG_SYS_FDT_BASE		0
 #endif
 
+/* MMC  spl stage */
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	82 /* 17k + 24k (17KB GPT offset and spl size CONFIG_SPL_PAD_TO) */
+#define CONFIG_CMD_SAVEENV  /* saveenv */
+#define CONFIG_SPL_JZ_MSC_BUS_4BIT	//only for emmc
+  #ifdef CONFIG_SPL_JZMMC_SUPPORT
+	#define CONFIG_SPL_JZSDHCI
+  #endif
+  #ifdef CONFIG_SPL_MMC_SUPPORT
+	#define CONFIG_JZ_MMC_SPLMSC		//Configuration SPL stage msc controller use jz_sdhci driver
+  #endif
+#endif /* CONFIG_SPL_MMC_SUPPORT || CONFIG_SPL_JZMMC_SUPPORT */
+
 /**
  * Environment
  */
