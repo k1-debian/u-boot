@@ -87,7 +87,13 @@
 /* #define CONFIG_DDR_TYPE_LPDDR3 */
 /* #define CONFIG_DDR_TYPE_LPDDR2 */
 
-#define CONFIG_DDR_TYPE_DDR3
+#ifdef CONFIG_X2600M_DDR
+  #define CONFIG_DDR_TYPE_DDR2
+  #undef CONFIG_SYS_MEM_FREQ
+  #define CONFIG_SYS_MEM_FREQ		600000000
+#else
+  #define CONFIG_DDR_TYPE_DDR3
+#endif
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
@@ -117,6 +123,9 @@
 	/* #define CONFIG_LPDDR3_W63AH6NBVABI_FPGA *//* size = 128M */
 #endif
 
+#ifdef CONFIG_DDR_TYPE_DDR2
+  #define CONFIG_DDR2_W9751V6NG
+#endif
 
 #define CONFIG_OPEN_KGD_DRIVER_STRENGTH
 #ifdef CONFIG_OPEN_KGD_DRIVER_STRENGTH
