@@ -599,7 +599,7 @@ void spl_sfc_nand_os_load(void)
 }
 #endif
 
-#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
+#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL) || defined(CONFIG_BOOT_RTOS_OTA)
 
 struct rtos_header rtos_header;
 
@@ -920,6 +920,37 @@ void spl_nand_mcu_rtos_boot(void)
 
 #endif
 
+#ifdef CONFIG_BOOT_RTOS_OTA
+static void spl_sfc_nand_rtos_ota_boot(void)
+{
+	unsigned int ota_offset;
+	unsigned int offset;
+	struct jz_sfcnand_partition_param *partitions = get_partitions();
+
+	ota_offset = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
+	if (ota_offset != -1) {
+		char buf[128];
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_nand_load(ota_offset, sizeof(buf), (unsigned char *)buf);
+		if (strncmp(kernel2, buf, strlen(kernel2))) {
+			return;
+		}
+
+		offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_OTA_NAME);
+		if (offset == -1) {
+			printf("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
+			return;
+		}
+
+		if (spl_sfc_rtos_load(&rtos_header, offset))
+			return;
+
+        flush_cache_all();
+		rtos_raw_start(&rtos_header, NULL);
+	}
+}
+#endif
+
 #ifdef CONFIG_OTA_VERSION30
 static struct ota_ops ota_ops = {
 	.flash_init = sfc_init,
@@ -934,6 +965,10 @@ char* spl_sfc_nand_load_image(void)
 {
 	spl_rtos_args.os_boot_args = NULL;
 	spl_rtos_args.card_params = NULL;
+
+#ifdef CONFIG_BOOT_RTOS_OTA
+	spl_sfc_nand_rtos_ota_boot();
+#endif
 
 #ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
 	return spl_sfc_nand_boot_rtos_load_os();
