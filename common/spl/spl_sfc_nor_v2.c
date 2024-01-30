@@ -972,7 +972,7 @@ static void nv_map_area(unsigned int *base_addr, unsigned int nv_addr, unsigned 
 }
 #endif
 
-#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
+#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL) || defined(CONFIG_BOOT_RTOS_OTA)
 
 struct rtos_header rtos_header;
 
@@ -1350,11 +1350,46 @@ static char *spl_sfc_nor_os_ota_load(void)
 }
 #endif
 
+#ifdef CONFIG_BOOT_RTOS_OTA
+static void spl_sfc_nor_rtos_ota_boot(void)
+{
+	unsigned int ota_offset;
+	unsigned int offset;
+	struct norflash_partitions partition;
+	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+
+	ota_offset = get_part_offset_by_name(partition, CONFIG_SPL_OTA_NAME);
+	if (ota_offset != -1) {
+		char buf[128];
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		sfc_read_data(ota_offset, sizeof(buf), (unsigned char *)buf);
+		if (strncmp(kernel2, buf, strlen(kernel2))) {
+			return;
+		}
+
+		offset = get_part_offset_by_name(partition, CONFIG_SPL_RTOS_OTA_NAME);
+		if (offset == -1) {
+			printf("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
+			return;
+		}
+
+		if (spl_sfc_nor_rtos_load(&rtos_header, offset))
+			return;
+
+        flush_cache_all();
+		rtos_raw_start(&rtos_header, NULL);
+	}
+}
+#endif
+
 char* spl_sfc_nor_load_image(void)
 {
 	sfc_init();
 	spl_rtos_args.os_boot_args = NULL;
 	spl_rtos_args.card_params = NULL;
+#ifdef CONFIG_BOOT_RTOS_OTA
+	spl_sfc_nor_rtos_ota_boot();
+#endif
 
 #ifdef CONFIG_BOOT_VMLINUX
 	spl_vmlinux_load();
