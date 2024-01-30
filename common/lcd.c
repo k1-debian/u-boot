@@ -1251,6 +1251,7 @@ static void *lcd_logo(void)
 #if defined(CONFIG_RLE_LCD_LOGO) && !defined(CONFIG_LCD_INFO_BELOW_LOGO)
 	rle_plot(RLE_LOGO_DEFAULT_ADDR, lcd_base);
 #else
+#if defined(CONFIG_LCD_LOGO)
 	/*  The logo size should not larger than framebuffer, else the DMA descriptor will be destroyed. */
 	if ((BMP_LOGO_WIDTH > panel_info.vl_col) || (BMP_LOGO_HEIGHT > panel_info.vl_row)) {
 		printf("\033[31mThe LOGO's width or height is larger than lcd panel, skip draw the LOGO!!!\033[0m\n");
@@ -1261,6 +1262,7 @@ static void *lcd_logo(void)
 		ypos = (panel_info.vl_row - BMP_LOGO_HEIGHT) / 2;
 		bitmap_plot(xpos, ypos);
 	}
+#endif
 #endif
 	flush_cache_all();
 #ifdef CONFIG_LCD_INFO
