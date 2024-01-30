@@ -554,14 +554,17 @@
 
 /********** RTOS **********/
 #ifdef CONFIG_SPL_RTOS_BOOT
+#define CONFIG_SPL_RTOS_NAME            "rtos"
 
 #if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
 #define CONFIG_RTOS_OFFSET              (17 * 1024 + CONFIG_SPL_PAD_TO)
 #define CONFIG_RTOS_OFFSET_SECTOR       (CONFIG_RTOS_OFFSET / 512)
-#define CONFIG_SPL_RTOS_NAME            "rtos"
-#elif defined(CONFIG_SPL_NOR_FLAG)
+
+/* CONFIG_RTOS_OFFSET Modifications can be made by comparing the burning tool with the actual situation*/
+#elif defined CONFIG_SPL_NOR_FLAG
 #define CONFIG_RTOS_OFFSET              (0x40000)
-#define CONFIG_SPL_RTOS_NAME            "rtos"
+#elif defined CONFIG_SPL_NAND_FLAG
+#define CONFIG_RTOS_OFFSET              (0x100000)
 #endif
 
 #endif
