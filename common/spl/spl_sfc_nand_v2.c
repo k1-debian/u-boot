@@ -168,6 +168,39 @@ static void sfc_write_data(unsigned int *data, unsigned int length)
 	clear_end();
 }
 
+static int spl_sfc_write_data(unsigned int *data, unsigned int length)
+{
+	unsigned int tmp_len = 0;
+	unsigned int fifo_num = 0;
+	unsigned int reg_tmp = 0;
+	unsigned int len = (length + 3) / 4;
+	int i;
+
+	while(1){
+		reg_tmp = sfc_readl(SFC_SR);
+		if (reg_tmp & TRAN_REQ) {
+			sfc_writel(CLR_TREQ, SFC_SCR);
+			if ((len - tmp_len) > THRESHOLD)
+				fifo_num = THRESHOLD;
+			else
+				fifo_num = len - tmp_len;
+
+			for (i = 0; i < fifo_num; i++) {
+				sfc_writel(*data, SFC_RM_DR);
+				data++ ;
+				tmp_len++;
+			}
+		}
+
+		if (tmp_len == len)
+			break;
+	}
+
+	clear_end();
+
+	return 0;
+}
+
 static int sfc_read_data(unsigned int *data, unsigned int length)
 {
 	unsigned int tmp_len = 0;
@@ -315,6 +348,60 @@ read_oob:
 	return 0;
 }
 
+static int  spinand_write_page(unsigned int page,unsigned int column,unsigned char * dst_addr,
+		unsigned int len,unsigned int pagesize){
+	/* sequence
+	 * 1 program load
+	 * 2 write enable
+	 * 3 program execute
+	 * 4 get feature
+	*/
+
+	struct jz_sfc sfc;
+	unsigned int read_buf = 0;
+	unsigned char i;
+
+	unsigned int ret =0,block_addr = 0;
+	unsigned int addr = 0;
+	unsigned int bad_block_check_len = 4;
+	unsigned int bad_block_check_page_addr = 0;
+	unsigned int bad_block_check_column_addr = pagesize;
+
+
+	/* check bad block*/
+	block_addr = page / CONFIG_SPI_NAND_PPB;
+	bad_block_check_page_addr = block_addr * CONFIG_SPI_NAND_PPB;
+
+	ret = spinand_read_page(bad_block_check_page_addr,bad_block_check_column_addr,(unsigned char *)&addr,bad_block_check_len,pagesize);
+
+	if (ret > 0){
+		printf("block %d is bad_bolck \n",block_addr);
+		return 1;
+	}
+
+	/*send write command*/
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_PRO_LOAD,len,column,2,0,1,1);
+	spl_sfc_write_data((unsigned int *)dst_addr, len);
+
+	/* write enable */
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_WREN, 0, 0, 0, 0, 0, 0);
+	clear_end();
+
+	/*send program execute command*/
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_PRO_EN,0,page, 3,0,0,0);
+	clear_end();
+
+	/*Wait for tCS time after sending page programming commands and tcS is 20ns*/
+	udelay(1);
+
+	/* get feature */
+	do {
+		SFC_SEND_COMMAND(&sfc, SPINAND_CMD_GET_FEATURE, 1, SPINAND_ADDR_STATUS, 1, 0, 1, 0);
+		sfc_read_data(&read_buf, 1);
+	}while(read_buf & 0x1);
+
+	return 0;
+}
 static int probe_id_list(unsigned char* id)
 {
 	unsigned char i;
@@ -384,6 +471,33 @@ int spinand_init(void)
 	x = BITS_QUAD_EN | BITS_ECC_EN | BITS_BUF_EN;
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_SET_FEATURE, 1, SPINAND_ADDR_FEATURE, 1, 0, 1, 1);
 	sfc_write_data(&x, 1);
+
+	return 0;
+}
+
+int sfc_nand_write(unsigned int flash_start_addr,unsigned int length,unsigned char *write_buffer)
+{
+	/*flash_start_addr是写入FLASH的起始地址,length是写入FLASH的数据长度,write_buffer是写入FLASH的数据*/
+	unsigned int pageaddr,columnaddr,wlen;
+	int ret;
+	unsigned int pagesize = curr_device->pagesize;
+
+	while(length) {
+		pageaddr = flash_start_addr / pagesize;
+		columnaddr = flash_start_addr % pagesize;
+		wlen = (pagesize - columnaddr) < length ? (pagesize - columnaddr) : length;
+
+		ret = spinand_write_page(pageaddr,columnaddr,write_buffer,wlen,pagesize);
+		if(ret > 0) {
+			debug("bad block %d\n",pageaddr / CONFIG_SPI_NAND_PPB);
+			flash_start_addr += CONFIG_SPI_NAND_PPB * pagesize;
+			continue;
+		}
+
+		write_buffer += wlen;
+		flash_start_addr += wlen;
+		length -= wlen;
+	}
 
 	return 0;
 }
