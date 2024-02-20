@@ -574,7 +574,7 @@
 #if defined(CONFIG_SPL_MMC_SUPPORT)
 #define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p2 rootwait"
 #else
-#define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro4"
+#define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " "root=/dev/mtdblock_bbt_ro4"
 #endif
 #endif
 

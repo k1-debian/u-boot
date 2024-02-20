@@ -592,7 +592,7 @@
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
 #define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
 #else
-#define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE " " "root=/dev/mtdblock_bbt_ro4"
+#define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " "root=/dev/mtdblock_bbt_ro4"
 #endif
 #endif
 
