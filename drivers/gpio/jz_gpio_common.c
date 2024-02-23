@@ -181,7 +181,20 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x4? 0 : pins, base + PXMSKC);
 	writel(func & 0x2? 0 : pins, base + PXPAT1C);
 	writel(func & 0x1? 0 : pins, base + PXPAT0C);
+#if defined(CONFIG_X2600)
+	if(n == GPIO_PORT_E){	//PE GROUP
+		// hiz
+		writel(func & 0x40? pins : 0, base + PEPUC);
+		// pull up
+		writel(func & 0x10? pins : 0, base + PEPUS);
+		writel(func & 0x10? pins : 0, base + PEPSS);
+		// pull down
+		writel(func & 0x20? pins : 0, base + PEPUS);
+		writel(func & 0x20? pins : 0, base + PEPSC);
 
+		return;
+	}
+#endif
 /* pull up */
 #if defined(PXPES) && defined(PXPEC) && defined(PXPE)
  #if defined(CONFIG_X1000)

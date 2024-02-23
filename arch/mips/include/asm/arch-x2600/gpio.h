@@ -40,7 +40,8 @@ enum gpio_function {
         GPIO_OUTPUT1    = 0x05,  //0101, GPIO output high level
 	GPIO_INPUT	= 0x06,	 //0110, GPIO as input
 	GPIO_RISE_EDGE  = 0x0b,	 //1011, GPIO as rise edge interrupt
-	GPIO_PULL	= 0x10,  //
+	GPIO_PULLUP	= 0x10,  //	enable gpio pull up
+	GPIO_PULLDOWN	= 0x20,  // enable gpio pull down
 };
 
 enum gpio_port {
@@ -80,9 +81,20 @@ struct jz_gpio_func_def {
 #define PXPAT0C		0x48   /* Port Pattern 0 Clear Register */
 #define PXFLG		0x50   /* Port Flag Register */
 #define PXFLGC		0x58   /* Port Flag clear Register */
-#define PXPE		0x70   /* Port Pull Disable Register */
-#define PXPES		0x74   /* Port Pull Disable Set Register */
-#define PXPEC		0x78   /* Port Pull Disable Clear Register */
+#define PXPU 		0x80   /* Port PULL-UP enabled State Register */
+#define PXPUS		0x84   /* Port PULL-UP enabled State Set Register */
+#define PXPUC		0x88   /* Port PULL-UP enabled State Clear Register */
+#define PXPD 		0x90   /* Port PULL-DOWN enabled State Register */
+#define PXPDS		0x94   /* Port PULL-DOWN enabled State Set Register */
+#define PXPDC		0x98   /* Port PULL-DOWN enabled State Clear Register */
+
+#define PEPU 		0x80   /* Port PULL State Register */
+#define PEPUS		0x84   /* Port PULL State Set Register */
+#define PEPUC		0x88   /* Port PULL State Clear Register */
+#define PEPS 		0x90   /* Port PULL State Select Register */
+#define PEPSS		0x94   /* Port PULL State Select Set Register */
+#define PEPSC		0x98   /* Port PULL State SelectClear Register */
+
 
 #define GPIO_PXPIN(n)	(GPIO_BASE + (PXPIN + (n)*0x1000)) /* PIN Level Register */
 #define GPIO_PXINT(n)	(GPIO_BASE + (PXINT + (n)*0x1000)) /* Port Interrupt Register */
