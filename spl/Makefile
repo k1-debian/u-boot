@@ -246,7 +246,8 @@ endif
 endif
 
 
-ifdef CONFIG_MMC_SPL_PARAMS
+ifeq ($(or $(CONFIG_SPL_MMC_SUPPORT),$(CONFIG_SPL_JZMMC_SUPPORT)),)
+else
 	$(OBJTREE)/tools/ingenic-tools/mmc_params $@
 endif
 
