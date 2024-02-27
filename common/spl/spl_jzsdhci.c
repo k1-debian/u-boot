@@ -1455,7 +1455,7 @@ static struct jzsd_ota_ops jzsd_ota_ops = {
 };
 #endif
 
-#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
+#if defined(CONFIG_SPL_RTOS_BOOT) || defined(CONFIG_SPL_RTOS_LOAD_KERNEL) || defined(CONFIG_BOOT_RTOS_OTA)
 
 struct rtos_header rtos_header;
 
@@ -1769,6 +1769,41 @@ static char *mmc_boot_rtos_load_os(void)
 }
 #endif
 
+
+#ifdef CONFIG_BOOT_RTOS_OTA
+static void mmc_load_rtos_ota_boot(void)
+{
+	int ret;
+	unsigned int ota_offset;
+	unsigned int offset;
+
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OTA_NAME, &ota_offset, NULL);
+	if (!ret) {
+		const char *buf = (const char *)(CONFIG_SYS_TEXT_BASE);
+		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+
+		mmc_block_read(ota_offset, 1, (u32 *)buf);
+		if (strncmp(kernel2, buf, strlen(kernel2))) {
+			return;
+		}
+
+		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_OTA_NAME, &offset, NULL);
+		if (ret) {
+			msc_debug("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
+			return;
+		}
+
+		/* RTOS镜像加载 */
+		if (mmc_rtos_load(&rtos_header, offset))
+			hang();
+
+		flush_cache_all();
+		rtos_raw_start(&rtos_header, &spl_rtos_args);
+		msc_debug("rtos: %x\n", offset);
+	}
+}
+#endif
+
 char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -1782,6 +1817,11 @@ char *spl_mmc_load_image(void)
 #endif
 
 	jzmmc_init();
+
+
+#ifdef CONFIG_BOOT_RTOS_OTA
+	mmc_load_rtos_ota_boot();
+#endif
 
 #ifdef CONFIG_SPL_RTOS_LOAD_KERNEL
 	return mmc_boot_rtos_load_os();
