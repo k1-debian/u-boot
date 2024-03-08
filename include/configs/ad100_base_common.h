@@ -649,6 +649,24 @@
     #define CONFIG_LOAD_ADDR	0x80001000
 #endif	/* CONFIG_SPL_OS_BOOT */
 
+#ifdef CONFIG_BOOT_RTOS_OTA
+    #define CONFIG_SPL_RTOS_OTA_NAME  "rtos_ota"
+#ifndef CONFIG_SPL_OTA_NAME
+    #define CONFIG_SPL_OTA_NAME       "ota"
+#endif
+
+#ifndef CONFIG_SPL_OS_NAME2
+    #define CONFIG_SPL_OS_NAME2       "kernel2"
+#endif
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+#ifndef CONFIG_SPL_RTOS_NAME
+    #define CONFIG_SPL_RTOS_NAME    "rtos"
+#endif
+#endif /* CONFIG_SPL_RTOS_BOOT */
+
+#endif /* CONFIG_BOOT_RTOS_OTA */
+
 #define CONFIG_BOOTARGS ""
 
 #define PARTITION_NUM 10
