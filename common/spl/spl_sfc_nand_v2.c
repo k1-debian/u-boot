@@ -566,7 +566,7 @@ unsigned int get_part_offset_by_name(struct jz_sfcnand_partition_param *partitio
 	int i = 0;
 
 	for(i = 0; i < partitions->num_partition; i++) {
-		if (!strncmp(partitions->partition[i].name, name, strlen(name))) {
+		if (!strcmp(partitions->partition[i].name, name)) {
 			return partitions->partition[i].offset;
 		}
 	}
@@ -579,7 +579,7 @@ struct jz_sfcnand_partition *get_part_by_name(struct jz_sfcnand_partition_param 
 	int i = 0;
 
 	for(i = 0; i < partitions->num_partition; i++) {
-		if (!strncmp(partitions->partition[i].name, name, strlen(name))) {
+		if (!strcmp(partitions->partition[i].name, name)) {
 			return &partitions->partition[i];
 		}
 	}
@@ -1037,6 +1037,8 @@ void spl_nand_mcu_rtos_boot(void)
 #ifdef CONFIG_BOOT_RTOS_OTA
 static void spl_sfc_nand_rtos_ota_boot(void)
 {
+	sfc_init();
+
 	unsigned int ota_offset;
 	unsigned int offset;
 	struct jz_sfcnand_partition_param *partitions = get_partitions();
