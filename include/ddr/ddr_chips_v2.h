@@ -43,6 +43,10 @@
 #include "chips-v2/LPDDR3_NK6CL256M16DKX-H1.h"
 #endif
 
+#ifdef  CONFIG_DDR3_NT5CB128M16JR
+#include "chips-v2/DDR3_NT5CB128M16JR.h"
+#endif
+
 #ifdef	CONFIG_DDR3_NK5CC128M8HKX
 #include "chips-v2/DDR3_NK5CC128M8HKX.h"
 #endif
