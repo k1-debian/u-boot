@@ -122,6 +122,12 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
 #endif
+
+#ifdef CONFIG_RUN_VMLINUX_FIRMWARE
+       printf("run start1 firmware finished, return to bootrom!\n");
+       return;
+#endif
+
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */
 	memset(__bss_start, 0, (char *)&__bss_end - __bss_start);
