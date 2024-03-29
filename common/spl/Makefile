@@ -51,6 +51,8 @@ COBJS-$(CONFIG_SPL_AUTO_PROBE_ARGS_MEM) += spl_auto_args_mem.o
 
 COBJS-$(CONFIG_SPL_RISCV) += spl_riscv.o
 
+COBJS-$(CONFIG_SPL_EFUSE) += spl_efuse.o
+
 endif
 
 COBJS	:= $(sort $(COBJS-y))

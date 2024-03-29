@@ -9,7 +9,7 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_AD100		/* ad100 SoC */
 
-#if ((defined CONFIG_AD101_DDR) || (defined CONFIG_AD100_DDR_SAMPLE)) 
+#if defined(CONFIG_AD101P_DDR)
   #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1800000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
@@ -17,7 +17,7 @@
   #define CONFIG_DDR_SEL_PLL		MPLL
   #define CONFIG_SYS_CPU_FREQ		1200000000
   #define CONFIG_SYS_MEM_FREQ		900000000
-#else
+#elif defined(CONFIG_AD100N_DDR) 
   #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
@@ -25,6 +25,8 @@
   #define CONFIG_DDR_SEL_PLL		MPLL
   #define CONFIG_SYS_CPU_FREQ		1200000000
   #define CONFIG_SYS_MEM_FREQ		600000000
+#else
+  #error "please add more define here"
 #endif
 
 
@@ -93,21 +95,21 @@
 #define CONFIG_DDR_PARAMS_CREATOR
 #define CONFIG_DDR_HOST_CC
 
-#if ((defined CONFIG_AD101_DDR) || (defined CONFIG_AD100_DDR_SAMPLE)) 
+#define CONFIG_SPL_EFUSE
+
+#if defined(CONFIG_AD101P_DDR)
   #define CONFIG_DDR_TYPE_DDR3
-#else
+#elif defined(CONFIG_AD100N_DDR)
   #define CONFIG_DDR_TYPE_DDR2
+#else
+  #error "please add more define here"
 #endif
 #define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 
 #ifdef CONFIG_DDR_TYPE_DDR3
-#ifdef CONFIG_AD100_DDR_SAMPLE
-  #define CONFIG_DDR3L_W632GU6QG_11
-#else
   #define CONFIG_DDR3_M15T1G1664A
-#endif
 #endif
 
 #ifdef CONFIG_DDR_TYPE_DDR2

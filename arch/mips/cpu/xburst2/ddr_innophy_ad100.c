@@ -26,16 +26,12 @@
 #include <common.h>
 #include <ddr/ddr_common.h>
 #ifndef CONFIG_BURNER
-//#include <generated/ddr_reg_values.h>
-extern struct ddr_reg_value supported_ddr_reg_values[];
+#include <generated/ddr_reg_values.h>
 #endif
 
 #include <asm/io.h>
 #include <asm/arch/clk.h>
-
-
-#define DEBUG_TX_RX_TRAINING	0
-#define OPTIMIZE_TX_RX_TRAINING 0	// save training time.
+#include "efuse_ddr.h"
 
 /*#define CONFIG_DWC_DEBUG 0*/
 #define ddr_hang() do{						\
@@ -44,15 +40,7 @@ extern struct ddr_reg_value supported_ddr_reg_values[];
 	}while(0)
 
 DECLARE_GLOBAL_DATA_PTR;
-extern struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
-
-static char tx_pass_cmd_skew[0x3f];
-static char tx_rx_pass_dqs_skew[0x3f];
-static char tx_rx_left_dq[0x3f];
-static char tx_rx_right_dq[0x3f];
-#ifdef CONFIG_DDR_DRVODT_DEBUG
-unsigned int pass_count = 0;
-#endif
+struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
 #ifdef  CONFIG_DWC_DEBUG
 #define FUNC_ENTER() debug("%s enter.\n",__FUNCTION__);
@@ -79,6 +67,35 @@ static void dump_ddrp_register(void)
 	debug("DDRP_INNOPHY_INIT_COMP		0x%x\n", ddr_readl(DDRP_INNOPHY_INIT_COMP));
 }
 
+static void dump_ddrc_register(void)
+{
+	debug("DDRC_STATUS		 0x%x\n", ddr_readl(DDRC_STATUS));
+	debug("DDRC_CFG			0x%x\n", ddr_readl(DDRC_CFG));
+	debug("DDRC_CTRL		   0x%x\n", ddr_readl(DDRC_CTRL));
+	debug("DDRC_LMR			0x%x\n", ddr_readl(DDRC_LMR));
+	debug("DDRC_DLP			0x%x\n", ddr_readl(DDRC_DLP));
+	debug("DDRC_TIMING1		0x%x\n", ddr_readl(DDRC_TIMING(1)));
+	debug("DDRC_TIMING2		0x%x\n", ddr_readl(DDRC_TIMING(2)));
+	debug("DDRC_TIMING3		0x%x\n", ddr_readl(DDRC_TIMING(3)));
+	debug("DDRC_TIMING4		0x%x\n", ddr_readl(DDRC_TIMING(4)));
+	debug("DDRC_TIMING5		0x%x\n", ddr_readl(DDRC_TIMING(5)));
+	debug("DDRC_REFCNT		 0x%x\n", ddr_readl(DDRC_REFCNT));
+	debug("DDRC_AUTOSR_CNT	 0x%x\n", ddr_readl(DDRC_AUTOSR_CNT));
+	debug("DDRC_AUTOSR_EN	  0x%x\n", ddr_readl(DDRC_AUTOSR_EN));
+	debug("DDRC_MMAP0		  0x%x\n", ddr_readl(DDRC_MMAP0));
+	debug("DDRC_MMAP1		  0x%x\n", ddr_readl(DDRC_MMAP1));
+	debug("DDRC_REMAP1		 0x%x\n", ddr_readl(DDRC_REMAP(1)));
+	debug("DDRC_REMAP2		 0x%x\n", ddr_readl(DDRC_REMAP(2)));
+	debug("DDRC_REMAP3		 0x%x\n", ddr_readl(DDRC_REMAP(3)));
+	debug("DDRC_REMAP4		 0x%x\n", ddr_readl(DDRC_REMAP(4)));
+	debug("DDRC_REMAP5		 0x%x\n", ddr_readl(DDRC_REMAP(5)));
+	debug("DDRC_REMAP6		 0x%x\n", ddr_readl(DDRC_REMAP(6)));
+	debug("DDRC_DWCFG		  0x%x\n", ddr_readl(DDRC_DWCFG));
+	debug("DDRC_HREGPRO		0x%x\n", ddr_readl(DDRC_HREGPRO));
+	debug("DDRC_PREGPRO		0x%x\n", ddr_readl(DDRC_PREGPRO));
+	debug("DDRC_CGUC0		  0x%x\n", ddr_readl(DDRC_CGUC0));
+	debug("DDRC_CGUC1		  0x%x\n", ddr_readl(DDRC_CGUC1));
+}
 
 #else
 #define FUNC_ENTER()
@@ -88,1189 +105,90 @@ static void dump_ddrp_register(void)
 #define dump_ddrp_register()
 #endif
 
-static void ddrp_set_dq_odt(unsigned int pu, unsigned int pd)
+static void ddrp_set_drv_odt(unsigned int *ddr_drv_config)
 {
-	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ7_0);
-	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ15_8);
-	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ7_0);
-	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ15_8);
+	ddr_writel(ddr_drv_config[ODT_PD], DDRP_INNOPHY_PD_ODT_DQ7_0 );	// [7:0]ODT pull down
+	ddr_writel(ddr_drv_config[ODT_PU], DDRP_INNOPHY_PU_ODT_DQ7_0 );	// [7:0]ODT pull up
+	ddr_writel(ddr_drv_config[ODT_PD], DDRP_INNOPHY_PD_ODT_DQ15_8);	// [15:8]ODT pull down
+	ddr_writel(ddr_drv_config[ODT_PU], DDRP_INNOPHY_PU_ODT_DQ15_8);	// [15:8]ODT pull up
 
-}
-static void ddrp_set_dq_drv(unsigned int pu, unsigned int pd)
-{
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ7_0);
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ15_8);
-	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ7_0);
-	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ15_8);
-}
-static void ddrp_set_cmd_drv(unsigned int pu, unsigned int pd)
-{
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
-	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CMD);
+	ddr_writel(ddr_drv_config[CMD_RC_PD], DDRP_INNOPHY_PD_DRV_CMD);	// CMD pull down
+	ddr_writel(ddr_drv_config[CMD_RC_PU], DDRP_INNOPHY_PU_DRV_CMD);	// CMD pull up
+
+	ddr_writel(ddr_drv_config[CLK_RC_PD], DDRP_INNOPHY_PD_DRV_CK);	 // CLK pull down
+	ddr_writel(ddr_drv_config[CLK_RC_PU], DDRP_INNOPHY_PU_DRV_CK);	 // CLK pull up
+
+	ddr_writel(ddr_drv_config[DQX_RC_PD], DDRP_INNOPHY_PD_DRV_DQ7_0 ); // [7:0]DQ pull down
+	ddr_writel(ddr_drv_config[DQX_RC_PU], DDRP_INNOPHY_PU_DRV_DQ7_0 ); // [7:0]DQ pull up
+	ddr_writel(ddr_drv_config[DQX_RC_PD], DDRP_INNOPHY_PD_DRV_DQ15_8); // [15:8]DQ pull down
+	ddr_writel(ddr_drv_config[DQX_RC_PU], DDRP_INNOPHY_PU_DRV_DQ15_8); // [15:8]DQ pull up
 }
 
-static void ddrp_set_ck_drv(unsigned int pu, unsigned int pd)
+static void ddr_set_vref_skew(unsigned int *ddr_drv_config)
 {
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CK);
-	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CK);
-}
-/*
-
-	该函数的作用主要用于校准 drv 和 odt 的pull up/down电阻.
-
-	对于drv pull up/down电阻使用的是40欧姆标定.
-	对于odt pull up/down电阻使用的是160欧姆标定.
-
-	实际设置的 ODT阻值与寄存器里面有偏差:
-
-	相关寄存器:
-
-	setting =
-	DDRP_INNOPHY_PD_DRV_DQ7_0
-	DDRP_INNOPHY_PU_DRV_DQ7_0
-	DDRP_INNOPHY_PD_DRV_DQ15_8
-	DDRP_INNOPHY_PU_DRV_DQ15_8
-
-	real = setting * (DDRP_INNOPHY_ZQ_CALIB_PU_ODT / 0x7)
-
-	0x7: 对应的是160欧姆的寄存器值.
-
-
-	DDRP_INNOPHY_PD_ODT_DQ7_0
-	DDRP_INNOPHY_PU_ODT_DQ7_0
-	DDRP_INNOPHY_PD_ODT_DQ15_8
-	DDRP_INNOPHY_PU_ODT_DQ15_8
-
-	real = setting * (DDRP_INNOPHY_ZQ_CALIB_PD_DRV  / 0x16)
-	或
-	real = setting * (DDRP_INNOPHY_ZQ_CALIB_PU_DRV  / 0x16)
-	0x16: 是对应41.4欧姆的寄存器值.
-
-
-	DDRP_INNOPHY_PU_DRV_CMD:  0000000e
-	DDRP_INNOPHY_PU_DRV_DQ7_0: 00000014
-	DDRP_INNOPHY_PU_DRV_DQ15_8: 00000014
-	DDRP_INNOPHY_PD_DRV_DQ7_0: 00000014
-	DDRP_INNOPHY_PD_DRV_DQ15_8: 00000014
-	DDRP_INNOPHY_PU_ODT_DQ7_0: 00000005
-	DDRP_INNOPHY_PU_ODT_DQ15_8: 00000005
-	DDRP_INNOPHY_PD_ODT_DQ7_0: 00000005
-	DDRP_INNOPHY_PD_ODT_DQ15_8: 00000005
-
-*/
-
-static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_drv, char dq_odt)
-{
-	unsigned tmp;
-	unsigned int pu_drv = 0;
-	unsigned int pd_drv = 0;
-	unsigned int pu_odt = 0;
-	unsigned int pd_odt = 0;
-
-	debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
-	debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
-	debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
-	debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
-	debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
-	debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
-	debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
-
-
-
-	if(!bypass) {
-		ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
-		ddr_writel(1 << 5, DDRP_INNOPHY_ZQ_CALIB_EN);
-		do{
-			tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE);
-		}while(tmp != 1);
-
-		ddr_writel(0, DDRP_INNOPHY_ZQ_CALIB_EN);
-		pd_drv = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C);
-		pu_drv = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D);
-		pd_odt = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E);
-		pu_odt = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F);
-
-		// Choose ZQCAL value?
-		ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AL);
-		ddr_writel(3 << 4, DDRP_INNOPHY_ZQ_CALIB_AH);
-
-		tmp = ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD);
-		tmp |= 1 << 7;
-		ddr_writel(tmp, DDRP_INNOPHY_ZQ_CALIB_CMD);	//Choose CMD pull up/down resistance. choose ZQCALIB value.
-
-	} else {
-
-		// Register value, 怎么补偿的？
-		// 默认pu/pd 配置为相同值.
-
-		ddrp_set_dq_odt(dq_odt, dq_odt);
-		ddrp_set_dq_drv(dq_drv, dq_drv);
-		ddrp_set_cmd_drv(cmd_drv, cmd_drv);
-		ddrp_set_ck_drv(ck_drv, ck_drv);
-	}
-
-
-	debug("DRP_INNOPHY_ZQ_CALIB_DONE : %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_DONE));
-	debug("DRP_INNOPHY_ZQ_CALIB_AL: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AL));
-	debug("DRP_INNOPHY_ZQ_CALIB_AH: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_AH));
-	debug("DRP_INNOPHY_ZQ_CALIB_PD_DRV_6C: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_DRV_6C));
-	debug("DRP_INNOPHY_ZQ_CALIB_PU_DRV_6D: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_DRV_6D));
-	debug("DRP_INNOPHY_ZQ_CALIB_PD_ODT_6E: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PD_ODT_6E));
-	debug("DRP_INNOPHY_ZQ_CALIB_PU_ODT_6F: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_PU_ODT_6F));
-	debug("DRP_INNOPHY_ZQ_CALIB_CMD: %x\n", ddr_readl(DDRP_INNOPHY_ZQ_CALIB_CMD));
-
-	debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
-	debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
-	debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
-	debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
-	debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
-	debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
-	debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
-}
-
-void ddrp_wl_calibration(void)
-{
-	unsigned tmp = 0;
-	int wl_count = 0;
-
-	unsigned int mr1 = global_reg_value->DDR_MR1_VALUE;
-
-
-	mr1 = ((mr1 >> 16) & 0x7) << 13 | (mr1 & 0x1ffe); // 高三位BA2,BA1,BA0 低位地址线, 确保DLL ON， 否则后面会卡死.
-
-	/*
-		说明:
-		这里做write leveling ，
-		需要确保MR1寄存器里面的ZQ的设置和正常读写的一致，否则即使writeleveling 完成，
-		但是实际上用的是不同的ZQ 配置，会影响后面系统的稳定性.!
-	*/
-
-	/*
-		WL_MODE1:
-		[7:0]: load mode [7:0];
-	*/
-	tmp = mr1 & 0x7f; // keep bit7 0. others mr1.
-	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE1);
-
-	/*
-		WL_MODE2:
-		[7:6]: load mode select[1:0], 00:MR0, 01:MR1
-		[5:0]: load mode [13:8]
-	*/
-	tmp = 0;
-	tmp = 1 << 6 | ((mr1 >> 8) & 0x1f);	// 去掉高3位bank信息.取低5位.
-
-	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE2);
-
-
-retry_wl:
-	wl_count ++;
-	tmp = 2 << 6 | 1 << 2;
-	ddr_writel(tmp, DDRP_INNOPHY_TRAINING_CTRL);
-
-	do{
-		tmp = ddr_readl(DDRP_INNOPHY_WL_DONE);
-	}while(tmp != 0x3);
-
-#if 1
-//	ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
-	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
-#endif
-
-#if 0
-#define MAX_WL_RETRY_CNT	3
-	if(((ddr_readl(DDRP_INNOPHY_WL_L) == 0x3f) || (ddr_readl(DDRP_INNOPHY_WL_H) == 0x3f)) && wl_count <= MAX_WL_RETRY_CNT) {
-		/* 不一定是错，这里进行 retry，只是在调试阶段debug使用.*/
-		printf("***ERROR WL FOUND retry <%d/%d>**** ", wl_count, MAX_WL_RETRY_CNT);
-		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
-		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
-		goto retry_wl;
-	}
-#endif
-
-#if 0
-	if(ddr_readl(DDRP_INNOPHY_WL_L) == 0x3f) {
-		printf("******** ");
-	}
-		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
-		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
-#endif
-
-}
-
-int tx_re_training(unsigned int cmd_skew)
-{
-	unsigned tmp, wl_l, wl_h;
-
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A2);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A3);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A4);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A5);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A6);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A7);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A8);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A9);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A10);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A11);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A12);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A13);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A14);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A15);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_WEB);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CASB);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA2);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BG1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RESETN);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RASB);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB1);
-
-	tmp = ddr_readl(DDRC_CGUC1);
-	tmp &= ~(0xf << 4);
-	ddr_writel(tmp, DDRC_CGUC1);
-
-	ddr_writel(7 << 9 | 1 << 0, DDRC_LMR);
-	udelay(200);
-
-	tmp = 0 << 7 | 6;
-	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE1);
-	tmp = 0x40;
-	ddr_writel(tmp, DDRP_INNOPHY_WL_MODE2);
-
-	tmp = ddr_readl(DDRC_CGUC1);
-	tmp |= 0xf << 4;
-	ddr_writel(tmp, DDRC_CGUC1);
-
-	ddr_writel(2 << 6 | 1 << 2, DDRP_INNOPHY_TRAINING_CTRL);
-
-	do{
-		tmp = ddr_readl(DDRP_INNOPHY_WL_DONE);
-	}while(tmp != 3);
-
-	ddr_readl( DDRP_INNOPHY_TRAINING_CTRL);
-	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
-
-	wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
-	wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
-	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
-	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
-
-	if((wl_h == 0x3f) && (wl_l == 0x3f))
-		return -1;
-	else
-		return 0;
-}
-
-
-static void tx_soft_training_set_pb_ck_skew(unsigned int ck_skew)
-{
-	ddr_writel(ck_skew, DDRP_INNOPHY_PBDS_CK0);
-	ddr_writel(ck_skew, DDRP_INNOPHY_PBDS_CKB0);
-}
-
-static void tx_soft_training_set_pb_cmd_skew(unsigned int cmd_skew)
-{
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A2);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A3);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A4);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A5);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A6);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A7);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A8);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A9);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A10);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A11);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A12);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A13);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A14);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_A15);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_WEB);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CASB);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BA2);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_BG1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE);
-#if 0
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB0);
-#endif
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT0);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RESETN);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_RASB);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CSB1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_ODT1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKE1);
-#if 0
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CK1);
-	ddr_writel(cmd_skew, DDRP_INNOPHY_PBDS_CKB1);
-#endif
-}
-
-static void tx_soft_training_set_pb_dq_skew(unsigned int dq_skew)
-{
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ0);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ1);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ2);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ3);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ4);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ5);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ6);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ7);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ8);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ9);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ10);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ11);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ12);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ13);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ14);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQ15);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DM0);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DM1);
-#if 0
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQS0);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQSB0);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQS1);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_TX_DQSB1);
-#endif
-}
-
-static void tx_soft_training_set_pb_dqs0_skew(unsigned int dqs_skew)
-{
-
-	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQS0);
-	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQSB0);
-}
-
-static void tx_soft_training_set_pb_dqs1_skew(unsigned int dqs_skew)
-{
-
-	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQS1);
-	ddr_writel(dqs_skew, DDRP_INNOPHY_PBDS_TX_DQSB1);
-}
-
-static void ddrp_wl_bypass()
-{
-	unsigned int reg;
-	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
-	reg |= (DDRP_TRAINING_CTRL_WL_BP);
-	reg &= ~(DDRP_TRAINING_CTRL_WL_START);
-	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
-}
-
-
-static int check_wr_data(int start)
-{
-	//unsigned int *p = 0xa5a5a5a0;
-	unsigned int *p = 0xa0000000;
-	int i = 0;
-	unsigned int pattern = 0;
-
-
-
-	for(i = 0; i < 16; i++) {
-		p[i] = 0xffff0000; //pattern;
-	}
-	for(i = 0; i < 16; i++) {
-		if(p[i] != 0xffff0000) {
-			return -1;
+	int DQxOFFSET_rx[] = {0x2, 0x4, 0x6, 0x8, 0xa, 0xc, 0xe, 0x10, 0x17, 0x19, 0x1b, 0x1d, 0x1f, 0x21, 0x23, 0x25}; // DQxxx RX寄存器偏移
+	int DQxOFFSET_tx[] = {0x3, 0x5, 0x7, 0x9, 0xb, 0xd, 0xf, 0x11, 0x18, 0x1a, 0x1c, 0x1e, 0x20, 0x22, 0x24, 0x26}; // DQxxx TX寄存器偏移
+
+	int i, wl;
+
+	if (0 == ddr_drv_config[SKEW_TRX])
+		return ;
+	printf("AD100 InnoPhy skew Settings...\n");
+
+	// VREF A_L
+	// ddrp_reg_set_range(0x147, 0, 8, ddr_drv_config[VREF]);
+	writel(ddr_drv_config[VREF], 0xb3011000 + 0x147 * 4);
+	// VREF A_H
+	writel(ddr_drv_config[VREF], 0xb3011000 + 0x157 * 4);
+	// ddrp_reg_set_range(0x157, 0, 8, ddr_drv_config[VREF]);
+
+	/* RX */
+	if (ddr_drv_config[SKEW_TRX] & 0x1)
+	{
+		writel(ddr_drv_config[SKEW_DQS0R], 0xb3011000 + (0x1c0 + 0x00) * 4); // RX DM0
+		writel(ddr_drv_config[SKEW_DQS0R], 0xb3011000 + (0x1c0 + 0x12) * 4); // RX DQS0
+		writel(ddr_drv_config[SKEW_DQS0R], 0xb3011000 + (0x1c0 + 0x2a) * 4); // RX DQSB0
+		writel(ddr_drv_config[SKEW_DQS1R], 0xb3011000 + (0x1c0 + 0x15) * 4); // RX DM1
+		writel(ddr_drv_config[SKEW_DQS1R], 0xb3011000 + (0x1c0 + 0x27) * 4); // RX DQS1
+		writel(ddr_drv_config[SKEW_DQS1R], 0xb3011000 + (0x1c0 + 0x2b) * 4); // RX DQSB1
+
+		for (i = 0; i < 16; i++)
+		{
+			writel(ddr_drv_config[SKEW_DQRX], 0xb3011000 + (0x1c0 + DQxOFFSET_rx[i]) * 4); // RX DQX
 		}
-	}
-
-	return 0;
-}
-
-void tx_soft_training()
-{
-	int cmd_skew = 0;
-	int pass = -1;
-	int i = 0;
-	int j = 0;
-	int left_dq = 0;
-	int right_dq = 0;
-	int max_pass_count = 0;
-	char selected_dq_skew = 0;
-	char selected_cmd_skew = 0;
-
-	int left_cmd_skew = -1;
-	int right_cmd_skew = -1;
-
-	int first_left_dq = -1;
-
-	int pass_index = 0;
-
-
-#if DEBUG_TX_RX_TRAINING
-	printf("=============tx pb deskew from 0 to 63 ==============\n");
-#endif
-	for(cmd_skew = 0;  cmd_skew <= 0x3F; cmd_skew++) {
-//	for(cmd_skew = 0x3f;  cmd_skew >= 0; cmd_skew--) {
-		/* 1. 每次修改 cmd_skew之后，需要做wl leveling使 cmd 和DQS 对齐.*/
-		tx_soft_training_set_pb_ck_skew(cmd_skew);
-		tx_soft_training_set_pb_cmd_skew(cmd_skew);
-
-		/* 2. 做一次 wl ，对齐 DQS 和 CMD */
-		ddrp_wl_calibration();
-		/*3. 将 wl 设置为bypass，使 tx dqs skew 可以使用 bypass 的值. */
-		ddrp_wl_bypass();
-
-		/*4. 将 wl 的结果，写入 tx dqs skew. */
-		unsigned int wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
-		tx_soft_training_set_pb_dqs0_skew(wl_l);
-		unsigned int wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
-		tx_soft_training_set_pb_dqs1_skew(wl_h);
-
-#if DEBUG_TX_RX_TRAINING
-		printf("WL_L(DQS0):%x, WL_H(DQS1):%x ",wl_l, wl_h);
-#endif
-
-#if DEBUG_TX_RX_TRAINING
-		if(cmd_skew < 10) {
-			printf("cmd_skew:0%d ", cmd_skew);
-		} else {
-			printf("cmd_skew:%d ", cmd_skew);
-		}
-#endif
-
-		pass = -1;
-		left_dq = 0;
-		right_dq = 0;
-
-
-		for(i = 0; i < 0x3f; i++) {
-			tx_soft_training_set_pb_dq_skew(i);
-
-			*(volatile unsigned int *)0xb0000000;
-
-			int check_wr = check_wr_data(i);
-			if(!check_wr && (pass == -1)) {
-				left_dq = i;
-				pass = 1;
-
-			} else if(check_wr && (pass == 1)) {
-				right_dq = i;
-				pass = 0;
-			}
-
-#if DEBUG_TX_RX_TRAINING
-			if(!check_wr) {
-				if(pass) {
-					putchar('1');
-				} else {
-					putchar('x'); // 读写测试通过，但是没有被选中，可能处于边缘，不稳定.
-				}
-			} else {
-				putchar('0');
-			}
-#endif
-		}
-
-		int count = right_dq - left_dq;
-		if(count >= 5 && left_cmd_skew == -1) {
-			left_cmd_skew = cmd_skew;
-			right_cmd_skew = cmd_skew;
-
-			max_pass_count = count;
-			first_left_dq = left_dq;
-
-#if DEBUG_TX_RX_TRAINING
-			printf(" -> * ");
-#endif
-		}
-#if 0
-else if(count == 0){
-			//break; // TEST.
-		}
-#endif
-
-		if((first_left_dq == left_dq) && (count >= max_pass_count)) {
-
-#if DEBUG_TX_RX_TRAINING
-			printf(" * <- ");
-#endif
-			right_cmd_skew = cmd_skew;
-			max_pass_count = count;
-
-			tx_pass_cmd_skew[pass_index]	= cmd_skew;
-			tx_rx_left_dq[pass_index] 	= left_dq;
-			tx_rx_right_dq[pass_index] 	= right_dq;
-			pass_index++;
-		}
-
-#if DEBUG_TX_RX_TRAINING
-		putchar('\n');
-#endif
 
 	}
+	/* TX */
+	if (ddr_drv_config[SKEW_TRX] & 0x2)
+	{
+		/* TX BYPASS FUNCTION */
+		wl = readl(0xb3011000 + (0x2) * 4);
+		wl |= 0x8;
+		writel(wl, 0xb3011000 + (0x2) * 4);
 
-	left_dq = tx_rx_left_dq[pass_index / 2];
-	right_dq = tx_rx_right_dq[pass_index / 2];
-	max_pass_count = tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1];
+		writel(ddr_drv_config[SKEW_DQS0T], 0xb3011000 + (0x1c0 + 0x01) * 4); // TX DM0
+		writel(ddr_drv_config[SKEW_DQS0T], 0xb3011000 + (0x1c0 + 0x13) * 4); // TX DQS0
+		writel(ddr_drv_config[SKEW_DQS0T], 0xb3011000 + (0x1c0 + 0x14) * 4); // TX DQSB0
+		writel(ddr_drv_config[SKEW_DQS1T], 0xb3011000 + (0x1c0 + 0x16) * 4); // TX DM1
+		writel(ddr_drv_config[SKEW_DQS1T], 0xb3011000 + (0x1c0 + 0x28) * 4); // TX DQS1
+		writel(ddr_drv_config[SKEW_DQS1T], 0xb3011000 + (0x1c0 + 0x29) * 4); // TX DASB1
 
-	selected_dq_skew = left_dq + (right_dq - left_dq) - max_pass_count / 2;
-	selected_cmd_skew = tx_pass_cmd_skew[pass_index / 2];
-
-	printf("selected tx cmd: %d\n", tx_pass_cmd_skew[pass_index / 2]);
-	printf("selected tx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
-	printf("max pass tx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
-	printf("selected dq: %d\n", selected_dq_skew);
-
-
-	if(max_pass_count == 0) {
-		printf("tx deskew tuning error, no skew found!\n");
-	} else {
-
-#define RIGHT_CMD_SKEW_ADJUST	3	// 去掉右侧可能出现的假PASS。
-
-#if 0
-		right_cmd_skew -= right_cmd_skew > RIGHT_CMD_SKEW_ADJUST ? RIGHT_CMD_SKEW_ADJUST : 0;
-		selected_cmd_skew = left_cmd_skew + (right_cmd_skew - left_cmd_skew) / 2;
-#endif
-
-		//1. 找到合适的cmd_skew， 重新设置到.
-		tx_soft_training_set_pb_ck_skew(selected_cmd_skew);
-		tx_soft_training_set_pb_cmd_skew(selected_cmd_skew);
-
-		//2. 重新做一次 wl_calibration，使DQS 和 CMD 对齐.
-		ddrp_wl_calibration();
-		//3. 设置wl 为bypass 模式，此时PHY 会使用 wl result 作为DQS tx perbit skew value.
-		//ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
-		ddrp_wl_bypass();
-
-		unsigned int wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
-		tx_soft_training_set_pb_dqs0_skew(wl_l);
-		unsigned int wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
-		tx_soft_training_set_pb_dqs1_skew(wl_h);
-
-
-		printf("================== Final TX deskew Result ===============\n");
-		printf("DDRP_INNOPHY_TRAINING_CTRL: %x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
-		printf("TX_DQS0 deskew: %x ",ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS0));
-		printf("TX_DQSB0 deskew: %x \n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB0));
-		printf("TX_DQS1 deskew: %x ", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS1));
-		printf("TX_DQSB1 deskew: %x\n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB1));
-
-		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
-		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
-
-		// 4. 使用上面扫描记录中的最佳dq_skew.
-		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
-		*(volatile unsigned int *)0xb0000000;
-
-#if 0
-		//4. 重新校准一次 perbit DQ skew，找到左右窗口的中心点作为最终值.
-		pass = -1;
-		left_dq = 0;
-		right_dq = 0;
-
-		for(i = 0; i <= 0x3f; i++) {
-			tx_soft_training_set_pb_dq_skew(i);
-			*(volatile unsigned int *)0xb0000000;
-			int check_wr = check_wr_data(i);
-			if(!check_wr && (pass == -1)) {
-				left_dq = i;
-				pass = 1;
-
-			} else if(check_wr && (pass == 1)) {
-				right_dq = i;
-				pass = 0;
-
-			}
-
-#if DEBUG_TX_RX_TRAINING
-			if(!check_wr) {
-				putchar('1');
-			} else {
-				putchar('0');
-			}
-#endif
+		// cmd
+		for (i = 0; i < 0x1d; i++)
+		{
+			writel(ddr_drv_config[SKEW_DQS0T], 0xb3011000 + (0x340 + i) * 4);
 		}
+		writel(ddr_drv_config[SKEW_DQS0T], 0xb3011000 + (0x340 + 0x1e) * 4);
+		writel(ddr_drv_config[SKEW_DQS0T], 0xb3011000 + (0x340 + 0x1f) * 4);
 
-#if DEBUG_TX_RX_TRAINING
-		putchar('\n');
-#endif
-
-		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
-
-		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
-		*(volatile unsigned int *)0xb0000000;
-
-		printf("tx deskew tuning done, %d found, tuned tx dq_skew: %d, tx_cmd_skew: %d\n", max_pass_count, selected_dq_skew, selected_cmd_skew);
-
-#endif
-	}
-
-
-}
-
-
-
-void tx_soft_training1()
-{
-	unsigned int addr = 0xa1000000, val, reg;
-	unsigned int dq_skew[64] = {0};
-	unsigned int i, j, n, m = 0, finish = 0, de_skew;
-	unsigned int cmd_skew = 32;
-	unsigned int cnt = 256;
-	unsigned int cmd_test_all = 0;
-	volatile unsigned int val1 = 0;
-	int ret;
-
-	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
-	reg |= (DDRP_TRAINING_CTRL_WL_BP);
-	reg &= ~(DDRP_TRAINING_CTRL_WL_START);
-	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
-
-
-	do{
-		for(i = 0; i < 64; i++){
-			/* printf("i = %d-----\n", i); */
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ0);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ1);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ2);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ3);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ4);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ5);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ6);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ7);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ8);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ9);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ10);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ11);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ12);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ13);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ14);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ15);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DM0);
-			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DM1);
-
-			for (j = 0; j < cnt; j++) {
-				volatile unsigned int val1;
-				val = 0x12345678;
-				*(volatile unsigned int *)(addr + j * 4) = val;
-				val1 = *(volatile unsigned int *)(addr + j * 4);
-
-				if (val1 != val) {
-					/*printf("%s  val = 0x%x val1 = 0x%x addr = 0x%x\n", __func__, val, val1, addr + j * 4);*/
-					break;
-				}
-			}
-
-			if (j == cnt) {
-				dq_skew[m] = i;
-				m++;
-			}
-
-		}
-
-		if ((m == 1) && (dq_skew[0] == 0)) {
-			cmd_skew++;
-			m = 0;
-			tx_re_training(cmd_skew);
-			if ((cmd_skew > 64) || (cmd_skew < 0))
-				finish = 1;
-			else
-				finish = 0;
-		} else if ((m == 1) && (dq_skew[0] == 63)) {
-			cmd_skew--;
-			m = 0;
-			tx_re_training(cmd_skew);
-			if ((cmd_skew > 64) || (cmd_skew < 0))
-				finish = 1;
-			else
-				finish = 0;
-		} else if (m == 0) {
-			printf("%s no_data_found cmd_skew = %d\n", __func__, cmd_skew);
-			if (cmd_test_all == 0) {
-				cmd_skew = 0;
-				cmd_test_all = 1;
-			}
-			if (cmd_test_all == 1) {
-				cmd_skew++;
-			}
-
-			m = 0;
-			do  {
-				ret = tx_re_training(cmd_skew);
-				if (ret)
-					cmd_skew++;
-			} while (ret);
-			finish = 0;
-		} else {
-			de_skew = dq_skew[m / 2];
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ0);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ1);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ2);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ3);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ4);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ5);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ6);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ7);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ8);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ9);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ10);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ11);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ12);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ13);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ14);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DQ15);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DM0);
-			ddr_writel(de_skew, DDRP_INNOPHY_PBDS_TX_DM1);
-         finish = 1;
-      }
-
-   } while(!finish);
-
-}
-
-static void rx_soft_training_set_pb_dqs_skew(unsigned int dqs0_skew, unsigned int dqs1_skew)
-{
-	ddr_writel(dqs0_skew, DDRP_INNOPHY_PBDS_RX_DQS0);
-	ddr_writel(dqs0_skew, DDRP_INNOPHY_PBDS_RX_DQSB0);
-	ddr_writel(dqs1_skew, DDRP_INNOPHY_PBDS_RX_DQS1);
-	ddr_writel(dqs1_skew, DDRP_INNOPHY_PBDS_RX_DQSB1);
-
-}
-
-static void rx_soft_training_set_pb_dq_skew(int dq_skew)
-{
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ0);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ1);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ2);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ3);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ4);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ5);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ6);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ7);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ8);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ9);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ10);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ11);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ12);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ13);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ14);
-	ddr_writel(dq_skew, DDRP_INNOPHY_PBDS_RX_DQ15);
-}
-
-
-static int check_pb_dq_pattern(int dq)
-{
-	unsigned int *p = 0xa0000000;
-
-	int i = 0;
-	unsigned int val = 0;
-	unsigned int short data_low = 0;
-	unsigned int short data_high = 0;
-	// 1 个burst 的数据.
-
-	//p[i] == 0xffff0000 is pass.
-
-	for(i = 0; i < 16; i++) {
-		//val = p[i];
-
-		data_low = p[i] & 0xffff;
-		data_high = (p[i] >> 16) & 0xffff;
-
-		if(!!(data_low & (1 << dq)) == 1) {
-			return -1;
-		}
-
-		if(!!(data_high & (1 << dq)) == 0) {
-			return -1;
+		for (i = 0; i < 16; i++)
+		{
+			writel(ddr_drv_config[SKEW_DQTX], 0xb3011000 + (0x1c0 + DQxOFFSET_tx[i]) * 4);
 		}
 	}
-
-#if 0
-	printf("dq%d: %x\n", dq, p[0]);
-
-	printf("p[0] & (1 << dq): %d\n", p[0] & (1 << dq));
-#endif
-
-	return 0;
-
 }
 
-static void rx_soft_training_pb_dqx(unsigned int reg_dqx, int dq)
-{
-	/*调整每个DQ，使DQ 和DQS 处于最佳采样点. 窗口最大,
-	这种tuning效率太低. 但是带来的稳定性相对较高.*/
-
-	int i = 0;
-
-	int left_dq = 0;
-	int right_dq = 0;
-	int pass = 0;
-	int selected_dq_skew = 0;
-	int count = 0;
-
-
-#if DEBUG_TX_RX_TRAINING
-	if(dq < 10) {
-		printf("DQ: 0%d ", dq);
-	} else {
-		printf("DQ: %d ", dq);
-	}
-#endif
-
-	for(i = 0; i < 0x3f; i++) {
-
-		/*1. 调整pb_dq的值.*/
-		ddr_writel(i, reg_dqx);
-
-		int check_ret = check_pb_dq_pattern(dq);
-
-		if(!check_ret && (pass == 0)) {
-			left_dq = i;
-			pass = 1;
-		} else if(check_ret && (pass == 1)) {
-			right_dq = i;
-			pass = 0;
-		}
-
-		if(pass) {
-			count ++;
-		}
-
-#if DEBUG_TX_RX_TRAINING
-		if(!check_ret) {
-			putchar('1');
-		} else {
-			putchar('0');
-		}
-#endif
-
-	}
-
-	selected_dq_skew = left_dq + count / 2;
-#if DEBUG_TX_RX_TRAINING
-	printf(" - pass: %d, dq_skew: %d\n", count, selected_dq_skew);
-#endif
-
-	ddr_writel(selected_dq_skew, reg_dqx);
-}
-
-static void rx_soft_training_pb_dq_all(int dqs_skew)
-{
-
-#if DEBUG_TX_RX_TRAINING
-	printf("============tuning dq @ dqs_skew: %d\n", dqs_skew);
-#endif
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ0, 0);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ1, 1);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ2, 2);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ3, 3);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ4, 4);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ5, 5);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ6, 6);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ7, 7);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ8, 8);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ9, 9);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ10, 10);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ11, 11);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ12, 12);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ13, 13);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ14, 14);
-	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ15, 15);
-}
-
-
-
-static inline void ddr3_enable_mpr(int enable)
-{
-	unsigned int mr3 = global_reg_value->DDR_MR3_VALUE;
-
-	unsigned int tmp, tmp1;
-
-	// clear before load MR registers.
-
-	mr3 = DDRC_LMR_START | DDRC_LMR_CMD_LMR	\
-		| ((mr3 & 0xffff | (!!enable << 2)) << DDRC_LMR_DDR_ADDR_BIT) \
-		| (((mr3 >> 16) & 0x7) << DDRC_LMR_BA_BIT) ;
-
-	ddr_writel(mr3, DDRC_LMR);
-	udelay(1);
-#if 0
-	int i = 0;
-	unsigned int *p = 0xa0000000;
-	for(i = 0; i < 4; i++) {
-		printf("%x\n", p[i]);
-	}
-#endif
-
-	// restore.
-	//ddr_writel(tmp, DDRC_CGUC1);
-	//udelay(10);
-}
-
-static int print_read_pattern(int dq_skew)
-{
-	unsigned int *p = 0xa0000000;
-
-	int i = 0;
-
-	printf("==dq_skew: %d ", dq_skew);
-	printf("%x\n", p[0]);
-
-
-}
-static int check_read_pattern(void)
-{
-	unsigned int *p = 0xa0000000;
-	int i = 0;
-
-#if 0
-	if((p[0] == 0xffff0000) && (p[1] == 0xffff0000)  && (p[2] == 0xffff0000) && (p[3] == 0xffff0000)) {
-		return 0;
-	} else {
-		return -1;
-	}
-#endif
-
-#if 1
-	for(i = 0; i < 8; i++) {
-		unsigned int d = p[i];
-		if(d != 0xffff0000) {
-			return -1;
-		}
-	}
-	return 0;
-#endif
-}
-
-
-
-
-static void rx_soft_training(void)
-{
-	unsigned int i, j, n, m = 0, finish = 0, de_skew;
-	unsigned int dqs_skew = 0;
-	unsigned int cnt = 256;
-	unsigned int dqs_test_all = 0;
-	unsigned int *p = 0xa0000000;
-	int pass = 0;
-	int ret;
-
-	int left_dq = 0;
-	int right_dq = 0;
-
-	int max_pass_count = 0;
-	char selected_dq_skew = 0;
-	char selected_dqs_skew = 0;
-
-	int left_dqs = -1;
-	int right_dqs = -1;
-
-	int first_left_dq = -1;
-
-	int pass_index = 0;
-
-
-	ddr3_enable_mpr(1);
-
-#if DEBUG_TX_RX_TRAINING
-	printf("==============rx dq pb deskew from 0 to 63 ============\n");
-#endif
-	for(dqs_skew = 0; dqs_skew <= 0x3f; dqs_skew++) {
-		//这里假定了所有的DQS skew 相同, 找到最大的pass区间.
-		rx_soft_training_set_pb_dqs_skew(dqs_skew, dqs_skew);
-		pass = -1;
-		left_dq = 0;
-		right_dq = 0;
-#if DEBUG_TX_RX_TRAINING
-		if(dqs_skew < 10) {
-			printf("dqs_skew:0%d ", dqs_skew);
-		} else {
-			printf("dqs_skew:%d ", dqs_skew);
-		}
-
-
-#endif
-		for(i = 0; i <= 0x3f; i++) {
-			//这里假定了所有的DQ skew 相同.
-			rx_soft_training_set_pb_dq_skew(i);
-			*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
-
-
-
-			/*
-				pass windows:
-				ffff0000	->	0000ffff	偏移了一个cycle.
-				0000ffff	->	ffff0000	从错误到正确，不可能偏移两个cycle.
-			*/
-
-			int check_ret = check_read_pattern();
-
-			/* 禁止出现 PFP 的情况
-			   只查找 FPF的情况.
-			   如果left_dq < right_dq 了，说明right_
-			*/
-			if(!check_ret && (pass == -1)) {
-				left_dq = i;
-				pass = 1;
-			} else if(check_ret && (pass == 1)) {
-				right_dq = i;
-				pass = 0;
-			}
-
-#if DEBUG_TX_RX_TRAINING
-			if(!check_ret) {
-				if(pass) {
-					putchar('1');
-				} else {
-					putchar('x');
-				}
-			} else {
-				putchar('0');
-			}
-
-//			print_read_pattern(i);
-#endif
-		}
-
-		int count = right_dq - left_dq;
-
-/*
-	定义必须在 某个DQS skew 下，DQ 必须PASS 的count数，值太小，可能会导致找到的值不是最佳，偏小.
-*/
-#define DQS_MIN_PASS_COUNT	5
-		if(count >= DQS_MIN_PASS_COUNT && left_dqs == -1) {
-			left_dqs = dqs_skew;
-			first_left_dq = left_dq;
-#if DEBUG_TX_RX_TRAINING
-			printf(" -> * ");
-#endif
-		}
-		if((first_left_dq == left_dq) && (count >= max_pass_count)) {
-
-			right_dqs = dqs_skew;
-			/* count 从小到大.*/
-			selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
-			max_pass_count = count;
-
-			tx_rx_pass_dqs_skew[pass_index]	= dqs_skew;
-			tx_rx_left_dq[pass_index] 	= left_dq;
-			tx_rx_right_dq[pass_index] 	= right_dq;
-			pass_index++;
-
-#if DEBUG_TX_RX_TRAINING
-			printf(" * <- ");
-#endif
-
-//			selected_dqs_skew = dqs_skew;
-		} else {
-
-#if DEBUG_TX_RX_TRAINING
-			//printf(" -> * ");
-#endif
-			/* count 从大到小变化, dqs 开始偏移. 结束tuning*/
-//			break;
-		}
-
-#if DEBUG_TX_RX_TRAINING
-		putchar('\n');
-#endif
-		//printf("---found pass count %d @ dqs deskew: %d, max_pass_count: %d, selected_dq_skew: %d, selected_dqs_skew: %d\n", count, dqs_skew, max_pass_count, selected_dq_skew, selected_dqs_skew);
-
-	}
-
-	selected_dqs_skew = tx_rx_pass_dqs_skew[pass_index / 2];
-	left_dq = tx_rx_left_dq[pass_index / 2];
-	right_dq = tx_rx_right_dq[pass_index / 2];
-	max_pass_count = tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1];
-
-	selected_dq_skew = left_dq + (right_dq - left_dq) - max_pass_count / 2;
-
-	printf("selected rx dqs: %d\n", tx_rx_pass_dqs_skew[pass_index / 2]);
-	printf("selected rx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
-	printf("max pass rx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
-	printf("selected dq: %d\n", selected_dq_skew);
-
-	if(max_pass_count == 0) {
-		printf("rx deskew tuning error, no skew found!\n");
-	} else {
-
-		rx_soft_training_set_pb_dqs_skew(selected_dqs_skew, selected_dqs_skew);
-		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
-		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
-
-
-#if 0
-		selected_dqs_skew = left_dqs + (right_dqs - left_dqs) / 2;
-
-		// 选定一个dqs，重新tuning dq的窗口.
-		rx_soft_training_set_pb_dqs_skew(selected_dqs_skew, selected_dqs_skew);
-
-		//
-
-#if 1
-	// 一起，重新tuning 一遍.
-		pass = -1;
-		left_dq = 0;
-		right_dq = 0;
-		for(i = 0; i <= 0x3f; i++) {
-			rx_soft_training_set_pb_dq_skew(i);
-
-			*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
-
-			int check_ret = check_read_pattern();
-
-			if(!check_ret && (pass == -1)) {
-				left_dq = i;
-				pass = 1;
-			} else if(check_ret && (pass == 1)) {
-				right_dq = i;
-				pass = 0;
-			}
-
-#if DEBUG_TX_RX_TRAINING
-			if(!check_ret) {
-				putchar('1');
-			} else {
-				putchar('0');
-			}
-#endif
-
-		}
-
-#if DEBUG_TX_RX_TRAINING
-		putchar('\n');
-#endif
-		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
-		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
-		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
-		printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
-#else
-		// 每个DQ 重新tuning一遍.
-		rx_soft_training_pb_dq_all(selected_dqs_skew);
-		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
-#endif
-
-#endif
-	}
-
-	ddr3_enable_mpr(0);
-}
-
-void ddrp_pll_init(void)
+static void ddrp_pll_init(void)
 {
 	ddr_writel(20, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 
@@ -1300,7 +218,7 @@ static void ddrp_reset(void)
 	udelay(10);
 }
 
-void ddrp_cfg(struct ddr_reg_value *global_reg_value)
+static void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 {
 	unsigned int val;
 
@@ -1325,14 +243,14 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 	val &= ~(0xf);
 	ddr_writel(val, DDRP_INNOPHY_AL);
 
-	debug("DDRP_INNOPHY_CL:   	%x\n", ddr_readl(DDRP_INNOPHY_CL));
-	debug("DRP_INNOPHY_CWL:  	%x\n", ddr_readl(DDRP_INNOPHY_CWL));
-	debug("DRP_INNOPHY_AL:   	%x\n", ddr_readl(DDRP_INNOPHY_AL));
+	debug("DDRP_INNOPHY_CL:	   %x\n", ddr_readl(DDRP_INNOPHY_CL));
+	debug("DRP_INNOPHY_CWL:	  %x\n", ddr_readl(DDRP_INNOPHY_CWL));
+	debug("DRP_INNOPHY_AL:	   %x\n", ddr_readl(DDRP_INNOPHY_AL));
 	debug("DDRP_INNOPHY_MEM_CFG:	%x\n", ddr_readl(DDRP_INNOPHY_MEM_CFG));
 }
 
 /*
- * Name     : ddrp_calibration()
+ * Name	 : ddrp_calibration()
  * Function : control the RX DQS window delay to the DQS
  *
  * a_low_8bit_delay	= al8_2x * clk_2x + al8_1x * clk_1x;
@@ -1382,465 +300,452 @@ static void ddrp_rx_dqs_auto_calibration(void)
 		while(1);
 	}
 
-
-
 	ddr_writel(0, DDRP_INNOPHY_TRAINING_CTRL);
 }
 
 
-
-static int do_whole_chip_scan(void)
+static void ddrp_post_init(void)
 {
-	int i = 0;
-	unsigned int *p = 0xa0000000;
 
-	for(i = 0; i < 16*1024*1024/4; i++) {
-		//p[i] = &p[i];
-		p[i] = 0x01010101;
-	}
-
-	for(i = 0; i < 16*1024*1024/4; i++) {
-		//p[i] = &p[i];
-		//p[i] = 0x12345a5a;
-
-		p[i] = (i&0xff) | (i&0xff) << 8 | (i&0xff) << 16 | (i&0xff) << 24;//(i&0xff) | ((i << 8) & 0xff) | ((i << 16)& 0xff) | ((i << 24) & 0xff);
-
-	}
-	printf("after write!\n");
-	for(i = 0; i < 16*1024*1024/4; i++) {
-
-		unsigned short low16bit = p[i] & 0xffff;
-		unsigned short high16bit = (p[i] >> 16) & 0xffff;
-
-		unsigned char byte0 = p[i] & 0xff;
-		unsigned char byte1 = (p[i] >> 8) & 0xff;
-		unsigned char byte2 = (p[i] >> 16) & 0xff;
-		unsigned char byte3 = (p[i] >> 24) & 0xff;
-		int err = 0;
-
-#if 1
-		if(byte0 != (i & 0xff)) {
-			err = 1;
-		}
-#endif
-#if 1
-		if(byte1 != (i & 0xff)) {
-			err = 1;
-		}
-#endif
-#if 1
-		if(byte2 != (i & 0xff)) {
-			err = 1;
-		}
-#endif
-#if 1
-		if(byte3 != (i & 0xff)) {
-			err = 1;
-		}
-#endif
-
-		if(err) {
-			printf("err:%x:%x, i: %x\n", &p[i], p[i], i);
-			printf("byte0: %x, byte3: %x\n", byte0, byte3);
-			return -1;
-		}
-	}
-
-	return 0;
 }
 
-unsigned char pass_invdelay[0x1f];
-static void _ddrp_training_invdelay(void)
+void ddrp_auto_calibration(unsigned int *ddr_drv_config)
 {
+    ddrp_set_drv_odt(ddr_drv_config);
+    ddrp_rx_dqs_auto_calibration();
+    ddr_set_vref_skew(ddr_drv_config);
+}
 
-	int i = 0;
-	int ret = 0;
-	int count = 0;
+// from ddr_innophy.c
+static void mem_remap(void)
+{
+	int i;
+	unsigned int *remap;
+
+	remap = global_reg_value->REMMAP_ARRAY;
 
 
-	printf("DDR_PHY_OFFSET_0x8: %x\n", ddr_readl(DDR_PHY_OFFSET + 0x20));
-	/*TODO:*/
-	for(i = 0; i < 0x1f; i++) {
-		ddr_writel(i, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
+	for(i = 0;i < ARRAY_SIZE(global_reg_value->REMMAP_ARRAY);i++)
+	{
+		ddr_writel(remap[i], DDRC_REMAP(i+1));
+	}
+}
 
-		printf("--- loop: %d\n", i);
+static enum ddr_type get_ddr_type(void)
+{
+	int type;
 
-		ret = do_whole_chip_scan();
-		if(!ret) {
-			printf("pass!\n");
-			pass_invdelay[count++] = i;
+	type = global_reg_value->h.type;
+	switch(global_reg_value->h.type){
 
-			if(count >= 0x1f) {
-				printf("pass_invdelay overflow, force done\n");
+		case DDR3:
+			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
+			break;
+		case LPDDR:
+			printf("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
+			break;
+		case LPDDR2:
+			printf("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
+			break;
+		case LPDDR3:
+			printf("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
+			break;
+		case DDR2:
+			printf("DDR: %s type is : DDR2\n", global_reg_value->h.name);
+			break;
+		default:
+			type = UNKOWN;
+			printf("unsupport ddr type!\n");
+			ddr_hang();
+	}
+
+	return type;
+}
+#if 0
+static void ddrc_reset_phy(void)
+{
+	FUNC_ENTER();
+	ddr_writel(0xf << 20, DDRC_CTRL);
+	mdelay(1);
+	ddr_writel(0x8 << 20, DDRC_CTRL);  //dfi_reset_n low for innophy
+	mdelay(1);
+	FUNC_EXIT();
+}
+#endif
+
+static struct jzsoc_ddr_hook *ddr_hook = NULL;
+
+void register_ddr_hook(struct jzsoc_ddr_hook * hook)
+{
+	ddr_hook = hook;
+}
+
+
+void ddrc_dfi_init(enum ddr_type type, unsigned int kgd_rtt_dic)
+{
+	unsigned int reg_val;
+	FUNC_ENTER();
+
+	reg_val = ddr_readl(DDRC_DWCFG);
+	reg_val &= ~(1 << 3);
+	ddr_writel(reg_val, DDRC_DWCFG); // set dfi_init_start low, and buswidth 16bit
+	while(!(ddr_readl(DDRC_DWSTATUS) & DDRC_DWSTATUS_DFI_INIT_COMP)); //polling dfi_init_complete
+
+	reg_val = ddr_readl(DDRC_CTRL);
+	reg_val &= ~(1 << 23);
+	ddr_writel(reg_val, DDRC_CTRL); //set dfi_reset_n high
+
+	udelay(500);
+	ddr_writel(global_reg_value->DDRC_CFG_VALUE, DDRC_CFG);
+	ddr_writel(DDRC_CTRL_CKE, DDRC_CTRL); // set CKE to high
+	udelay(500);
+
+
+	switch(type) {
+	case LPDDR2:
+		udelay(200);
+		ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
+#define DDRC_LMR_MR(n)														  \
+				global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
+		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |						   \
+		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
+		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11
+		mdelay(1);
+
+		break;
+
+	case LPDDR3:
+		udelay(200);	//200us delay before RST.
+#define DDRC_LMR_MR(n)														  \
+				global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
+		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |						   \
+		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
+		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //set MR1
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //set MR2
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
+		mdelay(1);
+		ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11
+		mdelay(1);
+
+		break;
+
+	case DDR3:
+		mdelay(1);
+#define DDRC_LMR_MR(n)								\
+		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		   \
+			((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |	   \
+			(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
+
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
+		udelay(10);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
+		udelay(10);
+		ddr_writel((DDRC_LMR_MR(1) & (~0x266000)) | (kgd_rtt_dic << 12), DDRC_LMR); //MR1
+		udelay(10);
+		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
+		udelay(10);
+
+#if CONFIG_DDR_CS0
+		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
+		mdelay(1);
+#endif
+
+#if CONFIG_DDR_CS1
+		ddr_writel(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS1, DDRC_LMR); //ZQCL
+		mdelay(1);
+#endif
+
+#undef DDRC_LMR_MR
+		break;
+
+	case DDR2:
+
+		udelay(200);
+		ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
+#define DDRC_LMR_MR(n)											\
+		global_reg_value->DDRC_DLMR_VALUE | 1 << 1 | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
+			((global_reg_value->DDR_MR##n##_VALUE & 0x1fff) << DDRC_LMR_DDR_ADDR_BIT) |		\
+			(((global_reg_value->DDR_MR##n##_VALUE >> 13) & 0x3) << DDRC_LMR_BA_BIT)
+
+		while (ddr_readl(DDRC_LMR) & (1 << 0));
+		ddr_writel(0x400003, DDRC_LMR);
+		udelay(100);
+		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
+		udelay(5);
+		ddr_writel((DDRC_LMR_MR(1) & (~0x46000)) | (kgd_rtt_dic << 12), DDRC_LMR); //MR1
+		udelay(5);
+		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
+		udelay(5 * 1000);
+		ddr_writel(0x400003, DDRC_LMR);
+		udelay(100);
+		ddr_writel(0x43, DDRC_LMR);
+		udelay(5);
+		ddr_writel(0x43, DDRC_LMR);
+		udelay(5 * 1000);
+
+		udelay(200);
+		ddr_writel(7 << 9 | 1 << 0, DDRC_LMR); //Send All bank precharge.
+		mdelay(1);
+
+		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
+		udelay(100);
+		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
+		udelay(100);
+
+#undef DDRC_LMR_MR
+		break;
+
+	default:
+		ddr_hang();
+	}
+	FUNC_EXIT();
+}
+
+static void ddrc_prev_init(void)
+{
+	FUNC_ENTER();
+	ddr_writel(global_reg_value->DDRC_TIMING1_VALUE, DDRC_TIMING(1));
+	ddr_writel(global_reg_value->DDRC_TIMING2_VALUE, DDRC_TIMING(2));
+	ddr_writel(global_reg_value->DDRC_TIMING3_VALUE, DDRC_TIMING(3));
+	ddr_writel(global_reg_value->DDRC_TIMING4_VALUE, DDRC_TIMING(4));
+	ddr_writel(global_reg_value->DDRC_TIMING5_VALUE, DDRC_TIMING(5));
+
+	/* DDRC memory map configure*/
+	ddr_writel(global_reg_value->DDRC_MMAP0_VALUE, DDRC_MMAP0);
+	ddr_writel(global_reg_value->DDRC_MMAP1_VALUE, DDRC_MMAP1);
+	mem_remap();
+
+	/* 初始化时，关闭DDR自刷新功能. */
+	ddr_writel(0, DDRC_AUTOSR_EN);
+	ddr_writel(0, DDRC_AUTOSR_CNT);
+	ddr_writel(0, DDRC_REFCNT);
+	FUNC_EXIT();
+}
+
+static void ddrc_post_init(void)
+{
+	unsigned int reg = 0;
+	FUNC_ENTER();
+
+	debug("DDRC_STATUS: %x\n",ddr_readl(DDRC_STATUS));
+
+	ddr_writel(global_reg_value->DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT);
+	ddr_writel(global_reg_value->DDRC_REFCNT_VALUE, DDRC_REFCNT);
+
+	/*控制寄存器应该只修改配置相关的内容，需要读后写操作.*/
+	reg = ddr_readl(DDRC_CTRL);
+	/*X2000/X2500/X1600 该寄存器有差异. */
+	reg |= global_reg_value->DDRC_CTRL_VALUE & (0xf << 12);
+	ddr_writel(reg, DDRC_CTRL);
+
+	reg = ddr_readl(DDRC_DWCFG);
+	reg |= (1 << 5);	//PORT_OB_EN, 优化选项.
+	ddr_writel(reg, DDRC_DWCFG);
+
+	FUNC_EXIT();
+}
+
+void dump_generated_reg(struct ddr_reg_value *reg)
+{
+	int i;
+	printf("name			  = %s\n", reg->h.name);
+	printf("id			  = %x\n", reg->h.id);
+	printf("type			  = %x\n", reg->h.type);
+	printf("freq			  = %x\n", reg->h.freq);
+	printf("DDRC_CFG_VALUE		= %x\n", reg->DDRC_CFG_VALUE);
+	printf("DDRC_CTRL_VALUE	   = %x\n", reg->DDRC_CTRL_VALUE);
+	printf("DDRC_DLMR_VALUE	   = %x\n", reg->DDRC_DLMR_VALUE);
+	printf("DDRC_DDLP_VALUE	   = %x\n", reg->DDRC_DDLP_VALUE);
+	printf("DDRC_MMAP0_VALUE	  = %x\n", reg->DDRC_MMAP0_VALUE);
+	printf("DDRC_MMAP1_VALUE	  = %x\n", reg->DDRC_MMAP1_VALUE);
+	printf("DDRC_REFCNT_VALUE	 = %x\n", reg->DDRC_REFCNT_VALUE);
+	printf("DDRC_TIMING1_VALUE	= %x\n", reg->DDRC_TIMING1_VALUE);
+	printf("DDRC_TIMING2_VALUE	= %x\n", reg->DDRC_TIMING2_VALUE);
+	printf("DDRC_TIMING3_VALUE	= %x\n", reg->DDRC_TIMING3_VALUE);
+	printf("DDRC_TIMING4_VALUE	= %x\n", reg->DDRC_TIMING4_VALUE);
+	printf("DDRC_TIMING5_VALUE	= %x\n", reg->DDRC_TIMING5_VALUE);
+	printf("DDRC_AUTOSR_CNT_VALUE = %x\n", reg->DDRC_AUTOSR_CNT_VALUE);
+	printf("DDRC_AUTOSR_EN_VALUE  = %x\n", reg->DDRC_AUTOSR_EN_VALUE);
+	printf("DDRC_HREGPRO_VALUE	= %x\n", reg->DDRC_HREGPRO_VALUE);
+	printf("DDRC_PREGPRO_VALUE	= %x\n", reg->DDRC_PREGPRO_VALUE);
+	printf("DDRC_CGUC0_VALUE	  = %x\n", reg->DDRC_CGUC0_VALUE);
+	printf("DDRC_CGUC1_VALUE	  = %x\n", reg->DDRC_CGUC1_VALUE);
+	printf("DDRP_MEMCFG_VALUE	 = %x\n", reg->DDRP_MEMCFG_VALUE);
+	printf("DDRP_CL_VALUE		 = %x\n", reg->DDRP_CL_VALUE);
+	printf("DDRP_CWL_VALUE		= %x\n", reg->DDRP_CWL_VALUE);
+	printf("DDR_MR0_VALUE		 = %x\n", reg->DDR_MR0_VALUE);
+	printf("DDR_MR1_VALUE		 = %x\n", reg->DDR_MR1_VALUE);
+	printf("DDR_MR2_VALUE		 = %x\n", reg->DDR_MR2_VALUE);
+	printf("DDR_MR3_VALUE		 = %x\n", reg->DDR_MR3_VALUE);
+	printf("DDR_MR10_VALUE		= %x\n", reg->DDR_MR10_VALUE);
+	printf("DDR_MR11_VALUE		= %x\n", reg->DDR_MR11_VALUE);
+	printf("DDR_MR63_VALUE		= %x\n", reg->DDR_MR63_VALUE);
+	printf("DDR_CHIP_0_SIZE	   = %x\n", reg->DDR_CHIP_0_SIZE);
+	printf("DDR_CHIP_1_SIZE	   = %x\n", reg->DDR_CHIP_1_SIZE);
+	for(i = 0; i < 5; i++) {
+		printf("REMMAP_ARRAY[%d] = %x\n", i, reg->REMMAP_ARRAY[i]);
+	}
+
+}
+
+#ifndef CONFIG_BURNER
+void get_ddr_params_normal(void)
+{
+	int found = 0;
+	int size = 0;
+	int i;
+	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
+
+	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
+		printf("invalid burned ddr id\n");
+	}
+
+	burned_ddr_id &= 0xffff;
+
+	size = ARRAY_SIZE(supported_ddr_reg_values);
+
+	if(size == 1) {
+		found = 1;
+		global_reg_value = &supported_ddr_reg_values[0];
+	} else {
+		for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
+			global_reg_value = &supported_ddr_reg_values[i];
+			if(burned_ddr_id == global_reg_value->h.id) {
+				found = 1;
 				break;
 			}
 		}
 	}
-
-	if(!count) {
-		return;
-	}
-
-
-	for(i = 0; i < count; i++) {
-		printf("passed delay: %d\n", pass_invdelay[i]);
-	}
-
-	//ddr_writel(pass_invdelay[count / 2], DDRP_INNOPHY_INVDELAYSEL_DQCMD);
-	//ddr_writel(20, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 }
-
-static void _ddrp_post_init(void)
-{
-
-}
-#ifdef CONFIG_DDR_DRVODT_DEBUG
-static int do_whole_chip_test(void)
-{
-	int i = 0;
-	unsigned int *p = 0x81000000;
-
-//	printf("doing whole chip w/r test!\n");
-
-#define MAX_WR_TEST_SIZE	(4*1024*1024/4)
-
-	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
-		p[i] = &p[i];
-		//p[i] = 0x01010101;
-	}
-
-	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
-		p[i] = &p[i];
-		//p[i] = 0x12345a5a;
-		//p[i] = (i&0xff) | (i&0xff) << 8 | (i&0xff) << 16 | (i&0xff) << 24;//(i&0xff) | ((i << 8) & 0xff) | ((i << 16)& 0xff) | ((i << 24) & 0xff);
-
-	}
-
-	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
-
-		if(p[i] != &p[i]) {
-			printf("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
-			return -1;
-		}
-
-	}
-	pass_count ++;
-	return 0;
-}
-struct debug_param {
-	unsigned int drv_value;
-	unsigned int odt_value;
-	unsigned int restart_count;
-	unsigned int debug_value;
-	unsigned char date_eye[32][32];
-};
-struct debug_param *debug_drvodt = (struct debug_param *) 0xb2400000;
-void debug_date_eye(void) {
-#ifdef CONFIG_BURNER
-        int x=0,y=0;
-	debug_drvodt ->drv_value = 0;
-	debug_drvodt -> odt_value = 0;
-	debug_drvodt -> debug_value = 1;
-	for(x=0;x<32;x++){
-		for(y=0;y<32;y++){
-			debug_drvodt->date_eye[x][y]=1;
-		}
-	}
 #else
-	int mem_count = 2;
-	int restart_count_max = 2;
-	int i=0;
-	printf("drv_value  is %x odt_value is %x\n",debug_drvodt->drv_value,debug_drvodt->odt_value);
-	ddrp_zq_calibration(1, debug_drvodt->drv_value,debug_drvodt->drv_value, debug_drvodt->drv_value, debug_drvodt->odt_value);
-	ddrp_rx_dqs_auto_calibration();
-	int j=0;
-	pass_count = 0;
-        if (debug_drvodt->debug_value > 0){
-		debug_drvodt->restart_count = 0;
-		debug_drvodt->debug_value = 0;
-		_machine_restart();
-	} else if(debug_drvodt->debug_value == 0) {
-		unsigned int restart_count = 0;
-		unsigned int drv_value = 0;
-		unsigned int odt_value = 0;
-
-		restart_count = debug_drvodt->restart_count;
-
-		if(restart_count < restart_count_max){
-
-			for(i = 0;i < mem_count;i++){
-				do_whole_chip_test();
-			}
-
-			if(pass_count != mem_count){
-				debug_drvodt->date_eye[debug_drvodt->drv_value][debug_drvodt->odt_value] = 0;
-				restart_count = restart_count_max ;
-			}
-			restart_count += 1;
-			debug_drvodt->restart_count = restart_count;
-			_machine_restart();
-		}else {
-			odt_value = debug_drvodt->odt_value;
-			odt_value += 1;
-			debug_drvodt->odt_value = odt_value;
-			if(debug_drvodt->odt_value > 0x1f){
-				drv_value = debug_drvodt->drv_value;
-				drv_value += 1;
-				debug_drvodt->drv_value  = drv_value;
-			        debug_drvodt->odt_value = 0;
-			}
-			debug_drvodt->debug_value = 1;
-		}
-		if(debug_drvodt->drv_value <= 0x1f) {
-			_machine_restart();
-		}else{
-			/*ddr inno phy default drv_value is 0x14,odt_value is 0x5*/
-			drv_value = 0x14;
-			odt_value = 0x5;
-			ddrp_zq_calibration(1,drv_value,drv_value,drv_value,odt_value);
-		}
-	}
-#endif
-}
-void debug_date_eye_printf(void) {
-	int i=0;
-	int j=0;
-        for(i=0;i<32;i++){
-		  if(i<10){
-		  printf("drv is %d                     ",i);
-		  }
-		  else{
-		  printf("drv is %d                    ",i);
-		  }
-	          for(j=0;j<32;j++){
-			printf("%d",debug_drvodt->date_eye[i][j]);
-		  }
-		  printf("\n");
-	}
-}
-#endif
-extern void (*ddrp_post_init)(void);
-void ddrp_auto_calibration(void)
+void get_ddr_params_burner(void)
 {
-
-	ddrp_post_init = _ddrp_post_init;
-
-#ifdef CONFIG_DDR_DRVODT_DEBUG
-	debug_date_eye();
-	debug_date_eye_printf();
+	/* keep ddr_reg_value inc ddr_innophy.h
+	 * with ddr_registers the same
+	 * */
+	global_reg_value = g_ddr_param;
+}
 #endif
-	//ddrp_zq_calibration(1, 0xe, 0x14, 0x14, 0x5);	 // 0xe, 0x14, 0x14, 0x5 is default value.
-	ddrp_zq_calibration(1, 0xc, 0xc, 0xc, 0x2);	// 1, bypass. drv:0xc 38.4 欧姆, odt:0x2, 282 欧姆.
-	ddrp_rx_dqs_auto_calibration();
 
-#if 0
-	//ddrp_wl_calibration();	// 低频可以只做WL. 不做tx rx training.
+void get_ddr_params(void)
+{
+#ifndef CONFIG_BURNER
+	get_ddr_params_normal();
 #else
-	/*如果频率低，可以不用tx rx training， 以减少启动时间.*/
-
-
-	/* 利用了DDR3 的固定pattern 做training，不依赖写数据，为了防止dfi 的影响，在auto refresh之前进行rx training.*/
-	//rx_soft_training();
-	/*
-	说明:
-	tx_soft_training 过程中有 write_leveling过程 和 数据读写过程.
-	write_leveling 过程 不能开启ddrc auto refresh 功能，否则对结果有影响.
-	数据读写过程理论上又要求控制器的auto refresh 功能打开，否则读写的数据可能不能保持.
-		--> 如果读写的数据量很小的情况下，CPU 的频率足够块，理论上可以维持数据.
-	*/
-	//tx_soft_training();
-	rx_soft_training_set_pb_dq_skew(0x3);
+	get_ddr_params_burner();
 #endif
+	//dump_generated_reg(global_reg_value);
+
 }
 
-#ifdef CONFIG_DDRP_SOFTWARE_TRAINING
-
-//#define DDR_CHOOSE_PARAMS	0
-#ifdef DDR_CHOOSE_PARAMS
-static int atoi(char *pstr)
+unsigned int get_ddr_size(void)
 {
-	int value = 0;
-	int sign = 1;
-	int radix;
-
-	if(*pstr == '-'){
-		sign = -1;
-		pstr++;
-	}
-	if(*pstr == '0' && (*(pstr+1) == 'x' || *(pstr+1) == 'X')){
-		radix = 16;
-		pstr += 2;
-	}
-	else
-		radix = 10;
-	while(*pstr){
-		if(radix == 16){
-			if(*pstr >= '0' && *pstr <= '9')
-				value = value * radix + *pstr - '0';
-			else if(*pstr >= 'A' && *pstr <= 'F')
-				value = value * radix + *pstr - 'A' + 10;
-			else if(*pstr >= 'a' && *pstr <= 'f')
-				value = value * radix + *pstr - 'a' + 10;
-		}
-		else
-			value = value * radix + *pstr - '0';
-		pstr++;
-	}
-	return sign*value;
+	return (global_reg_value->DDR_CHIP_0_SIZE) >> 20;
 }
 
-
-static int choose_params(int m)
+void sdram_init(void)
 {
-	char buf[16];
-	char ch;
-	char *p = buf;
-	int select_m;
+	enum ddr_type type;
+	unsigned int rate;
+	unsigned int reg_val;
+	unsigned int ddr_drv_config[INDEX_EN] = {0};
 
-	debug("Please select from [0 to %d]\n", m);
+	debug("sdram init start\n");
+	printf("DDR clk rate %d\n", CONFIG_SYS_MEM_FREQ);
+	soc_ddr_init();
 
-	debug(">>  ");
+	get_ddr_params();
+	type = get_ddr_type();
+	clk_set_rate(DDR, global_reg_value->h.freq);
 
-	while((ch = getc()) != '\r') {
-		putc(ch);
-		*p++ = ch;
+	if(ddr_hook && ddr_hook->prev_ddr_init)
+		ddr_hook->prev_ddr_init(type);
+	rate = clk_get_rate(DDR);
+	debug("DDR clk rate %d\n", rate);
 
-		if((p - buf) > 16)
-			break;
+	ddr_writel(0x1 << 20 | 1 << 23, DDRC_CTRL);  /* ddrc_reset_phy , keep dfi_rst_n low*/
+	mdelay(1);
+
+	ddrp_cfg(global_reg_value);
+
+	reg_val = ddr_readl(DDRC_CTRL);
+	reg_val &= ~ (1 << 20);
+	ddr_writel(reg_val, DDRC_CTRL); /*ddrc_reset_phy clear*/
+	mdelay(1);
+
+	ddrp_pll_init();
+
+	/* DDR Controller init*/
+	ddrc_prev_init();
+	get_ddr_par(ddr_drv_config, sizeof(ddr_drv_config));
+	ddrc_dfi_init(type, ddr_drv_config[KGD_RTT_DIC]);
+
+	/*auto training 需要在training之后，初始化控制器功能，防止控制器自动刷新对training结果造成影响.*/
+	ddrp_auto_calibration(ddr_drv_config);
+	ddrc_post_init(); //配置自刷新、power down、port ob buffer func
+
+	ddrp_post_init();
+
+	/*在完全初始化完ddr phy之后，再开启自动时钟控制.*/
+	ddr_writel(global_reg_value->DDRC_CGUC0_VALUE, DDRC_CGUC0);
+	ddr_writel(global_reg_value->DDRC_CGUC1_VALUE, DDRC_CGUC1);
+
+	/*一些数据访问相关的配置，自动控制的配置，应该在training之后，防止training过程中出现干扰.*/
+	if(global_reg_value->DDRC_AUTOSR_EN_VALUE) {
+		/* ddr_writel(DDRC_AUTOSR_CNT_VALUE, DDRC_AUTOSR_CNT); */
+		ddr_writel(1, DDRC_AUTOSR_EN);
+	} else {
+		ddr_writel(0, DDRC_AUTOSR_EN);
 	}
-	*p = '\0';
 
-	debug("\n");
+	if(ddr_hook && ddr_hook->post_ddr_init)
+		ddr_hook->post_ddr_init(type);
 
-	select_m = atoi(buf);
-	debug("slected: %d\n", select_m);
 
-	return select_m;
+	dump_ddrc_register();
+
+	debug("DDR size is : %d MByte\n", (global_reg_value->DDR_CHIP_0_SIZE + global_reg_value->DDR_CHIP_1_SIZE) / 1024 /1024);
+	/* DDRC address remap configure*/
+	debug("sdram init finished\n");
 }
-#endif
 
-struct ddrp_calib {
-	union{
-		uint8_t u8;
-		struct{
-			unsigned cyclesel:3;
-			unsigned reserved:5;
-		}b;
-	}bypass_c;
-	union{
-		uint8_t u8;
-		struct{
-			unsigned ophsel:3;
-			unsigned dllsel:5;
-		}b;
-	}bypass;
-	union{
-		uint8_t u8;
-		struct{
-			unsigned reserved:5;
-			unsigned rx_dll:3;
-		}b;
-	}rx_dll;
-};
-
-/* struct ddrp_calib calib_val[8 * 4 * 8 * 5]; */
-/*
- * Name     : ddrp_calibration_manual()
- * Function : control the RX DQS window delay to the DQS
- *
- * a_low_8bit_delay	= al8_2x * clk_2x + al8_1x * clk_1x;
- * a_high_8bit_delay	= ah8_2x * clk_2x + ah8_1x * clk_1x;
- *
- * */
-struct ddrp_calib calib_val[8*8*8];
-
-static void ddrp_software_calibration(void)
+phys_size_t initdram(int board_type)
 {
+	/* SDRAM size was calculated when compiling. */
+#ifndef EMC_LOW_SDRAM_SPACE_SIZE
+#define EMC_LOW_SDRAM_SPACE_SIZE 0x10000000 /* 256M */
+#endif /* EMC_LOW_SDRAM_SPACE_SIZE */
 
-	int x, y, z, x1, y1;
-	int c, o, d =0, r = 0;
-	unsigned int addr = 0xa1000000, val;
-	unsigned int i, n, m = 0;
-	unsigned int reg;
-	unsigned int tmp;
-	volatile unsigned int val1 = 0;
+	unsigned int ram_size;
 
-	ddr_writel(0x20, DDRP_INNOPHY_TRAINING_CTRL);
-	ddr_writel(0x0, DDRP_INNOPHY_CALIB_MODE);
-	reg = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
-	reg |= (DDRP_TRAINING_CTRL_DSCSE_BP);
-	reg &= ~(DDRP_TRAINING_CTRL_DSACE_START);
-	ddr_writel(reg, DDRP_INNOPHY_TRAINING_CTRL);
-
-	for(c = 0; c < 8; c ++) {
-		for(o = 0; o < 8; o++) {
-			for (d = 0; d < 32; d++) {
-				x = d << 3 | o;
-				x1 = c;
-				y = d << 3 | o;
-				y1 = c;
-				ddr_writel(x, DDRP_INNOPHY_CALIB_BYPASS_AL);
-				ddr_writel(x1, DDRP_INNOPHY_CALIB_BYPASS_AL_C);
-				ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
-				ddr_writel(y1, DDRP_INNOPHY_CALIB_BYPASS_AH_C);
-
-				for(i = 0; i < 0xff; i++) {
-					val = 0;
-					for(n = 0; n < 4; n++ ) {
-						val |= (i+n)<<(n * 8);
-					}
-
-					*(volatile unsigned int *)(addr + i * 4) = val;
-					val1 = *(volatile unsigned int *)(addr + i * 4);
-
-					if(val1 != val) {
-						break;
-					}
-#if 0
-					printf("val1 : 0x%x val : 0x%x, addr = 0x%x, bypass_l_c : %x bypass_l :%x bypass_h_c : %x bypass: %x\n", val1, val, addr + i * 4, \
-						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL_C),\
-						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL), \
-						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH_C),\
-						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH));
-#endif
-				}
-				if(i == 0xff) {
-					calib_val[m].bypass_c.b.cyclesel = c;
-					calib_val[m].bypass.b.ophsel = o;
-					calib_val[m].bypass.b.dllsel = d;
-					calib_val[m].rx_dll.b.rx_dll = r;
-					m++;
-				}
-			}
-		}
-	}
-
-	if(!m) {
-		printf("calib bypass fail\n");
-		return ;
-	}
+	/*init ddr params in uboot env. */
+	get_ddr_params();
+	ram_size = (unsigned int)(global_reg_value->DDR_CHIP_0_SIZE) + (unsigned int)(global_reg_value->DDR_CHIP_1_SIZE);
+	debug("ram_size=%x\n", ram_size);
 
 
-	m = m  / 2;
-	c = calib_val[m].bypass_c.b.cyclesel;
-	o = calib_val[m].bypass.b.ophsel;
-	d = calib_val[m].bypass.b.dllsel;
-	r = calib_val[m].rx_dll.b.rx_dll;
-
-	printf("m = %d   c = %d   o = %d   d = %d  r = %d\n", m, c, o, d, r);
-
-	x = d << 3 | o;
-	x1 = c;
-	y = d << 3 | o;
-	y1 = c;
-	ddr_writel(x, DDRP_INNOPHY_CALIB_BYPASS_AL);
-	ddr_writel(y, DDRP_INNOPHY_CALIB_BYPASS_AH);
-	ddr_writel(x1, DDRP_INNOPHY_CALIB_BYPASS_AL_C);
-	ddr_writel(y1, DDRP_INNOPHY_CALIB_BYPASS_AH_C);
-
+	return ram_size;
 }
-
-
-#endif
-
 
