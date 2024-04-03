@@ -194,6 +194,7 @@ static int mmc_rtos_load(struct mmc *mmc, unsigned long sector)
 	unsigned long err;
 	u32 rtos_size_sectors;
 	struct rtos_header *header;
+	struct rtos_header mheader;
 
 	header = (struct rtos_header *)(CONFIG_SYS_TEXT_BASE -
 						sizeof(struct rtos_header));
@@ -204,6 +205,7 @@ static int mmc_rtos_load(struct mmc *mmc, unsigned long sector)
 	if (err == 0)
 		goto end;
 
+	memcpy(&mheader, header, sizeof(struct rtos_header));
 	if (rtos_check_header(header))
 		return -1;
 
@@ -216,7 +218,7 @@ static int mmc_rtos_load(struct mmc *mmc, unsigned long sector)
 		goto end;
 
 	flush_cache_all();
-	rtos_raw_start(header, NULL);
+	rtos_raw_start(&mheader, NULL);
 	return 0;
 end:
 	printf("spl: [rtos] mmc blk read err, %d\n", err);
