@@ -51,6 +51,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 	DDR2_W9751V6NG,
 #endif
 
+#ifdef CONFIG_DDR2_SCKL18T512XX0AAE1
+	DDR2_SCKL18T512XX0AAE1,
+#endif
 #ifdef  CONFIG_DDR3_NT5CB128M16JR
         DDR3_NT5CB128M16JR,
 #endif

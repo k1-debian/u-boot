@@ -273,7 +273,6 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->ctrl =  DDRC_CTRL_CKE;
 #ifdef CONFIG_DDRC_CTRL_PDT
 	ddrc->ctrl &= ~(DDRC_CTRL_PDT_MASK);
-	ddrc->ctrl |= CONFIG_DDRC_CTRL_PDT;
 #endif
 	/* MMAP0,1 */
 	memsize_cs0 = p->size.chip0;
