@@ -219,6 +219,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 	unsigned int pll_rate;
 	struct clk_cgu_setting *cgu = NULL;
 	unsigned regval = 0, reg = 0;
+	unsigned int ratio;
 
 	if(clk_id >= CGU_CNT) {
 		/* printf("set clk id error\n"); */
@@ -234,9 +235,10 @@ void clk_set_rate(int clk_id, unsigned long rate)
 		return;
 	}
 
-	if(clk_id == MSC0 || clk_id == MSC1)
-		cdr = (((pll_rate + rate - 1)/rate)/4 - 1)& 0xff;
-	else
+	if(clk_id == MSC0 || clk_id == MSC1) {
+		ratio = (pll_rate + rate - 1)/rate;
+		cdr = ((ratio % 4) ? ratio/4 : (ratio/4 - 1)) & 0xff;
+	} else
 		cdr = ((pll_rate + rate - 1)/rate - 1 ) & 0xff;
 	/* debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr); */
 
