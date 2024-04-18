@@ -286,7 +286,9 @@ void clk_set_rate(int clk_id, unsigned long rate)
 			regval = (regval & (~MSCCDR_MPCS_MASK)) | MSCCDR_MPCS_EXCLK;
 			pll_rate = CONFIG_SYS_EXTAL;
 		}
-		cdr = (((pll_rate + rate - 1)/rate)/4 - 1) & 0xff;
+		cdr = (pll_rate/(rate*4) - 1) & 0xff;
+		if (pll_rate / ((cdr + 1) * 4) > rate)
+			cdr += 1;
 	} else
 		cdr = ((pll_rate + rate - 1)/rate - 1 ) & 0xff;
 	/* debug("pll_rate = %d, rate = %d, cdr = %d\n",pll_rate,rate,cdr); */
