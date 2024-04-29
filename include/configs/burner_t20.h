@@ -103,6 +103,7 @@
 #define CONFIG_SPL_VERSION_OFFSET   16
 #define CONFIG_JZ_SFC_NOR
 #define CONFIG_SFC_NOR
+#define CONFIG_MTD_UBI_BEB_LIMIT    20
 
 /*
  *  SPINAND MAC SN : the product of customer add partition of sequence code.

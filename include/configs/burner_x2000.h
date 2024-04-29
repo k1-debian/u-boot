@@ -217,6 +217,8 @@
 #define CONFIG_CMD_MTDPARTS
 #define CONFIG_MTD_DEVICE
 #define MTDIDS_DEFAULT                  "nand0=nand"
+
+#define CONFIG_MTD_UBI_BEB_LIMIT    20
 #endif
 
 

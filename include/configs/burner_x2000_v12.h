@@ -158,7 +158,7 @@
 #define CONFIG_MTD_DEVICE
 #define MTDIDS_DEFAULT                  "nand0=nand"
 
-
+#define CONFIG_MTD_UBI_BEB_LIMIT    20
 #define CONFIG_FLASH_RESERVED_PART
 /*
  *  SPINAND MAC SN : the product of customer add partition of sequence code.

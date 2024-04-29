@@ -103,6 +103,7 @@
 #define CONFIG_SFC_NAND_RATE	        100000000
 #define CONFIG_SPL_VERSION_OFFSET	16
 #define CONFIG_SPIFLASH_PART_OFFSET	(0x6800)
+#define CONFIG_MTD_UBI_BEB_LIMIT    20
 
 /*
  *  SPINAND MAC SN : the product of customer add partition of sequence code.
