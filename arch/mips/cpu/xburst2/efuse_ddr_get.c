@@ -367,7 +367,7 @@ static void ddr_par_init(unsigned int *ddr_drv_config)
 
 #elif defined(CONFIG_AD101P_DDR)           //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
     unsigned int init_ddr_par[INDEX_EN] = {0x01, 0x01, 0x0e, 0x0e, 0x0e, 0x0e, 0x14, 0x14, 0x96, 0x01, 0x01, 0x06,
-                                           0x19, 0x19, 0x0e, 0x00, 0x00, 0x00, 0x01};
+                                           0x09, 0x09, 0x01, 0x00, 0x00, 0x00, 0x01};
                                        //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
 
 #else                                  //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC

@@ -71,8 +71,8 @@
 #define CONFIG_DDR_CL	13
 #define CONFIG_DDR_CWL	9
 #else
-#define CONFIG_DDR_CL	-1
-#define CONFIG_DDR_CWL	-1
+#define CONFIG_DDR_CL	14
+#define CONFIG_DDR_CWL	10
 #endif
 
 #if(-1 == CONFIG_DDR_CL)

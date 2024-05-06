@@ -109,7 +109,7 @@
 #define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
 
 #ifdef CONFIG_DDR_TYPE_DDR3
-  #define CONFIG_DDR3_M15T1G1664A
+  #define CONFIG_DDR3_W631GU6NG
 #endif
 
 #ifdef CONFIG_DDR_TYPE_DDR2
