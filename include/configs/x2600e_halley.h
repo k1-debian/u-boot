@@ -272,8 +272,8 @@
 			#define CONFIG_PAT_UPDATEFS_NAME "updatefs"
             		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
 		#elif CONFIG_SPL_SFC_NAND
-        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro"
-        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc"
+        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro flashtype=nand"
+        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc flashtype=nand"
 		#else
 			#define CONFIG_GPT_TAB_BUILT_IN
 			#undef CONFIG_SPL_BOOTARGS
@@ -367,7 +367,7 @@
 #ifdef CONFIG_OTA_VERSION30
 #ifdef CONFIG_SPL_SFC_NAND
 #define CONFIG_KUNPENG_OTA_VERSION20
-#elif CONFIG_JZ_MMC_MSC2
+#else
 #define CONFIG_JZSD_OTA_VERSION20
 #endif
 #endif /*end of ota*/
