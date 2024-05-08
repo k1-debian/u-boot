@@ -69,6 +69,10 @@ int spinand_read(struct cloner *cloner)
 	nand_info_t *nand;
 	nand = &nand_info[0];
 
+	if (nand_block_isbad(nand, addr)) {
+		printf("Skip bad block 0x%lx\n", addr);
+		return 0xFF;
+	}
 	ret = nand_read(nand, addr, &len, buf);
 	if(ret < 0)
 		printf("%s error\n",__func__);
