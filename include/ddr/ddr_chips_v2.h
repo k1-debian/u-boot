@@ -103,6 +103,10 @@
 #include "chips-v2/X1600EN_DDR2_COMPATIBLE_PARAM.h"
 #endif
 
+#ifdef CONFIG_X2670M_DDR2
+#include "chips-v2/X2670M_DDR2_COMPATIBLE_PARAM.h"
+#endif
+
 #ifdef CONFIG_X1600E_LPDDR2
 #include "chips-v2/X1600E_LPDDR2_COMPATIBLE_PARAM.h"
 #endif
