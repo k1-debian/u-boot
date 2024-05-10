@@ -25,6 +25,7 @@
 #include <config.h>
 #include <asm/io.h>
 #include <asm/gpio.h>
+#include <asm/arch/cpm.h>
 
 #include <ingenic_soft_i2c.h>
 #include <jz_pca953x.h>
@@ -181,6 +182,14 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 	writel(func & 0x4? 0 : pins, base + PXMSKC);
 	writel(func & 0x2? 0 : pins, base + PXPAT1C);
 	writel(func & 0x1? 0 : pins, base + PXPAT0C);
+
+#ifdef CPM_EXCLK_DS
+	if(func & 0x80) {
+		/*controlled SD voltage to 1.8V*/
+		int val = cpm_inl(CPM_EXCLK_DS) | (1 << 31);
+		cpm_outl(val, CPM_EXCLK_DS);
+	}
+#endif
 #if defined(CONFIG_X2600)
 	if(n == GPIO_PORT_E){	//PE GROUP
 		// hiz

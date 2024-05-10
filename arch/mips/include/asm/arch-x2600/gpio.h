@@ -42,6 +42,7 @@ enum gpio_function {
 	GPIO_RISE_EDGE  = 0x0b,	 //1011, GPIO as rise edge interrupt
 	GPIO_PULLUP	= 0x10,  //	enable gpio pull up
 	GPIO_PULLDOWN	= 0x20,  // enable gpio pull down
+	GPIO_1_8V	= 0x80,  // GPIO switch to 1.8V
 };
 
 enum gpio_port {
