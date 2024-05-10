@@ -358,7 +358,7 @@
 #ifdef CONFIG_OTA_VERSION30
 #ifdef CONFIG_SPL_SFC_NAND
 #define CONFIG_KUNPENG_OTA_VERSION20
-#elif CONFIG_JZ_MMC_MSC2
+#else
 #define CONFIG_JZSD_OTA_VERSION20
 #endif
 #endif /*end of ota*/
