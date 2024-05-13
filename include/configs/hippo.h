@@ -269,15 +269,20 @@
 			#define CONFIG_PAT_UPDATEFS_NAME "updatefs"
             		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock5 rw"
 		#elif defined(CONFIG_SPL_SFC_NAND)
-        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro"
-        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc"
-                #else
+        		#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro flashtype=nand"
+        		#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc flashtype=nand"
+        #else
 			#define CONFIG_GPT_TAB_BUILT_IN
 			#undef CONFIG_SPL_BOOTARGS
-			#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON  " ip=off init=/linuxrc rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+			#if defined(CONFIG_JZ_MMC_MSC0)
+				#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON  " ip=off init=/linuxrc rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+			#elif defined(CONFIG_JZ_MMC_MSC1)
+				#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON  " ip=off init=/linuxrc rootfstype=ext4 root=/dev/mmcblk1p8 rootdelay=3 rw"
+			#elif defined(CONFIG_JZ_MMC_MSC2)
+				#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON  " ip=off init=/linuxrc rootfstype=ext4 root=/dev/mmcblk2p8 rootdelay=3 rw"
+			#endif
 			#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off root=/dev/ram0 rw rdinit=/linuxrc"
-
-                #endif
+        #endif
     #else
 		#ifdef CONFIG_BOOT_VMLINUX
 			#undef CONFIG_SPL_BOOTARGS
