@@ -923,6 +923,26 @@ static void ddrp_software_calibration(void)
 #endif
 
 #ifndef CONFIG_BURNER
+#ifdef CONFIG_CHECK_SOCID
+int get_ddr_params_socid(void)
+{
+	int i;
+	uint32_t socid = 0;
+
+	socid = check_socid();
+	if (socid == 0) {
+		printf("invalid soc id\n");
+		return -1;
+	}
+
+	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
+		global_reg_value = &supported_ddr_reg_values[i];
+		if(socid == (global_reg_value->h.id))
+			break;
+	}
+	return 0;
+}
+#endif
 void get_ddr_params_normal(void)
 {
 	int found = 0;
@@ -969,6 +989,9 @@ void get_ddr_params_burner(void)
 void get_ddr_params(void)
 {
 #ifndef CONFIG_BURNER
+#ifdef  CONFIG_CHECK_SOCID
+	if (get_ddr_params_socid() < 0)
+#endif
 	get_ddr_params_normal();
 #else
 	get_ddr_params_burner();
