@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_MID0B_DEVICES_NUM         4
+#define XTX_MID0B_DEVICES_NUM         5
 #define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
@@ -101,6 +101,26 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[4] = {
+		/*XT26G02D */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 130,
+		.tPP = 360,
+		.tBE = 4,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[XTX_MID0B_DEVICES_NUM] = {
@@ -108,6 +128,7 @@ static struct device_id_struct device_id[XTX_MID0B_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[1]),
 	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[2]),
 	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[3]),
+	DEVICE_ID_STRUCT(0x32, "XT26G02D ", &xtx_mid0b_param[4]),
 };
 
 
@@ -120,6 +141,7 @@ static cdt_params_t *xtx_mid0b_get_cdt_params(struct sfc_flash *flash, uint16_t 
 		case 0xF2:
 		case 0x11:
 		case 0x12:
+		case 0x32:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -168,6 +190,20 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 					return 8;
 				case 0xf:
 					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
+		case 0x32:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return ((ecc_status >> 6) & 0x3) + 4;
+				case 0x2:
+					return -EBADMSG;
+				case 0x3:
+					return 8;
 				default:
 					break;
 			}
