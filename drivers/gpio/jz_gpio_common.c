@@ -99,14 +99,14 @@
 #endif
 DECLARE_GLOBAL_DATA_PTR;
 
+#define BIT(nr)         (1UL << (nr))
+
 static inline int is_gpio_from_chip(int gpio_num)
 {
 	return gpio_num < (GPIO_NR_PORTS * 32) ? 1 : 0;
 }
 
-
 #if defined(PXPEL) && defined(PXPEH)
-#define BIT(nr)         (1UL << (nr))
 void gpio_set_driver_state(enum gpio_port n, unsigned int pins, unsigned int state)
 {
 	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * n;
@@ -136,38 +136,6 @@ void gpio_set_driver_state(enum gpio_port n, unsigned int pins, unsigned int sta
 	}
 }
 #endif
-
-#if defined(PXDSL) && defined(PXDSH)
-void gpio_set_driver_strength(enum gpio_port n, unsigned int pins, unsigned int ds)
-{
-	unsigned int base = GPIO_BASE + JZGPIO_GROUP_OFFSET * n;
-	unsigned int tmp = pins;
-	unsigned int val = 0;
-	unsigned int pin = 0;
-
-	if (tmp & 0xffff) {
-		val = readl(base + PXDSL);
-		while (!!(pin = fls((tmp & 0xffff)))) {
-			pin = pin - 1;
-			tmp &= ~(BIT(pin));
-			val |= ds << (pin << 1);
-		}
-
-		writel(val, base + PXDSL);
-	}
-	if (tmp & 0xffff0000) {
-		val = readl(base + PXDSH);
-		while (!!(pin = fls((tmp)))) {
-			pin = pin - 1;
-			tmp &= ~(BIT(pin));
-			val |= ds << ((pin - 16) << 1);
-		}
-
-		writel(val, base + PXDSH);
-	}
-}
-#endif
-
 
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 {
@@ -245,10 +213,6 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 #elif defined(PXPEHC) && defined(PXPELC) && defined(PXPE_PULLHZ)
 	if (func & 0x40)
 		gpio_set_driver_state(n, pins, PXPE_PULLHZ);
-#endif
-
-#if 0 //defined(PXDSL) && defined(PXDSH)
-	gpio_set_driver_strength(n, pins, PXDS_8mA);
 #endif
 }
 
@@ -441,6 +405,76 @@ void gpio_ack_irq(unsigned gpio)
 	unsigned pin = gpio % 32;
 
 	writel(1 << pin, GPIO_PXFLGC(port));
+}
+
+#ifdef CONFIG_AD100
+void gpio_set_driver_strength_ad100(enum gpio_port gpio, int value, unsigned int pins)
+{
+    if(value & BIT(0))
+        writel(pins, GPIO_PXDS0S(gpio));
+    else
+        writel(pins, GPIO_PXDS0C(gpio));
+
+    if(value & BIT(1))
+        writel(pins, GPIO_PXDS1S(gpio));
+    else
+        writel(pins, GPIO_PXDS1C(gpio));
+}
+#endif
+
+#ifdef CONFIG_x1600
+void gpio_set_driver_strength_x1600(enum gpio_port gpio, int value, unsigned int pins)
+{
+	/* x1600 is not supported in setting driver strength */
+}
+#endif
+
+#ifdef CONFIG_X2000_V12
+void gpio_set_driver_strength_x2000(enum gpio_port gpio, int value, unsigned int pins)
+{
+    if(value & BIT(0))
+        writel(pins, GPIO_PXDS0S(gpio));
+    else
+        writel(pins, GPIO_PXDS0C(gpio));
+
+    if(value & BIT(1))
+        writel(pins, GPIO_PXDS1S(gpio));
+    else
+        writel(pins, GPIO_PXDS1C(gpio));
+
+    if(value & BIT(2))
+        writel(pins, GPIO_PXDS2S(gpio));
+    else
+        writel(pins, GPIO_PXDS2C(gpio));
+}
+#endif
+
+#ifdef CONFIG_x2600
+void gpio_set_driver_strength_x2600(enum gpio_port gpio, int value, unsigned int pins)
+{
+    if(value & BIT(0))
+        writel(pins, GPIO_PXDS0S(gpio));
+    else
+        writel(pins, GPIO_PXDS0C(gpio));
+
+    if(value & BIT(1))
+        writel(pins, GPIO_PXDS1S(gpio));
+    else
+        writel(pins, GPIO_PXDS1C(gpio));
+}
+#endif
+
+void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
+{
+#ifdef CONFIG_AD100
+	gpio_set_driver_strength_ad100(gpio, value, pins);
+#elif defined CONFIG_x1600
+	gpio_set_driver_strength_x1600(gpio, value, pins);
+#elif defined CONFIG_X2000_V12
+	gpio_set_driver_strength_x2000(gpio, value, pins);
+#elif defined CONFIG_x2600
+	gpio_set_driver_strength_x2600(gpio, value, pins);
+#endif
 }
 
 void dump_gpio_func( unsigned int gpio);

@@ -57,7 +57,15 @@ extern void pll_init(void);
 extern void sdram_init(void);
 extern void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr);
 extern void flush_cache_all(void);
+extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
+void gpio_set_driver_strength_init(void)
+{
+#if 0
+	/* set sfc pe16-pe21 driver strength as GPIO_DS_LEVEL_1*/
+	gpio_set_driver_strength(GPIO_PORT_E, GPIO_DS_LEVEL_1, 0x3f << 16);
+#endif
+}
 
 void board_init_f(ulong dummy)
 {
@@ -72,6 +80,7 @@ void board_init_f(ulong dummy)
 #endif
 
 	gpio_init();
+	gpio_set_driver_strength_init();
 	/* OST clk gate set 0 */
 	cpm_outl(cpm_inl(CPM_CLKGR0) & (~CPM_CLKGR_OST), CPM_CLKGR0);
 	/* wtd disable */

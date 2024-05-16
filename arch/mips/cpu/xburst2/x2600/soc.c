@@ -55,6 +55,7 @@ extern void pll_init(void);
 extern void sdram_init(void);
 extern void validate_cache(void);
 extern void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr);
+extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 extern int debug_icache_store(unsigned int start, unsigned int len);
 extern int dump_icache_tag(unsigned int start, unsigned int len);
@@ -65,6 +66,14 @@ void change_lcd_ddrc_process_priority(void)
 {
 	*(unsigned int *)0x13012024 = 0xFF404030;   //DDRC-APB-CCHC0
 	*(unsigned int *)0x13012028 = 0xFF404030;   //DDRC-APB-CCHC1
+}
+
+void gpio_set_driver_strength_init(void)
+{
+#if 0
+	/* set sfc pd06-pd11 driver strength as GPIO_DS_LEVEL_1*/
+	gpio_set_driver_strength(GPIO_PORT_D, GPIO_DS_LEVEL_1, 0x3f <<6);
+#endif
 }
 
 void board_init_f(ulong dummy)
@@ -80,6 +89,7 @@ void board_init_f(ulong dummy)
 	burner_param_info();
 #endif
 	gpio_init();
+	gpio_set_driver_strength_init();
 
 	*(volatile unsigned int *)0xb363002c |= 1 << 16; // wdt disable.
 	*(volatile unsigned int *)0xb3630004 &= ~(1 << 0); // wdt disable.

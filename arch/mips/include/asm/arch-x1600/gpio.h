@@ -119,5 +119,6 @@ void gpio_as_irq_fall_edge(unsigned gpio);
 void gpio_ack_irq(unsigned gpio);
 int gpio_clear_flag(unsigned gpio);
 int gpio_get_flag(unsigned int gpio);
+void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 #endif /* __GPIO_H__ */
