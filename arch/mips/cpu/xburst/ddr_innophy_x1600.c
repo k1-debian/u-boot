@@ -927,19 +927,28 @@ static void ddrp_software_calibration(void)
 int get_ddr_params_socid(void)
 {
 	int i;
-	uint32_t socid = 0;
+	int found = 0;
+	uint32_t ddrid = 0;
 
-	socid = check_socid();
-	if (socid == 0) {
-		printf("invalid soc id\n");
+	ddrid = check_socid();
+	if (ddrid == 0) {
+		printf("invalid ddr id %x\n",ddrid);
 		return -1;
 	}
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];
-		if(socid == (global_reg_value->h.id))
+		if(ddrid == (global_reg_value->h.id)) {
+			found = 1;
 			break;
+		}
 	}
+
+	if(found == 0) {
+		printf("No match to %x\n",ddrid);
+		return -1;
+	}
+
 	return 0;
 }
 #endif
