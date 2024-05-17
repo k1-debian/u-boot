@@ -54,6 +54,15 @@ enum gpio_port {
 	GPIO_NR_PORTS,
 };
 
+enum gpio_driver_strength {
+	GPIO_DS_LEVEL_INVALID = -1,
+
+	GPIO_DS_LEVEL_0 = 0x0,
+	GPIO_DS_LEVEL_1 = 0x1,
+	GPIO_DS_LEVEL_2 = 0x2,
+	GPIO_DS_LEVEL_3 = 0x3,
+};
+
 struct jz_gpio_func_def {
 	int port;
 	int func;
@@ -84,6 +93,13 @@ struct jz_gpio_func_def {
 #define PXPES		0x74   /* Port Pull Disable Set Register */
 #define PXPEC		0x78   /* Port Pull Disable Clear Register */
 
+#define PXDS0	   0xA0   /* PORT Drive Strength State Register0*/
+#define PXDS0S	   0xA4   /* PORT Drive Strength State set Register0*/
+#define PXDS0C	   0xA8   /* PORT Drive Strength State clear Register0*/
+#define PXDS1	   0xB0   /* PORT Drive Strength State Register1*/
+#define PXDS1S	   0xB4   /* PORT Drive Strength State set Register1*/
+#define PXDS1C	   0xB8   /* PORT Drive Strength State clear Register1*/
+
 #define GPIO_PXPIN(n)	(GPIO_BASE + (PXPIN + (n)*0x1000)) /* PIN Level Register */
 #define GPIO_PXINT(n)	(GPIO_BASE + (PXINT + (n)*0x1000)) /* Port Interrupt Register */
 #define GPIO_PXINTS(n)	(GPIO_BASE + (PXINTS + (n)*0x1000)) /* Port Interrupt Set Register */
@@ -103,6 +119,13 @@ struct jz_gpio_func_def {
 #define GPIO_PXPES(n)	(GPIO_BASE + (PXPES + (n)*0x1000)) /* Port Pull Disable Set Register */
 #define GPIO_PXPEC(n)	(GPIO_BASE + (PXPEC + (n)*0x1000)) /* Port Pull Disable Clear Register */
 
+#define GPIO_PXDS0(n)	(GPIO_BASE + (PXDS0 + (n)*0x1000))  /* PORT Drive Strength State Register0*/
+#define GPIO_PXDS0S(n)	(GPIO_BASE + (PXDS0S + (n)*0x1000)) /* PORT Drive Strength State set Register0*/
+#define GPIO_PXDS0C(n)	(GPIO_BASE + (PXDS0C + (n)*0x1000)) /* PORT Drive Strength State clear Register0*/
+#define GPIO_PXDS1(n)	(GPIO_BASE + (PXDS1 + (n)*0x1000))  /* PORT Drive Strength State Register1*/
+#define GPIO_PXDS1S(n)	(GPIO_BASE + (PXDS1S + (n)*0x1000)) /* PORT Drive Strength State set Register1*/
+#define GPIO_PXDS1C(n)	(GPIO_BASE + (PXDS1C + (n)*0x1000)) /* PORT Drive Strength State clear Register1*/
+
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins);
 void gpio_port_set_value(int port, int pin, int value);
 void gpio_port_direction_input(int port, int pin);
@@ -117,5 +140,6 @@ void gpio_as_irq_fall_edge(unsigned gpio);
 void gpio_ack_irq(unsigned gpio);
 int gpio_clear_flag(unsigned gpio);
 int gpio_get_flag(unsigned int gpio);
+void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 #endif /* __GPIO_H__ */
