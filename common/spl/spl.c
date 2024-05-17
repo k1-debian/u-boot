@@ -294,6 +294,9 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		debug("get cmdargs: %s.\n", cmdargs);
 		jump_to_image_linux((void *)cmdargs);
 #endif
+	case IH_OS_ALIOS:
+		debug("Jumping to Alios\n");
+		break;
 	default:
 		debug("Unsupported OS image.. Jumping nevertheless..\n");
 	}

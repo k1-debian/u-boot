@@ -35,6 +35,11 @@
 #define CONFIG_SOC_NAME		x1600
 #define CONFIG_CHECK_SOCID
 
+#define CONFIG_SPL_ALIOS_BOOT
+
+#ifdef CONFIG_SPL_ALIOS_BOOT
+#define CONFIG_ALIOS_BOOT_INFO_OFFSET 0x40000
+#endif
 
 #define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/

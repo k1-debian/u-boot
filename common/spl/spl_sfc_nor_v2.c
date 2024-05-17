@@ -1226,6 +1226,110 @@ void spl_sfc_nor_os_load(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_ALIOS_BOOT
+typedef struct alios_image_header {
+	unsigned int header_size;/* Image Header Size	*/
+	unsigned int image_crc;	/* Image CRC Checksum	*/
+	unsigned int image_size;	/* Image Data Size		*/
+} alios_image_header_t;
+
+#define RTOSA 22
+#define RTOSB 23
+
+typedef struct alios_boot_info_param {
+	uint32_t version;
+	uint32_t state;
+	uint32_t partition;
+	uint32_t error_code;
+	uint32_t update_size;
+	uint32_t rtosa_start;
+	uint32_t rtosa_size;
+	uint32_t rtosb_start;
+	uint32_t rtosb_size;
+	uint32_t udisk_start;
+	uint32_t udisk_size;
+} alios_boot_info_param_t;
+
+void spl_sfc_nor_alios_load(void)
+{
+	unsigned int aos_img_addr = 0;
+	int crc1, crc2;
+
+	unsigned int buffer[32] = {0};
+	alios_image_header_t *header;
+	unsigned int header_size = sizeof(buffer);
+
+	unsigned int buffer1[48] = {0};
+	alios_boot_info_param_t *param;
+	unsigned int param_size = sizeof(buffer1);
+	int crc_try = 3;
+
+	sfc_read_data(CONFIG_ALIOS_BOOT_INFO_OFFSET, sizeof(buffer1), CONFIG_SYS_TEXT_BASE);
+	memcpy(buffer1, (alios_boot_info_param_t *)(CONFIG_SYS_TEXT_BASE), sizeof(alios_boot_info_param_t));
+	param = (alios_boot_info_param_t *)buffer1;
+
+	debug("param:\n");
+	debug("param->version:   %x\n", param->version);
+	debug("param->state:     %x\n", param->state);
+	debug("param->partition: %x\n", param->partition);
+	debug("param->error_code:%x\n", param->error_code);
+	debug("param->update_size:%x\n",param->update_size);
+	debug("param->rtosa_start:%x\n",param->rtosa_start);
+	debug("param->rtosa_size:%x\n", param->rtosa_size);
+	debug("param->rtosb_start:%x\n",param->rtosb_start);
+	debug("param->rtosb_size:%x\n", param->rtosb_size);
+	debug("param->udisk_start:%x\n",param->udisk_start);
+	debug("param->udisk_size:%x\n", param->udisk_size);
+
+change_part:
+	if(param->partition == RTOSA) {
+		printf("boot rtos-A\n");
+		aos_img_addr = param->rtosa_start;
+	} else if (param->partition == RTOSB) {
+		printf("boot rtos-B\n");
+		aos_img_addr = param->rtosb_start;
+	} else {
+		printf("boot partition type error!\n");
+		hang();
+	}
+
+	/* read alios image head */
+	debug("aos_img_addr: 0x%x\n", aos_img_addr);
+	sfc_read_data(aos_img_addr, sizeof(buffer), CONFIG_SYS_TEXT_BASE);
+	memcpy(buffer, (struct alios_image_header *)(CONFIG_SYS_TEXT_BASE), sizeof(alios_image_header_t));
+	header = (alios_image_header_t *)buffer;
+
+	debug("header:\n");
+	debug("header_size: %x\n",	 header->header_size);
+	debug("image_crc: %x\n",	 header->image_crc);
+	debug("image_size: %x\n",	 header->image_size);
+
+	spl_image.size = header->image_size;
+	spl_image.entry_point = CONFIG_SYS_TEXT_BASE;
+	spl_image.load_addr = CONFIG_SYS_TEXT_BASE;
+	spl_image.os = IH_OS_ALIOS;
+	spl_image.name = "Alios";
+	crc1 = header->image_crc;
+	sfc_read_data(aos_img_addr + header->header_size, spl_image.size, spl_image.load_addr);
+	crc2 = crc32(0, spl_image.load_addr, spl_image.size);
+	if(crc1 != crc2){
+		if(param->partition == RTOSA) {
+			printf("crc error !!! goto rtos-B\n");
+			param->partition = RTOSB;
+		} else if(param->partition == RTOSB) {
+			printf("crc error !!! goto rtos-A\n");
+			param->partition = RTOSA;
+		}
+		if(crc_try--)
+			goto change_part;
+		
+		printf("crc error, boot failed!\n");
+		hang();
+	}
+	jump_to_image_no_args(&spl_image);
+}
+#endif
+
 #ifdef CONFIG_OTA_VERSION20
 void spl_ota_load_image(void)
 {
@@ -1406,6 +1510,9 @@ char* spl_sfc_nor_load_image(void)
 	return NULL;
 #elif defined(CONFIG_SPL_RTOS_BOOT)
 	spl_sfc_nor_rtos_boot();
+	return NULL;
+#elif defined(CONFIG_SPL_ALIOS_BOOT)
+	spl_sfc_nor_alios_load();
 	return NULL;
 #else
 	{

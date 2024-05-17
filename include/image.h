@@ -148,6 +148,7 @@ struct lmb;
 #define IH_OS_INTEGRITY		21	/* INTEGRITY	*/
 #define IH_OS_OSE		22	/* OSE		*/
 #define IH_OS_PLAN9		23	/* Plan 9	*/
+#define IH_OS_ALIOS		24	/* Alios	*/
 
 /*
  * CPU Architecture Codes (supported by Linux)
