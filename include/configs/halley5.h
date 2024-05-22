@@ -143,21 +143,15 @@
 /*#define CONFIG_CMD_USB*/		/* USB host command */
 #ifdef CONFIG_CMD_USB
 #define CONFIG_FAT_WRITE	/* Support fatfs write */
-#define CONFIG_USB_UVC		/* Support uvc. */
 #define CONFIG_USB_STORAGE	/* Support u-disk. */
 #define CONFIG_USB_DWC2		/* DWC2 Host Driver. */
 #define CONFIG_USB_DRV_VBUS	GPIO_PE(22)
 #endif
 
-/*#define CONFIG_CMD_FASTBOOT*/	 /*USB device command */
-/*#define CONFIG_CMD_USBSERIAL*/
 /*#define CONFIG_ARDUINO*/
-/*#define CONFIG_CMD_USBHID*/
+/*#define CONFIG_CMD_FASTBOOT*/	 /*USB device command */
 
 #ifdef CONFIG_ARDUINO
-#ifdef CONFIG_CMD_USBHID
-#define CONFIG_HID_KEYBOARD_DEMO
-#endif
 #define CONFIG_USB_GADGET
 #define CONFIG_USB_GADGET_DUALSPEED
 #define CONFIG_USB_JZ_DWC2_UDC_V1_1
@@ -166,9 +160,6 @@
 #define CONFIG_FASTBOOT_FUNCTION
 #define CONFIG_G_FASTBOOT_VENDOR_NUM	(0x18d1)
 #define CONFIG_G_FASTBOOT_PRODUCT_NUM	(0xdddd)
-#endif
-#ifdef CONFIG_CMD_USBSERIAL
-#define CONFIG_USBSERIAL_FUNCTION
 #endif
 #define CONFIG_USB_GADGET_VBUS_DRAW 500
 #define CONFIG_FASTBOOT_MAX_DOWNLOAD_SIZE  (CONFIG_SYS_MALLOC_LEN - 2*1024*1024)
