@@ -131,8 +131,9 @@ void board_init_f(ulong dummy)
 	ddr_basic_tests();
 #endif
 
-#ifdef CONFIG_RUN_VMLINUX_FIRMWARE
+#ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT
        printf("run start1 firmware finished, return to bootrom!\n");
+       usb_boot_loop();	// USB Stage2 protocal.
        return;
 #endif
 
@@ -159,6 +160,19 @@ static int secure_load_uboot(struct spl_image_info *spl_image)
 }
 #endif
 
+void jump_to_entry_point(unsigned long entry_point)
+{
+	flush_cache_all();
+	__asm__ volatile (
+			".set push              \n\t"
+			".set noreorder         \n\t"
+			".set mips32r2          \n\t"
+			"jr.hb %0              \n\t"
+			"nop	\n\t"
+			:
+			:"r"(entry_point));
+}
+
 void jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void  (*image_entry_noargs_t)(void);
@@ -178,16 +192,6 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 	debug("image entry point: 0x%x\n", spl_image->entry_point);
 	image_entry_noargs_t image_entry =
 			(image_entry_noargs_t) spl_image->entry_point;
-
-	flush_cache_all();
-	__asm__ volatile (
-			".set push              \n\t"
-			".set noreorder         \n\t"
-			".set mips32r2          \n\t"
-			"jr.hb %0              \n\t"
-			"nop	\n\t"
-			:
-			:"r"(image_entry));
 
 }
 
