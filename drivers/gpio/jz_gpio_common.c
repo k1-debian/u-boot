@@ -449,6 +449,31 @@ void gpio_set_driver_strength_x2000(enum gpio_port gpio, int value, unsigned int
 }
 #endif
 
+#ifdef CONFIG_X2580
+void gpio_set_driver_strength_x2580(enum gpio_port gpio, int value, unsigned int pins)
+{
+    if(value & BIT(0))
+        writel(pins, GPIO_PXPDS0S(gpio));
+    else
+        writel(pins, GPIO_PXPDS0C(gpio));
+
+    if(value & BIT(1))
+        writel(pins, GPIO_PXPDS1S(gpio));
+    else
+        writel(pins, GPIO_PXPDS1C(gpio));
+
+    if(value & BIT(2))
+        writel(pins, GPIO_PXPDS2S(gpio));
+    else
+        writel(pins, GPIO_PXPDS2C(gpio));
+
+    if(value & BIT(3))
+        writel(pins, GPIO_PXPDS3S(gpio));
+    else
+        writel(pins, GPIO_PXPDS3C(gpio));
+}
+#endif
+
 #ifdef CONFIG_x2600
 void gpio_set_driver_strength_x2600(enum gpio_port gpio, int value, unsigned int pins)
 {
@@ -472,6 +497,8 @@ void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
 	gpio_set_driver_strength_x1600(gpio, value, pins);
 #elif defined CONFIG_X2000_V12
 	gpio_set_driver_strength_x2000(gpio, value, pins);
+#elif defined CONFIG_X2580
+	gpio_set_driver_strength_x2580(gpio, value, pins);
 #elif defined CONFIG_x2600
 	gpio_set_driver_strength_x2600(gpio, value, pins);
 #endif

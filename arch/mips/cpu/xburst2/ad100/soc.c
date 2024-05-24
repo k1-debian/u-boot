@@ -91,8 +91,6 @@ void board_init_f(ulong dummy)
 	gpio_init();
 	gpio_set_driver_strength_init();
 
-	*(volatile unsigned int *)0xb0000020 = 0;
-	*(volatile unsigned int *)0xb0000028 = 0;
 	*(volatile unsigned int *)0xb363002c |= 1 << 16; // wdt disable.
 	*(volatile unsigned int *)0xb3630004 &= ~(1 << 0); // wdt disable.
 

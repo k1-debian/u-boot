@@ -56,6 +56,30 @@ enum gpio_port {
 	GPIO_NR_PORTS,
 };
 
+/* TYPEC and TYPED are not supported in setting driver strength */
+enum gpio_driver_strength {
+	GPIO_DS_LEVEL_INVALID = -1,
+
+	GPIO_DS_LEVEL_0 = 0x0,
+	GPIO_DS_LEVEL_1 = 0x1,
+	GPIO_DS_LEVEL_2 = 0x2,
+	GPIO_DS_LEVEL_3 = 0x3,
+
+	/* GPIO_A 6~21 set valid */
+	GPIO_DS_LEVEL_4 = 0x4,
+	GPIO_DS_LEVEL_5 = 0x5,
+	GPIO_DS_LEVEL_6 = 0x6,
+	GPIO_DS_LEVEL_7 = 0x7,
+	GPIO_DS_LEVEL_8 = 0x8,
+	GPIO_DS_LEVEL_9 = 0x9,
+	GPIO_DS_LEVEL_10 = 0xa,
+	GPIO_DS_LEVEL_11 = 0xb,
+	GPIO_DS_LEVEL_12 = 0xc,
+	GPIO_DS_LEVEL_13 = 0xd,
+	GPIO_DS_LEVEL_14 = 0xe,
+	GPIO_DS_LEVEL_15 = 0xf,
+};
+
 struct jz_gpio_func_def {
 	int port;
 	int func;
@@ -116,6 +140,9 @@ struct jz_gpio_func_def {
 #define PXPDS2		0x150   /* Port Driver-strength 2  Register */
 #define PXPDS2S		0x154   /* Port Driver-strength 2 Set Register */
 #define PXPDS2C		0x158   /* Port Driver-strength 2 Clear Register */
+#define PXPDS3	   	0x1A0   /* PORT Drive Strength State Register3*/
+#define PXPDS3S	   	0x1A4   /* PORT Drive Strength State set Register3*/
+#define PXPDS3C	   	0x1A8   /* PORT Drive Strength State clear Register3*/
 #define PXPSLW		0x160   /* Port Slew Rate Register */
 #define PXPSLWS		0x164   /* Port Slew Rate Set Register */
 #define PXPSLWC		0x168   /* Port Slew Rate Clear Register */
@@ -156,6 +183,19 @@ struct jz_gpio_func_def {
 #define GPIO_PXPDENC(n)	(GPIO_BASE + (PXPDENC + (n)*0x1000))   /* Port Pull-down status Clear Register */
 
 
+#define GPIO_PXPDS0(n)	(GPIO_BASE + (PXPDS0 + (n)*0x1000))  /* PORT Drive Strength State Register0*/
+#define GPIO_PXPDS0S(n)	(GPIO_BASE + (PXPDS0S + (n)*0x1000)) /* PORT Drive Strength State set Register0*/
+#define GPIO_PXPDS0C(n)	(GPIO_BASE + (PXPDS0C + (n)*0x1000)) /* PORT Drive Strength State clear Register0*/
+#define GPIO_PXPDS1(n)	(GPIO_BASE + (PXPDS1 + (n)*0x1000))  /* PORT Drive Strength State Register1*/
+#define GPIO_PXPDS1S(n)	(GPIO_BASE + (PXPDS1S + (n)*0x1000)) /* PORT Drive Strength State set Register1*/
+#define GPIO_PXPDS1C(n)	(GPIO_BASE + (PXPDS1C + (n)*0x1000)) /* PORT Drive Strength State clear Register1*/
+#define GPIO_PXPDS2(n)	(GPIO_BASE + (PXPDS2 + (n)*0x1000))  /* PORT Drive Strength State Register2*/
+#define GPIO_PXPDS2S(n)	(GPIO_BASE + (PXPDS2S + (n)*0x1000)) /* PORT Drive Strength State set Register2*/
+#define GPIO_PXPDS2C(n)	(GPIO_BASE + (PXPDS2C + (n)*0x1000)) /* PORT Drive Strength State clear Register2*/
+#define GPIO_PXPDS3(n)	(GPIO_BASE + (PXPDS3 + (n)*0x1000))  /* PORT Drive Strength State Register3*/
+#define GPIO_PXPDS3S(n)	(GPIO_BASE + (PXPDS3S + (n)*0x1000)) /* PORT Drive Strength State set Register3*/
+#define GPIO_PXPDS3C(n)	(GPIO_BASE + (PXPDS3C + (n)*0x1000)) /* PORT Drive Strength State clear Register3*/
+
 
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins);
 void gpio_port_set_value(int port, int pin, int value);
@@ -171,5 +211,6 @@ void gpio_as_irq_low_level(unsigned gpio);
 void gpio_as_irq_rise_edge(unsigned gpio);
 void gpio_as_irq_fall_edge(unsigned gpio);
 void gpio_ack_irq(unsigned gpio);
+void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 #endif /* __GPIO_H__ */

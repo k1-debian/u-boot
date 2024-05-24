@@ -51,6 +51,7 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 
 extern void pll_init(void);
 extern void sdram_init(void);
+extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 void reallocate_cache(void)
 {
@@ -113,6 +114,14 @@ static inline void zboost_is_run()
 		::"r" (0xa0000000));
 }
 
+void gpio_set_driver_strength_init(void)
+{
+#if 0
+	/* set sfc PA23~28 driver strength as GPIO_DS_LEVEL_1*/
+	gpio_set_driver_strength(GPIO_PORT_A, GPIO_DS_LEVEL_1, 0x3f << 23);
+#endif
+}
+
 void board_init_f(ulong dummy)
 {
 	zboost_is_run();
@@ -128,6 +137,7 @@ void board_init_f(ulong dummy)
 #endif
 
 	gpio_init();
+	gpio_set_driver_strength_init();
 #if 1
 	/* OST clk gate set 0 */
 	cpm_outl(cpm_inl(CPM_CLKGR1) & (~CPM_CLKGR1_SYS_OST), CPM_CLKGR1);

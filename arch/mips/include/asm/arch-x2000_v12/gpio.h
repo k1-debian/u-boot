@@ -159,22 +159,15 @@ struct jz_gpio_func_def {
 #define GPIO_PXDS1(n)	(GPIO_BASE + (PXDS1  + (n)*0x100))/* Port Drive Strength Register1 */
 #define GPIO_PXDS1S(n)	(GPIO_BASE + (PXDS1S + (n)*0x100))/* Port Drive Strength Set Register1 */
 #define GPIO_PXDS1C(n)	(GPIO_BASE + (PXDS1C + (n)*0x100))/* Port Drive Strength Clear Register1 */
+#define GPIO_PXDS2(n)	(GPIO_BASE + (PXDS2 + (n)*0x100))  /* PORT Drive Strength State Register2, only TYPEA and TYPEB valid*/
+#define GPIO_PXDS2S(n)	(GPIO_BASE + (PXDS2S + (n)*0x100)) /* PORT Drive Strength State set Register2*/
+#define GPIO_PXDS2C(n)	(GPIO_BASE + (PXDS2C + (n)*0x100)) /* PORT Drive Strength State clear Register2*/
 #define GPIO_PXSR(n)	(GPIO_BASE + (PXSR   + (n)*0x100))/* Port Slew Rate Register */
 #define GPIO_PXSRS(n)	(GPIO_BASE + (PXSRS  + (n)*0x100))/* Port Slew Rate Set Register */
 #define GPIO_PXSRC(n)	(GPIO_BASE + (PXSRC  + (n)*0x100))/* Port PORTA Slew Rate Clear Register */
 #define GPIO_PXSMT(n)	(GPIO_BASE + (PXSMT  + (n)*0x100))/* Port Schmitt Trigger Register*/
 #define GPIO_PXSMTS(n)	(GPIO_BASE + (PXSMTS + (n)*0x100))/* Port Schmitt Trigger Set Register */
 #define GPIO_PXSMTC(n)	(GPIO_BASE + (PXSMTC + (n)*0x100))/* Port Schmitt Trigger Clear Register */
-
-#define GPIO_PXDS0(n)	(GPIO_BASE + (PXDS0 + (n)*0x100))  /* PORT Drive Strength State Register0*/
-#define GPIO_PXDS0S(n)	(GPIO_BASE + (PXDS0S + (n)*0x100)) /* PORT Drive Strength State set Register0*/
-#define GPIO_PXDS0C(n)	(GPIO_BASE + (PXDS0C + (n)*0x100)) /* PORT Drive Strength State clear Register0*/
-#define GPIO_PXDS1(n)	(GPIO_BASE + (PXDS1 + (n)*0x100))  /* PORT Drive Strength State Register1*/
-#define GPIO_PXDS1S(n)	(GPIO_BASE + (PXDS1S + (n)*0x100)) /* PORT Drive Strength State set Register1*/
-#define GPIO_PXDS1C(n)	(GPIO_BASE + (PXDS1C + (n)*0x100)) /* PORT Drive Strength State clear Register1*/
-#define GPIO_PXDS2(n)	(GPIO_BASE + (PXDS2 + (n)*0x100))  /* PORT Drive Strength State Register2, only TYPEA and TYPEB valid*/
-#define GPIO_PXDS2S(n)	(GPIO_BASE + (PXDS2S + (n)*0x100)) /* PORT Drive Strength State set Register2*/
-#define GPIO_PXDS2C(n)	(GPIO_BASE + (PXDS2C + (n)*0x100)) /* PORT Drive Strength State clear Register2*/
 
 void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins);
 void gpio_port_set_value(int port, int pin, int value);
