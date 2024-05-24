@@ -15,6 +15,9 @@ struct nv_flags {
     unsigned int step;
     unsigned int start;
     unsigned int finish;
+    unsigned int needfullpkg;
+    unsigned int rot_angle;
+    unsigned int reservedspace[15];
 };
 
 static struct ota_ops *ota_ops = NULL;
@@ -51,6 +54,7 @@ static int get_signature(const int signature)
 	return 0;
 }
 
+static char buffer[512];
 char* spl_ota_load_image(void)
 {
 	char *cmdargs = NULL;
@@ -58,13 +62,15 @@ char* spl_ota_load_image(void)
 	unsigned int bootimg_addr = 0;
 	struct jz_sfcnand_partition_param *partitions;
 	struct nv_flags nv;
+    int len;
 
 	ota_init();
 	partitions = ota_ops->flash_get_partitions();
 	addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_NV_NAME);
 	nv_read(addr, (unsigned int)&nv, sizeof(struct nv_flags));
-	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n",
-			nv.boot, nv.step, nv.start, nv.finish);
+
+	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%d\n nv.rot_angle \t%d\n",
+			nv.boot, nv.step, nv.start, nv.finish, nv.needfullpkg, nv.rot_angle);
 
 	if(get_signature(RECOVERY_SIGNATURE) || (nv.start == 0x5a5a5a5a)) {
 		if(nv.boot) {
@@ -79,6 +85,14 @@ char* spl_ota_load_image(void)
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 	}
 
-	ota_ops->flash_load_kernel(bootimg_addr);
-	return cmdargs;
+    if (nv.rot_angle >= 0 && nv.rot_angle <= 360) {
+        len = snprintf(buffer, sizeof(buffer), "%s rot_angle=%d", cmdargs, nv.rot_angle);
+        if (len >= sizeof(buffer)) {
+            printf("Error: buffer to small, rot_angle config not applied!.\n", len);
+        } else {
+            cmdargs = buffer;
+        }
+    }
+    ota_ops->flash_load_kernel(bootimg_addr);
+    return cmdargs;
 }
