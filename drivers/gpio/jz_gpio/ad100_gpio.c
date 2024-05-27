@@ -64,4 +64,7 @@ static struct jz_gpio_func_def gpio_func[] = {
 //	{.port = GPIO_PORT_C, .func = GPIO_FUNC_2, .pins = 0x18000001}
 
 #endif
+
+	/* gpio 漏电 */
+	{ .port = GPIO_PORT_E, .func = GPIO_OUTPUT0, .pins = 0x001FFF9F},
 };

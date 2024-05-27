@@ -158,7 +158,7 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 		cpm_outl(val, CPM_EXCLK_DS);
 	}
 #endif
-#if defined(CONFIG_X2600)
+#if defined(CONFIG_X2600) || defined(CONFIG_AD100)
 	if(n == GPIO_PORT_E){	//PE GROUP
 		// hiz
 		writel(func & 0x40? pins : 0, base + PEPUC);
