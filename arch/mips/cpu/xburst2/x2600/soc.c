@@ -193,6 +193,7 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 	image_entry_noargs_t image_entry =
 			(image_entry_noargs_t) spl_image->entry_point;
 
+	jump_to_entry_point(image_entry);
 }
 
 #endif /* CONFIG_SPL_BUILD */
