@@ -658,8 +658,8 @@
     #define CONFIG_SPL_OTA_NAME       "ota"
 #endif
 
-#ifndef CONFIG_SPL_OS_NAME2
-    #define CONFIG_SPL_OS_NAME2       "kernel2"
+#ifndef CONFIG_SPL_RTOS_OTA_INFO
+    #define CONFIG_SPL_RTOS_OTA_INFO       "ota:rtos_ota"
 #endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT

@@ -1780,10 +1780,10 @@ static void mmc_load_rtos_ota_boot(void)
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OTA_NAME, &ota_offset, NULL);
 	if (!ret) {
 		const char *buf = (const char *)(CONFIG_SYS_TEXT_BASE);
-		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		const char *ota_part_info = CONFIG_SPL_RTOS_OTA_INFO;
 
 		mmc_block_read(ota_offset, 1, (u32 *)buf);
-		if (strncmp(kernel2, buf, strlen(kernel2))) {
+		if (strncmp(ota_part_info, buf, strlen(ota_part_info))) {
 			return;
 		}
 

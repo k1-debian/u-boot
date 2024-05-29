@@ -1153,9 +1153,9 @@ static void spl_sfc_nand_rtos_ota_boot(void)
 	ota_offset = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
 	if (ota_offset != -1) {
 		char buf[128];
-		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
+		const char *ota_part_info = CONFIG_SPL_RTOS_OTA_INFO;
 		sfc_nand_load(ota_offset, sizeof(buf), (unsigned char *)buf);
-		if (strncmp(kernel2, buf, strlen(kernel2))) {
+		if (strncmp(ota_part_info, buf, strlen(ota_part_info))) {
 			return;
 		}
 
