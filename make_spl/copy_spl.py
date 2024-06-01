@@ -10,7 +10,7 @@ output_path=sys.argv[2]
 # 保证编译后执行此脚本
 sign_file=uboot_path+"/include/config.mk"
 if not os.path.exists(sign_file):
-    print "Err: Please perform the compilation operation first"
+    print("Err: Please perform the compilation operation first")
     sys.exit()
 
 
@@ -122,15 +122,48 @@ write_file_path=output_path+"/cmake/autoconf.cmake"
 handle_file = open(handle_file_path,'r')
 write_file = open(write_file_path,'w+')
 
+def LineToCmake(line):
+    if line.startswith("#"):
+        return
+    line = line.strip()
+    if line.startswith("CONFIG_"):
+        d = line.find("=")
+        confStr = line[0:d]
+        contentStr = line[d+1:]
+        isStr = False
+        if contentStr.startswith("\""):
+            e = contentStr.rfind("\"")
+            contentStr = contentStr[1:e]
+            isStr = True
+        info=""
+        isBrackets = False
+        for s in contentStr:
+            if isBrackets == True and s == "(":
+                info = info + "{"
+                continue
+            if isBrackets == True and s == ")":
+                info = info + "}"
+                isBrackets = False
+                continue
+            if(s == "\""):
+                info = info + "\\"
+            elif (s == "#"):
+                 info = info + "\\"
+            elif (s =="$"):
+                isBrackets = True
+            info = info + s
+        if isStr:
+            info = "\"" + info + "\""
+        return (confStr, info)
+
 while True:
     line = handle_file.readline()
     if not line:
         break
-
-    str_tmp3=line.replace("#","\#")
-    str_tmp2=str_tmp3.replace("\n","")
-    str_tmp="set("+str_tmp2.replace("="," ")+")\n"
-    write_file.writelines(str_tmp)
+    (conf,info) =LineToCmake(line)
+    if len(conf):
+        str_tmp="set(" + conf + " " + info + ")\n"
+        write_file.writelines(str_tmp)
 
 handle_file.close()
 write_file.close()
@@ -206,7 +239,7 @@ for cmake_file in os.listdir(uboot_path+"/make_spl/.vscode"):
 
 
 
-print "copy spl files ok !"
+print ("copy spl files ok !")
 
 
 
