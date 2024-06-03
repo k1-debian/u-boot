@@ -17,7 +17,8 @@ struct nv_flags {
     unsigned int finish;
     unsigned int needfullpkg;
     unsigned int rot_angle;
-    unsigned int reservedspace[15];
+    unsigned int partition;
+    unsigned int reservedspace[14];
 };
 
 static struct ota_ops *ota_ops = NULL;
@@ -54,7 +55,6 @@ static int get_signature(const int signature)
 	return 0;
 }
 
-static char buffer[512];
 char* spl_ota_load_image(void)
 {
 	char *cmdargs = NULL;
@@ -63,14 +63,17 @@ char* spl_ota_load_image(void)
 	struct jz_sfcnand_partition_param *partitions;
 	struct nv_flags nv;
     int len;
+    unsigned short degree;
+    unsigned int dec_degree;
+    unsigned int hightBits;
 
 	ota_init();
 	partitions = ota_ops->flash_get_partitions();
 	addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_NV_NAME);
 	nv_read(addr, (unsigned int)&nv, sizeof(struct nv_flags));
 
-	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%d\n nv.rot_angle \t%d\n",
-			nv.boot, nv.step, nv.start, nv.finish, nv.needfullpkg, nv.rot_angle);
+	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%x\n nv.rot_angle \t%x\n nv.partition \t%x\n",
+			nv.boot, nv.step, nv.start, nv.finish, nv.needfullpkg, nv.rot_angle, nv.partition);
 
 	if(get_signature(RECOVERY_SIGNATURE) || (nv.start == 0x5a5a5a5a)) {
 		if(nv.boot) {
@@ -85,14 +88,25 @@ char* spl_ota_load_image(void)
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 	}
 
-    if (nv.rot_angle >= 0 && nv.rot_angle <= 360) {
-        len = snprintf(buffer, sizeof(buffer), "%s rot_angle=%d", cmdargs, nv.rot_angle);
-        if (len >= sizeof(buffer)) {
-            printf("Error: buffer to small, rot_angle config not applied!.\n", len);
-        } else {
-            cmdargs = buffer;
+#ifdef CONFIG_NV_ROTATE
+    {
+        static char buffer[512];
+        hightBits = nv.rot_angle & 0xFFFF0000;
+        if (hightBits == 0xEEEE0000) {
+            degree = nv.rot_angle & 0x0000FFFF;
+            dec_degree = (int)degree;
+            if (dec_degree == 0 || dec_degree == 90 || dec_degree == 180 || dec_degree == 270) {
+                len = snprintf(buffer, sizeof(buffer), "%s rot_angle=%d", cmdargs, dec_degree);
+                if (len >= sizeof(buffer)) {
+                    printf("nv rot_angle failed!\n", len);
+                } else {
+                    cmdargs = buffer;
+                }
+            }
         }
     }
+#endif
+
     ota_ops->flash_load_kernel(bootimg_addr);
     return cmdargs;
 }
