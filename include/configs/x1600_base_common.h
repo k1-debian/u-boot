@@ -552,34 +552,52 @@
 #error "please add more define here"
 #endif
 
-#ifndef CONFIG_ROOTFS_DEV
-
 #if defined(CONFIG_SPL_RTOS_LOAD_KERNEL)
 #define CONFIG_CLK_IGNORE_UNUSED " clk_ignore_unused "
 #else
 #define CONFIG_CLK_IGNORE_UNUSED " "
 #endif
 
-#if defined(CONFIG_SPL_MMC_SUPPORT)
-#define CONFIG_ROOTFS_DEV CONFIG_CLK_IGNORE_UNUSED "root=/dev/mmcblk0p2 rootwait"
-#else
-#define CONFIG_ROOTFS_DEV CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " "root=/dev/mtdblock_bbt_ro2"
-#endif
-#endif
+#ifndef CONFIG_ROOTFS_PARAM
 
-#define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_DEV" "ARG_ROOTFS_TYPE
+#ifndef CONFIG_ROOTFS_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
+#else
+#define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
+#endif /* CONFIG_SPL_JZMMC_SUPPORT */
+#endif /* CONFIG_ROOTFS_DEV */
+
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+#define CONFIG_ROOTFS_PARAM CONFIG_CLK_IGNORE_UNUSED CONFIG_ROOTFS_DEV
+#else
+#define CONFIG_ROOTFS_PARAM CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " CONFIG_ROOTFS_DEV
+#endif
+#endif /* CONFIG_ROOTFS_PARAM */
+
+#define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_PARAM" "ARG_ROOTFS_TYPE
 
 /* boot args rootfs2
  */
-#ifndef CONFIG_ROOTFS2_DEV
-#if defined(CONFIG_SPL_MMC_SUPPORT)
-#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p2 rootwait"
-#else
-#define CONFIG_ROOTFS2_DEV CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " "root=/dev/mtdblock_bbt_ro4"
-#endif
-#endif
 
-#ifdef CONFIG_ROOTFS2_DEV
+#ifndef CONFIG_ROOTFS2_PARAM
+
+#ifndef CONFIG_ROOTFS2_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
+#else
+#define CONFIG_ROOTFS2_DEV "root=/dev/mtdblock_bbt_ro4"
+#endif /* CONFIG_SPL_JZMMC_SUPPORT */
+#endif /* CONFIG_ROOTFS2_DEV */
+
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+#define CONFIG_ROOTFS2_PARAM CONFIG_CLK_IGNORE_UNUSED CONFIG_ROOTFS2_DEV
+#else
+#define CONFIG_ROOTFS2_PARAM CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " CONFIG_ROOTFS2_DEV
+#endif
+#endif /* CONFIG_ROOTFS2_PARAM */
+
+#ifdef CONFIG_ROOTFS2_PARAM
 #if defined(CONFIG_ROOTFS2_UBI)
 #define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
 #elif defined(CONFIG_ROOTFS2_SQUASHFS)
@@ -590,7 +608,7 @@
 #error "please add more define here"
 #endif
 
-#define ARGS_ROOTFS2 CONFIG_ROOTFS2_INITRC " " CONFIG_ROOTFS2_DEV " " ARG_ROOTFS2_TYPE
+#define ARGS_ROOTFS2 CONFIG_ROOTFS2_INITRC " " CONFIG_ROOTFS2_PARAM " " ARG_ROOTFS2_TYPE
 #endif
 
 #ifndef CONFIG_ARGS_EXTRA
