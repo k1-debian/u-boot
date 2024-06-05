@@ -44,6 +44,22 @@
 #define CONFIG_LMB
 #endif
 
+#ifdef CONFIG_SPL_OF_LIBFDT
+
+#ifndef CONFIG_DTB_ADRESS
+#define CONFIG_DTB_ADRESS 0x80E80000
+#endif
+
+#ifndef CONFIG_DTB_SIZE
+#define CONFIG_DTB_SIZE 0x20000
+#endif
+
+#ifndef CONFIG_DTB_NAME
+#define CONFIG_DTB_NAME "dtb"
+#endif
+
+#endif /* CONFIG_SPL_OF_LIBFDT */
+
 /* CLK CGU */
 #define  CGU_CLK_SRC {				\
 		{LCD, MPLL},			\
@@ -665,7 +681,11 @@
     #define CONFIG_SPL_OTA_NAME       "ota"
     #define CONFIG_SPL_OS_NAME2       "kernel2"
     #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
-    #define CONFIG_SYS_SPL_ARGS_ADDR2 CONFIG_SPL_BOOTARGS2
+#ifndef CONFIG_SPL_OF_LIBFDT
+    #define CONFIG_SYS_SPL_ARGS_ADDR2    CONFIG_SPL_BOOTARGS2
+#else
+    #define CONFIG_SYS_SPL_ARGS_ADDR2 " "
+#endif
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
@@ -673,7 +693,11 @@
     #define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " " ARGS_ROOTFS
     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
     #define CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME    "rtosdata"
+#ifndef CONFIG_SPL_OF_LIBFDT
     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
+#else
+    #define CONFIG_SYS_SPL_ARGS_ADDR " "
+#endif
     #define CONFIG_BOOTX_BOOTARGS ""
     #undef  CONFIG_BOOTCOMMAND
     #define CONFIG_BOOTCOMMAND    ""

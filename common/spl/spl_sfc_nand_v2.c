@@ -702,6 +702,17 @@ void spl_sfc_nand_os_load(void)
 	sfc_init();
 
 	partitions = get_partitions();
+
+#ifdef CONFIG_SPL_OF_LIBFDT
+	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_DTB_NAME);
+	if (bootimg_addr == -1){
+		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		hang();
+	}
+
+	sfc_nand_load(bootimg_addr, CONFIG_DTB_SIZE, (unsigned char *)CONFIG_DTB_ADRESS);
+#endif /* CONFIG_SPL_OF_LIBFDT */
+
 	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1){
 		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
@@ -954,6 +965,7 @@ static void spl_sfc_rtos_boot(void)
 static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitions, char *kernel_name, char *cmdargs)
 {
 	unsigned int img_addr = 0;
+
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
 	if (img_addr == -1) {
 		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
@@ -1021,6 +1033,16 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 		}
 	}
 #endif
+
+#ifdef CONFIG_SPL_OF_LIBFDT
+	unsigned int dtb_addr = get_part_offset_by_name(partitions, CONFIG_DTB_NAME);
+	if (dtb_addr == -1){
+		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		hang();
+	}
+
+	sfc_nand_load(dtb_addr, CONFIG_DTB_SIZE, (unsigned char *)CONFIG_DTB_ADRESS);
+#endif /* CONFIG_SPL_OF_LIBFDT */
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	secure_check_hash_rootfs(partitions);

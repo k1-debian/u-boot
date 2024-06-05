@@ -1174,6 +1174,16 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	}
 #endif
 
+#ifdef CONFIG_SPL_OF_LIBFDT
+	unsigned int bootimg_addr = get_part_offset_by_name(partitions, CONFIG_DTB_NAME);
+	if (bootimg_addr == -1){
+		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		hang();
+	}
+
+	sfc_read_data(bootimg_addr, CONFIG_DTB_SIZE, (unsigned char *)CONFIG_DTB_ADRESS);
+#endif /* CONFIG_SPL_OF_LIBFDT */
+
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	secure_check_hash_rootfs(partitions);
 #endif
@@ -1216,6 +1226,17 @@ void spl_sfc_nor_os_load(void)
 	unsigned int bootimg_addr = 0;
 
 	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
+
+#ifdef CONFIG_SPL_OF_LIBFDT
+	bootimg_addr = get_part_offset_by_name(partition, CONFIG_DTB_NAME);
+	if (bootimg_addr == -1){
+		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		hang();
+	}
+
+	sfc_read_data(bootimg_addr, CONFIG_DTB_SIZE, (unsigned char *)CONFIG_DTB_ADRESS);
+#endif /* CONFIG_SPL_OF_LIBFDT */
+
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1){
 		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
