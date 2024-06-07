@@ -542,6 +542,35 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 }
 
 #ifndef CONFIG_BURNER
+
+int get_ddr_params_socid(void)
+{
+	int i;
+	int found = 0;
+	uint32_t ddrid = 0;
+
+	ddrid = check_socid();
+	if (ddrid == 0) {
+		printf("invalid ddr id %x\n",ddrid);
+		return -1;
+	}
+
+	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
+		global_reg_value = &supported_ddr_reg_values[i];
+		if((ddrid & ~(0x7 << 3)) == (global_reg_value->h.id & ~(0x7 << 3))) {
+			found = 1;
+			break;
+		}
+	}
+
+	if(found == 0) {
+		printf("No match to %x\n",ddrid);
+		return -1;
+	}
+
+	return 0;
+}
+
 void get_ddr_params_normal(void)
 {
 	int found = 0;
@@ -555,20 +584,18 @@ void get_ddr_params_normal(void)
 
 	burned_ddr_id &= 0xffff;
 
-	size = ARRAY_SIZE(supported_ddr_reg_values);
-
-	if(size == 1) {
-		found = 1;
-		global_reg_value = &supported_ddr_reg_values[0];
-	} else {
-		for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
-			global_reg_value = &supported_ddr_reg_values[i];
-			if(burned_ddr_id == global_reg_value->h.id) {
-				found = 1;
-				break;
-			}
+	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
+		global_reg_value = &supported_ddr_reg_values[i];
+		if((burned_ddr_id & ~(0x7 << 3)) == (global_reg_value->h.id & ~(0x7 << 3))) {
+			found = 1;
+			break;
 		}
 	}
+
+	if(found == 0) {
+		printf("No match to %x\n",burned_ddr_id);
+	}
+
 }
 #else
 void get_ddr_params_burner(void)
@@ -583,7 +610,10 @@ void get_ddr_params_burner(void)
 void get_ddr_params(void)
 {
 #ifndef CONFIG_BURNER
-	get_ddr_params_normal();
+	if(ARRAY_SIZE(supported_ddr_reg_values) == 1)
+		global_reg_value = &supported_ddr_reg_values[0];
+	else if (get_ddr_params_socid() < 0)
+		get_ddr_params_normal();
 #else
 	get_ddr_params_burner();
 #endif

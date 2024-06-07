@@ -321,16 +321,13 @@ void clk_init(void)
 #ifdef CONFIG_JZ_SPI1
 		| CPM_CLKGR_SSI1
 #endif
-#ifdef CONFIG_JZ_EFUSE
-		| CPM_CLKGR_EFUSE
-#endif
 #ifdef CONFIG_JZ_SCBOOT
 		| CPM_CLKGR_RSA
 		| CPM_CLKGR_AES
 		| CPM_CLKGR_PDMA
-		| CPM_CLKGR_EFUSE
 		| CPM_CLKGR_DTRNG
 #endif
+		| CPM_CLKGR_EFUSE
 		;
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR0);

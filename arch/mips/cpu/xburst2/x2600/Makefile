@@ -34,6 +34,7 @@ COBJS-y += pllsetting.o
 COBJS-y += ddr_set_dll.o
 COBJS-y += ../ddr_innophy.o
 COBJS-y += ../ddr_innophy_x2600.o
+COBJS-y += check_socid.o
 
 COBJS-$(CONFIG_RUN_FIRMWARE_VIA_USB_BOOT) += usb_boot.o
 

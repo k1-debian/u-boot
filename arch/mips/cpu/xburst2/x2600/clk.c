@@ -327,9 +327,9 @@ void clk_init(void)
 		| CPM_CLKGR_SSI1
 #endif
 #ifdef CONFIG_JZ_SCBOOT
-		| CPM_CLKGR_EFUSE
 		| CPM_CLKGR_DTRNG
 #endif
+		| CPM_CLKGR_EFUSE
 		;
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR0);
