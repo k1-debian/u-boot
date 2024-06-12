@@ -720,6 +720,7 @@
     #define CONFIG_SYS_SPL_ARGS_ADDR2    CONFIG_SPL_BOOTARGS2
 #else
     #define CONFIG_SYS_SPL_ARGS_ADDR2 " "
+    #define CONFIG_DTB_NAME2          "dtb2"
 #endif
 #endif
 

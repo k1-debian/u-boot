@@ -4,13 +4,15 @@ property:
     custom_signature = 0
 
 partition:
-	#name     =  start,   size, fstype
-	xboot     =     0m,     1m,
-	kernel    =     1m,     8m, EMPTY
-	rootfs    =     9m,    100m, LINUX_FS
-	kernel2   =    109m,    8m, EMPTY
-	rootfs2   =    117m,   100m, LINUX_FS
-	ota       =    217m,    1m, EMPTY
-	userdata  =    218m,   3510m, LINUX_FS
+    #name     =  start,   size, fstype
+    xboot     =     0m,     1m,
+    kernel    =     1m,     8m, EMPTY
+    dtb       =     9m,     1m, EMPTY
+    rootfs    =     10m,    100m, LINUX_FS
+    kernel2   =    110m,    8m, EMPTY
+    dtb2      =    118m,    1m, EMPTY
+    rootfs2   =    119m,   100m, LINUX_FS
+    ota       =    219m,    1m, EMPTY
+    userdata  =    220m,   3508m, LINUX_FS
 
 #fstype could be: LINUX_FS, FAT_FS, EMPTY
