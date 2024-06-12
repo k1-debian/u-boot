@@ -2,7 +2,7 @@
 #include "nand_common.h"
 
 #define DOSILICON_MID		    0xE5
-#define DOSILICON_NAND_DEVICE_COUNT	    6
+#define DOSILICON_NAND_DEVICE_COUNT	    7
 
 static unsigned char ds_eccerr[] = {0x2,0x3};
 static unsigned char ds_eccerr1[] = {0x2};
@@ -15,6 +15,7 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 1,  ds_eccerr),
 	DEVICE_STRUCT(0x22, 2048, 2, 4, 2, 1,  ds_eccerr),
 	DEVICE_STRUCT(0xF1, 2048, 2, 4, 3, 1,  ds_eccerr),
+	DEVICE_STRUCT(0xB4, 2048, 2, 4, 3, 1,  ds_eccerr1),
 };
 
 static struct nand_desc dosilicon_nand = {

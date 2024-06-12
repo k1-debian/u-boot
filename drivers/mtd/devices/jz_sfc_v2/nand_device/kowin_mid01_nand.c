@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define KOWIN_DEVICES_NUM         1
+#define KOWIN_MID01_DEVICES_NUM         1
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		30
@@ -14,9 +14,9 @@
 #define TPP		600
 #define TBE		10
 
-static struct jz_sfcnand_device *kowin_nand;
+static struct jz_sfcnand_device *kowin_mid01_nand;
 
-static struct jz_sfcnand_base_param kowin_param[KOWIN_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param kowin_mid01_param[KOWIN_MID01_DEVICES_NUM] = {
 
 	[0] = {
 		/*KANY1D4S2WD*/
@@ -41,14 +41,14 @@ static struct jz_sfcnand_base_param kowin_param[KOWIN_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[KOWIN_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x15, "KANY1D4S2WD", &kowin_param[0]),
+static struct device_id_struct device_id[KOWIN_MID01_DEVICES_NUM] = {
+	DEVICE_ID_STRUCT(0x15, "KANY1D4S2WD", &kowin_mid01_param[0]),
 };
 
 
-static cdt_params_t *kowin_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
+static cdt_params_t *kowin_mid01_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
-	CDT_PARAMS_INIT(kowin_nand->cdt_params);
+	CDT_PARAMS_INIT(kowin_mid01_nand->cdt_params);
 
 	switch(device_id) {
 		case 0x15:
@@ -58,7 +58,7 @@ static cdt_params_t *kowin_get_cdt_params(struct sfc_flash *flash, uint16_t devi
 			return NULL;
 	}
 
-	return &kowin_nand->cdt_params;
+	return &kowin_mid01_nand->cdt_params;
 }
 
 
@@ -88,25 +88,25 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 }
 
 
-static int kowin_nand_init(void) {
+static int kowin_mid01_nand_init(void) {
 
-	kowin_nand = kzalloc(sizeof(*kowin_nand), GFP_KERNEL);
-	if(!kowin_nand) {
+	kowin_mid01_nand = kzalloc(sizeof(*kowin_mid01_nand), GFP_KERNEL);
+	if(!kowin_mid01_nand) {
 		pr_err("alloc kowin_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	kowin_nand->id_manufactory = 0x01;
-	kowin_nand->id_device_list = device_id;
-	kowin_nand->id_device_count = KOWIN_DEVICES_NUM;
+	kowin_mid01_nand->id_manufactory = 0x01;
+	kowin_mid01_nand->id_device_list = device_id;
+	kowin_mid01_nand->id_device_count = KOWIN_MID01_DEVICES_NUM;
 
-	kowin_nand->ops.get_cdt_params = kowin_get_cdt_params;
-	kowin_nand->ops.deal_ecc_status = deal_ecc_status;
+	kowin_mid01_nand->ops.get_cdt_params = kowin_mid01_get_cdt_params;
+	kowin_mid01_nand->ops.deal_ecc_status = deal_ecc_status;
 
 	/* use private get feature interface, please define it in this document */
-	kowin_nand->ops.get_feature = NULL;
+	kowin_mid01_nand->ops.get_feature = NULL;
 
-	return jz_sfcnand_register(kowin_nand);
+	return jz_sfcnand_register(kowin_mid01_nand);
 }
 
-SPINAND_MOUDLE_INIT(kowin_nand_init);
+SPINAND_MOUDLE_INIT(kowin_mid01_nand_init);
