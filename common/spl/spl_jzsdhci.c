@@ -1399,6 +1399,17 @@ static int mmc_load_img_from_partition(const char *name)
 	unsigned int start_sector;
 	int ret;
 
+#ifdef CONFIG_SPL_OF_LIBFDT
+	unsigned int dtb_addr;
+	ret = spl_get_built_in_gpt_partition(CONFIG_DTB_NAME, &dtb_addr, NULL);
+	if (ret){
+		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		hang();
+	}
+
+	mmc_block_read(dtb_addr, (CONFIG_DTB_SIZE + 512 - 1) / 512, (unsigned char *)CONFIG_DTB_ADRESS);
+#endif /* CONFIG_SPL_OF_LIBFDT */
+
 	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
 	if (ret) {
 		printf("mmc:failed get part %s\n", name);
@@ -1717,6 +1728,9 @@ static char *mmc_boot_rtos_load_os(void)
 	const char *kernel_name = CONFIG_SPL_OS_NAME;
 	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
 	char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_OF_LIBFDT
+	char *dtbname = CONFIG_DTB_NAME;
+#endif /* CONFIG_SPL_OF_LIBFDT */
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 	unsigned int ota_offset = 0;
@@ -1726,12 +1740,26 @@ static char *mmc_boot_rtos_load_os(void)
 		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
 		mmc_block_read(ota_offset, 1, (u32 *)buf);
 		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+#ifdef CONFIG_SPL_OF_LIBFDT
+			dtbname = CONFIG_DTB_NAME2;
+#endif /* CONFIG_SPL_OF_LIBFDT */
 			kernel_name = CONFIG_SPL_OS_NAME2;
 			rtos_name = CONFIG_SPL_RTOS_NAME2;
 			cmdargs = CONFIG_SYS_SPL_ARGS_ADDR2;
 		}
 	}
 #endif
+
+#ifdef CONFIG_SPL_OF_LIBFDT
+	unsigned int dtb_addr;
+	ret = spl_get_built_in_gpt_partition(dtbname, &dtb_addr, NULL);
+	if (ret){
+		printf("dtb not found: "dtbname"\n");
+		hang();
+	}
+
+	mmc_block_read(dtb_addr, (CONFIG_DTB_SIZE + 512 - 1) / 512, (unsigned char *)CONFIG_DTB_ADRESS);
+#endif /* CONFIG_SPL_OF_LIBFDT */
 
 	spl_mmc_cfg_os_args(kernel_name, cmdargs);
 

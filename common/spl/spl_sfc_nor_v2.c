@@ -1156,6 +1156,9 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	const char *kernel_name = CONFIG_SPL_OS_NAME;
 	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
 	char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_OF_LIBFDT
+	char *dtbname = CONFIG_DTB_NAME;
+#endif /* CONFIG_SPL_OF_LIBFDT */
 
 	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partitions);
 
@@ -1167,6 +1170,9 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
 		sfc_read_data(ota_addr, sizeof(buf), (unsigned char *)buf);
 		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+#ifdef CONFIG_SPL_OF_LIBFDT
+			dtbname = CONFIG_DTB_NAME2;
+#endif /* CONFIG_SPL_OF_LIBFDT */
 			kernel_name = CONFIG_SPL_OS_NAME2;
 			rtos_name = CONFIG_SPL_RTOS_NAME2;
 			cmdargs = CONFIG_SYS_SPL_ARGS_ADDR2;
@@ -1175,9 +1181,9 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 #endif
 
 #ifdef CONFIG_SPL_OF_LIBFDT
-	unsigned int bootimg_addr = get_part_offset_by_name(partitions, CONFIG_DTB_NAME);
+	unsigned int bootimg_addr = get_part_offset_by_name(partitions, dtbname);
 	if (bootimg_addr == -1){
-		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		printf("dtb not found: "dtbname"\n");
 		hang();
 	}
 

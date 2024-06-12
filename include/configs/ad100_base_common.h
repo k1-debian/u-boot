@@ -460,7 +460,7 @@
 #ifdef CONFIG_GPT_CREATOR
 #ifndef CONFIG_GPT_TABLE_PATH
 #define CONFIG_GPT_TABLE_PATH	"$(TOPDIR)/board/$(BOARDDIR)"
-#endif
+#endif /* CONFIG_GPT_TABLE_PATH */
 #else
 /* USE MBR + zero-GPT-table instead if no gpt table defined*/
 #define CONFIG_MBR_P0_OFF	64mb
@@ -582,7 +582,7 @@
 
 #ifndef CONFIG_ROOTFS_DEV
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
-#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p2 rootwait"
+#define CONFIG_ROOTFS_DEV "root=/dev/mmcblk0p3 rootwait"
 #else
 #define CONFIG_ROOTFS_DEV "root=/dev/mtdblock_bbt_ro2"
 #endif /* CONFIG_SPL_JZMMC_SUPPORT */
@@ -604,7 +604,7 @@
 
 #ifndef CONFIG_ROOTFS2_DEV
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
-#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
+#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p5 rootwait"
 #else
 #define CONFIG_ROOTFS2_DEV "root=/dev/mtdblock_bbt_ro4"
 #endif /* CONFIG_SPL_JZMMC_SUPPORT */
@@ -685,6 +685,7 @@
     #define CONFIG_SYS_SPL_ARGS_ADDR2    CONFIG_SPL_BOOTARGS2
 #else
     #define CONFIG_SYS_SPL_ARGS_ADDR2 " "
+    #define CONFIG_DTB_NAME2          "dtb2"
 #endif
 #endif
 
