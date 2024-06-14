@@ -924,28 +924,34 @@ static void ddrp_software_calibration(void)
 
 #ifndef CONFIG_BURNER
 
+__weak unsigned int check_socid(void)
+{
+        return -1;
+}
+
 int get_ddr_params_socid(void)
 {
 	int i;
 	int found = 0;
 	uint32_t ddrid = 0;
+	uint32_t mask = ~(7 << 3);
 
 	ddrid = check_socid();
-	if (ddrid == 0) {
-		printf("invalid ddr id %x\n",ddrid);
+	if ((int)ddrid < 0) {
+		debug("Check socid return invalid ddr id %x\n",ddrid);
 		return -1;
 	}
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];
-		if((ddrid & ~(0x7 << 3)) == (global_reg_value->h.id & ~(0x7 << 3))) {
+		if((ddrid & mask) == (global_reg_value->h.id & mask)) {
 			found = 1;
 			break;
 		}
 	}
 
 	if(found == 0) {
-		printf("No match to %x\n",ddrid);
+		debug("Check socid not match to %x\n",ddrid);
 		return -1;
 	}
 
@@ -958,23 +964,24 @@ void get_ddr_params_normal(void)
 	int size = 0;
 	int i;
 	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
+	uint32_t mask = ~(7 << 3);
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
-		printf("invalid burned ddr id\n");
+		debug("invalid burned ddr id\n");
 	}
 
 	burned_ddr_id &= 0xffff;
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];
-		if((burned_ddr_id & ~(0x7 << 3)) == (global_reg_value->h.id & ~(0x7 << 3))) {
+		if((burned_ddr_id & mask) == (global_reg_value->h.id & mask)) {
 			found = 1;
 			break;
 		}
 	}
 
 	if(found == 0) {
-		printf("No match to %x\n",burned_ddr_id);
+		debug("No match to %x\n",burned_ddr_id);
 	}
 
 }

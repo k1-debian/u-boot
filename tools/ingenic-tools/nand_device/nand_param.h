@@ -6,7 +6,8 @@ int fm_nand_register_func(void);
 int foresee_nand_register_func(void);
 int gd_nand_register_func(void);
 int issi_nand_register_func(void);
-int kowin_nand_register_func(void);
+int kowin_mid01_nand_register_func(void);
+int kowin_midc9_nand_register_func(void);
 int mxic_nand_register_func(void);
 int tc_nand_register_func(void);
 int toshiba_nand_register_func(void);
@@ -38,7 +39,10 @@ static void *nand_param[] = {
 (void *)issi_nand_register_func,
 /*##################*/
 /*##################*/
-(void *)kowin_nand_register_func,
+(void *)kowin_mid01_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)kowin_midc9_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)mxic_nand_register_func,
