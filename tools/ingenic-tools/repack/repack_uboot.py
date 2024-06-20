@@ -51,7 +51,7 @@ def main():
         file.seek(512)
         secureID = file.read(2)
         file.seek(0x5800)
-        partition = file.read(484)
+        partition = file.read(1024)
     with open(inFile, "rb") as iFile , open(outFile, "wb") as oFile:
         data = iFile.read(128)
         oFile.write(data)
@@ -67,7 +67,7 @@ def main():
         oFile.write(data)
         oFile.write(partition)
 
-        iFile.seek(0x5800 + 484)
+        iFile.seek(0x5800 + 1024)
         data = iFile.read()
         oFile.write(data)
         print("done")
