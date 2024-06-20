@@ -1043,7 +1043,7 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 #ifdef CONFIG_SPL_OF_LIBFDT
 	unsigned int dtb_addr = get_part_offset_by_name(partitions, dtbname);
 	if (dtb_addr == -1){
-		printf("dtb not found: "dtbname"\n");
+		printf("dtb not found: %s\n", dtbname);
 		hang();
 	}
 

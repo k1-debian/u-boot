@@ -1754,7 +1754,7 @@ static char *mmc_boot_rtos_load_os(void)
 	unsigned int dtb_addr;
 	ret = spl_get_built_in_gpt_partition(dtbname, &dtb_addr, NULL);
 	if (ret){
-		printf("dtb not found: "dtbname"\n");
+		printf("dtb not found: %s\n", dtbname);
 		hang();
 	}
 
