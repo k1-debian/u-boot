@@ -4,7 +4,7 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define DOSILICON_DEVICES_NUM         7
+#define DOSILICON_DEVICES_NUM         8
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -161,6 +161,28 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+        [7] = {
+		/*DS35Q12C-1B*/
+		/*this parameter has not been tested for high/low temperature and random power on/off.*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 512,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP,
+		.tBE = TBE,
+
+
+		.plane_select = 1,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
@@ -171,6 +193,7 @@ static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x22, "DS35Q2GAXXX-1V8", &dosilicon_param[4]),
 	DEVICE_ID_STRUCT(0xF1, "DS35X1GBXXX", &dosilicon_param[5]),
 	DEVICE_ID_STRUCT(0xB4, "DS35Q4GBXXX", &dosilicon_param[6]),
+        DEVICE_ID_STRUCT(0x75, "DS35Q12C-1B", &dosilicon_param[7]),
 };
 
 
@@ -186,6 +209,7 @@ static cdt_params_t *dosilicon_get_cdt_params(struct sfc_flash *flash, uint16_t 
 		case 0x22:
 		case 0xF1:
 		case 0xB4:
+                case 0x75:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -231,6 +255,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 			}
 			break;
 		case 0xB4:
+                case 0x75:
 			switch((ecc_status >> 4) & 0x7) {
 				case 0x0:
 					return 0;
