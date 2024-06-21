@@ -763,25 +763,33 @@ struct nor_partition *get_partition_index(u32 offset, u32 length, int *pt_index)
 	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
 	int i;
 
-	for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
-		if(offset >= nor_info->norflash_partitions->nor_partition[i].offset && \
-				(offset + length) <= (nor_info->norflash_partitions->nor_partition[i].offset + \
-					nor_info->norflash_partitions->nor_partition[i].size)){
-			*pt_index = i;
-			break;
-		}else if(offset >= nor_info->norflash_partitions->nor_partition[i].offset && \
-				offset < (spi_nor_info->chip_size) && \
-				(nor_info->norflash_partitions->nor_partition[i].size == 0xffffffff)){ /*size == -1*/
-			nor_info->norflash_partitions->nor_partition[i].size = spi_nor_info->chip_size-nor_info->norflash_partitions->nor_partition[i].offset;
-			*pt_index = i;
-			break;
-		}
-	}
-	if(i >= nor_info->norflash_partitions->num_partition_info){
-		*pt_index = -1;
-		printf("partition size not align with write transfer size \n");
+	if (offset > spi_nor_info->chip_size) {
+		printf("offset address exceeds flash size.\n");
 		return NULL;
 	}
+
+	for (i = 0; i < nor_info->norflash_partitions->num_partition_info; i++) {
+		if (offset >= nor_info->norflash_partitions->nor_partition[i].offset) {
+			if (nor_info->norflash_partitions->nor_partition[i].size == 0UL ||
+					nor_info->norflash_partitions->nor_partition[i].size == -1UL) {
+
+				nor_info->norflash_partitions->nor_partition[i].size =
+					spi_nor_info->chip_size - nor_info->norflash_partitions->nor_partition[i].offset;
+			}
+
+			if ((offset + length) <= (nor_info->norflash_partitions->nor_partition[i].offset +
+						nor_info->norflash_partitions->nor_partition[i].size)){
+				*pt_index = i;
+				break;
+			}
+		}
+	}
+	if (i >= nor_info->norflash_partitions->num_partition_info) {
+		*pt_index = -1;
+		printf("offset address is not in the partition or the data length exceeds the partition size.\n");
+		return NULL;
+	}
+
 	return &nor_info->norflash_partitions->nor_partition[i];
 }
 
