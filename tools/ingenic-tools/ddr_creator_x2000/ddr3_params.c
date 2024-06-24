@@ -69,6 +69,11 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 	case 15 ... 16:
 		p->mr0.ddr3.WR = 0;
 		break;
+#ifdef CONFIG_AD_SLT
+	case 17 ... 22:
+		p->mr0.ddr3.WR = 0;
+		break;
+#endif
 	default:
 		out_error("tWR(%d) is error, valid value is between from 5 to 12.\n",
 		       p->private_params.ddr3_params.tWR);
@@ -137,7 +142,11 @@ static void fill_mr_params_ddr3(struct ddr_params *p)
 
 	tmp = -1;
 	tmp = ps2cycle_ceil(p->private_params.ddr3_params.WL,1);
+#ifdef CONFIG_AD_SLT
+	if(tmp < 5 || tmp > 10)
+#else
 	if(tmp < 5 || tmp > 9)
+#endif
 	{
 		out_error("ddr frequancy too fast. %d\n",tmp);
 		out_error(". %d\n",__ps_per_tck);

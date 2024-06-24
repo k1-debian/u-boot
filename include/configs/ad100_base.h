@@ -7,5 +7,8 @@
 #define CONFIG_SPL_SERIAL_SUPPORT
 
 #include "ad100_base_common.h"
+#ifdef CONFIG_AD_SLT
+#include "ad100_slt_common.h"
+#endif
 
 #endif /* __AD100_BASE_H__ */

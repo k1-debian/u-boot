@@ -408,9 +408,9 @@ void ddrc_dfi_init(enum ddr_type type, unsigned int kgd_rtt_dic)
 		mdelay(1);
 
 #define DDRC_LMR_MR(n)														  \
-				global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
+				(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
 		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |						   \
-		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
+		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16)))
 		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
 		mdelay(1);
 		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
@@ -429,9 +429,9 @@ void ddrc_dfi_init(enum ddr_type type, unsigned int kgd_rtt_dic)
 	case LPDDR3:
 		udelay(200);	//200us delay before RST.
 #define DDRC_LMR_MR(n)														  \
-				global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
+				(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		\
 		((global_reg_value->DDR_MR##n##_VALUE & 0xff) << 24)  |						   \
-		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16))
+		(((global_reg_value->DDR_MR##n##_VALUE >> 8) & 0xff) << (16)))
 		ddr_writel(DDRC_LMR_MR(63), DDRC_LMR); //set MRS reset
 		mdelay(1);
 		ddr_writel(DDRC_LMR_MR(10), DDRC_LMR); //set IO calibration
@@ -450,9 +450,9 @@ void ddrc_dfi_init(enum ddr_type type, unsigned int kgd_rtt_dic)
 	case DDR3:
 		mdelay(1);
 #define DDRC_LMR_MR(n)								\
-		global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		   \
+		(global_reg_value->DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_LMR |		   \
 			((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << DDRC_LMR_DDR_ADDR_BIT) |	   \
-			(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT)
+			(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << DDRC_LMR_BA_BIT))
 
 		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
 		udelay(10);
@@ -483,9 +483,9 @@ void ddrc_dfi_init(enum ddr_type type, unsigned int kgd_rtt_dic)
 		mdelay(1);
 
 #define DDRC_LMR_MR(n)											\
-		global_reg_value->DDRC_DLMR_VALUE | 1 << 1 | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
+		(global_reg_value->DDRC_DLMR_VALUE | 1 << 1 | DDRC_LMR_START | DDRC_LMR_CMD_LMR |	\
 			((global_reg_value->DDR_MR##n##_VALUE & 0x1fff) << DDRC_LMR_DDR_ADDR_BIT) |		\
-			(((global_reg_value->DDR_MR##n##_VALUE >> 13) & 0x3) << DDRC_LMR_BA_BIT)
+			(((global_reg_value->DDR_MR##n##_VALUE >> 13) & 0x3) << DDRC_LMR_BA_BIT))
 
 		while (ddr_readl(DDRC_LMR) & (1 << 0));
 		ddr_writel(0x400003, DDRC_LMR);

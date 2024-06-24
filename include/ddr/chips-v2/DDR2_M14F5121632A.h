@@ -29,6 +29,12 @@
 #define CONFIG_DDR_CL -1
 #endif
 
+#if defined(CONFIG_AD_SLT)
+#if (CONFIG_DDR2_M14F5121632A_MEM_FREQ > 667000000)
+#define CONFIG_DDR_CL 9
+#endif
+#endif
+
 #define CONFIG_DDR_AL 0
 
 #if (-1 == CONFIG_DDR_CL)
