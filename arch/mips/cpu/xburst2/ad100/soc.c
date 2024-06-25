@@ -102,6 +102,7 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 #endif
 
+	printf("%s\n", AD100_VERSION);
 	printf("ERROR EPC %x\n", read_c0_errorepc());
 	//dump_c0_regs();
 

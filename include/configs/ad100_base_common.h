@@ -1,6 +1,8 @@
 #ifndef __AD100_BASE_COMMON_H__
 #define	__AD100_BASE_COMMON_H__
 
+#define AD100_VERSION   "V1.0.0 <2024/06/25>"
+
 /**
  * Basic configuration(SOC, Cache, UART, DDR).
  */
@@ -17,7 +19,7 @@
   #define CONFIG_DDR_SEL_PLL		MPLL
   #define CONFIG_SYS_CPU_FREQ		1200000000
   #define CONFIG_SYS_MEM_FREQ		900000000
-#elif defined(CONFIG_AD100N_DDR) 
+#elif defined(CONFIG_AD100N_DDR)
   #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
@@ -539,6 +541,10 @@
 
 #ifndef CONFIG_RTOS_SIZE_MB
 #define CONFIG_RTOS_SIZE_MB 0
+#endif
+
+#ifndef CONFIG_LCD_MEM_MB
+#define CONFIG_LCD_MEM_MB 0
 #endif
 
 /* boot args init program

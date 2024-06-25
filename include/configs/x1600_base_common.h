@@ -527,6 +527,10 @@
 #define CONFIG_RTOS_SIZE_MB 0
 #endif
 
+#ifndef CONFIG_LCD_MEM_MB
+#define CONFIG_LCD_MEM_MB 0
+#endif
+
 /*
  * boot args init program
  */
