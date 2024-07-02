@@ -528,6 +528,8 @@
 #define CONFIG_SFC_QUAD
 #else
 #define CONFIG_SFC_NAND
+#define CONFIG_SFC_QUAD
+#define CONFIG_SFC_NAND_INIT_RATE	50000000
 #endif /* defined CONFIG_SPL_SFC_NOR */
 /*#define CONFIG_SPI_QUAD*/
 #endif /* defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND) */
@@ -591,12 +593,13 @@
 #if defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SFC_NAND_COMMAND)
 #define CONFIG_SPL_SERIAL_SUPPORT
 #define CONFIG_SPI_SPL_CHECK
+/* sfc nand config */
 #if defined(CONFIG_SPL_SFC_NAND) || defined(CONFIG_SFC_NAND_COMMAND)
 #define CONFIG_NAND_BURNER
-#define CONFIG_SPIFLASH_PART_OFFSET     ( 26 * 1024)
+#define CONFIG_SPIFLASH_PART_OFFSET     0x5800
 #define CONFIG_SPI_NAND_BPP     (2048 +64)  /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB     (64)        /*Page Per Block*/
-#define CONFIG_SFC_NAND_RATE    50000000
+#define CONFIG_SFC_NAND_RATE    100000000	/* value <= 296000000(sfc 74Mhz)*/
 #define CONFIG_MTD_SFCNAND
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND
@@ -608,10 +611,15 @@
 #define CONFIG_MTD_DEVICE
 #define CONFIG_CMD_UBI
 #define CONFIG_CMD_UBIFS
+/* sfc nand env config */
+/* #define CONFIG_CMD_SAVEENV */		/* saveenv */
+#define CONFIG_FLASH_TYPE              "flashtype=nand"
 #define MTDIDS_DEFAULT                  "nand0=nand"
-#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(uboot),3M(kernel),20M(root),-(appfs)"
+#define MTDPARTS_DEFAULT                "mtdparts=nand:1M(boot),8M(kernel),40M(rootfs),-(data)"
+#define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
+
 #if 1
-#define CONFIG_SPI_STANDARD //if the nand is QUAD mode, please annotate it. the default is one lan.
+#define CONFIG_SPI_STANDARD /* if the nand is QUAD mode, please annotate it. the default is one lan. */
 #endif
 #ifdef CONFIG_SPL_SFC_SUPPORT
 /* spi nand environment */
@@ -637,7 +645,7 @@
 /* This is used to specify the sfc to use in spl_sfc_nor_v2.c */
 /*#define SFC SFC0*/
 #endif
-#endif /* CONFIG_SPL_SFC_SUPPORT */
+#endif /* defined(CONFIG_SPL_SFC_SUPPORT) || defined(CONFIG_SFC_NAND_COMMAND) */
 
 /* PMU */
 #define CONFIG_REGULATOR
@@ -833,7 +841,7 @@
 	#define CONFIG_SPL_JZSDHCI
   #endif
   #ifdef CONFIG_SPL_MMC_SUPPORT
-	#define CONFIG_JZ_MMC_SPLMSC		//Configuration SPL stage msc controller use jz_sdhci driver
+	#define CONFIG_JZ_MMC_SPLMSC		/* Configuration SPL stage msc controller use jz_sdhci driver */
   #endif
 #endif /* CONFIG_SPL_MMC_SUPPORT || CONFIG_SPL_JZMMC_SUPPORT */
 
