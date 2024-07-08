@@ -1359,21 +1359,17 @@ static int mmc_load_image_raw(unsigned long sector)
 	/* convert size to sectors - round up */
 	image_size_sectors = (spl_image.size + 0x200 - 1) / 0x200;
 
-#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
-	spl_image.load_addr -= 2048;
-#endif
-
 	/* Read the header too to avoid extra memcpy */
 	err = mmc_block_read(sector, image_size_sectors,
-			     (void *)spl_image.load_addr);
+			     (void *)spl_image.load_addr - 2048);
 
 #ifdef DEBUG_DDR_CONTENT
-	dump_ddr_content(spl_image.load_addr, 200);
+	dump_ddr_content(spl_image.load_addr - 2048, 200);
 #endif
 	flush_cache_all();
 
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
-	int ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
+	int ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
 	if(ret) {
 		printf("Error spl secure load kernel.\n");
 		hang();

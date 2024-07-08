@@ -201,10 +201,12 @@
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
 
+#ifndef CONFIG_JZ_SCBOOT
 #ifdef CONFIG_BOOT_FAST_FIXED
 #define CONFIG_MMC_SDMA
 #define MSC_INIT_CLK                      (400 * 1000)  /* 400k */
 #define MSC_WORKING_CLK                   (100 * 1000000)    /* 100M */
+#endif /* end of CONFIG_BOOT_FAST_FIXED */
 #endif
 
 /* MSC Command configuration */
@@ -222,10 +224,12 @@
 #define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
 
+#ifndef CONFIG_JZ_SCBOOT
 #ifdef CONFIG_BOOT_FAST_FIXED
 #define CONFIG_MMC_SDMA
 #define MSC_INIT_CLK                      (400 * 1000)  /* 400k */
 #define MSC_WORKING_CLK                   (50 * 1000000)    /* 100M */
+#endif /* end of CONFIG_BOOT_FAST_FIXED */
 #endif
 
 /* MSC Command configuration */

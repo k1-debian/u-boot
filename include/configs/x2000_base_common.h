@@ -155,12 +155,14 @@
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
 
+#ifndef CONFIG_JZ_SCBOOT
 #ifdef CONFIG_BOOT_FAST_FIXED
 #define CONFIG_MMC_SDMA
 #define CONFIG_SPL_JZ_MSC_BUS_8BIT
 #define MSC_INIT_CLK                      (1 * 1000 * 1000)  /* 1M */
 #define MSC_WORKING_CLK                   (200 * 1000000)    /* 200M */
 #define CONFIG_SPL_RTOS_CARD_PARAMS_BASE  (0x80000A00)     /* 起始地址:CONFIG_PARAM_BASE + 512      大小:1024 */
+#endif /* end of CONFIG_BOOT_FAST_FIXED */
 #endif
 
 /* MSC Command configuration */
@@ -179,9 +181,11 @@
 #define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
 
+#ifndef CONFIG_JZ_SCBOOT
 #ifdef CONFIG_BOOT_FAST_FIXED
 #define CONFIG_MMC_SDMA
 #define CONFIG_SPL_JZ_MSC_BUS_4BIT
+#endif /* end of CONFIG_BOOT_FAST_FIXED */
 #endif
 
 /* MSC Command configuration */
@@ -200,12 +204,14 @@
 #define CONFIG_MMC_SPL_PARAMS
 #define CONFIG_JZ_SDHCI
 
+#ifndef CONFIG_JZ_SCBOOT
 #ifdef CONFIG_BOOT_FAST_FIXED
 #define CONFIG_MMC_SDMA
 #define CONFIG_SPL_JZ_MSC_BUS_4BIT
 #define MSC_INIT_CLK                      (1 * 1000 * 1000)  /* 1M */
 #define MSC_WORKING_CLK                   (50 * 1000000)    /* 50M */
 #define CONFIG_SPL_RTOS_CARD_PARAMS_BASE  (0x80000A00)     /* CONFIG_PARAM_BASE + 512 */
+#endif /* end of CONFIG_BOOT_FAST_FIXED */
 #endif
 
 /* MSC Command configuration */
