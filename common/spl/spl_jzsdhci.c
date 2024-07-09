@@ -1360,12 +1360,22 @@ static int mmc_load_image_raw(unsigned long sector)
 	image_size_sectors = (spl_image.size + 0x200 - 1) / 0x200;
 
 	/* Read the header too to avoid extra memcpy */
+#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
+	/* 跳过2Kbyte大小的安全启动签名数据 */
 	err = mmc_block_read(sector, image_size_sectors,
 			     (void *)spl_image.load_addr - 2048);
+#else
+	err = mmc_block_read(sector, image_size_sectors,
+			     (void *)spl_image.load_addr);
+#endif
 
 #ifdef DEBUG_DDR_CONTENT
+#if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
 	dump_ddr_content(spl_image.load_addr - 2048, 200);
+#else
+	dump_ddr_content(spl_image.load_addr, 200);
 #endif
+#endif /* end of DEBUG_DDR_CONTENT */
 	flush_cache_all();
 
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
