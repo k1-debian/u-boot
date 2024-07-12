@@ -1332,7 +1332,7 @@ extern int secure_scboot (void *, void *);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 #define LOAD_ROOTFS_ADDR 0x82000000
-static void secure_check_hash_rootfs(void)
+static void secure_check_hash_rootfs(const char *name)
 {
 	unsigned int signature_offset;
 	unsigned int rootfs_offset;
@@ -1340,10 +1340,16 @@ static void secure_check_hash_rootfs(void)
 	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
 	int ret;
 
-	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_SIG_NAME, &signature_offset, NULL);
-	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_ROOTFS_NAME, &rootfs_offset, NULL);
+	if (!strncmp(name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2))) {
+		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_SIG_NAME2, &signature_offset, NULL);
+		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_ROOTFS_NAME2, &rootfs_offset, NULL);
+	}
+	else {
+		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_SIG_NAME, &signature_offset, NULL);
+		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_ROOTFS_NAME, &rootfs_offset, NULL);
+	}
 
-	if (signature_offset == -1 || rootfs_offset == -1){
+	if (ret == -1) {
 		printf("sig or rootfs partitions not found\n");
 		hang();
 	}
@@ -1447,7 +1453,7 @@ static int mmc_load_img_from_partition(const char *name)
 #endif /* CONFIG_SPL_OF_LIBFDT */
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
-	secure_check_hash_rootfs();
+	secure_check_hash_rootfs(name);
 #endif
 
 	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
@@ -1480,6 +1486,13 @@ static int mmc_ota_load_img_from_partition(const char *name)
 			kernel_name = CONFIG_SPL_OS_NAME2;
 		}
 	}
+
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	if (is_kernel2)
+		secure_check_hash_rootfs(CONFIG_SPL_OS_NAME2);
+	else
+		secure_check_hash_rootfs(CONFIG_SPL_OS_NAME);
+#endif
 
 	ret = spl_get_built_in_gpt_partition(kernel_name, &start_sector, NULL);
 	if (ret) {
@@ -1802,7 +1815,7 @@ static char *mmc_boot_rtos_load_os(void)
 #endif /* CONFIG_SPL_OF_LIBFDT */
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
-	secure_check_hash_rootfs();
+	secure_check_hash_rootfs(kernel_name);
 #endif
 	spl_mmc_cfg_os_args(kernel_name, cmdargs);
 
