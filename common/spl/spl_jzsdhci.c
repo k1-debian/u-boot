@@ -1332,7 +1332,7 @@ extern int secure_scboot (void *, void *);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 #define LOAD_ROOTFS_ADDR 0x82000000
-static void secure_check_hash_rootfs(const char *name)
+static void secure_check_hash_rootfs(const char *name, void *buffer)
 {
 	unsigned int signature_offset;
 	unsigned int rootfs_offset;
@@ -1340,24 +1340,23 @@ static void secure_check_hash_rootfs(const char *name)
 	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
 	int ret;
 
-	if (!strncmp(name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2))) {
-		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_SIG_NAME2, &signature_offset, NULL);
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	if (!strncmp(name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2)))
 		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_ROOTFS_NAME2, &rootfs_offset, NULL);
-	}
-	else {
-		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_SIG_NAME, &signature_offset, NULL);
+	else
 		ret = spl_get_built_in_gpt_partition(CONFIG_SPL_ROOTFS_NAME, &rootfs_offset, NULL);
-	}
+#else
+	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_ROOTFS_NAME, &rootfs_offset, NULL);
+#endif
 
 	if (ret == -1) {
 		printf("sig or rootfs partitions not found\n");
 		hang();
 	}
 
-	mmc_block_read(signature_offset, 2048 / 512, LOAD_ROOTFS_ADDR - 2048);
+	memcpy(LOAD_ROOTFS_ADDR - 2048, buffer, 2048);
 	code_len = ptr[128];
 	mmc_block_read(rootfs_offset, code_len / 512, LOAD_ROOTFS_ADDR);
-
 	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
 	if(ret) {
 		printf("Error check rootfs hash.\n");
@@ -1367,7 +1366,7 @@ static void secure_check_hash_rootfs(const char *name)
 #endif
 #endif
 
-static int mmc_load_image_raw(unsigned long sector)
+static int mmc_load_image_raw(unsigned long sector, const char *name)
 {
 	int err = 0;
 	u32 image_size_sectors;
@@ -1392,14 +1391,29 @@ static int mmc_load_image_raw(unsigned long sector)
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
 
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	/* 读的长度增加2K(rootfs signature) */
+	image_size_sectors = (spl_image.size + 2048 + 0x200 - 1) / 0x200;
+#else
 	/* convert size to sectors - round up */
 	image_size_sectors = (spl_image.size + 0x200 - 1) / 0x200;
+#endif
 
 	/* Read the header too to avoid extra memcpy */
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
 	/* 跳过2Kbyte大小的安全启动签名数据 */
 	err = mmc_block_read(sector, image_size_sectors,
 			     (void *)spl_image.load_addr - 2048);
+
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	unsigned int *info =  (void *)spl_image.load_addr - 2048 + 512;
+	unsigned int sig_offset = *info + (16 - 1);
+	sig_offset = sig_offset & ~(16 - 1);
+	sig_offset = sig_offset + 2048;
+	/* signature address */
+	secure_check_hash_rootfs(name, (void *)spl_image.load_addr - 2048 + sig_offset);
+#endif
+
 #else
 	err = mmc_block_read(sector, image_size_sectors,
 			     (void *)spl_image.load_addr);
@@ -1452,17 +1466,13 @@ static int mmc_load_img_from_partition(const char *name)
 	mmc_block_read(dtb_addr, (CONFIG_DTB_SIZE + 512 - 1) / 512, (unsigned char *)CONFIG_DTB_ADRESS);
 #endif /* CONFIG_SPL_OF_LIBFDT */
 
-#ifdef CONFIG_JZ_SECURE_ROOTFS
-	secure_check_hash_rootfs(name);
-#endif
-
 	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
 	if (ret) {
 		printf("mmc:failed get part %s\n", name);
 		return ret;
 	}
 
-	return mmc_load_image_raw(start_sector);
+	return mmc_load_image_raw(start_sector, name);
 }
 #endif
 
@@ -1487,13 +1497,6 @@ static int mmc_ota_load_img_from_partition(const char *name)
 		}
 	}
 
-#ifdef CONFIG_JZ_SECURE_ROOTFS
-	if (is_kernel2)
-		secure_check_hash_rootfs(CONFIG_SPL_OS_NAME2);
-	else
-		secure_check_hash_rootfs(CONFIG_SPL_OS_NAME);
-#endif
-
 	ret = spl_get_built_in_gpt_partition(kernel_name, &start_sector, NULL);
 	if (ret) {
 		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
@@ -1502,7 +1505,7 @@ static int mmc_ota_load_img_from_partition(const char *name)
 
 	debug("kernel:%s %x\n", kernel_name, start_sector);
 
-	mmc_load_image_raw(start_sector);
+	mmc_load_image_raw(start_sector, kernel_name);
 
 	if (is_kernel2)
 		return CONFIG_SYS_SPL_ARGS_ADDR2;
@@ -1814,9 +1817,6 @@ static char *mmc_boot_rtos_load_os(void)
 	mmc_block_read(dtb_addr, (CONFIG_DTB_SIZE + 512 - 1) / 512, (unsigned char *)CONFIG_DTB_ADRESS);
 #endif /* CONFIG_SPL_OF_LIBFDT */
 
-#ifdef CONFIG_JZ_SECURE_ROOTFS
-	secure_check_hash_rootfs(kernel_name);
-#endif
 	spl_mmc_cfg_os_args(kernel_name, cmdargs);
 
 	unsigned int rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
@@ -1930,7 +1930,7 @@ char *spl_mmc_load_image(void)
 	mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
 #endif
 #else
-	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR, NULL);
 #endif
 	return NULL;
 }

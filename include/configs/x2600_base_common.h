@@ -725,7 +725,6 @@
     #define CONFIG_SPL_OS_NAME2       "kernel2"
 #ifdef CONFIG_JZ_SECURE_ROOTFS
     #define CONFIG_SPL_ROOTFS_NAME2   "rootfs2"
-    #define CONFIG_SPL_SIG_NAME2      "signature2"
 #endif /* end of CONFIG_JZ_SECURE_ROOTFS */
     #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
 #ifndef CONFIG_SPL_OF_LIBFDT
