@@ -4,14 +4,16 @@
 #include <asm/io.h>
 #include <asm/errno.h>
 #include <asm/gpio.h>
+#include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
+#include <cloner/cloner.h>
 
 #include "secall.h"
 #include "pdma.h"
 #include "aes.h"
 #include "otp.h"
 
-#include <cloner/cloner.h>
+
 static int efuse_en_gpio = -1;
 
 #ifdef CONFIG_PMU_RICOH6x
@@ -62,103 +64,69 @@ static void efuse_1v8_output(int value)
 #endif
 }
 
-static int efuse_config(void)
+static int set_efuse_timing(void)
 {
-	/*efuse register*/
-	volatile unsigned int *reg_ctrl = (volatile unsigned int *)EFUSE_REG_CTRL;
-	volatile unsigned int *reg_cfg = (volatile unsigned int *)EFUSE_REG_CFG;
-	volatile unsigned int *reg_stat = (volatile unsigned int *)EFUSE_REG_STAT;
-	/*cpm register*/
-	volatile unsigned int *reg_cpccr = (volatile unsigned int *)(CPM_BASE + CPM_CPCCR);
-	volatile unsigned int *reg_cpapcr = (volatile unsigned int *)(CPM_BASE + CPM_CPAPCR);
-	volatile unsigned int *reg_cpmpcr = (volatile unsigned int *)(CPM_BASE + CPM_CPMPCR);
+	unsigned long rate;
+	uint32_t val, ns;
+	uint32_t rd_adj, wr_adj;
+	int rd_strobe, wr_strobe;
+	int i, negative_flag;
 
-	debug("xxxxxxx reg_cfg = %x\n",*reg_cfg);
-	debug("xxxxxxx reg_cpccr = %x\n",*reg_cpccr);
-	debug("xxxxxxx reg_cpmpcr = %x\n",*reg_cpmpcr);
-	debug("xxxxxxx reg_stat: = %x\n", *reg_stat);
+	rate = clk_get_rate(H2CLK);
+	ns = 1000000000 / rate;
+	printf("rate = %lu, ns = %d\n", rate, ns);
 
-	int cfg = 0;
-	int h2div = ((*reg_cpccr & 0xf<<12)>>12) + 1;
-	int sel_a = 0;
-	if(((*reg_cpccr >> 24) & 0x3) == 1) {
-		sel_a = 1;
-	} else if (((*reg_cpccr >> 24) & 0x3) == 2) {
-		sel_a = 2;
-	}
-
-	int pll = 0;
-	if(sel_a == 1) {
-		int apll_m = ((*reg_cpapcr & 0x3ff<<20)>>20) + 1;
-		int apll_n = ((*reg_cpapcr & 0x3f<<14)>>14) + 1;
-		int apll_o = ((*reg_cpapcr & 0x7<<11)>>11) + 1;
-
-		pll = 24 * 2 * apll_m / (apll_n * apll_o);
-		debug(" xxxx AHB2 select APLL : NF=%d, NR=%d, NO=%d, FOUT=%d\n", apll_m, apll_n, apll_o, pll);
-	} else if(sel_a == 2) {
-		int mpll_m = ((*reg_cpmpcr & 0x3ff<<20)>>20) + 1;
-		int mpll_n = ((*reg_cpmpcr & 0x3f<<14)>>14) + 1;
-		int mpll_o = ((*reg_cpmpcr & 0x7<<11)>>11) + 1;
-
-		pll = 24 * 2 * mpll_m / (mpll_n * mpll_o);
-		debug(" xxxx AHB2 select MPLL : NF=%d, NR=%d, NO=%d, FOUT=%d\n", mpll_m, mpll_n, mpll_o, pll);
-	}
-
-	int ahb2 = pll/h2div;
-	int ahb2_cycle= 1000/ahb2; //ns
-
-	int wr_adj = 0;
-	int rd_adj = 0;
-	while(1) {
-		if((wr_adj + 1) * ahb2_cycle > 4) {
-			debug("-----wr_adj = %x --\n",wr_adj);
+	for(i = 0; i <= 0xf; i++) {
+		if((i + 2) * ns > 15)
 			break;
-		}
-		wr_adj ++;
-		rd_adj ++;
 	}
 
-	int flag = 0;
-	int wr_strobe = 0;
-	while(1) {
+	if(i > 0xf) {
+		printf("rd_adj and wr_adj fail!\n");
+		return -1;
+	}
+	rd_adj = wr_adj = i;
 
-		if((ahb2_cycle * (wr_adj+3000 + wr_strobe)) > 11000 &&
-				(ahb2_cycle * (wr_adj+3000 + wr_strobe)) < 13000) {
-			debug("-----wr_strobe = %x --\n",wr_strobe);
+	for(i = 0; i < 0x1f; i++) {
+		if(((rd_adj + i + 48) * ns) > 150)
 			break;
-		}
-
-		wr_strobe++;
-		if((flag && wr_strobe == 0x7ff) || (!flag && wr_strobe == 0x3ff)) {
-			printf("!!!!!!!!!!!! efuse can't run in bad AHB2 Frequency!!!!!!!\n");
-			return -1;
-		}
-
-		if((ahb2_cycle * (wr_adj + 3000)) > 13000) {
-			if((ahb2_cycle * (wr_adj+3000 - wr_strobe)) > 11000 &&
-				(ahb2_cycle * (wr_adj+3000 - wr_strobe)) < 13000) {
-				wr_strobe |= (1 << 10);
-				debug("-----wr_strobe = %x --\n",wr_strobe);
-				break;
-			}
-			flag = 1;
-		}
 	}
+	if(i == 0x1f) {
+		printf("get efuse cfg rd_strobe fail!\n");
+		return -1;
+	}
+	rd_strobe = i;
 
-	int rd_strobe = 0;
-	while(1) {
-		if(((rd_adj + rd_strobe + 30) * ahb2_cycle) > 100) {
-			debug("-----rd_strobe = %x --\n",rd_strobe);
+	for(i = 0; i < 0x7ff; i++) {
+		val = (wr_adj + i + 3000) * ns;
+		if(val > 13000) {
+			val = (wr_adj - i + 3000) * ns;
+			negative_flag = 1;
+		}
+
+		if(val > 11000 && val < 13000)
 			break;
-		}
-
-		rd_strobe++;
 	}
 
-	*reg_cfg = (rd_adj << 24) | (rd_strobe << 16) | (wr_adj<<12) | wr_strobe;
-	debug("xxxxxxx reg_cfg = %x\n",*reg_cfg);
-	debug("xxxxxxx mpll = %d\n",pll);
-	debug("xxxxxxx ahb2 = %d\n",ahb2);
+	if(i == 0x7ff) {
+		printf("wr_strobe fail!\n");
+		return -1;
+	}
+
+	if(negative_flag)
+		i |= 1 << 10;
+
+	wr_strobe = i;
+
+
+	printf("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n",
+			rd_adj, rd_strobe, wr_adj, wr_strobe);
+
+	/*set configer register*/
+	val = rd_adj << EFUSE_REG_CFG_RD_ADJ | rd_strobe << EFUSE_REG_CFG_RD_STROBE;
+	val |= wr_adj << EFUSE_REG_CFG_WR_ADJ | wr_strobe;
+	REG32(EFUSE_REG_CFG) = val;
+
 	return 0;
 }
 
@@ -218,7 +186,8 @@ static int otp_w(unsigned int offset)
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
 
 	otp_r();
 
@@ -234,16 +203,18 @@ static int cpu_wtotp(int opera)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
@@ -287,7 +258,8 @@ int otp_init(void)
 	}
 #endif
 
-	efuse_config();
+	set_efuse_timing();
+
 	efuse_update_state();
 	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
 	return 0;
@@ -312,9 +284,13 @@ int cpu_burn_rckey(void)
 
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
 	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
+
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
 
 	ret = *(volatile unsigned int *)(MCU_TCSM_RETVAL);
 	if(ret == SC_ERR_CK_EXISTENCE) {
@@ -369,7 +345,6 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 			debug("\n");
 	}
 
-	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
 
@@ -415,8 +390,6 @@ static int check_nku(unsigned int *idata, unsigned int length)
 			debug("\n");
 	}
 
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
 
@@ -599,14 +572,16 @@ int cpu_burn_secboot_enable(void)
 
 	/*efuse config*/
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
 	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
 
 	efuse_update_state();
