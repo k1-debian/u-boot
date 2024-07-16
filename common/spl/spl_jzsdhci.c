@@ -1356,7 +1356,18 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 
 	memcpy(LOAD_ROOTFS_ADDR - 2048, buffer, 2048);
 	code_len = ptr[128];
-	mmc_block_read(rootfs_offset, code_len / 512, LOAD_ROOTFS_ADDR);
+
+	int max_load_length = 10 * 1024 * 1024;
+	/* 读长度块512对齐 */
+	code_len = (code_len + (512 - 1)) / 512;
+	code_len = code_len * 512;
+	int temp_offset = 0;
+	while (temp_offset < code_len) {
+		int temp_size = (code_len - temp_offset) > max_load_length ? max_load_length : (code_len - temp_offset);
+		mmc_block_read(rootfs_offset + temp_offset / 512, temp_size / 512, LOAD_ROOTFS_ADDR + temp_offset);
+		temp_offset += temp_size;
+	}
+
 	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
 	if(ret) {
 		printf("Error check rootfs hash.\n");
