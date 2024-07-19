@@ -70,7 +70,8 @@ static int set_efuse_timing(void)
 	uint32_t val, ns;
 	uint32_t rd_adj, wr_adj;
 	int rd_strobe, wr_strobe;
-	int i, negative_flag;
+	int i;
+	int negative_flag = 0;
 
 	rate = clk_get_rate(H2CLK);
 	ns = 1000000000 / rate;
@@ -85,30 +86,32 @@ static int set_efuse_timing(void)
 		printf("rd_adj and wr_adj fail!\n");
 		return -1;
 	}
+
 	rd_adj = wr_adj = i;
 
-	for(i = 0; i < 0x1f; i++) {
+	for(i = 0; i <= 0xf; i++) {
 		if(((rd_adj + i + 48) * ns) > 150)
 			break;
 	}
-	if(i == 0x1f) {
+	if(i > 0xf) {
 		printf("get efuse cfg rd_strobe fail!\n");
 		return -1;
 	}
 	rd_strobe = i;
 
-	for(i = 0; i < 0x7ff; i++) {
+	for(i = 0; i <= 0x3ff; i++) {
 		val = (wr_adj + i + 3000) * ns;
 		if(val > 13000) {
 			val = (wr_adj - i + 3000) * ns;
 			negative_flag = 1;
 		}
 
-		if(val > 11000 && val < 13000)
+		if(val > 11500 && val < 12500) {
 			break;
+		}
 	}
 
-	if(i == 0x7ff) {
+	if(i > 0x3ff) {
 		printf("wr_strobe fail!\n");
 		return -1;
 	}
@@ -123,8 +126,11 @@ static int set_efuse_timing(void)
 			rd_adj, rd_strobe, wr_adj, wr_strobe);
 
 	/*set configer register*/
-	val = rd_adj << EFUSE_REG_CFG_RD_ADJ | rd_strobe << EFUSE_REG_CFG_RD_STROBE;
-	val |= wr_adj << EFUSE_REG_CFG_WR_ADJ | wr_strobe;
+//	val = (rd_adj << EFUSE_REG_CFG_RD_ADJ) | (rd_strobe << EFUSE_REG_CFG_RD_STROBE);
+//	val |= (wr_adj << EFUSE_REG_CFG_WR_ADJ) | wr_strobe;
+
+	val = (15 << EFUSE_REG_CFG_RD_ADJ) | (0 << EFUSE_REG_CFG_RD_STROBE);
+	val |= (15 << EFUSE_REG_CFG_WR_ADJ) | 1624;
 	REG32(EFUSE_REG_CFG) = val;
 
 	return 0;
@@ -158,7 +164,7 @@ static int otp_r()
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_STAT) = 0;
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR | 0 << EFUSE_REGOFF_CRTL_LENG);
+	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
 	printf("REG32(EFUSE_REG_DAT0) = %x\n",REG32(EFUSE_REG_DAT0));
@@ -202,16 +208,19 @@ static int cpu_wtotp(int opera)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
+	redundancy_rd();
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
+	mdelay(40);
 	efuse_1v8_output(efuse_args->efuse_en_active);
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
 	efuse_1v8_output(!efuse_args->efuse_en_active);
+	mdelay(40);
 
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
@@ -258,7 +267,9 @@ int otp_init(void)
 	}
 #endif
 
-	set_efuse_timing();
+	ret = set_efuse_timing();
+	if (ret < 0)
+		return ret;
 
 	efuse_update_state();
 	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
