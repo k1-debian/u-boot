@@ -52,6 +52,7 @@
 	}
 
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 24 MHz */
+#define CONFIG_SYS_OST_FREQ		12500000	/* on fpga, 12.5MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 
 
