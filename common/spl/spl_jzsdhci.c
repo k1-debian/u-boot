@@ -489,6 +489,10 @@ static u32 mmc_block_read_poll(u8 type, u32 start, u32 blkcnt, u32 *dst)
 	}else {
 		msc_writew(MSC_BLOCKSIZE_R, 4);
 	}
+
+	if(nob > 0xffff)
+		printf("Check blkcnt %x!\n", nob);
+
 	msc_writew(MSC_BLOCKCOUNT_R, nob);
 
 	msc_set_xfer_bus_width(bus_width);
@@ -1357,7 +1361,8 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 	memcpy(LOAD_ROOTFS_ADDR - 2048, buffer, 2048);
 	code_len = ptr[128];
 
-	int max_load_length = 10 * 1024 * 1024;
+	/* 非DMA模式块数量不能超过0xffff */
+	int max_load_length = 31 * 1024 * 1024;
 	/* 读长度块512对齐 */
 	code_len = (code_len + (512 - 1)) / 512;
 	code_len = code_len * 512;

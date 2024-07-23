@@ -431,7 +431,7 @@
 #else
 #define CONFIG_SPL_TEXT_BASE		0xb2401000
 #endif	/*CONFIG_SPL_NOR_SUPPORT*/
-#define CONFIG_SPL_MAX_SIZE		(18 * 1024)
+#define CONFIG_SPL_MAX_SIZE		(24 * 1024)
 
 
 #ifdef CONFIG_SPL_NOR_SUPPORT
@@ -677,6 +677,9 @@
 #endif
     #define CONFIG_SPL_OTA_NAME       "ota"
     #define CONFIG_SPL_OS_NAME2       "kernel2"
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+    #define CONFIG_SPL_ROOTFS_NAME2   "rootfs2"
+#endif /* end of CONFIG_JZ_SECURE_ROOTFS */
     #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
     #define CONFIG_SYS_SPL_ARGS_ADDR2 CONFIG_SPL_BOOTARGS2
 #endif

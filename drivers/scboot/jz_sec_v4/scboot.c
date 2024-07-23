@@ -249,7 +249,7 @@ int secure_scboot(void *input, void *output)
 			printf("Normal boot...\n");
 			return 0;
 		} else {
-			printf("ERROR: please check image size !!\n");
+			printf("ERROR: check image size !!\n");
 			return -1;
 		}
 	} else if (EFUSTATE_SECBOOT_EN) {
@@ -257,17 +257,17 @@ int secure_scboot(void *input, void *output)
 			printf("Security boot...\n");
 			ret = setup_sckeys(input, &len);
 			if(ret) {
-				printf("ERROR: please check image size, ret = %x !!\n", ret);
+				printf("ERROR: check image size, ret = %x !!\n", ret);
 				return -1;
 			}
 
 			ret = start_scboot(input, output, len);
 			if(ret) {
-				printf("ERROR: please check your image, ret = %x!!\n", ret);
+				printf("ERROR: check your image, ret = %x!!\n", ret);
 				return -1;
 			}
 		} else {
-			printf("ERROR: please sign your image !!\n");
+			printf("ERROR: sign your image !!\n");
 			return -1;
 		}
 	}
