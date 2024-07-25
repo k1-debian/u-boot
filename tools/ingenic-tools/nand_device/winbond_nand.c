@@ -10,7 +10,7 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0xAA21, 2048, 2, 4, 2, 2, winbond_eccerr),
 	DEVICE_STRUCT(0xAA22, 2048, 2, 4, 2, 2, winbond_eccerr),
 	DEVICE_STRUCT(0xAB21, 2048, 2, 4, 2, 2, winbond_eccerr),
-	DEVICE_STRUCT(0xAE21, 2048, 2, 4, 1, 2, winbond_eccerr),
+	DEVICE_STRUCT(0xAE21, 2048, 2, 4, 2, 2, winbond_eccerr),
 };
 
 static struct nand_desc winbond_nand = {
