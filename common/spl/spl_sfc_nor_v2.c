@@ -637,23 +637,31 @@ extern int is_security_boot(void);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 #define LOAD_ROOTFS_ADDR 0x82000000
-static void secure_check_hash_rootfs(struct norflash_partitions partitions)
+static void secure_check_hash_rootfs(const char *name, void *buffer)
 {
-	unsigned int signature_offset;
+	struct norflash_partitions partition;
 	unsigned int rootfs_offset;
 	unsigned int code_len;
 	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
 	int ret;
 
-	signature_offset = get_part_offset_by_name(partitions, CONFIG_SPL_SIG_NAME);
-	rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME);
+	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 
-	if (signature_offset == -1 || rootfs_offset == -1){
-		printf("sig or rootfs part not found\n");
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	if (!strncmp(name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2)))
+		rootfs_offset = get_part_offset_by_name(partition, CONFIG_SPL_ROOTFS_NAME2);
+	else
+		rootfs_offset = get_part_offset_by_name(partition, CONFIG_SPL_ROOTFS_NAME);
+#else
+	rootfs_offset = get_part_offset_by_name(partition, CONFIG_SPL_ROOTFS_NAME);
+#endif
+
+	if (rootfs_offset == -1){
+		printf("rootfs part not found\n");
 		hang();
 	}
 
-	sfc_read_data(signature_offset, 2048, LOAD_ROOTFS_ADDR - 2048);
+	memcpy(LOAD_ROOTFS_ADDR - 2048 , buffer, 2048);
 	code_len = ptr[128];
 
 	sfc_read_data(rootfs_offset, code_len, LOAD_ROOTFS_ADDR);
@@ -667,10 +675,11 @@ static void secure_check_hash_rootfs(struct norflash_partitions partitions)
 #endif
 #endif
 
-void spl_load_kernel(long offset)
+void spl_load_kernel(long offset, const char *name)
 {
 	struct image_header *header;
 	struct image_info info;
+	u32 image_size_sectors;
 	int ret;
 	void *load_buf, *image_buf;
 	int image_len;
@@ -682,7 +691,17 @@ void spl_load_kernel(long offset)
 
 	spl_parse_image_header(header);
 	spl_image.load_addr -= 2048;
-	sfc_read_data(offset, spl_image.size, (unsigned char *)spl_image.load_addr);
+
+	/* 读的长度增加2K(rootfs signature) */
+	image_size_sectors = spl_image.size + 2048 + 0x200 - 1;
+	sfc_read_data(offset, image_size_sectors, (void *)spl_image.load_addr);
+
+	unsigned int *sig_info =  (void *)spl_image.load_addr + 512;
+	unsigned int sig_offset = *sig_info + (16 - 1);
+	sig_offset = sig_offset & ~(16 - 1);
+	sig_offset = sig_offset + 2048;
+	/* signature address */
+	secure_check_hash_rootfs(name, (void *)spl_image.load_addr + sig_offset);
 
 	flush_scache_range(spl_image.load_addr, spl_image.load_addr + spl_image.size);
 
@@ -1190,9 +1209,6 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	sfc_read_data(bootimg_addr, CONFIG_DTB_SIZE, (unsigned char *)CONFIG_DTB_ADRESS);
 #endif /* CONFIG_SPL_OF_LIBFDT */
 
-#ifdef CONFIG_JZ_SECURE_ROOTFS
-	secure_check_hash_rootfs(partitions);
-#endif
 	spl_sfc_nor_cfg_os_args(partitions, kernel_name, cmdargs);
 
 	unsigned int rtos_offset = 0;
@@ -1249,7 +1265,7 @@ void spl_sfc_nor_os_load(void)
 		hang();
 	}
 
-	spl_load_kernel(bootimg_addr);
+	spl_load_kernel(bootimg_addr, CONFIG_SPL_OS_NAME);
 }
 #endif
 
@@ -1407,7 +1423,7 @@ void spl_ota_load_image(void)
 	updata_flag = nv_buf[1];
 	if((updata_flag & 0x3) != 0x3)
 	{
-		spl_load_kernel(bootimg_addr);
+		spl_load_kernel(bootimg_addr, CONFIG_SPL_OS_NAME);
 	} else {
 		header->ih_name[IH_NMLEN - 1] = 0;
 		spl_parse_image_header(header);
@@ -1472,7 +1488,7 @@ static char *spl_sfc_nor_os_ota_load(void)
 
 	debug("kernel:%s %x\n", kernel_name, img_addr);
 
-	spl_load_kernel(img_addr);
+	spl_load_kernel(img_addr, kernel_name);
 
 	if (is_kernel2)
 		return CONFIG_SYS_SPL_ARGS_ADDR2;

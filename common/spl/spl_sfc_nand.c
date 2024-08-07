@@ -384,7 +384,7 @@ unsigned int get_part_offset_by_name(struct jz_sfcnand_partition_param *partitio
 	return -1;
 }
 
-void spl_load_kernel(long offset)
+void spl_load_kernel(long offset, const char *name)
 {
 	struct image_header *header;
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
@@ -433,7 +433,7 @@ void spl_sfc_nand_load(void)
 	sfc_nand_load(bootimg_addr, bootimg_size, (unsigned int*)CONFIG_LOAD_ADDR);
 #else /* CONFIG_BOOT_RTOS */
 	/*read image head*/
-	spl_load_kernel(bootimg_addr);
+	spl_load_kernel(bootimg_addr, CONFIG_SPL_OS_NAME);
 #endif
 
 #else

@@ -107,6 +107,6 @@ char* spl_ota_load_image(void)
     }
 #endif
 
-    ota_ops->flash_load_kernel(bootimg_addr);
+    ota_ops->flash_load_kernel(bootimg_addr, CONFIG_PAT_KERNEL_NAME);
     return cmdargs;
 }

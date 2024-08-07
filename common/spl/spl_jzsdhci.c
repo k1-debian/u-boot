@@ -1338,7 +1338,6 @@ extern int secure_scboot (void *, void *);
 #define LOAD_ROOTFS_ADDR 0x82000000
 static void secure_check_hash_rootfs(const char *name, void *buffer)
 {
-	unsigned int signature_offset;
 	unsigned int rootfs_offset;
 	unsigned int code_len;
 	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
@@ -1354,7 +1353,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 #endif
 
 	if (ret == -1) {
-		printf("sig or rootfs partitions not found\n");
+		printf("rootfs partitions not found\n");
 		hang();
 	}
 
