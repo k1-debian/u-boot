@@ -633,30 +633,36 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 
 void spl_load_kernel(long offset, const char *name)
 {
-	u32 image_size_sectors;
 	struct image_header *header;
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
+	u32 image_size;
 	int ret;
+	unsigned int load_addr;
 	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE);
 
 	sfc_nand_load(offset, sizeof(struct image_header) + sizeof(int), CONFIG_SYS_TEXT_BASE);
 	header->ih_name[IH_NMLEN - 1] = 0;
 
 	spl_parse_image_header(header);
+	image_size = spl_image.size - sizeof(struct image_header);
+	load_addr = spl_image.load_addr;
 
+#ifdef CONFIG_JZ_SECURE_ROOTFS
 	/* 读的长度增加2K(rootfs signature) */
-	image_size_sectors = spl_image.size + 2048 + 0x200 - 1;
-	sfc_nand_load(offset, image_size_sectors, (void *)spl_image.load_addr - 2048);
+	image_size += + 2048;
+	load_addr -= 2048;
+#endif
 
-	unsigned int *info =  (void *)spl_image.load_addr - 2048 + 512;
-	unsigned int sig_offset = *info + (16 - 1);
-	sig_offset = sig_offset & ~(16 - 1);
-	sig_offset = sig_offset + 2048;
+	sfc_nand_load(offset, image_size, (void *)load_addr);
+
+#ifdef CONFIG_JZ_SECURE_ROOTFS
 	/* signature address */
-	secure_check_hash_rootfs(name, (void *)spl_image.load_addr - 2048 + sig_offset);
+	unsigned int sig_buf = load_addr + spl_image.size - sizeof(struct image_header);
+	secure_check_hash_rootfs(name, (void *)sig_buf);
+#endif
 
-	ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
+	ret = secure_scboot(load_addr, spl_image.load_addr);
 	if(ret) {
 		printf("Error spl secure load kernel.\n");
 		hang();
@@ -1015,12 +1021,7 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 	os_boot_args.size = spl_image.size;
 	os_boot_args.cmdargs = cmdargs;
 	os_boot_args.entry_point = spl_image.entry_point;
-
-#ifdef CONFIG_JZ_SECURE_SUPPORT
-	os_boot_args.load_addr = spl_image.load_addr - 2048;
-#else
 	os_boot_args.load_addr = spl_image.load_addr;
-#endif
 
 	spl_rtos_args.os_boot_args = &os_boot_args;
 }
@@ -1088,7 +1089,7 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	int ret = 0;
-	ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
+	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
 	if (ret) {
 		printf("Error spl secure load kernel.\n");
 		hang();

@@ -1772,10 +1772,6 @@ static void spl_mmc_cfg_os_args(char *kernel_name, char *cmdargs)
 	/* convert size to sectors - round up */
 	image_size_sectors = (spl_image.size + 0x200 - 1) / 0x200;
 
-#ifdef CONFIG_JZ_SECURE_SUPPORT
-	spl_image.load_addr -= 2048;
-#endif
-
 	cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
 #ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
 	cmdargs = spl_board_process_mem_bootargs(cmdargs);
