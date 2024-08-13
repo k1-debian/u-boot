@@ -422,7 +422,7 @@ void gpio_set_driver_strength_ad100(enum gpio_port gpio, int value, unsigned int
 }
 #endif
 
-#ifdef CONFIG_x1600
+#ifdef CONFIG_X1600
 void gpio_set_driver_strength_x1600(enum gpio_port gpio, int value, unsigned int pins)
 {
 	/* x1600 is not supported in setting driver strength */
@@ -474,7 +474,7 @@ void gpio_set_driver_strength_x2580(enum gpio_port gpio, int value, unsigned int
 }
 #endif
 
-#ifdef CONFIG_x2600
+#ifdef CONFIG_X2600
 void gpio_set_driver_strength_x2600(enum gpio_port gpio, int value, unsigned int pins)
 {
     if(value & BIT(0))
@@ -493,13 +493,13 @@ void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
 {
 #ifdef CONFIG_AD100
 	gpio_set_driver_strength_ad100(gpio, value, pins);
-#elif defined CONFIG_x1600
+#elif defined CONFIG_X1600
 	gpio_set_driver_strength_x1600(gpio, value, pins);
 #elif defined CONFIG_X2000_V12
 	gpio_set_driver_strength_x2000(gpio, value, pins);
 #elif defined CONFIG_X2580
 	gpio_set_driver_strength_x2580(gpio, value, pins);
-#elif defined CONFIG_x2600
+#elif defined CONFIG_X2600
 	gpio_set_driver_strength_x2600(gpio, value, pins);
 #endif
 }
