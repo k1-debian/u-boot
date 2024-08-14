@@ -100,6 +100,7 @@ int sfc_nand_program(struct cloner *cloner)
 	partition = get_partion_index(startaddr,length,&pt_index);
 	if (pt_index < 0)
 		return -EIO;
+
 	if (startaddr==0 && spi_args->download_params != 0) {
 		sfcnand_add_info_to_flash(databuf);
 	}
@@ -207,8 +208,13 @@ out:
  * **************************************************************************************/
 void sfcnand_add_info_to_flash(char *buf)
 {
-	memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &bp, sizeof(struct jz_sfcnand_burner_param) - 4);
-	memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4, bp.partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
+	uint32_t param_offset = CONFIG_SPIFLASH_PART_OFFSET;
+
+	if ((int)(spi_args->param_offset) > 0)
+		param_offset = spi_args->param_offset;
+
+	memcpy(buf + param_offset, &bp, sizeof(struct jz_sfcnand_burner_param) - 4);
+	memcpy(buf + param_offset + sizeof(struct jz_sfcnand_burner_param) - 4, bp.partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
 	if(ddr_args != NULL && ddr_args->ddr_type > 0)
 		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;

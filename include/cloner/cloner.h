@@ -191,6 +191,7 @@ struct spi_param {
 	int spi_erase;
 	uint32_t sfc_frequency;
 	int reserve_space;
+	int param_offset;
 	char* flash_info[0];
 };
 struct policy_param{

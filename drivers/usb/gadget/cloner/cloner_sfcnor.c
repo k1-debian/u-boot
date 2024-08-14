@@ -17,20 +17,25 @@ static void sfcnor_add_info_to_flash(unsigned char *buf)
 {
 	struct legacy_params *l_params;
 	int spl_version;
+	uint32_t param_offset = CONFIG_SPIFLASH_PART_OFFSET;
 	/* spl_version is in 16byte of spl header,
 	 * spl_version = 0x01, spl is new code, NOR_VERSION is 2,
 	 * spl_version = 0x00, spl is old code, NOR_VERSION is 1.
 	 * */
-	spl_version = buf[CONFIG_SPL_VERSION_OFFSET];
+
+	if ((int)(spi_args->param_offset) > 0)
+		param_offset = spi_args->param_offset;
+
+	spl_version = buf[param_offset];
 	switch (spl_version) {
 		case 0:
 			l_params = params_compatibility();
-			memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, l_params, sizeof(struct legacy_params));
+			memcpy(buf + param_offset, l_params, sizeof(struct legacy_params));
 			break;
 		case 1:
 			params.version = NOR_VERSION;
-			memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET, &params, sizeof(struct burner_params));
-			memcpy(buf + CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
+			memcpy(buf + param_offset, &params, sizeof(struct burner_params));
+			memcpy(buf + param_offset + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
 			break;
 		default:
 			printf("spl uboot version error !\n");
