@@ -115,7 +115,7 @@ void board_init_f(ulong dummy)
 #endif
 
 #ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT
-       printf("run start1 firmware finished, return to bootrom!\n");
+       serial_debug("run start1 firmware finished, return to bootrom!\n");
        return;
 #endif
 

@@ -246,28 +246,28 @@ int secure_scboot(void *input, void *output)
 
 	if(EFUSTATE_SECBOOT_EN == 0) {
 		if (issig == 0) {
-			printf("Normal boot...\n");
+			serial_debug("Normal boot...\n");
 			return 0;
 		} else {
-			printf("ERROR: please check image size !!\n");
+			serial_debug("ERROR: please check image size !!\n");
 			return -1;
 		}
 	} else if (EFUSTATE_SECBOOT_EN) {
 		if(issig == 1) {
-			printf("Security boot...\n");
+			serial_debug("Security boot...\n");
 			ret = setup_sckeys(input, &len);
 			if(ret) {
-				printf("ERROR: please check image size, ret = %x !!\n", ret);
+				serial_debug("ERROR: please check image size, ret = %x !!\n", ret);
 				return -1;
 			}
 
 			ret = start_scboot(input, output, len);
 			if(ret) {
-				printf("ERROR: please check your image, ret = %x!!\n", ret);
+				serial_debug("ERROR: please check your image, ret = %x!!\n", ret);
 				return -1;
 			}
 		} else {
-			printf("ERROR: please sign your image !!\n");
+			serial_debug("ERROR: please sign your image !!\n");
 			return -1;
 		}
 	}

@@ -102,8 +102,8 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 #endif
 
-	printf("%s\n", AD100_VERSION);
-	printf("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("%s\n", AD100_VERSION);
+	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
 	//dump_c0_regs();
 
 	debug("Timer init\n");
@@ -163,7 +163,7 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 
 	int ret = secure_load_uboot(spl_image);
 	if (ret) {
-	  printf("Error spl secure load uboot.\n");
+	  serial_debug("Error spl secure load uboot.\n");
 	  hang();
 	}
 

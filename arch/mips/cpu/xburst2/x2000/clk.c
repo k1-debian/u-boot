@@ -74,7 +74,7 @@ void clk_prepare(void)
 			writel(regval, reg);
 		}
 #ifdef DUMP_CGU_SELECT
-		printf("%s(0x%x) :0x%x\n",clk_name[i] ,reg,  readl(reg));
+		serial_debug("%s(0x%x) :0x%x\n",clk_name[i] ,reg,  readl(reg));
 #endif
 	}
 }
@@ -222,7 +222,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 	unsigned int ratio;
 
 	if(clk_id >= CGU_CNT) {
-		/* printf("set clk id error\n"); */
+		/* serial_debug("set clk id error\n"); */
 		return;
 	}
 
@@ -249,7 +249,7 @@ void clk_set_rate(int clk_id, unsigned long rate)
 	while (readl(reg) & (1 << cgu->busy))
 		;
 #ifdef DUMP_CGU_SELECT
-	printf("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  readl(reg));
+	serial_debug("%s(0x%x) :0x%x\n",clk_name[clk_id] ,reg,  readl(reg));
 #endif
 	return;
 }
@@ -302,7 +302,7 @@ void enable_uart_clk(void)
 
 void otg_phy_init(enum otg_mode_t mode, unsigned extclk) {
 #ifndef CONFIG_SPL_BUILD
-	printf("ERR, usb clk need rewriting!!\n");
+	serial_debug("ERR, usb clk need rewriting!!\n");
 #if 0
 	int ext_sel = 0;
 	int tmp_reg = 0;
@@ -351,7 +351,7 @@ void otg_phy_init(enum otg_mode_t mode, unsigned extclk) {
 		while ((cpm_inl(CPM_USBCDR) & USBCDR_USB_BUSY) || timeout--);
 	}
 	if (!timeout)
-		printf("USBCDR wait busy bit failed\n");
+		serial_debug("USBCDR wait busy bit failed\n");
 
 	tmp_reg = cpm_inl(CPM_USBPCR);
 	switch (mode) {
@@ -428,13 +428,13 @@ void print_clock()
 /* 		h2clk=mpll/div; */
 /* 		pclk=mpll/div1; */
 /* 	} */
-/* 	printf("apll = %d\n mpll = %d\n", apll, mpll); */
+/* 	serial_debug("apll = %d\n mpll = %d\n", apll, mpll); */
 
-/* 	printf("ddrfreq = %d\n cpufreq = %d\n l2cache = %d\n",\ */
+/* 	serial_debug("ddrfreq = %d\n cpufreq = %d\n l2cache = %d\n",\ */
 /* 	       gd->arch.gi->ddrfreq, gd->arch.gi->cpufreq, l2clk); */
-/* 	printf("AHB0freq= %d\nAHB2freq= %d\npclk %d\n",h0clk,h2clk,pclk); */
+/* 	serial_debug("AHB0freq= %d\nAHB2freq= %d\npclk %d\n",h0clk,h2clk,pclk); */
 /* #else */
-	/* printf("apll = %d\n mpll = %d\n", pll_get_rate(APLL), pll_get_rate(MPLL)); */
-	/* printf("cpccr = %x\n", cpm_inl(CPM_CPCCR)); */
+	/* serial_debug("apll = %d\n mpll = %d\n", pll_get_rate(APLL), pll_get_rate(MPLL)); */
+	/* serial_debug("cpccr = %x\n", cpm_inl(CPM_CPCCR)); */
 /* #endif */
 }

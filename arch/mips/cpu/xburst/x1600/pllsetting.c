@@ -34,12 +34,12 @@ static void pll_set(unsigned int reg)
 		cpm_outl(val,CPM_CPEPCR);
 		break;
 	default:
-		printf("pll reg[0x%x] not recognise!\n",reg, val);
+		serial_debug("pll reg[0x%x] not recognise!\n",reg, val);
 	}
 	timeout = 0x10000;
 	while((!(cpm_inl(reg) & (1 << 3))) && --timeout);
 	if(timeout == 0) {
-		printf("pll reg[0x%x] val[0x%x] setting timeout!\n",reg, val);
+		serial_debug("pll reg[0x%x] val[0x%x] setting timeout!\n",reg, val);
 	}
 }
 static void pll_sets(void)
@@ -47,19 +47,19 @@ static void pll_sets(void)
 	if(APLL_EN_VALUE) {
 		pll_set(CPM_CPAPCR);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-		printf("CPA_CPAPCR:%x\n",cpm_inl(CPM_CPAPCR));
+		serial_debug("CPA_CPAPCR:%x\n",cpm_inl(CPM_CPAPCR));
 #endif
 	}
 	if(MPLL_EN_VALUE){
 		pll_set(CPM_CPMPCR);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-		printf("CPM_CPMPCR:%x\n",cpm_inl(CPM_CPMPCR));
+		serial_debug("CPM_CPMPCR:%x\n",cpm_inl(CPM_CPMPCR));
 #endif
 	}
 	if(EPLL_EN_VALUE){
 		pll_set(CPM_CPEPCR);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-		printf("CPM_CPEPCR:%x\n",cpm_inl(CPM_CPEPCR));
+		serial_debug("CPM_CPEPCR:%x\n",cpm_inl(CPM_CPEPCR));
 #endif
 	}
 }
@@ -91,7 +91,7 @@ static void cpccr_sets(void)
 	cpm_outl(val,CPM_CPCCR);
 	while((cpm_inl(CPM_CPCSR) & 0xf0000000) != 0xf0000000);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-	printf("CPM_CPCCR:%x\n",cpm_inl(CPM_CPCCR));
+	serial_debug("CPM_CPCCR:%x\n",cpm_inl(CPM_CPCCR));
 #endif
 }
 int pll_init(void)

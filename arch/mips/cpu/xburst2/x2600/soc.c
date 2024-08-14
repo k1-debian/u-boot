@@ -102,7 +102,7 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 #endif
 
-	printf("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
 	//dump_c0_regs();
 
 	debug("Timer init\n");
@@ -132,7 +132,7 @@ void board_init_f(ulong dummy)
 #endif
 
 #ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT
-       printf("run start1 firmware finished, return to bootrom!\n");
+       serial_debug("run start1 firmware finished, return to bootrom!\n");
        usb_boot_loop();	// USB Stage2 protocal.
        return;
 #endif
@@ -182,7 +182,7 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 
 	int ret = secure_load_uboot(spl_image);
 	if (ret) {
-	  printf("Error spl secure load uboot.\n");
+	  serial_debug("Error spl secure load uboot.\n");
 	  hang();
 	}
 

@@ -83,31 +83,31 @@ static void dump_ddrp_register(void)
 
 static void dump_inno_driver_strength_register(void)
 {
-	printf("inno reg:0x42 = 0x%x\n", readl(0xb3011108));
-	printf("inno reg:0x41 = 0x%x\n", readl(0xb3011104));
-	printf("inno cmd io driver strenth pull_down                = 0x%x\n", readl(0xb30112c0));
-	printf("inno cmd io driver strenth pull_up                  = 0x%x\n", readl(0xb30112c4));
+	serial_debug("inno reg:0x42 = 0x%x\n", readl(0xb3011108));
+	serial_debug("inno reg:0x41 = 0x%x\n", readl(0xb3011104));
+	serial_debug("inno cmd io driver strenth pull_down                = 0x%x\n", readl(0xb30112c0));
+	serial_debug("inno cmd io driver strenth pull_up                  = 0x%x\n", readl(0xb30112c4));
 
-	printf("inno clk io driver strenth pull_down                = 0x%x\n", readl(0xb30112c8));
-	printf("inno clk io driver strenth pull_up                  = 0x%x\n", readl(0xb30112cc));
+	serial_debug("inno clk io driver strenth pull_down                = 0x%x\n", readl(0xb30112c8));
+	serial_debug("inno clk io driver strenth pull_up                  = 0x%x\n", readl(0xb30112cc));
 
-	printf("Channel A data io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011300));
-	printf("Channel A data io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011304));
-	printf("Channel A data io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011340));
-	printf("Channel A data io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011344));
-	printf("Channel B data io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011380));
-	printf("Channel B data io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011384));
-	printf("Channel B data io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb30113c0));
-	printf("Channel B data io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb30113c4));
+	serial_debug("Channel A data io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011300));
+	serial_debug("Channel A data io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011304));
+	serial_debug("Channel A data io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011340));
+	serial_debug("Channel A data io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011344));
+	serial_debug("Channel B data io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011380));
+	serial_debug("Channel B data io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011384));
+	serial_debug("Channel B data io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb30113c0));
+	serial_debug("Channel B data io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb30113c4));
 
-	printf("Channel A data io driver strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011308));
-	printf("Channel A data io driver strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb301130c));
-	printf("Channel A data io driver strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011348));
-	printf("Channel A data io driver strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb301134c));
-	printf("Channel B data io driver strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011388));
-	printf("Channel B data io driver strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb301138c));
-	printf("Channel B data io driver strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb30113c8));
-	printf("Channel B data io driver strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb30113cc));
+	serial_debug("Channel A data io driver strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011308));
+	serial_debug("Channel A data io driver strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb301130c));
+	serial_debug("Channel A data io driver strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011348));
+	serial_debug("Channel A data io driver strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb301134c));
+	serial_debug("Channel B data io driver strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011388));
+	serial_debug("Channel B data io driver strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb301138c));
+	serial_debug("Channel B data io driver strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb30113c8));
+	serial_debug("Channel B data io driver strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb30113cc));
 
 }
 
@@ -170,7 +170,7 @@ void ddr_phyreg_set_range(u32 offset, u32 startbit, u32 bitscnt, u32 value)
 	mask = ((0xffffffff>>startbit)<<(startbit))&((0xffffffff<<(32 - startbit - bitscnt))>>(32 - startbit - bitscnt));
 	reg = readl(DDRC_BASE+DDR_PHY_OFFSET+(offset*4));
 	reg = (reg&(~mask))|((value<<startbit)&mask);
-	//printf("value = %x, reg = %x, mask = %x", value, reg, mask);
+	//serial_debug("value = %x, reg = %x, mask = %x", value, reg, mask);
 	writel(reg, DDRC_BASE+DDR_PHY_OFFSET+(offset*4));
 }
 static void ddr_phy_cfg_driver_odt(void)
@@ -364,9 +364,9 @@ static void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
 
 		//enable bypass write leveling
 		//open manual per bit de-skew
-		//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+		//serial_debug("PHY REG-02 :  0x%x \n",readl(0xb3011008));
 		writel((readl(0xb3011008))|(0x8), 0xb3011008);
-		//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+		//serial_debug("PHY REG-02 :  0x%x \n",readl(0xb3011008));
 
 		break;
 	case DDR2:
@@ -398,13 +398,13 @@ static void ddr_phy_cfg_drive(struct ddr_reg_value *global_reg_value)
 		ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x15)*4);//DQS1B-B
 
 		writel((readl(0xb3011008))|(0x8), 0xb3011008);
-		//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+		//serial_debug("PHY REG-02 :  0x%x \n",readl(0xb3011008));
 
 		break;
 
 	default:
 		type = UNKOWN;
-		printf(" ##unsupport ddr type!\n");
+		serial_debug(" ##unsupport ddr type!\n");
 		ddr_hang();
 		break;
 	}

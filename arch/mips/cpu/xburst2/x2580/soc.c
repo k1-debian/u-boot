@@ -153,7 +153,7 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
-	printf("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
 #endif
 #ifndef CONFIG_X2580_FPGA
 	debug("Timer init\n");

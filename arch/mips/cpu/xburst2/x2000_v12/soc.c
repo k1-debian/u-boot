@@ -95,11 +95,11 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
-	printf("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
 	if(*(volatile unsigned int *)0xbfc00084 == 0x244232c8) {
-		printf("Current Version: V2\n");
+		serial_debug("Current Version: V2\n");
 	} else {
-		printf("Current Version: V1\n");
+		serial_debug("Current Version: V1\n");
 	}
 #endif
 #ifndef CONFIG_X2000_FPGA
@@ -129,7 +129,7 @@ void board_init_f(ulong dummy)
 #endif
 
 #ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT
-       printf("run start1 firmware finished, return to bootrom!\n");
+       serial_debug("run start1 firmware finished, return to bootrom!\n");
        return;
 #endif
 
@@ -170,7 +170,7 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 	flush_cache_all();
 	int ret = secure_load_uboot(spl_image);
 	if (ret) {
-	  printf("Error spl secure load uboot.\n");
+	  serial_debug("Error spl secure load uboot.\n");
 	  hang();
 	}
 	spl_image->entry_point += 2048;

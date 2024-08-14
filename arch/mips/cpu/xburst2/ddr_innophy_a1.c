@@ -35,163 +35,163 @@
 #include <asm/arch/clk.h>
 #include "ddr_debug.h"
 #define ddr_hang() do{						\
-		printf("%s %d\n",__FUNCTION__,__LINE__);	\
+		serial_debug("%s %d\n",__FUNCTION__,__LINE__);	\
 		hang();						\
 	}while(0)
 
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef  CONFIG_DDR_DEBUG
-#define FUNC_ENTER() printf("%s enter.\n",__FUNCTION__);
-#define FUNC_EXIT() printf("%s exit.\n",__FUNCTION__);
+#define FUNC_ENTER() serial_debug("%s enter.\n",__FUNCTION__);
+#define FUNC_EXIT() serial_debug("%s exit.\n",__FUNCTION__);
 
 static void dump_ddrc_register(void)
 {
-	printf("DDRC_STATUS         0x%x\n", ddr_readl(DDRC_STATUS));
-	printf("DDRC_CFG            0x%x\n", ddr_readl(DDRC_CFG));
-	printf("DDRC_CTRL           0x%x\n", ddr_readl(DDRC_CTRL));
-	printf("DDRC_LMR            0x%x\n", ddr_readl(DDRC_LMR));
-	printf("DDRC_DLP            0x%x\n", ddr_readl(DDRC_DLP));
-	printf("DDRC_TIMING1        0x%x\n", ddr_readl(DDRC_TIMING(1)));
-	printf("DDRC_TIMING2        0x%x\n", ddr_readl(DDRC_TIMING(2)));
-	printf("DDRC_TIMING3        0x%x\n", ddr_readl(DDRC_TIMING(3)));
-	printf("DDRC_TIMING4        0x%x\n", ddr_readl(DDRC_TIMING(4)));
-	printf("DDRC_TIMING5        0x%x\n", ddr_readl(DDRC_TIMING(5)));
-	printf("DDRC_REFCNT         0x%x\n", ddr_readl(DDRC_REFCNT));
-	printf("DDRC_AUTOSR_CNT     0x%x\n", ddr_readl(DDRC_AUTOSR_CNT));
-	printf("DDRC_AUTOSR_EN      0x%x\n", ddr_readl(DDRC_AUTOSR_EN));
-	printf("DDRC_MMAP0          0x%x\n", ddr_readl(DDRC_MMAP0));
-	printf("DDRC_MMAP1          0x%x\n", ddr_readl(DDRC_MMAP1));
-	printf("DDRC_REMAP1         0x%x\n", ddr_readl(DDRC_REMAP(1)));
-	printf("DDRC_REMAP2         0x%x\n", ddr_readl(DDRC_REMAP(2)));
-	printf("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
-	printf("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
-	printf("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
-	printf("DDRC_DWCFG          0x%x\n", ddr_readl(DDRC_DWCFG));
-	printf("DDRC_DWSTATUS          0x%x\n", ddr_readl(DDRC_DWSTATUS));
+	serial_debug("DDRC_STATUS         0x%x\n", ddr_readl(DDRC_STATUS));
+	serial_debug("DDRC_CFG            0x%x\n", ddr_readl(DDRC_CFG));
+	serial_debug("DDRC_CTRL           0x%x\n", ddr_readl(DDRC_CTRL));
+	serial_debug("DDRC_LMR            0x%x\n", ddr_readl(DDRC_LMR));
+	serial_debug("DDRC_DLP            0x%x\n", ddr_readl(DDRC_DLP));
+	serial_debug("DDRC_TIMING1        0x%x\n", ddr_readl(DDRC_TIMING(1)));
+	serial_debug("DDRC_TIMING2        0x%x\n", ddr_readl(DDRC_TIMING(2)));
+	serial_debug("DDRC_TIMING3        0x%x\n", ddr_readl(DDRC_TIMING(3)));
+	serial_debug("DDRC_TIMING4        0x%x\n", ddr_readl(DDRC_TIMING(4)));
+	serial_debug("DDRC_TIMING5        0x%x\n", ddr_readl(DDRC_TIMING(5)));
+	serial_debug("DDRC_REFCNT         0x%x\n", ddr_readl(DDRC_REFCNT));
+	serial_debug("DDRC_AUTOSR_CNT     0x%x\n", ddr_readl(DDRC_AUTOSR_CNT));
+	serial_debug("DDRC_AUTOSR_EN      0x%x\n", ddr_readl(DDRC_AUTOSR_EN));
+	serial_debug("DDRC_MMAP0          0x%x\n", ddr_readl(DDRC_MMAP0));
+	serial_debug("DDRC_MMAP1          0x%x\n", ddr_readl(DDRC_MMAP1));
+	serial_debug("DDRC_REMAP1         0x%x\n", ddr_readl(DDRC_REMAP(1)));
+	serial_debug("DDRC_REMAP2         0x%x\n", ddr_readl(DDRC_REMAP(2)));
+	serial_debug("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
+	serial_debug("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
+	serial_debug("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
+	serial_debug("DDRC_DWCFG          0x%x\n", ddr_readl(DDRC_DWCFG));
+	serial_debug("DDRC_DWSTATUS          0x%x\n", ddr_readl(DDRC_DWSTATUS));
 
-	printf("DDRC_HREGPRO        0x%x\n", ddr_readl(DDRC_HREGPRO));
-	printf("DDRC_PREGPRO        0x%x\n", ddr_readl(DDRC_PREGPRO));
-	printf("DDRC_CGUC0          0x%x\n", ddr_readl(DDRC_CGUC0));
-	printf("DDRC_CGUC1          0x%x\n", ddr_readl(DDRC_CGUC1));
+	serial_debug("DDRC_HREGPRO        0x%x\n", ddr_readl(DDRC_HREGPRO));
+	serial_debug("DDRC_PREGPRO        0x%x\n", ddr_readl(DDRC_PREGPRO));
+	serial_debug("DDRC_CGUC0          0x%x\n", ddr_readl(DDRC_CGUC0));
+	serial_debug("DDRC_CGUC1          0x%x\n", ddr_readl(DDRC_CGUC1));
 
 }
 
 static void dump_ddrp_register(void)
 {
 #if 1
-	printf("DDRP_INNO_PHY_RST    0x%x\n", ddr_readl(DDRP_INNOPHY_INNO_PHY_RST	));
-	printf("DDRP_MEM_CFG         0x%x\n", ddr_readl(DDRP_INNOPHY_MEM_CFG		));
-	printf("DDRP_TRAINING_CTRL   0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL	));
-	printf("DDRP_CALIB_DELAY_AL  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
-	printf("DDRP_CALIB_DELAY_AH  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
-	printf("DDRP_CALIB_DELAY_BL  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
-	printf("DDRP_CALIB_DELAY_BH  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
-	printf("DDRP_CL              0x%x\n", ddr_readl(DDRP_INNOPHY_CL				));
-	printf("DDRP_CWL             0x%x\n", ddr_readl(DDRP_INNOPHY_CWL			));
-	printf("DDRP_WL_DONE         0x%x\n", ddr_readl(DDRP_INNOPHY_WL_DONE		));
-	printf("DDRP_CALIB_DONE      0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE		));
-	printf("DDRP_PLL_LOCK        0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_LOCK		));
-	printf("DDRP_PLL_FBDIV       0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV		));
-	printf("DDRP_PLL_CTRL        0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_CTRL		));
-	printf("DDRP_PLL_PDIV        0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_PDIV		));
+	serial_debug("DDRP_INNO_PHY_RST    0x%x\n", ddr_readl(DDRP_INNOPHY_INNO_PHY_RST	));
+	serial_debug("DDRP_MEM_CFG         0x%x\n", ddr_readl(DDRP_INNOPHY_MEM_CFG		));
+	serial_debug("DDRP_TRAINING_CTRL   0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL	));
+	serial_debug("DDRP_CALIB_DELAY_AL  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
+	serial_debug("DDRP_CALIB_DELAY_AH  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
+	serial_debug("DDRP_CALIB_DELAY_BL  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
+	serial_debug("DDRP_CALIB_DELAY_BH  0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
+	serial_debug("DDRP_CL              0x%x\n", ddr_readl(DDRP_INNOPHY_CL				));
+	serial_debug("DDRP_CWL             0x%x\n", ddr_readl(DDRP_INNOPHY_CWL			));
+	serial_debug("DDRP_WL_DONE         0x%x\n", ddr_readl(DDRP_INNOPHY_WL_DONE		));
+	serial_debug("DDRP_CALIB_DONE      0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE		));
+	serial_debug("DDRP_PLL_LOCK        0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_LOCK		));
+	serial_debug("DDRP_PLL_FBDIV       0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_FBDIV		));
+	serial_debug("DDRP_PLL_CTRL        0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_CTRL		));
+	serial_debug("DDRP_PLL_PDIV        0x%x\n", ddr_readl(DDRP_INNOPHY_PLL_PDIV		));
 
-	printf("DDRP_TRAINING_2c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_2c	));
-	printf("DDRP_TRAINING_3c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_3c	));
-	printf("DDRP_TRAINING_4c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_4c	));
-	printf("DDRP_TRAINING_5c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_5c	));
+	serial_debug("DDRP_TRAINING_2c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_2c	));
+	serial_debug("DDRP_TRAINING_3c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_3c	));
+	serial_debug("DDRP_TRAINING_4c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_4c	));
+	serial_debug("DDRP_TRAINING_5c     0x%x\n", ddr_readl(DDRP_INNOPHY_TRAINING_5c	));
 #endif
 #if 0
 	unsigned int offset;
-	printf("------------------ ddr phy common register ------------------\n");
+	serial_debug("------------------ ddr phy common register ------------------\n");
 	for (offset = 0; offset <= 0x136; offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
-	printf("------------------ ddr phy specail register ------------------\n");
+	serial_debug("------------------ ddr phy specail register ------------------\n");
 
-	printf("-------- DRIVE STRENGTH --------\n");
+	serial_debug("-------- DRIVE STRENGTH --------\n");
 	for (offset = 0x130; offset <= (0x130+3); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = 0x140; offset <= (0x140+3); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = 0x150; offset <= (0x150+3); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = 0x160; offset <= (0x160+3); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = 0x170; offset <= (0x170+3); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
-	printf("-------- PER BIT DE-SKEW --------\n");
+	serial_debug("-------- PER BIT DE-SKEW --------\n");
 	for (offset = 0x340; offset <= (0x340+0x32); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = 0x1c0; offset <= (0x1c0+0x2b); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = 0x220; offset <= (0x220+0x2b); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
-	printf("-------- RX CALIBRATION --------\n");
+	serial_debug("-------- RX CALIBRATION --------\n");
 	for (offset = (0x70+0x2b); offset <= (0x70+0x2e); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0xa0+0x2b); offset <= (0xa0+0x2e); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0x70+0x00); offset <= (0x70+0x01); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0x70+0x10); offset <= (0x70+0x11); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0x70+0x02); offset <= (0x70+0x03); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0x70+0x12); offset <= (0x70+0x13); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0xa0+0x00); offset <= (0xa0+0x01); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0xa0+0x10); offset <= (0xa0+0x11); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0xa0+0x02); offset <= (0xa0+0x03); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 	for (offset = (0xa0+0x12); offset <= (0xa0+0x13); offset++) {
-		printf("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
+		serial_debug("ddr phy offset %x, addr %x, value %x\n", offset, 0xb3011000+offset*4, readl(0xb3011000+offset*4));
 	}
 #endif
 }
 
 static void dump_ddrp_driver_strength_register(void)
 {
-	printf("-------------------------------------------------------\n");
-	printf("cmd strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x130));
-	printf("cmd strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x131));
-	printf("clk strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x132));
-	printf("clk strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x133));
-	printf("data A io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x140));
-	printf("data A io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x141));
-	printf("data A io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x150));
-	printf("data A io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x151));
-	printf("data B io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x160));
-	printf("data B io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x161));
-	printf("data B io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x170));
-	printf("data B io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x171));
-	printf("data A io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x142));
-	printf("data A io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x143));
-	printf("data A io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x152));
-	printf("data A io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x153));
-	printf("data B io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x162));
-	printf("data B io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x163));
-	printf("data B io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x172));
-	printf("data B io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x173));
+	serial_debug("-------------------------------------------------------\n");
+	serial_debug("cmd strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x130));
+	serial_debug("cmd strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x131));
+	serial_debug("clk strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x132));
+	serial_debug("clk strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x133));
+	serial_debug("data A io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x140));
+	serial_debug("data A io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x141));
+	serial_debug("data A io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x150));
+	serial_debug("data A io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x151));
+	serial_debug("data B io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x160));
+	serial_debug("data B io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x161));
+	serial_debug("data B io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x170));
+	serial_debug("data B io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x171));
+	serial_debug("data A io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x142));
+	serial_debug("data A io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x143));
+	serial_debug("data A io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x152));
+	serial_debug("data A io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x153));
+	serial_debug("data B io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x162));
+	serial_debug("data B io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x163));
+	serial_debug("data B io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x172));
+	serial_debug("data B io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x173));
 #if 0
 	writel(0x1c, 0xb3011000+4*0x130);
 	writel(0x1c, 0xb3011000+4*0x131);
@@ -221,27 +221,27 @@ static void dump_ddrp_driver_strength_register(void)
 	writel(0x1c, 0xb3011000+4*0x173);
 #endif
 #if 0
-	printf("-------------------------------------------------------\n");
-	printf("cmd strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x130));
-	printf("cmd strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x131));
-	printf("clk strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x132));
-	printf("clk strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x133));
-	printf("data A io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x140));
-	printf("data A io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x141));
-	printf("data A io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x150));
-	printf("data A io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x151));
-	printf("data B io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x160));
-	printf("data B io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x161));
-	printf("data B io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x170));
-	printf("data B io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x171));
-	printf("data A io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x142));
-	printf("data A io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x143));
-	printf("data A io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x152));
-	printf("data A io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x153));
-	printf("data B io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x162));
-	printf("data B io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x163));
-	printf("data B io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x172));
-	printf("data B io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x173));
+	serial_debug("-------------------------------------------------------\n");
+	serial_debug("cmd strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x130));
+	serial_debug("cmd strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x131));
+	serial_debug("clk strenth pull_down                = 0x%x\n", readl(0xb3011000+4*0x132));
+	serial_debug("clk strenth pull_up                  = 0x%x\n", readl(0xb3011000+4*0x133));
+	serial_debug("data A io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x140));
+	serial_debug("data A io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x141));
+	serial_debug("data A io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x150));
+	serial_debug("data A io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x151));
+	serial_debug("data B io ODT DQ[7:0]  pull_down               = 0x%x\n", readl(0xb3011000+4*0x160));
+	serial_debug("data B io ODT DQ[7:0]  pull_up                 = 0x%x\n", readl(0xb3011000+4*0x161));
+	serial_debug("data B io ODT DQ[15:8] pull_down               = 0x%x\n", readl(0xb3011000+4*0x170));
+	serial_debug("data B io ODT DQ[15:8] pull_up                 = 0x%x\n", readl(0xb3011000+4*0x171));
+	serial_debug("data A io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x142));
+	serial_debug("data A io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x143));
+	serial_debug("data A io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x152));
+	serial_debug("data A io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x153));
+	serial_debug("data B io strenth DQ[7:0]  pull_down    = 0x%x\n", readl(0xb3011000+4*0x162));
+	serial_debug("data B io strenth DQ[7:0]  pull_up      = 0x%x\n", readl(0xb3011000+4*0x163));
+	serial_debug("data B io strenth DQ[15:8] pull_down    = 0x%x\n", readl(0xb3011000+4*0x172));
+	serial_debug("data B io strenth DQ[15:8] pull_up      = 0x%x\n", readl(0xb3011000+4*0x173));
 #endif
 
 }
@@ -251,31 +251,31 @@ static void dump_ddrp_per_bit_de_skew(void)
 	int channel = 0;
 	unsigned int reg_offset[2] = {0x1c0, 0x220};
 	unsigned int offset;
-	printf("---------------------------------------------------------------\n");
+	serial_debug("---------------------------------------------------------------\n");
 	for (channel = 0; channel < 2; channel++) {
 		offset = reg_offset[channel];
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x0)*4, readl(0xb3011000+(offset+0x0)*4));//RX DM0
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x2)*4, readl(0xb3011000+(offset+0x2)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x4)*4, readl(0xb3011000+(offset+0x4)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x6)*4, readl(0xb3011000+(offset+0x6)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x8)*4, readl(0xb3011000+(offset+0x8)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0xa)*4, readl(0xb3011000+(offset+0xa)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x8)*4, readl(0xb3011000+(offset+0x8)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0xe)*4, readl(0xb3011000+(offset+0xe)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x10)*4, readl(0xb3011000+(offset+0x10)*4));//RX DQ7
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x12)*4, readl(0xb3011000+(offset+0x12)*4));//RX DQS0
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x15)*4, readl(0xb3011000+(offset+0x15)*4));//RX DM1
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x17)*4, readl(0xb3011000+(offset+0x17)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x19)*4, readl(0xb3011000+(offset+0x19)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x1b)*4, readl(0xb3011000+(offset+0x1b)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x1d)*4, readl(0xb3011000+(offset+0x1d)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x1f)*4, readl(0xb3011000+(offset+0x1f)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x21)*4, readl(0xb3011000+(offset+0x21)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x23)*4, readl(0xb3011000+(offset+0x23)*4));
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x25)*4, readl(0xb3011000+(offset+0x25)*4));//RX DQ15
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x27)*4, readl(0xb3011000+(offset+0x27)*4));//RX DQS1
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x2a)*4, readl(0xb3011000+(offset+0x2a)*4));//RX DQSB0
-		printf("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x2b)*4, readl(0xb3011000+(offset+0x2b)*4));//RX DQSB1
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x0)*4, readl(0xb3011000+(offset+0x0)*4));//RX DM0
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x2)*4, readl(0xb3011000+(offset+0x2)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x4)*4, readl(0xb3011000+(offset+0x4)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x6)*4, readl(0xb3011000+(offset+0x6)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x8)*4, readl(0xb3011000+(offset+0x8)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0xa)*4, readl(0xb3011000+(offset+0xa)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x8)*4, readl(0xb3011000+(offset+0x8)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0xe)*4, readl(0xb3011000+(offset+0xe)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x10)*4, readl(0xb3011000+(offset+0x10)*4));//RX DQ7
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x12)*4, readl(0xb3011000+(offset+0x12)*4));//RX DQS0
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x15)*4, readl(0xb3011000+(offset+0x15)*4));//RX DM1
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x17)*4, readl(0xb3011000+(offset+0x17)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x19)*4, readl(0xb3011000+(offset+0x19)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x1b)*4, readl(0xb3011000+(offset+0x1b)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x1d)*4, readl(0xb3011000+(offset+0x1d)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x1f)*4, readl(0xb3011000+(offset+0x1f)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x21)*4, readl(0xb3011000+(offset+0x21)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x23)*4, readl(0xb3011000+(offset+0x23)*4));
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x25)*4, readl(0xb3011000+(offset+0x25)*4));//RX DQ15
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x27)*4, readl(0xb3011000+(offset+0x27)*4));//RX DQS1
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x2a)*4, readl(0xb3011000+(offset+0x2a)*4));//RX DQSB0
+		serial_debug("phy de skew chn %d, reg offset %x, reg addr %x, reg value %x\n", channel, offset, 0xb3011000+(offset+0x2b)*4, readl(0xb3011000+(offset+0x2b)*4));//RX DQSB1
 	}
 }
 #else
@@ -318,21 +318,21 @@ static void ddrp_set_drv_odt(void)
 #endif
 
 #if 0
-	printf("input drv,odt(odt_pd,odt_pu,drvcmd):\n");
+	serial_debug("input drv,odt(odt_pd,odt_pu,drvcmd):\n");
 	if (3 == scanf("%d,%d,%d\n",
 				&odt_pd, &odt_pu,
 				&drvcmd)) {
 		;
 	} else {
 	}
-	printf("input drv,odt(drval_pd,drval_pu,drvah_pd,drvah_pu):\n");
+	serial_debug("input drv,odt(drval_pd,drval_pu,drvah_pd,drvah_pu):\n");
 	if (4 == scanf("%d,%d,%d,%d\n",
 				&drval_pd, &drval_pu,
 				&drvah_pd, &drvah_pu)) {
 		;
 	} else {
 	}
-	printf("input drv,odt(drvbl_pd,drvbl_pu,drvbh_pd,drvbh_pu):\n");
+	serial_debug("input drv,odt(drvbl_pd,drvbl_pu,drvbh_pd,drvbh_pu):\n");
 	if (4 == scanf("%d,%d,%d,%d\n",
 				&drvbl_pd, &drvbl_pu,
 				&drvbh_pd, &drvbh_pu)) {
@@ -340,7 +340,7 @@ static void ddrp_set_drv_odt(void)
 	} else {
 	}
 
-	printf("dump drv,odt:\n"
+	serial_debug("dump drv,odt:\n"
 			"odt_pd = %x, odt_pu = %x\n"
 			"drvcmd = %x\n"
 			"drval_pd = %x, drval_pu = %x\n"
@@ -404,7 +404,7 @@ static void ddrp_reg_set_range(u32 offset, u32 startbit, u32 bitscnt, u32 value)
 	mask = ((0xffffffff>>startbit)<<(startbit))&((0xffffffff<<(32-startbit-bitscnt))>>(32-startbit-bitscnt));
 	reg = readl(DDRC_BASE+DDR_PHY_OFFSET+(offset*4));
 	reg = (reg&(~mask))|((value<<startbit)&mask);
-	//printf("value = %x, reg = %x, mask = %x", value, reg, mask);
+	//serial_debug("value = %x, reg = %x, mask = %x", value, reg, mask);
 	writel(reg, DDRC_BASE+DDR_PHY_OFFSET+(offset*4));
 }
 
@@ -595,7 +595,7 @@ static void ddrp_pll_init(void)
 
 	while(!(ddr_readl(DDRP_INNOPHY_PLL_LOCK) & 1 << 2) && timeout--);
 	if(!timeout) {
-		printf("DDRP_INNOPHY_PLL_LOCK time out!!!\n");
+		serial_debug("DDRP_INNOPHY_PLL_LOCK time out!!!\n");
 		hang();
 	}
 	//mdelay(20);
@@ -641,7 +641,7 @@ static void ddrp_software_writeleveling_tx(void)
                     *(volatile unsigned int *)(addr + a * 4) = val;
 
                     if(((*(volatile unsigned int *)(addr + a * 4)) & 0xff000000) != (val & 0xff000000) && ((*(volatile unsigned int *)(addr + a * 4)) & 0x00ff0000) != (val & 0x00ff0000) && ((*(volatile unsigned int *)(addr + a * 4)) & 0x0000ff00) != (val & 0x0000ff00) && ((*(volatile unsigned int *)(addr + a * 4)) & 0x000000ff) != (val & 0x000000ff)) {
-                        printf(" AL fail VALUE 0x%x  sVALUE 0x%x error \n", val ,(*(volatile unsigned int *)(addr + i * 4)));
+                        serial_debug(" AL fail VALUE 0x%x  sVALUE 0x%x error \n", val ,(*(volatile unsigned int *)(addr + i * 4)));
                         break;
                     }
                 }
@@ -654,7 +654,7 @@ static void ddrp_software_writeleveling_tx(void)
 
             middle = pass_cnt / 2;
             writel((pass_invdelay_total[middle] | reg_val), (offset_addr_tx[j]+k*4));    //this means step 3
-            printf("\nTX  chan%d DQ%d small_value = %d big value %d  size = 0x%x middle = %x\n",j, k, pass_invdelay_total[0], pass_invdelay_total[pass_cnt-1], (pass_invdelay_total[pass_cnt-1] - pass_invdelay_total[0]), pass_invdelay_total[middle]);
+            serial_debug("\nTX  chan%d DQ%d small_value = %d big value %d  size = 0x%x middle = %x\n",j, k, pass_invdelay_total[0], pass_invdelay_total[pass_cnt-1], (pass_invdelay_total[pass_cnt-1] - pass_invdelay_total[0]), pass_invdelay_total[middle]);
         }
     }
 }
@@ -730,17 +730,17 @@ static void ddrp_software_writeleveling_rx(void)
 
                 for(a = 0; a < 0xff; a ++) {
                     if(((*(volatile unsigned int *)(addr + a * 4)) != val[a]) && ((*(volatile unsigned int *)(addr + (a + 0xff*3) * 4)) != val[a])) {
-                        //printf("want = 0x%x value1 = 0x%x  value2 = 0x%x value3 = 0x%x value4 = 0x%x \n", val1, tmp, tmp1, tmp2, tmp3);
+                        //serial_debug("want = 0x%x value1 = 0x%x  value2 = 0x%x value3 = 0x%x value4 = 0x%x \n", val1, tmp, tmp1, tmp2, tmp3);
                         break;
                     }
                 }
 
                 if(a == 0xff) {
                     pass_invdelay_total[pass_cnt] = i;
-                    //printf("\nRX  chan%d DQ%d pass_value = %d \n",j, k, i);
+                    //serial_debug("\nRX  chan%d DQ%d pass_value = %d \n",j, k, i);
                     pass_cnt++;
                 } else {
-                    printf("##### this is the big :2222 pass_cnt = %d\n", pass_cnt);
+                    serial_debug("##### this is the big :2222 pass_cnt = %d\n", pass_cnt);
                     break;
                 }
 
@@ -760,17 +760,17 @@ static void ddrp_software_writeleveling_rx(void)
 
                 for(a = 0; a < 0xff; a ++) {
                     if((*(volatile unsigned int *)(addr + a * 4)) != val[a]) {
-                        //printf("want = 0x%x value1 = 0x%x  value2 = 0x%x value3 = 0x%x value4 = 0x%x \n", val1, tmp, tmp1, tmp2, tmp3);
+                        //serial_debug("want = 0x%x value1 = 0x%x  value2 = 0x%x value3 = 0x%x value4 = 0x%x \n", val1, tmp, tmp1, tmp2, tmp3);
                         break;
                     }
                 }
 
                 if(a == 0xff) {
                     pass_invdelay_total[pass_cnt] = i;
-                    //printf("\nRX  chan%d DQ%d pass_value = %d \n",j, k, i);
+                    //serial_debug("\nRX  chan%d DQ%d pass_value = %d \n",j, k, i);
                     pass_cnt++;
                 } else {
-                    printf("##### this is the small:2222 pass_cnt = %d\n", pass_cnt);
+                    serial_debug("##### this is the small:2222 pass_cnt = %d\n", pass_cnt);
                     break;
                 }
             }
@@ -785,12 +785,12 @@ static void ddrp_software_writeleveling_rx(void)
                 }
             }
             for(a=0; a<pass_cnt;a++) {
-                printf("##### pass_invdelay_total[%d] value %d\n", a, pass_invdelay_total[a]);
+                serial_debug("##### pass_invdelay_total[%d] value %d\n", a, pass_invdelay_total[a]);
             }
-            printf("##### this is the small:3333\n");
+            serial_debug("##### this is the small:3333\n");
             middle = pass_cnt / 2;
             writel(pass_invdelay_total[middle], (offset_addr_rx[j]+k*4));    //this means step 3
-            printf("\nRX  chan%d DQ%d small_value = %d big value %d  size = 0x%x middle = %x\n",j, k, pass_invdelay_total[0], pass_invdelay_total[pass_cnt-1], (pass_invdelay_total[pass_cnt-1] - pass_invdelay_total[0]), pass_invdelay_total[middle]);
+            serial_debug("\nRX  chan%d DQ%d small_value = %d big value %d  size = 0x%x middle = %x\n",j, k, pass_invdelay_total[0], pass_invdelay_total[pass_cnt-1], (pass_invdelay_total[pass_cnt-1] - pass_invdelay_total[0]), pass_invdelay_total[middle]);
         }
     }
 
@@ -806,15 +806,15 @@ static void ddrp_write_leveling_calibration(void)
 	ddrp_reg_set_range(DDRP_REG_OFFSET_RAINING_CTRL, 2, 1, 1);
 	while (((ddrp_readl_byidx(DDRP_REG_OFFSET_WL_DONE) & 0xf) != 0xf) && timeout--);
 	if(!timeout) {
-		printf("timeout:INNOPHY_WL_DONE %x\n", ddrp_readl_byidx(DDRP_REG_OFFSET_WL_DONE));
+		serial_debug("timeout:INNOPHY_WL_DONE %x\n", ddrp_readl_byidx(DDRP_REG_OFFSET_WL_DONE));
 		hang();
 	}
 	ddrp_reg_set_range(DDRP_REG_OFFSET_RAINING_CTRL, 2, 1, 0);
-	printf("ddrp write leveling calibration:\n");
-	printf("A chn low,  reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_A, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_A));
-	printf("A chn high, reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_A, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_A));
-	printf("B chn low,  reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_B, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_B));
-	printf("B chn high, reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_B, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_B));
+	serial_debug("ddrp write leveling calibration:\n");
+	serial_debug("A chn low,  reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_A, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_A));
+	serial_debug("A chn high, reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_A, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_A));
+	serial_debug("B chn low,  reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_B, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_LOW_B));
+	serial_debug("B chn high, reg offset %x value %x\n", DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_B, ddrp_readl_byidx(DDRP_REG_OFFSET_WRLEVEL_RESULT_HIGH_B));
 #endif
 }
 
@@ -840,26 +840,26 @@ static void ddrp_hardware_calibration(void)
 	} while (((val & 0xf) != 0x3) && timeout--);/*16bit ddr mode*/
 #endif
 	if(!timeout) {
-		printf("timeout:INNOPHY_CALIB_DONE %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+		serial_debug("timeout:INNOPHY_CALIB_DONE %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
 		hang();
 	}
 
 	ddr_writel(ddr_readl(DDRP_INNOPHY_TRAINING_CTRL)&(~0x1), DDRP_INNOPHY_TRAINING_CTRL);
 	{
 		int reg1, reg2;
-		printf("ddrp rx hard calibration:\n");
+		serial_debug("ddrp rx hard calibration:\n");
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL_RESULT1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL_RESULT2);
-		printf("CALIB_AL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_AL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH_RESULT1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH_RESULT2);
-		printf("CALIB_AH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_AH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL_RESULT1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL_RESULT2);
-		printf("CALIB_BL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_BL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH_RESULT1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH_RESULT2);
-		printf("CALIB_BH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_BH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 	}
 }
 
@@ -1017,19 +1017,19 @@ static void ddr_phy_init(void)
 	ddr_writel(5, DDR_PHY_OFFSET + (0x1a0+0x34)*4);//DQS1-B
 	//enable bypass write leveling
 	//open manual per bit de-skew
-	//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+	//serial_debug("PHY REG-02 :  0x%x \n",readl(0xb3011008));
 	writel((readl(0xb3011008))|(0x8), 0xb3011008);
-	//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+	//serial_debug("PHY REG-02 :  0x%x \n",readl(0xb3011008));
 
 	dump_ddr_phy_cfg_per_bit_de_skew_register();
 
 #ifdef CONFIG_DDR_DEBUG
 	//writel(0x73, 0xb3011000+(0x88*4));
 	//writel(0x73, 0xb3011000+(0x98*4));
-	printf("--------inno a dll reg:0x58 = 0x%x\n", readl(0xb3011000+(0x58*4)));
-	printf("--------inno a dll reg:0x68 = 0x%x\n", readl(0xb3011000+(0x68*4)));
-	printf("--------inno b dll reg:0x88 = 0x%x\n", readl(0xb3011000+(0x88*4)));
-	printf("--------inno b dll reg:0x98 = 0x%x\n", readl(0xb3011000+(0x98*4)));
+	serial_debug("--------inno a dll reg:0x58 = 0x%x\n", readl(0xb3011000+(0x58*4)));
+	serial_debug("--------inno a dll reg:0x68 = 0x%x\n", readl(0xb3011000+(0x68*4)));
+	serial_debug("--------inno b dll reg:0x88 = 0x%x\n", readl(0xb3011000+(0x88*4)));
+	serial_debug("--------inno b dll reg:0x98 = 0x%x\n", readl(0xb3011000+(0x98*4)));
 #endif
 #elif defined(CONFIG_DDR_TYPE_DDR2)
 	unsigned int i = 0;
@@ -1059,7 +1059,7 @@ static void ddr_phy_init(void)
 	ddr_writel(2, DDR_PHY_OFFSET + (0x1a0+0x15)*4);//DQS1B-B
 
 	writel((readl(0xb3011008))|(0x8), 0xb3011008);
-	//printf("PHY REG-02 :  0x%x \n",readl(0xb3011008));
+	//serial_debug("PHY REG-02 :  0x%x \n",readl(0xb3011008));
 #endif
 #endif
 	ddrp_pll_init();
@@ -1087,15 +1087,15 @@ static void ddrp_software_calibration(void)
 	unsigned int ddbuf[8] = {0};
 	unsigned short calv[0x3ff] = {0};
 	ddrp_reg_set_range(0x2, 1, 1, 1);
-	printf("BEFORE A CALIB\n");
-	printf("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
-	printf("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2));
-	printf("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
-	printf("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2));
-	printf("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
-	printf("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2));
-	printf("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
-	printf("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2));
+	serial_debug("BEFORE A CALIB\n");
+	serial_debug("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
+	serial_debug("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2));
+	serial_debug("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
+	serial_debug("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2));
+	serial_debug("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
+	serial_debug("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2));
+	serial_debug("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
+	serial_debug("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2));
 #if 1
 	for(c = 0; c <=0x3ff; c++) {
 		ddr_writel((c>>7)&0x7, DDRP_INNOPHY_CALIB_DELAY_AL1);
@@ -1124,15 +1124,15 @@ static void ddrp_software_calibration(void)
 			ddbuf[7] = *(volatile unsigned int *)(addr + (i + 7) * 4);
 			for(q = 0; q < 8; q++) {
 				if ((ddbuf[q]&0xffff0000) != (value&0xffff0000)) {
-					;//printf("#####################################   high error want 0x%x get 0x%x\n", value, ddbuf[q]);
+					;//serial_debug("#####################################   high error want 0x%x get 0x%x\n", value, ddbuf[q]);
 				}
 				if ((ddbuf[q]&0xffff) != (value&0xffff)) {
-					//printf("SET AL,AH %x q[%d] fail want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
+					//serial_debug("SET AL,AH %x q[%d] fail want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
 					ret = -1;
 					break;
 				} else {
-					//printf("SET AL,AH %x q[%d] pass want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
-					//printf("SET %d  AL[%d] pass want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
+					//serial_debug("SET AL,AH %x q[%d] pass want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
+					//serial_debug("SET %d  AL[%d] pass want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
 					ret = 0;
 				}
 			}
@@ -1144,12 +1144,12 @@ static void ddrp_software_calibration(void)
 		if(i == 4 * 1024) {
 			calv[m] = c;
 			m++;
-			printf("calib a once idx = %d,  value = %x\n", m, c);
+			serial_debug("calib a once idx = %d,  value = %x\n", m, c);
 		}
 	}
 
 	if(!m) {
-		printf("####################### AL a calib bypass fail\n");
+		serial_debug("####################### AL a calib bypass fail\n");
 		ddr_writel(0x1c, DDRP_INNOPHY_CALIB_DELAY_AL1);
 		ddr_writel(0x1c, DDRP_INNOPHY_CALIB_DELAY_AH1);
 		//		return;
@@ -1161,16 +1161,16 @@ static void ddrp_software_calibration(void)
 		ddr_writel((calv[sel]>>7)&0x7, DDRP_INNOPHY_CALIB_DELAY_AH1);
 		ddr_writel((calv[sel]&0x1f)<<3 | ((calv[sel]>>5)&0x3), DDRP_INNOPHY_CALIB_DELAY_AH2);
 	}
-	printf("calib a done range = %d, value = %x\n", m, calv[sel]);
-	printf("AFTER A CALIB\n");
-	printf("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
-	printf("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2));
-	printf("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
-	printf("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2));
-	printf("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
-	printf("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2));
-	printf("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
-	printf("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2));
+	serial_debug("calib a done range = %d, value = %x\n", m, calv[sel]);
+	serial_debug("AFTER A CALIB\n");
+	serial_debug("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
+	serial_debug("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2));
+	serial_debug("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
+	serial_debug("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2));
+	serial_debug("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
+	serial_debug("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2));
+	serial_debug("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
+	serial_debug("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2));
 #endif
 #if CONFIG_DDR_DW32
 #if 1
@@ -1206,11 +1206,11 @@ static void ddrp_software_calibration(void)
 			for(q = 0; q < 8; q++) {
 
 				if ((ddbuf[q]&0xffff0000) != (value&0xffff0000)) {
-					//printf("SET BL,BH 0x%x q[%d] fail want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
+					//serial_debug("SET BL,BH 0x%x q[%d] fail want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
 					ret = -1;
 					break;
 				} else {
-					//printf("SET BL,BH 0x%x q[%d] pass want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
+					//serial_debug("SET BL,BH 0x%x q[%d] pass want 0x%x  get 0x%x \n", c, q, value, ddbuf[q]);
 					ret = 0;
 				}
 			}
@@ -1222,12 +1222,12 @@ static void ddrp_software_calibration(void)
 		if(i == 4 * 1024) {
 			calv[m] = c;
 			m++;
-			printf("calib b once idx = %d,  value = %x\n", m, c);
+			serial_debug("calib b once idx = %d,  value = %x\n", m, c);
 		}
 	}
 
 	if(!m) {
-		printf("####################### AL calib bypass fail\n");
+		serial_debug("####################### AL calib bypass fail\n");
 		ddr_writel(0x1c, DDRP_INNOPHY_CALIB_DELAY_BL1);
 		ddr_writel(0x1c, DDRP_INNOPHY_CALIB_DELAY_BH1);
 
@@ -1240,33 +1240,33 @@ static void ddrp_software_calibration(void)
 		ddr_writel((calv[sel]>>7)&0x7, DDRP_INNOPHY_CALIB_DELAY_BH1);
 		ddr_writel((calv[sel]&0x1f)<<3 | ((calv[sel]>>5)&0x3), DDRP_INNOPHY_CALIB_DELAY_BH2);
 	}
-	printf("calib b done range = %d, value = %x\n", m, calv[sel]);
-	printf("AFTER B CALIB\n");
+	serial_debug("calib b done range = %d, value = %x\n", m, calv[sel]);
+	serial_debug("AFTER B CALIB\n");
 
-	printf("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
-	printf("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2));
-	printf("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
-	printf("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2));
-	printf("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
-	printf("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2));
-	printf("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
-	printf("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2));
+	serial_debug("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1));
+	serial_debug("CALIB DELAY AL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2));
+	serial_debug("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1));
+	serial_debug("CALIB DELAY AH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2));
+	serial_debug("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1));
+	serial_debug("CALIB DELAY BL 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2));
+	serial_debug("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1));
+	serial_debug("CALIB DELAY BH 0x%x\n", ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2));
 
 	{
 		int reg1, reg2;
-		printf("ddrp rx soft calibration:\n");
+		serial_debug("ddrp rx soft calibration:\n");
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL2);
-		printf("CALIB_AL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_AL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH2);
-		printf("CALIB_AH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_AH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BL2);
-		printf("CALIB_BL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_BL: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 		reg1 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH1);
 		reg2 = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_BH2);
-		printf("CALIB_BH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
+		serial_debug("CALIB_BH: cyc %d, oph %d, dll %d\n", reg1, reg2&0x3, reg2>>3&0x1f);
 	}
 #endif
 #endif/*end if CONFIG_DDR_DW32 */
@@ -1336,19 +1336,19 @@ static void ddrc_dfi_init(enum ddr_type type, int bypass)
 
 		ddr_writel(0, DDRC_LMR);udelay(5);
 		ddr_writel(DDRC_LMR_MR(2), DDRC_LMR); //MR2
-		printf("mr2: %x\n", DDRC_LMR_MR(2));
+		serial_debug("mr2: %x\n", DDRC_LMR_MR(2));
 		udelay(5);
 		ddr_writel(0, DDRC_LMR);udelay(5);
 		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //MR3
-		printf("mr3: %x\n", DDRC_LMR_MR(3));
+		serial_debug("mr3: %x\n", DDRC_LMR_MR(3));
 		udelay(5);
 		ddr_writel(0, DDRC_LMR);udelay(5);
 		ddr_writel(DDRC_LMR_MR(1), DDRC_LMR); //MR1
-		printf("mr1: %x\n", DDRC_LMR_MR(1));
+		serial_debug("mr1: %x\n", DDRC_LMR_MR(1));
 		udelay(5);
 		ddr_writel(0, DDRC_LMR);udelay(5);
 		ddr_writel(DDRC_LMR_MR(0), DDRC_LMR); //MR0
-		printf("mr0: %x\n", DDRC_LMR_MR(0));
+		serial_debug("mr0: %x\n", DDRC_LMR_MR(0));
 		udelay(5);
 		//ddr_writel(DDRC_DLMR_VALUE | DDRC_LMR_START | DDRC_LMR_CMD_ZQCL_CS0, DDRC_LMR); //ZQCL
 		udelay(5);
@@ -1394,9 +1394,9 @@ static void ddr_calibration(struct ddr_calib_value *dcv, int div)
 	/* ddrp_software_calibration(); */
 
 	dcv->bypass_al = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AL1);
-	/* printf("auto :CALIB_AL: dcv->bypss_al %x\n", dcv->bypass_al); */
+	/* serial_debug("auto :CALIB_AL: dcv->bypss_al %x\n", dcv->bypass_al); */
 	dcv->bypass_ah = ddr_readl(DDRP_INNOPHY_CALIB_DELAY_AH1);
-	/* printf("auto:CAHIB_AH: dcv->bypss_ah %x\n", dcv->bypass_ah); */
+	/* serial_debug("auto:CAHIB_AH: dcv->bypss_ah %x\n", dcv->bypass_ah); */
 
 	// Set Controller Freq Exit
 	val = ddr_readl(DDRC_DWCFG);
@@ -1503,7 +1503,7 @@ static void ddrp_try_per_bit_de_skew(void)
 			unsigned int data;
 			unsigned int test_size =  64;
 			unsigned int test_data =  0xffffffff;
-			printf("try rx skew %x\n", value);
+			serial_debug("try rx skew %x\n", value);
 			int isok = 1;
 			for (j = 0; j < test_size; j+=4) {
 				data = (j/4)%2?test_data:0;
@@ -1514,15 +1514,15 @@ static void ddrp_try_per_bit_de_skew(void)
 				data = (j/4)%2?test_data:0;
 				value_get = *(volatile unsigned int *)(addr+j);
 				if (value_get != data) {
-					printf("memtest rx skew %x  addr 0x%x  want 0x%x get 0x%x error 0x%x\n",
+					serial_debug("memtest rx skew %x  addr 0x%x  want 0x%x get 0x%x error 0x%x\n",
 							value, addr+j, data, value_get, data^value_get);
 					isok = 0;
 				}
 			}
 			if (isok)
-				printf("try rx skew %x success.\n", value);
+				serial_debug("try rx skew %x success.\n", value);
 			else
-				printf("try rx skew %x failed.\n", value);
+				serial_debug("try rx skew %x failed.\n", value);
 		}
 	}
 
@@ -1539,10 +1539,10 @@ int ddrp_set_rfifo()
 
 int ddrp_set_rx_vref()
 {
-    printf("ddrp vref AL: %x\n", ddrp_readl_byidx(0x140+0x07));
-    printf("ddrp vref AH: %x\n", ddrp_readl_byidx(0x140+0x17));
-    printf("ddrp vref BL: %x\n", ddrp_readl_byidx(0x160+0x07));
-    printf("ddrp vref BH: %x\n", ddrp_readl_byidx(0x160+0x07));
+    serial_debug("ddrp vref AL: %x\n", ddrp_readl_byidx(0x140+0x07));
+    serial_debug("ddrp vref AH: %x\n", ddrp_readl_byidx(0x140+0x17));
+    serial_debug("ddrp vref BL: %x\n", ddrp_readl_byidx(0x160+0x07));
+    serial_debug("ddrp vref BH: %x\n", ddrp_readl_byidx(0x160+0x07));
 
 	//A_L
 	ddrp_reg_set_range(0x140+0x07, 0, 8, 0x80);
@@ -1553,10 +1553,10 @@ int ddrp_set_rx_vref()
 	//B_H
 	ddrp_reg_set_range(0x160+0x17, 0, 8, 0x80);
 
-    printf("ddrp vref AL: %x\n", ddrp_readl_byidx(0x140+0x07));
-    printf("ddrp vref AH: %x\n", ddrp_readl_byidx(0x140+0x17));
-    printf("ddrp vref BL: %x\n", ddrp_readl_byidx(0x160+0x07));
-    printf("ddrp vref BH: %x\n", ddrp_readl_byidx(0x160+0x07));
+    serial_debug("ddrp vref AL: %x\n", ddrp_readl_byidx(0x140+0x07));
+    serial_debug("ddrp vref AH: %x\n", ddrp_readl_byidx(0x140+0x17));
+    serial_debug("ddrp vref BL: %x\n", ddrp_readl_byidx(0x160+0x07));
+    serial_debug("ddrp vref BH: %x\n", ddrp_readl_byidx(0x160+0x07));
 	return 0;
 }
 
@@ -1579,7 +1579,7 @@ void sdram_init(void)
 #endif
 
 #ifndef CONFIG_FAST_BOOT
-    printf("DDR clk rate: %d\n\n", rate);
+    serial_debug("DDR clk rate: %d\n\n", rate);
 #endif
 
 	ddrc_reset_phy();
@@ -1597,12 +1597,12 @@ void sdram_init(void)
 #ifdef CONFIG_DDR_DEBUG
     dump_ddrp_driver_strength_register();
 
-	printf("DDRP_INNOPHY_INNO_PHY 0X1d0    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x1d0));
-	printf("DDRP_INNOPHY_INNO_PHY 0X1d4    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x1d4));
-	printf("DDRP_INNOPHY_INNO_PHY 0X290    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x290));
-	printf("DDRP_INNOPHY_INNO_PHY 0X294    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x294));
-	printf("DDRP_INNOPHY_INNO_PHY 0X1c0    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x1c0));
-	printf("DDRP_INNOPHY_INNO_PHY 0X280    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x280));
+	serial_debug("DDRP_INNOPHY_INNO_PHY 0X1d0    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x1d0));
+	serial_debug("DDRP_INNOPHY_INNO_PHY 0X1d4    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x1d4));
+	serial_debug("DDRP_INNOPHY_INNO_PHY 0X290    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x290));
+	serial_debug("DDRP_INNOPHY_INNO_PHY 0X294    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x294));
+	serial_debug("DDRP_INNOPHY_INNO_PHY 0X1c0    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x1c0));
+	serial_debug("DDRP_INNOPHY_INNO_PHY 0X280    0x%x\n", ddr_readl(DDR_PHY_OFFSET + 0x280));
 #endif
 
 	ddrc_post_init();
@@ -1631,25 +1631,25 @@ void sdram_init(void)
 #endif
 
 #if 0
-	printf("reselect ddr type\n");
+	serial_debug("reselect ddr type\n");
 #ifdef CONFIG_DDR_TYPE_DDR3
-	//printf("PHY REG-01 :  0x%x \n", ddrp_reg_get(0x1));
+	//serial_debug("PHY REG-01 :  0x%x \n", ddrp_reg_get(0x1));
 	ddrp_reg_set_range(0x1, 6, 1, 1);
-	//printf("PHY REG-01 :  0x%x \n", ddrp_reg_get(0x1));
+	//serial_debug("PHY REG-01 :  0x%x \n", ddrp_reg_get(0x1));
 #elif defined(CONFIG_DDR_TYPE_DDR2)
-	//printf("PHY REG-01 :  0x%x \n",readl(0xb3011004));
+	//serial_debug("PHY REG-01 :  0x%x \n",readl(0xb3011004));
 	writel(0x51,0xb3011004);
-	//printf("PHY REG-01 :  0x%x \n",readl(0xb3011004));
+	//serial_debug("PHY REG-01 :  0x%x \n",readl(0xb3011004));
 #endif
 	//fifo need set reg 0x01 bit6  to 1
-	//printf("PHY REG-0xa :  0x%x \n", ddrp_reg_get(0xa));
+	//serial_debug("PHY REG-0xa :  0x%x \n", ddrp_reg_get(0xa));
 	ddrp_reg_set_range(0xa, 1, 3, 3);
-	//printf("PHY REG-0xa :  0x%x \n", ddrp_reg_get(0xa));
+	//serial_debug("PHY REG-0xa :  0x%x \n", ddrp_reg_get(0xa));
 
 	//TX Write Pointer adjust
-	//printf("PHY REG-0x8 :  0x%x \n", ddrp_reg_get(0x8));
+	//serial_debug("PHY REG-0x8 :  0x%x \n", ddrp_reg_get(0x8));
 	ddrp_reg_set_range(0x8, 0, 2, 3);
-	//printf("PHY REG-0x8 :  0x%x \n", ddrp_reg_get(0x8));
+	//serial_debug("PHY REG-0x8 :  0x%x \n", ddrp_reg_get(0x8));
 
 	//extend rx dqs gateing window
 	//ddrp_reg_set_range(0x9, 7, 1, 1);

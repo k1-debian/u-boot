@@ -37,12 +37,12 @@ void reset_dll(void)
  * 	If clear BIT6, chip memory will not stable, gpu hang occur.
  */
 
-//	printf("----------CPM_DRCG: %x, CPM_DRCG: %x\n", readl(0xb0000000 + CPM_DRCG), CPM_DRCG);
+//	serial_debug("----------CPM_DRCG: %x, CPM_DRCG: %x\n", readl(0xb0000000 + CPM_DRCG), CPM_DRCG);
 //	writel(3 | (1<<6), CPM_DRCG);
 //	mdelay(5);
 //	writel(0x7d | (1<<6), CPM_DRCG);
 //	mdelay(5);
-//	printf("----------CPM_DRCG: %x\n", readl(CPM_DRCG));
+//	serial_debug("----------CPM_DRCG: %x\n", readl(CPM_DRCG));
 
 	cpm_outl(0x73 | (1 << 6) , CPM_DRCG);
 	mdelay(1);

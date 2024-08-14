@@ -100,7 +100,7 @@ void board_init_f(ulong dummy)
 	gpio_spi_to_uart_init();
 #endif
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-	printf("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
 #endif
 #ifndef CONFIG_FPGA
 	debug("Timer init\n");
@@ -182,7 +182,7 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 	flush_cache_all();
 	int ret = secure_load_uboot(spl_image);
 	if (ret) {
-	  printf("Error spl secure load uboot.\n");
+	  serial_debug("Error spl secure load uboot.\n");
 	  hang();
 	}
 	spl_image->entry_point += 2048;

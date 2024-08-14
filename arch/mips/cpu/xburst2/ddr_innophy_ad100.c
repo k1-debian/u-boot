@@ -133,7 +133,7 @@ static void ddr_set_vref_skew(unsigned int *ddr_drv_config)
 
 	if (0 == ddr_drv_config[SKEW_TRX])
 		return ;
-	printf("AD100 InnoPhy skew Settings...\n");
+	serial_debug("AD100 InnoPhy skew Settings...\n");
 
 	// VREF A_L
 	// ddrp_reg_set_range(0x147, 0, 8, ddr_drv_config[VREF]);
@@ -210,7 +210,7 @@ static void ddrp_pll_init(void)
 
 static void ddrp_reset(void)
 {
-	printf("DDRP_INNOPHY_PHY_RST: %x\n", ddr_readl(DDRP_INNOPHY_PHY_RST));
+	serial_debug("DDRP_INNOPHY_PHY_RST: %x\n", ddr_readl(DDRP_INNOPHY_PHY_RST));
 	unsigned int val = ddr_readl(DDRP_INNOPHY_PHY_RST);
 	ddr_writel(0, DDRP_INNOPHY_PHY_RST);
 	udelay(10);
@@ -296,7 +296,7 @@ static void ddrp_rx_dqs_auto_calibration(void)
 	debug("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
 
 	if(ddr_readl(DDRP_INNOPHY_CALIB_ERR) & (1 << 6)) {
-		printf("ddr pass but with error!\n");
+		serial_debug("ddr pass but with error!\n");
 		while(1);
 	}
 
@@ -339,23 +339,23 @@ static enum ddr_type get_ddr_type(void)
 	switch(global_reg_value->h.type){
 
 		case DDR3:
-			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : DDR3\n", global_reg_value->h.name);
 			break;
 		case LPDDR:
-			printf("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
 			break;
 		case LPDDR2:
-			printf("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
 			break;
 		case LPDDR3:
-			printf("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
 			break;
 		case DDR2:
-			printf("DDR: %s type is : DDR2\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : DDR2\n", global_reg_value->h.name);
 			break;
 		default:
 			type = UNKOWN;
-			printf("unsupport ddr type!\n");
+			serial_debug("unsupport ddr type!\n");
 			ddr_hang();
 	}
 
@@ -570,42 +570,42 @@ static void ddrc_post_init(void)
 void dump_generated_reg(struct ddr_reg_value *reg)
 {
 	int i;
-	printf("name			  = %s\n", reg->h.name);
-	printf("id			  = %x\n", reg->h.id);
-	printf("type			  = %x\n", reg->h.type);
-	printf("freq			  = %x\n", reg->h.freq);
-	printf("DDRC_CFG_VALUE		= %x\n", reg->DDRC_CFG_VALUE);
-	printf("DDRC_CTRL_VALUE	   = %x\n", reg->DDRC_CTRL_VALUE);
-	printf("DDRC_DLMR_VALUE	   = %x\n", reg->DDRC_DLMR_VALUE);
-	printf("DDRC_DDLP_VALUE	   = %x\n", reg->DDRC_DDLP_VALUE);
-	printf("DDRC_MMAP0_VALUE	  = %x\n", reg->DDRC_MMAP0_VALUE);
-	printf("DDRC_MMAP1_VALUE	  = %x\n", reg->DDRC_MMAP1_VALUE);
-	printf("DDRC_REFCNT_VALUE	 = %x\n", reg->DDRC_REFCNT_VALUE);
-	printf("DDRC_TIMING1_VALUE	= %x\n", reg->DDRC_TIMING1_VALUE);
-	printf("DDRC_TIMING2_VALUE	= %x\n", reg->DDRC_TIMING2_VALUE);
-	printf("DDRC_TIMING3_VALUE	= %x\n", reg->DDRC_TIMING3_VALUE);
-	printf("DDRC_TIMING4_VALUE	= %x\n", reg->DDRC_TIMING4_VALUE);
-	printf("DDRC_TIMING5_VALUE	= %x\n", reg->DDRC_TIMING5_VALUE);
-	printf("DDRC_AUTOSR_CNT_VALUE = %x\n", reg->DDRC_AUTOSR_CNT_VALUE);
-	printf("DDRC_AUTOSR_EN_VALUE  = %x\n", reg->DDRC_AUTOSR_EN_VALUE);
-	printf("DDRC_HREGPRO_VALUE	= %x\n", reg->DDRC_HREGPRO_VALUE);
-	printf("DDRC_PREGPRO_VALUE	= %x\n", reg->DDRC_PREGPRO_VALUE);
-	printf("DDRC_CGUC0_VALUE	  = %x\n", reg->DDRC_CGUC0_VALUE);
-	printf("DDRC_CGUC1_VALUE	  = %x\n", reg->DDRC_CGUC1_VALUE);
-	printf("DDRP_MEMCFG_VALUE	 = %x\n", reg->DDRP_MEMCFG_VALUE);
-	printf("DDRP_CL_VALUE		 = %x\n", reg->DDRP_CL_VALUE);
-	printf("DDRP_CWL_VALUE		= %x\n", reg->DDRP_CWL_VALUE);
-	printf("DDR_MR0_VALUE		 = %x\n", reg->DDR_MR0_VALUE);
-	printf("DDR_MR1_VALUE		 = %x\n", reg->DDR_MR1_VALUE);
-	printf("DDR_MR2_VALUE		 = %x\n", reg->DDR_MR2_VALUE);
-	printf("DDR_MR3_VALUE		 = %x\n", reg->DDR_MR3_VALUE);
-	printf("DDR_MR10_VALUE		= %x\n", reg->DDR_MR10_VALUE);
-	printf("DDR_MR11_VALUE		= %x\n", reg->DDR_MR11_VALUE);
-	printf("DDR_MR63_VALUE		= %x\n", reg->DDR_MR63_VALUE);
-	printf("DDR_CHIP_0_SIZE	   = %x\n", reg->DDR_CHIP_0_SIZE);
-	printf("DDR_CHIP_1_SIZE	   = %x\n", reg->DDR_CHIP_1_SIZE);
+	serial_debug("name			  = %s\n", reg->h.name);
+	serial_debug("id			  = %x\n", reg->h.id);
+	serial_debug("type			  = %x\n", reg->h.type);
+	serial_debug("freq			  = %x\n", reg->h.freq);
+	serial_debug("DDRC_CFG_VALUE		= %x\n", reg->DDRC_CFG_VALUE);
+	serial_debug("DDRC_CTRL_VALUE	   = %x\n", reg->DDRC_CTRL_VALUE);
+	serial_debug("DDRC_DLMR_VALUE	   = %x\n", reg->DDRC_DLMR_VALUE);
+	serial_debug("DDRC_DDLP_VALUE	   = %x\n", reg->DDRC_DDLP_VALUE);
+	serial_debug("DDRC_MMAP0_VALUE	  = %x\n", reg->DDRC_MMAP0_VALUE);
+	serial_debug("DDRC_MMAP1_VALUE	  = %x\n", reg->DDRC_MMAP1_VALUE);
+	serial_debug("DDRC_REFCNT_VALUE	 = %x\n", reg->DDRC_REFCNT_VALUE);
+	serial_debug("DDRC_TIMING1_VALUE	= %x\n", reg->DDRC_TIMING1_VALUE);
+	serial_debug("DDRC_TIMING2_VALUE	= %x\n", reg->DDRC_TIMING2_VALUE);
+	serial_debug("DDRC_TIMING3_VALUE	= %x\n", reg->DDRC_TIMING3_VALUE);
+	serial_debug("DDRC_TIMING4_VALUE	= %x\n", reg->DDRC_TIMING4_VALUE);
+	serial_debug("DDRC_TIMING5_VALUE	= %x\n", reg->DDRC_TIMING5_VALUE);
+	serial_debug("DDRC_AUTOSR_CNT_VALUE = %x\n", reg->DDRC_AUTOSR_CNT_VALUE);
+	serial_debug("DDRC_AUTOSR_EN_VALUE  = %x\n", reg->DDRC_AUTOSR_EN_VALUE);
+	serial_debug("DDRC_HREGPRO_VALUE	= %x\n", reg->DDRC_HREGPRO_VALUE);
+	serial_debug("DDRC_PREGPRO_VALUE	= %x\n", reg->DDRC_PREGPRO_VALUE);
+	serial_debug("DDRC_CGUC0_VALUE	  = %x\n", reg->DDRC_CGUC0_VALUE);
+	serial_debug("DDRC_CGUC1_VALUE	  = %x\n", reg->DDRC_CGUC1_VALUE);
+	serial_debug("DDRP_MEMCFG_VALUE	 = %x\n", reg->DDRP_MEMCFG_VALUE);
+	serial_debug("DDRP_CL_VALUE		 = %x\n", reg->DDRP_CL_VALUE);
+	serial_debug("DDRP_CWL_VALUE		= %x\n", reg->DDRP_CWL_VALUE);
+	serial_debug("DDR_MR0_VALUE		 = %x\n", reg->DDR_MR0_VALUE);
+	serial_debug("DDR_MR1_VALUE		 = %x\n", reg->DDR_MR1_VALUE);
+	serial_debug("DDR_MR2_VALUE		 = %x\n", reg->DDR_MR2_VALUE);
+	serial_debug("DDR_MR3_VALUE		 = %x\n", reg->DDR_MR3_VALUE);
+	serial_debug("DDR_MR10_VALUE		= %x\n", reg->DDR_MR10_VALUE);
+	serial_debug("DDR_MR11_VALUE		= %x\n", reg->DDR_MR11_VALUE);
+	serial_debug("DDR_MR63_VALUE		= %x\n", reg->DDR_MR63_VALUE);
+	serial_debug("DDR_CHIP_0_SIZE	   = %x\n", reg->DDR_CHIP_0_SIZE);
+	serial_debug("DDR_CHIP_1_SIZE	   = %x\n", reg->DDR_CHIP_1_SIZE);
 	for(i = 0; i < 5; i++) {
-		printf("REMMAP_ARRAY[%d] = %x\n", i, reg->REMMAP_ARRAY[i]);
+		serial_debug("REMMAP_ARRAY[%d] = %x\n", i, reg->REMMAP_ARRAY[i]);
 	}
 
 }
@@ -619,7 +619,7 @@ void get_ddr_params_normal(void)
 	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
-		printf("invalid burned ddr id\n");
+		serial_debug("invalid burned ddr id\n");
 	}
 
 	burned_ddr_id &= 0xffff;
@@ -673,7 +673,7 @@ void sdram_init(void)
 	unsigned int ddr_drv_config[INDEX_EN] = {0};
 
 	debug("sdram init start\n");
-	printf("DDR clk rate %d\n", CONFIG_SYS_MEM_FREQ);
+	serial_debug("DDR clk rate %d\n", CONFIG_SYS_MEM_FREQ);
 	soc_ddr_init();
 
 	get_ddr_params();

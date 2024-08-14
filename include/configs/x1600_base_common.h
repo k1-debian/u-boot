@@ -484,10 +484,6 @@
  */
 #define ARGS_CONSOLE ARG_CONSOLE_TTY ARG_CONSOLE_RATE
 
-#ifndef CONFIG_SPL_SERIAL_SUPPORT
-#define ARGS_CONSOLE "no_console"
-#endif
-
 #ifdef CONFIG_ARG_NO_CONSOLE
 #undef ARGS_CONSOLE
 #define ARGS_CONSOLE "no_console"

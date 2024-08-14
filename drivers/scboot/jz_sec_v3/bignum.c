@@ -206,13 +206,13 @@ void bn_div(bn_t *a, bn_t *b, bn_t *c, u32 cdigits, bn_t *d, u32 ddigits)
 		}
 
 		cc[i+dddigits] -= bn_sub_digit_mul(&cc[i], &cc[i], ai, dd, dddigits);
-		// printf("cc[%d]: %08X\n", i, cc[i+dddigits]);
+		// serial_debug("cc[%d]: %08X\n", i, cc[i+dddigits]);
 		while(cc[i+dddigits] || (bn_cmp(&cc[i], dd, dddigits) >= 0)) {
 			ai++;
 			cc[i+dddigits] -= bn_sub(&cc[i], &cc[i], dd, dddigits);
 		}
 		a[i] = ai;
-		// printf("ai[%d]: %08X\n", i, ai);
+		// serial_debug("ai[%d]: %08X\n", i, ai);
 	}
 
 	bn_assign_zero(b, ddigits);

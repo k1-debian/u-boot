@@ -27,7 +27,7 @@
 #define ham_debug(fmt, args...) \
     do                          \
     {                           \
-        printf(fmt, ##args);    \
+        serial_debug(fmt, ##args);    \
     } while (0)
 #else
 #define ham_debug(fmt, args...) \
@@ -446,7 +446,7 @@ void get_ddr_par(unsigned int *ddr_drv_config, int par_size)
 
     spl_efuse_read_ddrpar(hamming_data);
 
-    printf("DDR_PAR of eFuse: %x %x\n", hamming_data[0], hamming_data[1]);
+    serial_debug("DDR_PAR of eFuse: %x %x\n", hamming_data[0], hamming_data[1]);
 
     if(0 == hamming_data[0] && 0 == hamming_data[1])
     {

@@ -285,19 +285,19 @@ retry_wl:
 #define MAX_WL_RETRY_CNT	3
 	if(((ddr_readl(DDRP_INNOPHY_WL_L) == 0x3f) || (ddr_readl(DDRP_INNOPHY_WL_H) == 0x3f)) && wl_count <= MAX_WL_RETRY_CNT) {
 		/* 不一定是错，这里进行 retry，只是在调试阶段debug使用.*/
-		printf("***ERROR WL FOUND retry <%d/%d>**** ", wl_count, MAX_WL_RETRY_CNT);
-		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
-		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+		serial_debug("***ERROR WL FOUND retry <%d/%d>**** ", wl_count, MAX_WL_RETRY_CNT);
+		serial_debug("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
+		serial_debug("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 		goto retry_wl;
 	}
 #endif
 
 #if 0
 	if(ddr_readl(DDRP_INNOPHY_WL_L) == 0x3f) {
-		printf("******** ");
+		serial_debug("******** ");
 	}
-		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
-		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+		serial_debug("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
+		serial_debug("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 #endif
 
 }
@@ -368,8 +368,8 @@ int tx_re_training(unsigned int cmd_skew)
 
 	wl_l = ddr_readl(DDRP_INNOPHY_WL_L);
 	wl_h = ddr_readl(DDRP_INNOPHY_WL_H);
-	printf("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
-	printf("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+	serial_debug("write leveling low : 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_L));
+	serial_debug("write leveling high: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
 	if((wl_h == 0x3f) && (wl_l == 0x3f))
 		return -1;
@@ -520,7 +520,7 @@ void tx_soft_training()
 
 
 #if DEBUG_TX_RX_TRAINING
-	printf("=============tx pb deskew from 0 to 63 ==============\n");
+	serial_debug("=============tx pb deskew from 0 to 63 ==============\n");
 #endif
 	for(cmd_skew = 0;  cmd_skew <= 0x3F; cmd_skew++) {
 //	for(cmd_skew = 0x3f;  cmd_skew >= 0; cmd_skew--) {
@@ -540,14 +540,14 @@ void tx_soft_training()
 		tx_soft_training_set_pb_dqs1_skew(wl_h);
 
 #if DEBUG_TX_RX_TRAINING
-		printf("WL_L(DQS0):%x, WL_H(DQS1):%x ",wl_l, wl_h);
+		serial_debug("WL_L(DQS0):%x, WL_H(DQS1):%x ",wl_l, wl_h);
 #endif
 
 #if DEBUG_TX_RX_TRAINING
 		if(cmd_skew < 10) {
-			printf("cmd_skew:0%d ", cmd_skew);
+			serial_debug("cmd_skew:0%d ", cmd_skew);
 		} else {
-			printf("cmd_skew:%d ", cmd_skew);
+			serial_debug("cmd_skew:%d ", cmd_skew);
 		}
 #endif
 
@@ -593,7 +593,7 @@ void tx_soft_training()
 			first_left_dq = left_dq;
 
 #if DEBUG_TX_RX_TRAINING
-			printf(" -> * ");
+			serial_debug(" -> * ");
 #endif
 		}
 #if 0
@@ -605,7 +605,7 @@ else if(count == 0){
 		if((first_left_dq == left_dq) && (count >= max_pass_count)) {
 
 #if DEBUG_TX_RX_TRAINING
-			printf(" * <- ");
+			serial_debug(" * <- ");
 #endif
 			right_cmd_skew = cmd_skew;
 			max_pass_count = count;
@@ -629,14 +629,14 @@ else if(count == 0){
 	selected_dq_skew = left_dq + (right_dq - left_dq) - max_pass_count / 2;
 	selected_cmd_skew = tx_pass_cmd_skew[pass_index / 2];
 
-	printf("selected tx cmd: %d\n", tx_pass_cmd_skew[pass_index / 2]);
-	printf("selected tx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
-	printf("max pass tx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
-	printf("selected dq: %d\n", selected_dq_skew);
+	serial_debug("selected tx cmd: %d\n", tx_pass_cmd_skew[pass_index / 2]);
+	serial_debug("selected tx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
+	serial_debug("max pass tx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
+	serial_debug("selected dq: %d\n", selected_dq_skew);
 
 
 	if(max_pass_count == 0) {
-		printf("tx deskew tuning error, no skew found!\n");
+		serial_debug("tx deskew tuning error, no skew found!\n");
 	} else {
 
 #define RIGHT_CMD_SKEW_ADJUST	3	// 去掉右侧可能出现的假PASS。
@@ -662,15 +662,15 @@ else if(count == 0){
 		tx_soft_training_set_pb_dqs1_skew(wl_h);
 
 
-		printf("================== Final TX deskew Result ===============\n");
-		printf("DDRP_INNOPHY_TRAINING_CTRL: %x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
-		printf("TX_DQS0 deskew: %x ",ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS0));
-		printf("TX_DQSB0 deskew: %x \n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB0));
-		printf("TX_DQS1 deskew: %x ", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS1));
-		printf("TX_DQSB1 deskew: %x\n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB1));
+		serial_debug("================== Final TX deskew Result ===============\n");
+		serial_debug("DDRP_INNOPHY_TRAINING_CTRL: %x\n", ddr_readl(DDRP_INNOPHY_TRAINING_CTRL));
+		serial_debug("TX_DQS0 deskew: %x ",ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS0));
+		serial_debug("TX_DQSB0 deskew: %x \n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB0));
+		serial_debug("TX_DQS1 deskew: %x ", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQS1));
+		serial_debug("TX_DQSB1 deskew: %x\n", ddr_readl(DDRP_INNOPHY_PBDS_TX_DQSB1));
 
-		printf("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
-		printf("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
+		serial_debug("DDRP_INNOPHY_WL_L: 0x%x ", ddr_readl(DDRP_INNOPHY_WL_L));
+		serial_debug("DDRP_INNOPHY_WL_H: 0x%x\n", ddr_readl(DDRP_INNOPHY_WL_H));
 
 		// 4. 使用上面扫描记录中的最佳dq_skew.
 		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
@@ -714,7 +714,7 @@ else if(count == 0){
 		tx_soft_training_set_pb_dq_skew(selected_dq_skew);
 		*(volatile unsigned int *)0xb0000000;
 
-		printf("tx deskew tuning done, %d found, tuned tx dq_skew: %d, tx_cmd_skew: %d\n", max_pass_count, selected_dq_skew, selected_cmd_skew);
+		serial_debug("tx deskew tuning done, %d found, tuned tx dq_skew: %d, tx_cmd_skew: %d\n", max_pass_count, selected_dq_skew, selected_cmd_skew);
 
 #endif
 	}
@@ -743,7 +743,7 @@ void tx_soft_training1()
 
 	do{
 		for(i = 0; i < 64; i++){
-			/* printf("i = %d-----\n", i); */
+			/* serial_debug("i = %d-----\n", i); */
 			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ0);
 			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ1);
 			ddr_writel(i, DDRP_INNOPHY_PBDS_TX_DQ2);
@@ -770,7 +770,7 @@ void tx_soft_training1()
 				val1 = *(volatile unsigned int *)(addr + j * 4);
 
 				if (val1 != val) {
-					/*printf("%s  val = 0x%x val1 = 0x%x addr = 0x%x\n", __func__, val, val1, addr + j * 4);*/
+					/*serial_debug("%s  val = 0x%x val1 = 0x%x addr = 0x%x\n", __func__, val, val1, addr + j * 4);*/
 					break;
 				}
 			}
@@ -799,7 +799,7 @@ void tx_soft_training1()
 			else
 				finish = 0;
 		} else if (m == 0) {
-			printf("%s no_data_found cmd_skew = %d\n", __func__, cmd_skew);
+			serial_debug("%s no_data_found cmd_skew = %d\n", __func__, cmd_skew);
 			if (cmd_test_all == 0) {
 				cmd_skew = 0;
 				cmd_test_all = 1;
@@ -900,9 +900,9 @@ static int check_pb_dq_pattern(int dq)
 	}
 
 #if 0
-	printf("dq%d: %x\n", dq, p[0]);
+	serial_debug("dq%d: %x\n", dq, p[0]);
 
-	printf("p[0] & (1 << dq): %d\n", p[0] & (1 << dq));
+	serial_debug("p[0] & (1 << dq): %d\n", p[0] & (1 << dq));
 #endif
 
 	return 0;
@@ -925,9 +925,9 @@ static void rx_soft_training_pb_dqx(unsigned int reg_dqx, int dq)
 
 #if DEBUG_TX_RX_TRAINING
 	if(dq < 10) {
-		printf("DQ: 0%d ", dq);
+		serial_debug("DQ: 0%d ", dq);
 	} else {
-		printf("DQ: %d ", dq);
+		serial_debug("DQ: %d ", dq);
 	}
 #endif
 
@@ -962,7 +962,7 @@ static void rx_soft_training_pb_dqx(unsigned int reg_dqx, int dq)
 
 	selected_dq_skew = left_dq + count / 2;
 #if DEBUG_TX_RX_TRAINING
-	printf(" - pass: %d, dq_skew: %d\n", count, selected_dq_skew);
+	serial_debug(" - pass: %d, dq_skew: %d\n", count, selected_dq_skew);
 #endif
 
 	ddr_writel(selected_dq_skew, reg_dqx);
@@ -972,7 +972,7 @@ static void rx_soft_training_pb_dq_all(int dqs_skew)
 {
 
 #if DEBUG_TX_RX_TRAINING
-	printf("============tuning dq @ dqs_skew: %d\n", dqs_skew);
+	serial_debug("============tuning dq @ dqs_skew: %d\n", dqs_skew);
 #endif
 	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ0, 0);
 	rx_soft_training_pb_dqx(DDRP_INNOPHY_PBDS_RX_DQ1, 1);
@@ -1012,7 +1012,7 @@ static inline void ddr3_enable_mpr(int enable)
 	int i = 0;
 	unsigned int *p = 0xa0000000;
 	for(i = 0; i < 4; i++) {
-		printf("%x\n", p[i]);
+		serial_debug("%x\n", p[i]);
 	}
 #endif
 
@@ -1027,8 +1027,8 @@ static int print_read_pattern(int dq_skew)
 
 	int i = 0;
 
-	printf("==dq_skew: %d ", dq_skew);
-	printf("%x\n", p[0]);
+	serial_debug("==dq_skew: %d ", dq_skew);
+	serial_debug("%x\n", p[0]);
 
 
 }
@@ -1087,7 +1087,7 @@ static void rx_soft_training(void)
 	ddr3_enable_mpr(1);
 
 #if DEBUG_TX_RX_TRAINING
-	printf("==============rx dq pb deskew from 0 to 63 ============\n");
+	serial_debug("==============rx dq pb deskew from 0 to 63 ============\n");
 #endif
 	for(dqs_skew = 0; dqs_skew <= 0x3f; dqs_skew++) {
 		//这里假定了所有的DQS skew 相同, 找到最大的pass区间.
@@ -1097,9 +1097,9 @@ static void rx_soft_training(void)
 		right_dq = 0;
 #if DEBUG_TX_RX_TRAINING
 		if(dqs_skew < 10) {
-			printf("dqs_skew:0%d ", dqs_skew);
+			serial_debug("dqs_skew:0%d ", dqs_skew);
 		} else {
-			printf("dqs_skew:%d ", dqs_skew);
+			serial_debug("dqs_skew:%d ", dqs_skew);
 		}
 
 
@@ -1156,7 +1156,7 @@ static void rx_soft_training(void)
 			left_dqs = dqs_skew;
 			first_left_dq = left_dq;
 #if DEBUG_TX_RX_TRAINING
-			printf(" -> * ");
+			serial_debug(" -> * ");
 #endif
 		}
 		if((first_left_dq == left_dq) && (count >= max_pass_count)) {
@@ -1172,14 +1172,14 @@ static void rx_soft_training(void)
 			pass_index++;
 
 #if DEBUG_TX_RX_TRAINING
-			printf(" * <- ");
+			serial_debug(" * <- ");
 #endif
 
 //			selected_dqs_skew = dqs_skew;
 		} else {
 
 #if DEBUG_TX_RX_TRAINING
-			//printf(" -> * ");
+			//serial_debug(" -> * ");
 #endif
 			/* count 从大到小变化, dqs 开始偏移. 结束tuning*/
 //			break;
@@ -1188,7 +1188,7 @@ static void rx_soft_training(void)
 #if DEBUG_TX_RX_TRAINING
 		putchar('\n');
 #endif
-		//printf("---found pass count %d @ dqs deskew: %d, max_pass_count: %d, selected_dq_skew: %d, selected_dqs_skew: %d\n", count, dqs_skew, max_pass_count, selected_dq_skew, selected_dqs_skew);
+		//serial_debug("---found pass count %d @ dqs deskew: %d, max_pass_count: %d, selected_dq_skew: %d, selected_dqs_skew: %d\n", count, dqs_skew, max_pass_count, selected_dq_skew, selected_dqs_skew);
 
 	}
 
@@ -1199,13 +1199,13 @@ static void rx_soft_training(void)
 
 	selected_dq_skew = left_dq + (right_dq - left_dq) - max_pass_count / 2;
 
-	printf("selected rx dqs: %d\n", tx_rx_pass_dqs_skew[pass_index / 2]);
-	printf("selected rx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
-	printf("max pass rx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
-	printf("selected dq: %d\n", selected_dq_skew);
+	serial_debug("selected rx dqs: %d\n", tx_rx_pass_dqs_skew[pass_index / 2]);
+	serial_debug("selected rx left dq: %d right dq: %d\n", tx_rx_left_dq[pass_index / 2], tx_rx_right_dq[pass_index / 2]);
+	serial_debug("max pass rx dq: %d\n", tx_rx_right_dq[pass_index - 1] - tx_rx_left_dq[pass_index - 1]);
+	serial_debug("selected dq: %d\n", selected_dq_skew);
 
 	if(max_pass_count == 0) {
-		printf("rx deskew tuning error, no skew found!\n");
+		serial_debug("rx deskew tuning error, no skew found!\n");
 	} else {
 
 		rx_soft_training_set_pb_dqs_skew(selected_dqs_skew, selected_dqs_skew);
@@ -1257,7 +1257,7 @@ static void rx_soft_training(void)
 		selected_dq_skew = left_dq + (right_dq - left_dq) / 2;
 		rx_soft_training_set_pb_dq_skew(selected_dq_skew);
 		*(volatile unsigned int *)0xb0000000;	// 读一下总线，确保寄存器已经写入DDRPHY. 否则下面的读可能会出错.
-		printf("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
+		serial_debug("rx deskew tuning done, %d found, tuned rx dq_skew: %d, rx_dqs_skew: %d\n", max_pass_count, selected_dq_skew, selected_dqs_skew);
 #else
 		// 每个DQ 重新tuning一遍.
 		rx_soft_training_pb_dq_all(selected_dqs_skew);
@@ -1292,7 +1292,7 @@ void ddrp_pll_init(void)
 
 static void ddrp_reset(void)
 {
-	printf("DDRP_INNOPHY_PHY_RST: %x\n", ddr_readl(DDRP_INNOPHY_PHY_RST));
+	serial_debug("DDRP_INNOPHY_PHY_RST: %x\n", ddr_readl(DDRP_INNOPHY_PHY_RST));
 	unsigned int val = ddr_readl(DDRP_INNOPHY_PHY_RST);
 	ddr_writel(0, DDRP_INNOPHY_PHY_RST);
 	udelay(10);
@@ -1378,7 +1378,7 @@ static void ddrp_rx_dqs_auto_calibration(void)
 	debug("DDRP_INNOPHY_CALIB_MODE:	%x\n", ddr_readl(DDRP_INNOPHY_CALIB_MODE));
 
 	if(ddr_readl(DDRP_INNOPHY_CALIB_ERR) & (1 << 6)) {
-		printf("ddr pass but with error!\n");
+		serial_debug("ddr pass but with error!\n");
 		while(1);
 	}
 
@@ -1406,7 +1406,7 @@ static int do_whole_chip_scan(void)
 		p[i] = (i&0xff) | (i&0xff) << 8 | (i&0xff) << 16 | (i&0xff) << 24;//(i&0xff) | ((i << 8) & 0xff) | ((i << 16)& 0xff) | ((i << 24) & 0xff);
 
 	}
-	printf("after write!\n");
+	serial_debug("after write!\n");
 	for(i = 0; i < 16*1024*1024/4; i++) {
 
 		unsigned short low16bit = p[i] & 0xffff;
@@ -1440,8 +1440,8 @@ static int do_whole_chip_scan(void)
 #endif
 
 		if(err) {
-			printf("err:%x:%x, i: %x\n", &p[i], p[i], i);
-			printf("byte0: %x, byte3: %x\n", byte0, byte3);
+			serial_debug("err:%x:%x, i: %x\n", &p[i], p[i], i);
+			serial_debug("byte0: %x, byte3: %x\n", byte0, byte3);
 			return -1;
 		}
 	}
@@ -1458,20 +1458,20 @@ static void _ddrp_training_invdelay(void)
 	int count = 0;
 
 
-	printf("DDR_PHY_OFFSET_0x8: %x\n", ddr_readl(DDR_PHY_OFFSET + 0x20));
+	serial_debug("DDR_PHY_OFFSET_0x8: %x\n", ddr_readl(DDR_PHY_OFFSET + 0x20));
 	/*TODO:*/
 	for(i = 0; i < 0x1f; i++) {
 		ddr_writel(i, DDRP_INNOPHY_INVDELAYSEL_DQCMD);
 
-		printf("--- loop: %d\n", i);
+		serial_debug("--- loop: %d\n", i);
 
 		ret = do_whole_chip_scan();
 		if(!ret) {
-			printf("pass!\n");
+			serial_debug("pass!\n");
 			pass_invdelay[count++] = i;
 
 			if(count >= 0x1f) {
-				printf("pass_invdelay overflow, force done\n");
+				serial_debug("pass_invdelay overflow, force done\n");
 				break;
 			}
 		}
@@ -1483,7 +1483,7 @@ static void _ddrp_training_invdelay(void)
 
 
 	for(i = 0; i < count; i++) {
-		printf("passed delay: %d\n", pass_invdelay[i]);
+		serial_debug("passed delay: %d\n", pass_invdelay[i]);
 	}
 
 	//ddr_writel(pass_invdelay[count / 2], DDRP_INNOPHY_INVDELAYSEL_DQCMD);
@@ -1500,7 +1500,7 @@ static int do_whole_chip_test(void)
 	int i = 0;
 	unsigned int *p = 0x81000000;
 
-//	printf("doing whole chip w/r test!\n");
+//	serial_debug("doing whole chip w/r test!\n");
 
 #define MAX_WR_TEST_SIZE	(4*1024*1024/4)
 
@@ -1519,7 +1519,7 @@ static int do_whole_chip_test(void)
 	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
 
 		if(p[i] != &p[i]) {
-			printf("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
+			serial_debug("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
 			return -1;
 		}
 
@@ -1550,7 +1550,7 @@ void debug_date_eye(void) {
 	int mem_count = 2;
 	int restart_count_max = 2;
 	int i=0;
-	printf("drv_value  is %x odt_value is %x\n",debug_drvodt->drv_value,debug_drvodt->odt_value);
+	serial_debug("drv_value  is %x odt_value is %x\n",debug_drvodt->drv_value,debug_drvodt->odt_value);
 	ddrp_zq_calibration(1, debug_drvodt->drv_value,debug_drvodt->drv_value, debug_drvodt->drv_value, debug_drvodt->odt_value);
 	ddrp_rx_dqs_auto_calibration();
 	int j=0;
@@ -1607,15 +1607,15 @@ void debug_date_eye_printf(void) {
 	int j=0;
         for(i=0;i<32;i++){
 		  if(i<10){
-		  printf("drv is %d                     ",i);
+		  serial_debug("drv is %d                     ",i);
 		  }
 		  else{
-		  printf("drv is %d                    ",i);
+		  serial_debug("drv is %d                    ",i);
 		  }
 	          for(j=0;j<32;j++){
-			printf("%d",debug_drvodt->date_eye[i][j]);
+			serial_debug("%d",debug_drvodt->date_eye[i][j]);
 		  }
-		  printf("\n");
+		  serial_debug("\n");
 	}
 }
 #endif
@@ -1797,7 +1797,7 @@ static void ddrp_software_calibration(void)
 						break;
 					}
 #if 0
-					printf("val1 : 0x%x val : 0x%x, addr = 0x%x, bypass_l_c : %x bypass_l :%x bypass_h_c : %x bypass: %x\n", val1, val, addr + i * 4, \
+					serial_debug("val1 : 0x%x val : 0x%x, addr = 0x%x, bypass_l_c : %x bypass_l :%x bypass_h_c : %x bypass: %x\n", val1, val, addr + i * 4, \
 						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL_C),\
 						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL), \
 						ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH_C),\
@@ -1816,7 +1816,7 @@ static void ddrp_software_calibration(void)
 	}
 
 	if(!m) {
-		printf("calib bypass fail\n");
+		serial_debug("calib bypass fail\n");
 		return ;
 	}
 
@@ -1827,7 +1827,7 @@ static void ddrp_software_calibration(void)
 	d = calib_val[m].bypass.b.dllsel;
 	r = calib_val[m].rx_dll.b.rx_dll;
 
-	printf("m = %d   c = %d   o = %d   d = %d  r = %d\n", m, c, o, d, r);
+	serial_debug("m = %d   c = %d   o = %d   d = %d  r = %d\n", m, c, o, d, r);
 
 	x = d << 3 | o;
 	x1 = c;

@@ -25,7 +25,7 @@ static struct rtos_boot_os_args os_boot_args;
 #ifdef SFC_NOR_DEBUG
 #define sfc_debug(fmt, args...)			\
 	do {					\
-		printf(fmt, ##args);		\
+		serial_debug(fmt, ##args);		\
 	} while(0)
 #else
 #define sfc_debug(fmt, args...)			\
@@ -657,7 +657,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 #endif
 
 	if (rootfs_offset == -1){
-		printf("rootfs part not found\n");
+		serial_debug("rootfs part not found\n");
 		hang();
 	}
 
@@ -668,7 +668,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 
 	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
 	if(ret) {
-		printf("Error check rootfs hash\n");
+		serial_debug("Error check rootfs hash\n");
 		hang();
 	}
 }
@@ -710,7 +710,7 @@ void spl_load_kernel(long offset, const char *name)
 
 	ret = secure_scboot(load_addr, spl_image.load_addr);
 	if(ret) {
-		printf("Error spl secure load kernel.\n");
+		serial_debug("Error spl secure load kernel.\n");
 		hang();
 	}
 #else
@@ -729,17 +729,17 @@ void spl_load_kernel(long offset, const char *name)
 	image_len = info.image_len;
 
 	if (info.comp == IH_COMP_HARDLZMA) {
-		printf("Uncompressing LZMA Hardware ... \n");
+		serial_debug("Uncompressing LZMA Hardware ... \n");
 /*lzma 硬件解压*/
 		flush_cache_all();
 		ret = jz_lzma_decompress(image_buf, image_len, load_buf, CONFIG_HARD_LZMA_CHANNEL);
 		flush_cache_all();
 		if(ret <= 0) {
-			printf("lzam hardware decompress uImage failed \n");
+			serial_debug("lzam hardware decompress uImage failed \n");
 			hang();
 		}
  	} else
-		printf("The kernel compression type is incorrect\n");
+		serial_debug("The kernel compression type is incorrect\n");
 #else
 	sfc_read_data(offset, spl_image.size, (unsigned char *)spl_image.load_addr);
 #endif
@@ -831,14 +831,14 @@ void sfc_init(void)
 				}
 			}
 			if (i == tag.array_size)
-				printf("not match extra nor info: %x\n", nor_id);
+				serial_debug("not match extra nor info: %x\n", nor_id);
 		} else {
-			printf("not found extra nor info array\n");
+			serial_debug("not found extra nor info array\n");
 		}
 	}
 #endif
 
-	printf("%s %x %x\n", flash->g_nor_info.name, flash->g_nor_info.id, nor_id);
+	serial_debug("%s %x %x\n", flash->g_nor_info.name, flash->g_nor_info.id, nor_id);
 
 	/* update to private CDT table */
 	create_cdt_table(flash, UPDATE_CDT);
@@ -899,12 +899,12 @@ void sfc_erase_data(unsigned int addr, unsigned int len)
     unsigned int erasesize = flash->g_nor_info.erase_size;
 
     if ((erasesize-1) & addr) {
-        printf("erase error: address isn't aligned with block_size\n");
+        serial_debug("erase error: address isn't aligned with block_size\n");
         hang();
     }
 
     if ((erasesize-1) & len) {
-        printf("erase error: len must be times of blocks_size\n");
+        serial_debug("erase error: len must be times of blocks_size\n");
         hang();
 	}
 
@@ -1057,7 +1057,7 @@ static int spl_sfc_nor_rtos_load(struct rtos_header *rtos, unsigned int offset)
 	sfc_read_data(offset, size, start);
 	int ret = secure_scboot((void *)(start + sizeof(struct rtos_header)), (void*)rtos->img_start);
 	if(ret) {
-		printf("Error spl secure load freertos\n");
+		serial_debug("Error spl secure load freertos\n");
 		return -1;
 	}
 #else
@@ -1092,7 +1092,7 @@ static void spl_sfc_nor_rtos_boot(void)
 
 	rtos_addr = get_part_offset_by_name(partition, rtos_name);
 	if (rtos_addr == -1) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
 		hang();
 	}
 
@@ -1101,8 +1101,8 @@ static void spl_sfc_nor_rtos_boot(void)
     #ifdef CONFIG_SPL_RTOS_NAME
 	rtos_addr = get_part_offset_by_name(partition, CONFIG_SPL_RTOS_NAME);
 	if (rtos_addr == -1) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_addr = CONFIG_RTOS_OFFSET;
 	}
     #else
@@ -1132,7 +1132,7 @@ static void spl_sfc_nor_cfg_os_args(struct norflash_partitions partitions, char 
 	unsigned int img_addr = 0;
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
 	if (img_addr == -1) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 	debug("kernel:%s %x\n", kernel_name, img_addr);
@@ -1200,7 +1200,7 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 #ifdef CONFIG_SPL_OF_LIBFDT
 	unsigned int bootimg_addr = get_part_offset_by_name(partitions, dtbname);
 	if (bootimg_addr == -1){
-		printf("dtb not found: %s\n", dtbname);
+		serial_debug("dtb not found: %s\n", dtbname);
 		hang();
 	}
 
@@ -1213,7 +1213,7 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
 	if (rtos_offset == -1) {
 		debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		serial_debug("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_offset = CONFIG_RTOS_OFFSET;
 	}
 	debug("rtos:%s %x\n", rtos_name, rtos_offset);
@@ -1229,7 +1229,7 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	int ret = 0;
 	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
 	if (ret) {
-		printf("Error spl secure load kernel\n");
+		serial_debug("Error spl secure load kernel\n");
 		hang();
 	}
 #endif
@@ -1250,7 +1250,7 @@ void spl_sfc_nor_os_load(void)
 #ifdef CONFIG_SPL_OF_LIBFDT
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_DTB_NAME);
 	if (bootimg_addr == -1){
-		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		serial_debug("dtb not found: "CONFIG_DTB_NAME"\n");
 		hang();
 	}
 
@@ -1259,7 +1259,7 @@ void spl_sfc_nor_os_load(void)
 
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1){
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -1324,13 +1324,13 @@ void spl_sfc_nor_alios_load(void)
 
 change_part:
 	if(param->partition == RTOSA) {
-		printf("boot rtos-A\n");
+		serial_debug("boot rtos-A\n");
 		aos_img_addr = param->rtosa_start;
 	} else if (param->partition == RTOSB) {
-		printf("boot rtos-B\n");
+		serial_debug("boot rtos-B\n");
 		aos_img_addr = param->rtosb_start;
 	} else {
-		printf("boot partition type error!\n");
+		serial_debug("boot partition type error!\n");
 		hang();
 	}
 
@@ -1355,16 +1355,16 @@ change_part:
 	crc2 = crc32(0, spl_image.load_addr, spl_image.size);
 	if(crc1 != crc2){
 		if(param->partition == RTOSA) {
-			printf("crc error !!! goto rtos-B\n");
+			serial_debug("crc error !!! goto rtos-B\n");
 			param->partition = RTOSB;
 		} else if(param->partition == RTOSB) {
-			printf("crc error !!! goto rtos-A\n");
+			serial_debug("crc error !!! goto rtos-A\n");
 			param->partition = RTOSA;
 		}
 		if(crc_try--)
 			goto change_part;
 		
-		printf("crc error, boot failed!\n");
+		serial_debug("crc error, boot failed!\n");
 		hang();
 	}
 	jump_to_image_no_args(&spl_image);
@@ -1394,25 +1394,25 @@ void spl_ota_load_image(void)
 
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1){
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
 	bootimg_size = get_part_size_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_size == -1){
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
 	nv_rw_addr = get_part_offset_by_name(partition, CONFIG_PAR_NV_NAME);
 	if (nv_rw_addr == -1){
-		printf("nv_rw not found: "CONFIG_PAR_NV_NAME"\n");
+		serial_debug("nv_rw not found: "CONFIG_PAR_NV_NAME"\n");
 		hang();
 	}
 
 	nv_rw_size = get_part_size_by_name(partition, CONFIG_PAR_NV_NAME);
 	if (nv_rw_size == -1){
-		printf("nv_rw not found: "CONFIG_PAR_NV_NAME"\n");
+		serial_debug("nv_rw not found: "CONFIG_PAR_NV_NAME"\n");
 		hang();
 	}
 
@@ -1441,13 +1441,13 @@ void spl_vmlinux_load(void)
 
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
 	bootimg_size = get_part_size_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_size == -1) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -1480,7 +1480,7 @@ static char *spl_sfc_nor_os_ota_load(void)
 
 	img_addr = get_part_offset_by_name(partition, kernel_name);
 	if (img_addr == -1) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -1514,7 +1514,7 @@ static void spl_sfc_nor_rtos_ota_boot(void)
 
 		offset = get_part_offset_by_name(partition, CONFIG_SPL_RTOS_OTA_NAME);
 		if (offset == -1) {
-			printf("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
+			serial_debug("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
 			return;
 		}
 

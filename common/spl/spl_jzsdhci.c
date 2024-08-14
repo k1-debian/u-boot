@@ -20,7 +20,7 @@
 //#define DEBUG_DDR_CONTENT
 
 #ifdef DEBUG_MSC
-#define msc_debug	printf
+#define msc_debug	serial_debug
 #else
 #define msc_debug(fmt, args...) do { }while(0)
 #endif
@@ -103,7 +103,7 @@ static void msc_reset(u8 mask)
 	}
 
 	if(!timeout)
-		printf("host reset=0x%x fail!\n", mask);
+		serial_debug("host reset=0x%x fail!\n", mask);
 }
 
 static void mmc_init_host(void)
@@ -182,7 +182,7 @@ static void msc_clk_switch(int high_frq)
 	else
 		clk_set_rate(CPM_MSC, MSC_WORKING_CLK);
 
-	//printf("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__, \
+	//serial_debug("%s : clk_id[%d], set clk[%d], clk_get_rate=%d width=%d\n", __func__, \
 			CPM_MSC, high_frq ? MSC_WORKING_CLK : MSC_INIT_CLK, clk_get_rate(CPM_MSC), 1 << bus_width);
 #endif
 
@@ -234,7 +234,7 @@ static u32 wait_cmd_complete(int index)
 	}
 
 	if(!timeout) {
-		printf("[ERROR]:ERROR_INT_STAT:%x,INT_STAT=%x cmd timeout\n", msc_readw(MSC_ERROR_INT_STAT_R), msc_readw(MSC_NORMAL_INT_STAT_R));
+		serial_debug("[ERROR]:ERROR_INT_STAT:%x,INT_STAT=%x cmd timeout\n", msc_readw(MSC_ERROR_INT_STAT_R), msc_readw(MSC_NORMAL_INT_STAT_R));
 		return -1;
 	}
 
@@ -253,7 +253,7 @@ static u32 wait_xfer_complete(void)
 	}
 
 	if(!timeout) {
-		printf("[ERROR]:ERROR_INT_STAT:%x,xfer timeout\n", msc_readw(MSC_ERROR_INT_STAT_R));
+		serial_debug("[ERROR]:ERROR_INT_STAT:%x,xfer timeout\n", msc_readw(MSC_ERROR_INT_STAT_R));
 		return -1;
 	}
 
@@ -271,7 +271,7 @@ static u32 wait_buf_rb(void)
 	}
 
 	if(!timeout) {
-		printf("[ERROR]:ERROR_INT_STAT:%x,buf read timeout\n", msc_readw(MSC_ERROR_INT_STAT_R));
+		serial_debug("[ERROR]:ERROR_INT_STAT:%x,buf read timeout\n", msc_readw(MSC_ERROR_INT_STAT_R));
 		dump_error_status();
 		return -1;
 	}
@@ -341,9 +341,9 @@ static  u8* msc_get_resp(void)
 		}
 	}
 #if 0
-	printf("Response of CMD\n");
+	serial_debug("Response of CMD\n");
 	for(i=0; i<=3; i++){
-		printf("\tRESP%d%d=0x%08x\n",6-(i*2),7-(i*2), RESP_ARRAY[i]);
+		serial_debug("\tRESP%d%d=0x%08x\n",6-(i*2),7-(i*2), RESP_ARRAY[i]);
 	}
 #endif
 
@@ -364,7 +364,7 @@ static u32 msc_check_cmd_data_line(u32 cmdidx)
 
 	while (msc_readl(MSC_PSTATE_REG) & mask) {
 		if (timeout == 0) {
-			printf("Ctrl never released inhibit bit(s).\n");
+			serial_debug("Ctrl never released inhibit bit(s).\n");
 			return -1;
 		}
 		timeout--;
@@ -491,7 +491,7 @@ static u32 mmc_block_read_poll(u8 type, u32 start, u32 blkcnt, u32 *dst)
 	}
 
 	if(nob > 0xffff)
-		printf("Check blkcnt %x!\n", nob);
+		serial_debug("Check blkcnt %x!\n", nob);
 
 	msc_writew(MSC_BLOCKCOUNT_R, nob);
 
@@ -679,7 +679,7 @@ static u32 mmc_block_read_sdma(u8 type, u32 start, u32 blkcnt, u32 *dst)
             u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
             msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
             msc_writew(MSC_ERROR_INT_STAT_R, error_status);
-            printf("[DATA]:Error detected in status(0x%X) error_status(0x%X)\n", status, error_status);
+            serial_debug("[DATA]:Error detected in status(0x%X) error_status(0x%X)\n", status, error_status);
             goto err;
         }
 
@@ -694,7 +694,7 @@ static u32 mmc_block_read_sdma(u8 type, u32 start, u32 blkcnt, u32 *dst)
         if (timeout-- > 0) {
             udelay(1);
         } else {
-            printf("Transfer data timeout\n");
+            serial_debug("Transfer data timeout\n");
             return -1;
         }
     } while (!(status & MSC_XFER_COMPLETE_STAT_BIT));
@@ -794,7 +794,7 @@ static int mmc_get_ext_csd_sdma(unsigned char *buffer)
             u32 error_status = msc_readw(MSC_ERROR_INT_STAT_R);
             msc_writew(MSC_NORMAL_INT_STAT_R, MSC_ERR_INTERRUPT_STAT_BIT);
             msc_writew(MSC_ERROR_INT_STAT_R, error_status);
-            printf("[DATA]:Error detected in status(0x%X) error_status(0x%X)\n", status, error_status);
+            serial_debug("[DATA]:Error detected in status(0x%X) error_status(0x%X)\n", status, error_status);
             goto err;
         }
 
@@ -809,14 +809,14 @@ static int mmc_get_ext_csd_sdma(unsigned char *buffer)
         if (timeout-- > 0) {
             udelay(1);
         } else {
-            printf("Transfer data timeout\n");
+            serial_debug("Transfer data timeout\n");
             return -1;
         }
     } while (!(status & MSC_XFER_COMPLETE_STAT_BIT));
     nob = 0;
 
     if(wait_xfer_complete()) {
-		printf("wait xfer complete error\n");
+		serial_debug("wait xfer complete error\n");
         goto err;
 	}
 #ifdef DEBUG_MSC
@@ -830,11 +830,11 @@ static int mmc_get_ext_csd_sdma(unsigned char *buffer)
 	unsigned int *tmp_buf = (unsigned int *)buffer;
 	for (i = 0; i < 512 / 4; i++) {
 		if ( (i != 0) && (i % 4 == 0) ) {
-			printf("\n");
+			serial_debug("\n");
 		}
-		printf("%x:", tmp_buf[i]);
+		serial_debug("%x:", tmp_buf[i]);
 	}
-	printf("\n");
+	serial_debug("\n");
 #endif
 err:
 	msc_sync_abort();
@@ -1023,7 +1023,7 @@ static int sd_found(void)
 	}
 
 	if (!(resp[4] & 0x80)) {
-		printf("sd init fail\n");
+		serial_debug("sd init fail\n");
 		return -1;
 	}
 
@@ -1146,7 +1146,7 @@ static int mmc_found(void)
 	}
 
 	if (!timeout) {
-		printf("emmc card init err\n");
+		serial_debug("emmc card init err\n");
 		return -1;
 	}
 
@@ -1353,7 +1353,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 #endif
 
 	if (ret == -1) {
-		printf("rootfs partitions not found\n");
+		serial_debug("rootfs partitions not found\n");
 		hang();
 	}
 
@@ -1374,7 +1374,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 
 	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
 	if(ret) {
-		printf("Error check rootfs hash.\n");
+		serial_debug("Error check rootfs hash.\n");
 		hang();
 	}
 }
@@ -1446,7 +1446,7 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
 	int ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
 	if(ret) {
-		printf("Error spl secure load kernel.\n");
+		serial_debug("Error spl secure load kernel.\n");
 		hang();
 	}
 #endif
@@ -1474,7 +1474,7 @@ static int mmc_load_img_from_partition(const char *name)
 	unsigned int dtb_addr;
 	ret = spl_get_built_in_gpt_partition(CONFIG_DTB_NAME, &dtb_addr, NULL);
 	if (ret){
-		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		serial_debug("dtb not found: "CONFIG_DTB_NAME"\n");
 		hang();
 	}
 
@@ -1483,7 +1483,7 @@ static int mmc_load_img_from_partition(const char *name)
 
 	ret = spl_get_built_in_gpt_partition(name, &start_sector, NULL);
 	if (ret) {
-		printf("mmc:failed get part %s\n", name);
+		serial_debug("mmc:failed get part %s\n", name);
 		return ret;
 	}
 
@@ -1514,7 +1514,7 @@ static int mmc_ota_load_img_from_partition(const char *name)
 
 	ret = spl_get_built_in_gpt_partition(kernel_name, &start_sector, NULL);
 	if (ret) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -1619,12 +1619,12 @@ static int mmc_rtos_load_rtosdata_partition(struct rtos_header *rtos)
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME,
 								&mapped_rtosdata_offset_sector, &mapped_rtosdata_size_sector);
 	if (ret) {
-		printf("not found: "CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME"\n");
+		serial_debug("not found: "CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME"\n");
 		return -1;
 	}
 
 	if (rtos->heap_end - rtos->heap_start <= mapped_rtosdata_size_sector * 512) {
-		printf("part too large:" CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME"\n");
+		serial_debug("part too large:" CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME"\n");
 		return -1;
 	}
 
@@ -1632,7 +1632,7 @@ static int mmc_rtos_load_rtosdata_partition(struct rtos_header *rtos)
 
 	ret = mmc_block_read(mapped_rtosdata_offset_sector, mapped_rtosdata_size_sector, mapped_rtosdata_address);
 	if (ret == 0) {
-		printf("read rtos data err\n");
+		serial_debug("read rtos data err\n");
 		return -1;
 	}
 
@@ -1669,7 +1669,7 @@ static int mmc_rtos_load(struct rtos_header *rtos, unsigned int sector_offset)
 
 	return 0;
 end:
-	printf("read rtos image err\n");
+	serial_debug("read rtos image err\n");
 	return -1;
 }
 
@@ -1698,7 +1698,7 @@ static void mmc_load_rtos_boot(void)
 
 	ret = spl_get_built_in_gpt_partition(rtos_name, &rtos_offset, NULL);
 	if (ret) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
 		hang();
 	}
 
@@ -1707,8 +1707,8 @@ static void mmc_load_rtos_boot(void)
 	#ifdef CONFIG_SPL_RTOS_NAME
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_RTOS_NAME, &rtos_offset, NULL);
 	if (ret) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("rtos use default offset sector:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("rtos use default offset sector:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
 		rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
 	}
 	#else
@@ -1745,7 +1745,7 @@ static void spl_mmc_cfg_os_args(char *kernel_name, char *cmdargs)
 	unsigned int offset_sector = 0;
 	ret = spl_get_built_in_gpt_partition(CONFIG_SPL_OS_NAME, &offset_sector, NULL);
 	if (ret) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 	debug("kernel:%s %x\n", kernel_name, offset_sector);
@@ -1821,7 +1821,7 @@ static char *mmc_boot_rtos_load_os(void)
 	unsigned int dtb_addr;
 	ret = spl_get_built_in_gpt_partition(dtbname, &dtb_addr, NULL);
 	if (ret){
-		printf("dtb not found: %s\n", dtbname);
+		serial_debug("dtb not found: %s\n", dtbname);
 		hang();
 	}
 
@@ -1833,8 +1833,8 @@ static char *mmc_boot_rtos_load_os(void)
 	unsigned int rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
 	ret = spl_get_built_in_gpt_partition(rtos_name, &rtos_offset, NULL);
 	if (ret) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("rtos use default offset sector:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("rtos use default offset sector:%d\n", CONFIG_RTOS_OFFSET_SECTOR);
 		rtos_offset = CONFIG_RTOS_OFFSET_SECTOR;
 	}
 	debug("rtos:%s %x\n", rtos_name, rtos_offset);
@@ -1855,7 +1855,7 @@ static char *mmc_boot_rtos_load_os(void)
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
 	if (ret) {
-		printf("Error spl secure load kernel.\n");
+		serial_debug("Error spl secure load kernel.\n");
 		hang();
 	}
 #endif

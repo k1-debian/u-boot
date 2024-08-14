@@ -375,7 +375,7 @@ static int  spinand_write_page(unsigned int page,unsigned int column,unsigned ch
 	ret = spinand_read_page(bad_block_check_page_addr,bad_block_check_column_addr,(unsigned char *)&addr,bad_block_check_len,pagesize);
 
 	if (ret > 0){
-		printf("block %d is bad_bolck \n",block_addr);
+		serial_debug("block %d is bad_bolck \n",block_addr);
 		return 1;
 	}
 
@@ -448,7 +448,7 @@ static int spinand_probe_id(struct jz_sfc* sfc)
 		return -ENODEV;
 	}
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-	printf("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]);
+	serial_debug("%d, VID=0x%x, PID=0x%x\n", __LINE__, id[0], id[1]);
 #endif
 	return 0;
 }
@@ -613,7 +613,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 #endif
 
 	if (rootfs_offset == -1) {
-		printf("rootfs partitions not found\n");
+		serial_debug("rootfs partitions not found\n");
 		hang();
 	}
 
@@ -624,7 +624,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 
 	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
 	if(ret) {
-		printf("Error check rootfs hash.\n");
+		serial_debug("Error check rootfs hash.\n");
 		hang();
 	}
 }
@@ -664,7 +664,7 @@ void spl_load_kernel(long offset, const char *name)
 
 	ret = secure_scboot(load_addr, spl_image.load_addr);
 	if(ret) {
-		printf("Error spl secure load kernel.\n");
+		serial_debug("Error spl secure load kernel.\n");
 		hang();
 	}
 #else
@@ -686,12 +686,12 @@ void sfc_erase_data(unsigned int addr, unsigned int len)
 
 
     if ((blocksize-1) & addr) {
-        printf("erase error: address isn't aligned with blocks_size.\n");
+        serial_debug("erase error: address isn't aligned with blocks_size.\n");
         hang();
     }
 
     if ((blocksize-1) & len) {
-        printf("erase error: len must be times of blocks_size.\n");
+        serial_debug("erase error: len must be times of blocks_size.\n");
         hang();
 	}
 
@@ -730,7 +730,7 @@ void spl_sfc_nand_os_load(void)
 #ifdef CONFIG_SPL_OF_LIBFDT
 	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_DTB_NAME);
 	if (bootimg_addr == -1){
-		printf("dtb not found: "CONFIG_DTB_NAME"\n");
+		serial_debug("dtb not found: "CONFIG_DTB_NAME"\n");
 		hang();
 	}
 
@@ -739,7 +739,7 @@ void spl_sfc_nand_os_load(void)
 
 	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1){
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -808,13 +808,13 @@ void spl_sfc_nand_alios_load(void)
 
 change_part:
 	if(param->partition == RTOSA) {
-		printf("boot rtos-A\n");
+		serial_debug("boot rtos-A\n");
 		aos_img_addr = param->rtosa_start;
 	} else if (param->partition == RTOSB) {
-		printf("boot rtos-B\n");
+		serial_debug("boot rtos-B\n");
 		aos_img_addr = param->rtosb_start;
 	} else {
-		printf("boot partition type error!\n");
+		serial_debug("boot partition type error!\n");
 		hang();
 	}
 
@@ -839,16 +839,16 @@ change_part:
 	crc2 = crc32(0, spl_image.load_addr, spl_image.size);
 	if(crc1 != crc2){
 		if(param->partition == RTOSA) {
-			printf("crc error !!! goto rtos-B\n");
+			serial_debug("crc error !!! goto rtos-B\n");
 			param->partition = RTOSB;
 		} else if(param->partition == RTOSB) {
-			printf("crc error !!! goto rtos-A\n");
+			serial_debug("crc error !!! goto rtos-A\n");
 			param->partition = RTOSA;
 		}
 		if(crc_try--)
 			goto change_part;
 
-		printf("crc error, boot failed!\n");
+		serial_debug("crc error, boot failed!\n");
 		hang();
 	}
 	jump_to_image_no_args(&spl_image);
@@ -915,7 +915,7 @@ static int spl_sfc_rtos_load(struct rtos_header *rtos, unsigned int offset)
 	sfc_nand_load(offset, rtos->img_end - rtos->img_start, rtos->img_start);
 	int ret = secure_scboot(rtos->img_start + sizeof(struct rtos_header), rtos->img_start);
 	if(ret) {
-		printf("Error rtos decryption.\n");
+		serial_debug("Error rtos decryption.\n");
 		hang();
 	}
 #else
@@ -949,7 +949,7 @@ static void spl_sfc_rtos_boot(void)
 
 	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
 	if (rtos_offset == -1) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
 		hang();
 	}
 
@@ -960,8 +960,8 @@ static void spl_sfc_rtos_boot(void)
 
 	rtos_offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_NAME);
 	if (rtos_offset == -1) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_offset = CONFIG_RTOS_OFFSET;
 	}
 	#else
@@ -992,7 +992,7 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
 	if (img_addr == -1) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 	debug("kernel:%s %x\n", kernel_name, img_addr);
@@ -1062,7 +1062,7 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 #ifdef CONFIG_SPL_OF_LIBFDT
 	unsigned int dtb_addr = get_part_offset_by_name(partitions, dtbname);
 	if (dtb_addr == -1){
-		printf("dtb not found: %s\n", dtbname);
+		serial_debug("dtb not found: %s\n", dtbname);
 		hang();
 	}
 
@@ -1074,8 +1074,8 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 	unsigned int rtos_offset = 0;
 	rtos_offset = get_part_offset_by_name(partitions, rtos_name);
 	if (rtos_offset == -1) {
-		printf("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
-		printf("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
+		serial_debug("rtos not found: "CONFIG_SPL_RTOS_NAME"\n");
+		serial_debug("use rtos default offset_addr:%d\n", CONFIG_RTOS_OFFSET);
 		rtos_offset = CONFIG_RTOS_OFFSET;
 	}
 	debug("rtos:%s %x\n", rtos_name, rtos_offset);
@@ -1091,7 +1091,7 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 	int ret = 0;
 	ret = secure_scboot(spl_image.load_addr, spl_image.load_addr);
 	if (ret) {
-		printf("Error spl secure load kernel.\n");
+		serial_debug("Error spl secure load kernel.\n");
 		hang();
 	}
 #endif
@@ -1111,7 +1111,7 @@ void spl_sfc_nand_rtos_load(void)
 	partitions = get_partitions();
 	partition = get_part_by_name(partitions, CONFIG_SPL_OS_NAME);
 	if (partition == NULL) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -1144,7 +1144,7 @@ static char *spl_sfc_nand_os_ota_load(void)
 
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
 	if (img_addr == -1) {
-		printf("kernel not found: "CONFIG_SPL_OS_NAME"\n");
+		serial_debug("kernel not found: "CONFIG_SPL_OS_NAME"\n");
 		hang();
 	}
 
@@ -1172,7 +1172,7 @@ void spl_nand_mcu_rtos_boot(void)
 
     struct jz_sfcnand_partition *riscv_part = get_part_by_name(partitions, "riscv");
     if (!riscv_part) {
-        printf("not found riscv\n");
+        serial_debug("not found riscv\n");
         return;
     }
 
@@ -1205,7 +1205,7 @@ static void spl_sfc_nand_rtos_ota_boot(void)
 
 		offset = get_part_offset_by_name(partitions, CONFIG_SPL_RTOS_OTA_NAME);
 		if (offset == -1) {
-			printf("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
+			serial_debug("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
 			return;
 		}
 

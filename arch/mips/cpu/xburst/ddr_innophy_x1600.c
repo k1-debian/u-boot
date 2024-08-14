@@ -69,7 +69,7 @@ void drv_odt_value_ergodic(void){
 	drv_value = (slpc & 0xff);
 	odt_value = (slpc >> 8) & 0xff;
 	pass_value = 0;
-	printf("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
+	serial_debug("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
 	odt_value += 1;
 
 	if(odt_value > 0x1f){
@@ -103,7 +103,7 @@ void  _machine_restart(void){
 			, WDT_BASE + WDT_TCSR);
 	writel(0,WDT_BASE + WDT_TCER);
 
-	/*printf("reset in %dms\n", RESET_DELAY_MS);*/
+	/*serial_debug("reset in %dms\n", RESET_DELAY_MS);*/
 	writel(TCER_TCEN,WDT_BASE + WDT_TCER);
 	mdelay(1000);
 }
@@ -123,69 +123,69 @@ extern void reset_dll(void);
 #ifdef  CONFIG_DWC_DEBUG
 static void dump_ddrc_register(void)
 {
-	printf("DDRC_STATUS         0x%x\n", ddr_readl(DDRC_STATUS));
-	printf("DDRC_CFG            0x%x\n", ddr_readl(DDRC_CFG));
-	printf("DDRC_CTRL           0x%x\n", ddr_readl(DDRC_CTRL));
-	printf("DDRC_LMR            0x%x\n", ddr_readl(DDRC_LMR));
-	printf("DDRC_DLP            0x%x\n", ddr_readl(DDRC_DLP));
-	printf("DDRC_TIMING1        0x%x\n", ddr_readl(DDRC_TIMING(1)));
-	printf("DDRC_TIMING2        0x%x\n", ddr_readl(DDRC_TIMING(2)));
-	printf("DDRC_TIMING3        0x%x\n", ddr_readl(DDRC_TIMING(3)));
-	printf("DDRC_TIMING4        0x%x\n", ddr_readl(DDRC_TIMING(4)));
-	printf("DDRC_TIMING5        0x%x\n", ddr_readl(DDRC_TIMING(5)));
-	printf("DDRC_TIMING6        0x%x\n", ddr_readl(DDRC_TIMING(6)));
-	printf("DDRC_REFCNT         0x%x\n", ddr_readl(DDRC_REFCNT));
-	printf("DDRC_MMAP0          0x%x\n", ddr_readl(DDRC_MMAP0));
-	printf("DDRC_MMAP1          0x%x\n", ddr_readl(DDRC_MMAP1));
-	printf("DDRC_REMAP1         0x%x\n", ddr_readl(DDRC_REMAP(1)));
-	printf("DDRC_REMAP2         0x%x\n", ddr_readl(DDRC_REMAP(2)));
-	printf("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
-	printf("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
-	printf("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
-	printf("DDRC_AUTOSR_EN      0x%x\n", ddr_readl(DDRC_AUTOSR_EN));
-	printf("INNO_DQ_WIDTH   :%X\n",phy_readl(INNO_DQ_WIDTH));
-	printf("INNO_PLL_FBDIV  :%X\n",phy_readl(INNO_PLL_FBDIV));
-	printf("INNO_PLL_PDIV   :%X\n",phy_readl(INNO_PLL_PDIV));
-	printf("INNO_MEM_CFG    :%X\n",phy_readl(INNO_MEM_CFG));
-	printf("INNO_PLL_CTRL   :%X\n",phy_readl(INNO_PLL_CTRL));
-	printf("INNO_CHANNEL_EN :%X\n",phy_readl(INNO_CHANNEL_EN));
-	printf("INNO_CWL        :%X\n",phy_readl(INNO_CWL));
-	printf("INNO_CL         :%X\n",phy_readl(INNO_CL));
+	serial_debug("DDRC_STATUS         0x%x\n", ddr_readl(DDRC_STATUS));
+	serial_debug("DDRC_CFG            0x%x\n", ddr_readl(DDRC_CFG));
+	serial_debug("DDRC_CTRL           0x%x\n", ddr_readl(DDRC_CTRL));
+	serial_debug("DDRC_LMR            0x%x\n", ddr_readl(DDRC_LMR));
+	serial_debug("DDRC_DLP            0x%x\n", ddr_readl(DDRC_DLP));
+	serial_debug("DDRC_TIMING1        0x%x\n", ddr_readl(DDRC_TIMING(1)));
+	serial_debug("DDRC_TIMING2        0x%x\n", ddr_readl(DDRC_TIMING(2)));
+	serial_debug("DDRC_TIMING3        0x%x\n", ddr_readl(DDRC_TIMING(3)));
+	serial_debug("DDRC_TIMING4        0x%x\n", ddr_readl(DDRC_TIMING(4)));
+	serial_debug("DDRC_TIMING5        0x%x\n", ddr_readl(DDRC_TIMING(5)));
+	serial_debug("DDRC_TIMING6        0x%x\n", ddr_readl(DDRC_TIMING(6)));
+	serial_debug("DDRC_REFCNT         0x%x\n", ddr_readl(DDRC_REFCNT));
+	serial_debug("DDRC_MMAP0          0x%x\n", ddr_readl(DDRC_MMAP0));
+	serial_debug("DDRC_MMAP1          0x%x\n", ddr_readl(DDRC_MMAP1));
+	serial_debug("DDRC_REMAP1         0x%x\n", ddr_readl(DDRC_REMAP(1)));
+	serial_debug("DDRC_REMAP2         0x%x\n", ddr_readl(DDRC_REMAP(2)));
+	serial_debug("DDRC_REMAP3         0x%x\n", ddr_readl(DDRC_REMAP(3)));
+	serial_debug("DDRC_REMAP4         0x%x\n", ddr_readl(DDRC_REMAP(4)));
+	serial_debug("DDRC_REMAP5         0x%x\n", ddr_readl(DDRC_REMAP(5)));
+	serial_debug("DDRC_AUTOSR_EN      0x%x\n", ddr_readl(DDRC_AUTOSR_EN));
+	serial_debug("INNO_DQ_WIDTH   :%X\n",phy_readl(INNO_DQ_WIDTH));
+	serial_debug("INNO_PLL_FBDIV  :%X\n",phy_readl(INNO_PLL_FBDIV));
+	serial_debug("INNO_PLL_PDIV   :%X\n",phy_readl(INNO_PLL_PDIV));
+	serial_debug("INNO_MEM_CFG    :%X\n",phy_readl(INNO_MEM_CFG));
+	serial_debug("INNO_PLL_CTRL   :%X\n",phy_readl(INNO_PLL_CTRL));
+	serial_debug("INNO_CHANNEL_EN :%X\n",phy_readl(INNO_CHANNEL_EN));
+	serial_debug("INNO_CWL        :%X\n",phy_readl(INNO_CWL));
+	serial_debug("INNO_CL         :%X\n",phy_readl(INNO_CL));
 }
 
 void dump_generated_reg(struct ddr_reg_value *reg)
 {
 	int i;
-	printf("name		      = %s\n", reg->h.name);
-	printf("id		      = %x\n", reg->h.id);
-	printf("type		      = %x\n", reg->h.type);
-	printf("freq		      = %x\n", reg->h.freq);
-	printf("DDRC_CFG_VALUE        = %x\n", reg->DDRC_CFG_VALUE);
-	printf("DDRC_CTRL_VALUE       = %x\n", reg->DDRC_CTRL_VALUE);
-	printf("DDRC_DLMR_VALUE       = %x\n", reg->DDRC_DLMR_VALUE);
-	printf("DDRC_DDLP_VALUE       = %x\n", reg->DDRC_DDLP_VALUE);
-	printf("DDRC_MMAP0_VALUE      = %x\n", reg->DDRC_MMAP0_VALUE);
-	printf("DDRC_MMAP1_VALUE      = %x\n", reg->DDRC_MMAP1_VALUE);
-	printf("DDRC_REFCNT_VALUE     = %x\n", reg->DDRC_REFCNT_VALUE);
-	printf("DDRC_TIMING1_VALUE    = %x\n", reg->DDRC_TIMING1_VALUE);
-	printf("DDRC_TIMING2_VALUE    = %x\n", reg->DDRC_TIMING2_VALUE);
-	printf("DDRC_TIMING3_VALUE    = %x\n", reg->DDRC_TIMING3_VALUE);
-	printf("DDRC_TIMING4_VALUE    = %x\n", reg->DDRC_TIMING4_VALUE);
-	printf("DDRC_TIMING5_VALUE    = %x\n", reg->DDRC_TIMING5_VALUE);
-	printf("DDRP_MEMCFG_VALUE     = %x\n", reg->DDRP_MEMCFG_VALUE);
-	printf("DDRP_CL_VALUE         = %x\n", reg->DDRP_CL_VALUE);
-	printf("DDRP_CWL_VALUE        = %x\n", reg->DDRP_CWL_VALUE);
-	printf("DDR_MR0_VALUE         = %x\n", reg->DDR_MR0_VALUE);
-	printf("DDR_MR1_VALUE         = %x\n", reg->DDR_MR1_VALUE);
-	printf("DDR_MR2_VALUE         = %x\n", reg->DDR_MR2_VALUE);
-	printf("DDR_MR3_VALUE         = %x\n", reg->DDR_MR3_VALUE);
-	printf("DDR_MR10_VALUE        = %x\n", reg->DDR_MR10_VALUE);
-	printf("DDR_MR11_VALUE        = %x\n", reg->DDR_MR11_VALUE);
-	printf("DDR_MR63_VALUE        = %x\n", reg->DDR_MR63_VALUE);
-	printf("DDR_CHIP_0_SIZE       = %x\n", reg->DDR_CHIP_0_SIZE);
-	printf("DDR_CHIP_1_SIZE       = %x\n", reg->DDR_CHIP_1_SIZE);
+	serial_debug("name		      = %s\n", reg->h.name);
+	serial_debug("id		      = %x\n", reg->h.id);
+	serial_debug("type		      = %x\n", reg->h.type);
+	serial_debug("freq		      = %x\n", reg->h.freq);
+	serial_debug("DDRC_CFG_VALUE        = %x\n", reg->DDRC_CFG_VALUE);
+	serial_debug("DDRC_CTRL_VALUE       = %x\n", reg->DDRC_CTRL_VALUE);
+	serial_debug("DDRC_DLMR_VALUE       = %x\n", reg->DDRC_DLMR_VALUE);
+	serial_debug("DDRC_DDLP_VALUE       = %x\n", reg->DDRC_DDLP_VALUE);
+	serial_debug("DDRC_MMAP0_VALUE      = %x\n", reg->DDRC_MMAP0_VALUE);
+	serial_debug("DDRC_MMAP1_VALUE      = %x\n", reg->DDRC_MMAP1_VALUE);
+	serial_debug("DDRC_REFCNT_VALUE     = %x\n", reg->DDRC_REFCNT_VALUE);
+	serial_debug("DDRC_TIMING1_VALUE    = %x\n", reg->DDRC_TIMING1_VALUE);
+	serial_debug("DDRC_TIMING2_VALUE    = %x\n", reg->DDRC_TIMING2_VALUE);
+	serial_debug("DDRC_TIMING3_VALUE    = %x\n", reg->DDRC_TIMING3_VALUE);
+	serial_debug("DDRC_TIMING4_VALUE    = %x\n", reg->DDRC_TIMING4_VALUE);
+	serial_debug("DDRC_TIMING5_VALUE    = %x\n", reg->DDRC_TIMING5_VALUE);
+	serial_debug("DDRP_MEMCFG_VALUE     = %x\n", reg->DDRP_MEMCFG_VALUE);
+	serial_debug("DDRP_CL_VALUE         = %x\n", reg->DDRP_CL_VALUE);
+	serial_debug("DDRP_CWL_VALUE        = %x\n", reg->DDRP_CWL_VALUE);
+	serial_debug("DDR_MR0_VALUE         = %x\n", reg->DDR_MR0_VALUE);
+	serial_debug("DDR_MR1_VALUE         = %x\n", reg->DDR_MR1_VALUE);
+	serial_debug("DDR_MR2_VALUE         = %x\n", reg->DDR_MR2_VALUE);
+	serial_debug("DDR_MR3_VALUE         = %x\n", reg->DDR_MR3_VALUE);
+	serial_debug("DDR_MR10_VALUE        = %x\n", reg->DDR_MR10_VALUE);
+	serial_debug("DDR_MR11_VALUE        = %x\n", reg->DDR_MR11_VALUE);
+	serial_debug("DDR_MR63_VALUE        = %x\n", reg->DDR_MR63_VALUE);
+	serial_debug("DDR_CHIP_0_SIZE       = %x\n", reg->DDR_CHIP_0_SIZE);
+	serial_debug("DDR_CHIP_1_SIZE       = %x\n", reg->DDR_CHIP_1_SIZE);
 	for(i = 0; i < 5; i++) {
-		printf("REMMAP_ARRAY[%d] = %x\n", i, reg->REMMAP_ARRAY[i]);
+		serial_debug("REMMAP_ARRAY[%d] = %x\n", i, reg->REMMAP_ARRAY[i]);
 	}
 }
 
@@ -239,15 +239,15 @@ static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_d
 	ddrp_set_dq_drv(dq_drv, dq_drv);
 	ddrp_set_cmd_drv(cmd_drv, cmd_drv);
 #if 0
-	printf("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
-	printf("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
-	printf("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	printf("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
-	printf("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
-	printf("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
-	printf("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
-	printf("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
-	printf("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
+	serial_debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
+	serial_debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
+	serial_debug("DDRP_INNOPHY_PU_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	serial_debug("DDRP_INNOPHY_PD_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_DRV_DQ7_0));
+	serial_debug("DDRP_INNOPHY_PD_DRV_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ15_8));
+	serial_debug("DDRP_INNOPHY_PU_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ7_0));
+	serial_debug("DDRP_INNOPHY_PU_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PU_ODT_DQ15_8));
+	serial_debug("DDRP_INNOPHY_PD_ODT_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ7_0));
+	serial_debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 #endif
 }
 #endif
@@ -315,7 +315,7 @@ static void ddrp_zqcalibration(void)
 		unsigned int pu_odt = ddr_readl(DDR_PHY_OFFSET + (0x8c << 2));
 
 
-		printf("--pd: %x, pu: %x, pd_odt: %x, pu_odt:%x\n", pd_resist, pu_resist, pd_odt, pu_odt);
+		serial_debug("--pd: %x, pu: %x, pd_odt: %x, pu_odt:%x\n", pd_resist, pu_resist, pd_odt, pu_odt);
 	}
 
 
@@ -402,9 +402,9 @@ void ddrp_auto_calibration(void)
 
 		udelay(1);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-		printf("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
-		printf("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
-		printf("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
+		serial_debug("DDRP_INNOPHY_CALIB_DELAY_AL:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
+		serial_debug("DDRP_INNOPHY_CALIB_DELAY_AH:%x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+		serial_debug("-----ddr_readl(DDRP_INNOPHY_CALIB_DONE): %x\n", ddr_readl(DDRP_INNOPHY_CALIB_DONE));
 #endif
 	}
 
@@ -455,7 +455,7 @@ void ddrp_auto_calibration(void)
 		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
 	}
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-	printf("ddr calib finish\n");
+	serial_debug("ddr calib finish\n");
 #endif
 }
 #ifdef CONFIG_DDR_DRVODT_DEBUG
@@ -464,7 +464,7 @@ static int do_whole_chip_scan(void)
 	int i = 0;
 	unsigned int *p = 0x81000000;
 
-//	printf("doing whole chip w/r test!\n");
+//	serial_debug("doing whole chip w/r test!\n");
 
 #define MAX_WR_TEST_SIZE	(4*1024*1024/4)
 	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
@@ -481,7 +481,7 @@ static int do_whole_chip_scan(void)
 	for(i = 0; i < MAX_WR_TEST_SIZE; i++) {
 
 		if(p[i] != &p[i]) {
-			printf("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
+			serial_debug("---------------------------------------------------------err:%x:%x\n", &p[i], p[i]);
 			return -1;
 		}
 	}
@@ -512,7 +512,7 @@ void debug_date_eye(void) {
 				if(pass_count != 1){
 					pass_value = 0;
 					restart_count = 0;
-					printf("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
+					serial_debug("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
 					odt_value += 1;
 					if(odt_value > 0x1f){
 						drv_value += 1;
@@ -546,7 +546,7 @@ void debug_date_eye(void) {
 	}else {
 		odt_value = (slpc >> 8) & 0xff;
 		pass_value = 1;
-		printf("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
+		serial_debug("drv value is %x odt value is %x pass_value is %x\n",drv_value,odt_value,pass_value);
 		odt_value += 1;
 		if(odt_value > 0x1f){
 			drv_value += 1;
@@ -639,7 +639,7 @@ void ddrc_dfi_init(void)
 	while(!(readl(DDR_APB_PHY_INIT) & (1<<1))); //polling dfi init comp
 #ifndef CONFIG_FASTBOOT
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-	printf("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
+	serial_debug("ddr_inno_phy_init ..! 11:  %X\n", readl(DDR_APB_PHY_INIT));
 #endif
 #endif
 
@@ -659,11 +659,11 @@ void ddrc_dfi_init(void)
 		((global_reg_value->DDR_MR##n##_VALUE & 0xffff) << 12) |		\
 		(((global_reg_value->DDR_MR##n##_VALUE >> 16) & 0x7) << 8)
 
-	printf("MR0 : 0x%x\n", DDRC_LMR_MR(0));
-	printf("MR1 : 0x%x\n", DDRC_LMR_MR(1));
-	printf("MR2 : 0x%x\n", DDRC_LMR_MR(2));
-	printf("MR3 : 0x%x\n", DDRC_LMR_MR(3));
-	printf("ZQCL : 0x%x\n", global_reg_value->DDRC_DLMR_VALUE | (0x4 << 3) | 0x1);
+	serial_debug("MR0 : 0x%x\n", DDRC_LMR_MR(0));
+	serial_debug("MR1 : 0x%x\n", DDRC_LMR_MR(1));
+	serial_debug("MR2 : 0x%x\n", DDRC_LMR_MR(2));
+	serial_debug("MR3 : 0x%x\n", DDRC_LMR_MR(3));
+	serial_debug("ZQCL : 0x%x\n", global_reg_value->DDRC_DLMR_VALUE | (0x4 << 3) | 0x1);
 
 	/*从CKE High 到第一个MR命令需要延时tXPR,*/
 	udelay(100);
@@ -702,11 +702,11 @@ void ddrc_dfi_init(void)
 		ddr_writel(DDRC_LMR_MR(3), DDRC_LMR); //set MR3
 		mdelay(1);
 #ifndef CONFIG_DDR_DRVODT_DEBUG
-		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
-		printf("mr2 = 0x%x\n", DDRC_LMR_MR(2));
-		printf("mr3 = 0x%x\n", DDRC_LMR_MR(3));
-		printf("mr10 = 0x%x\n", DDRC_LMR_MR(10));
-		printf("mr63 = 0x%x\n", DDRC_LMR_MR(63));
+		serial_debug("mr1 = 0x%x\n", DDRC_LMR_MR(1));
+		serial_debug("mr2 = 0x%x\n", DDRC_LMR_MR(2));
+		serial_debug("mr3 = 0x%x\n", DDRC_LMR_MR(3));
+		serial_debug("mr10 = 0x%x\n", DDRC_LMR_MR(10));
+		serial_debug("mr63 = 0x%x\n", DDRC_LMR_MR(63));
 #endif
 #undef DDRC_LMR_MR
 	} else {
@@ -747,8 +747,8 @@ void ddrc_dfi_init(void)
 		ddr_writel(1 << 3 | 1 << 0, DDRC_LMR); // send auto refresh.
 		udelay(100);
 
-		printf("mr0 = 0x%x\n", DDRC_LMR_MR(0));
-		printf("mr1 = 0x%x\n", DDRC_LMR_MR(1));
+		serial_debug("mr0 = 0x%x\n", DDRC_LMR_MR(0));
+		serial_debug("mr1 = 0x%x\n", DDRC_LMR_MR(1));
 #undef DDRC_LMR_MR
 	}
 }
@@ -758,7 +758,7 @@ void ddrp_wl_training(void)
 
 	if(current_ddr_type == DDR3) {
 		//write level
-		printf("WL_MODE1 : 0x%x\n", global_reg_value->DDR_MR1_VALUE & 0xff);
+		serial_debug("WL_MODE1 : 0x%x\n", global_reg_value->DDR_MR1_VALUE & 0xff);
 		phy_writel(global_reg_value->DDR_MR1_VALUE & 0xff, INNO_WL_MODE1);
 		phy_writel(0x40, INNO_WL_MODE2);
 		phy_writel(0xa4, INNO_TRAINING_CTRL);
@@ -786,23 +786,23 @@ int get_ddr_type(void)
 	switch(global_reg_value->h.type){
 #ifndef CONFIG_DDR_DRVODT_DEBUG
 		case DDR3:
-			printf("DDR: %s type is : DDR3\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : DDR3\n", global_reg_value->h.name);
 			break;
 		case LPDDR:
-			printf("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
 			break;
 		case LPDDR2:
-			printf("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
 			break;
 		case LPDDR3:
-			printf("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
 			break;
 		case DDR2:
-			printf("DDR: %s type is : DDR2\n", global_reg_value->h.name);
+			serial_debug("DDR: %s type is : DDR2\n", global_reg_value->h.name);
 			break;
 		default:
 			type = UNKOWN;
-			printf("unsupport ddr type!\n");
+			serial_debug("unsupport ddr type!\n");
 			ddr_hang();
 #endif
 	}
@@ -870,7 +870,7 @@ static void ddrp_software_calibration(void)
 						volatile unsigned int val1;
 						val1 = *(volatile unsigned int *)(addr + i * 4);
 						if(val1 != val) {
-//						printf("val1 : 0x%x   val : 0x%x\n", val1, val);
+//						serial_debug("val1 : 0x%x   val : 0x%x\n", val1, val);
 							break;
 						}
 					}
@@ -887,7 +887,7 @@ static void ddrp_software_calibration(void)
 	}
 
 	if(!m) {
-		printf("calib bypass fail\n");
+		serial_debug("calib bypass fail\n");
 		return ;
 	}
 
@@ -898,7 +898,7 @@ static void ddrp_software_calibration(void)
 	d = calib_val[m].bypass.b.dllsel;
 	r = calib_val[m].rx_dll.b.rx_dll;
 
-	printf("m = %d   c = %d   o = %d   d = %d  r = %d\n", m, c, o, d, r);
+	serial_debug("m = %d   c = %d   o = %d   d = %d  r = %d\n", m, c, o, d, r);
 
 	x = c << 4 | o << 3 | d;
 	y = c << 4 | o << 3 | d;
@@ -912,11 +912,11 @@ static void ddrp_software_calibration(void)
 	{
 		struct ddrp_calib b_al, b_ah, r_al,r_ah;
 		b_al.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AL);
-		printf("bypass :CALIB_AL: dllsel %x, ophsel %x, cyclesel %x\n",b_al.bypass.b.dllsel, b_al.bypass.b.ophsel, b_al.bypass.b.cyclesel);
+		serial_debug("bypass :CALIB_AL: dllsel %x, ophsel %x, cyclesel %x\n",b_al.bypass.b.dllsel, b_al.bypass.b.ophsel, b_al.bypass.b.cyclesel);
 		b_ah.bypass.u8 = ddr_readl(DDRP_INNOPHY_CALIB_BYPASS_AH);
-		printf("bypass:CAHIB_AH: dllsel %x, ophsel %x, cyclesel %x\n", b_ah.bypass.b.dllsel, b_ah.bypass.b.ophsel, b_ah.bypass.b.cyclesel);
-		printf("rxdll delay al : %x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
-		printf("rxdll delay ah : %x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
+		serial_debug("bypass:CAHIB_AH: dllsel %x, ophsel %x, cyclesel %x\n", b_ah.bypass.b.dllsel, b_ah.bypass.b.ophsel, b_ah.bypass.b.cyclesel);
+		serial_debug("rxdll delay al : %x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AL));
+		serial_debug("rxdll delay ah : %x\n", ddr_readl(DDRP_INNOPHY_RXDLL_DELAY_AH));
 
 	}
 }

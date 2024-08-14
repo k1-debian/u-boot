@@ -85,7 +85,7 @@ u8 sec_crc(u8 *addr, int len)
 		len -= 4;
 	}
 
-	printf("spi spl crc7 = %x \n", crc);
+	serial_debug("spi spl crc7 = %x \n", crc);
 
 	return crc;
 }
