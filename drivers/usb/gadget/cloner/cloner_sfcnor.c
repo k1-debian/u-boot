@@ -26,7 +26,7 @@ static void sfcnor_add_info_to_flash(unsigned char *buf)
 	if ((int)(spi_args->param_offset) > 0)
 		param_offset = spi_args->param_offset;
 
-	spl_version = buf[param_offset];
+	spl_version = buf[CONFIG_SPL_VERSION_OFFSET];
 	switch (spl_version) {
 		case 0:
 			l_params = params_compatibility();
