@@ -1,5 +1,6 @@
 #include <div64.h>
 #include <malloc.h>
+#include <common.h>
 #include "bignum.h"
 
 static bn_t bn_sub_digit_mul(bn_t *a, bn_t *b, bn_t c, bn_t *d, u32 digits);

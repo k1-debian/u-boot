@@ -1,4 +1,4 @@
-
+#include <common.h>
 #define DDR_CS0
 //#define DDR_CS1
 void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr)

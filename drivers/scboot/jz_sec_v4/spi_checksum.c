@@ -20,6 +20,8 @@
  * MA 02111-1307 USA
  */
 
+#include <common.h>
+
 #define BUFFER_SIZE 4
 #define SKIP_SIZE 2048
 
