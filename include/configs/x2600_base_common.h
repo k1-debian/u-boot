@@ -639,6 +639,18 @@
 
 /* boot args rootfs2
  */
+#if defined(CONFIG_ROOTFS2_EXT2)
+#define ARG_ROOTFS2_TYPE " ro" /* rootfstype=ext2 */
+#elif defined(CONFIG_ROOTFS2_UBI)
+#define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
+#elif defined(CONFIG_ROOTFS2_SQUASHFS)
+#define ARG_ROOTFS2_TYPE "rootfstype=squashfs ro"
+#elif defined(CONFIG_ROOTFS2_RAMDISK)
+#define ARG_ROOTFS2_TYPE "rw"
+#else
+#error "please add more define here"
+#endif
+
 #ifndef CONFIG_ROOTFS2_PARAM
 
 #ifndef CONFIG_ROOTFS2_DEV
@@ -653,24 +665,10 @@
 #define CONFIG_ROOTFS2_PARAM CONFIG_CLK_IGNORE_UNUSED CONFIG_ROOTFS2_DEV
 #else
 #define CONFIG_ROOTFS2_PARAM CONFIG_FLASH_TYPE CONFIG_CLK_IGNORE_UNUSED " " CONFIG_ROOTFS2_DEV
-#endif
-#endif
-
-#ifdef CONFIG_ROOTFS2_PARAM
-#if defined(CONFIG_ROOTFS2_EXT2)
-#define ARG_ROOTFS2_TYPE " ro" /* rootfstype=ext2 */
-#elif defined(CONFIG_ROOTFS2_UBI)
-#define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
-#elif defined(CONFIG_ROOTFS2_SQUASHFS)
-#define ARG_ROOTFS2_TYPE "rootfstype=squashfs ro"
-#elif defined(CONFIG_ROOTFS2_RAMDISK)
-#define ARG_ROOTFS2_TYPE "rw"
-#else
-#error "please add more define here"
-#endif
+#endif /* CONFIG_SPL_JZMMC_SUPPORT */
+#endif /* CONFIG_ROOTFS2_PARAM */
 
 #define ARGS_ROOTFS2 CONFIG_ROOTFS2_INITRC " " CONFIG_ROOTFS2_PARAM " " ARG_ROOTFS2_TYPE " " CONFIG_BOGOMIPS
-#endif
 
 #ifndef CONFIG_ARGS_EXTRA
 #define CONFIG_ARGS_EXTRA ""
