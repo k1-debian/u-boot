@@ -19,6 +19,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_DDR3_W631GU6NG
 	DDR3_W631GU6NG,
 #endif
+#ifdef CONFIG_DDR3L_W631GU6RG
+	DDR3L_W631GU6RG,
+#endif
 #ifdef CONFIG_DDR2_M14D5121632A
 	DDR2_M14D5121632A,
 #endif
