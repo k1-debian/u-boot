@@ -87,7 +87,7 @@ static inline void DDR2_M14F5121632A_init(void *data)
 #define DDR2_M14F5121632A                                      \
     {                                                          \
         .name = "M14F5121632A",                                \
-        .id = DDR_CHIP_ID(VENDOR_WINBOND, TYPE_DDR2, MEM_64M), \
+        .id = DDR_CHIP_ID(VENDOR_ESMT, TYPE_DDR2, MEM_64M), \
         .type = DDR2,                                          \
         .freq = CONFIG_DDR2_M14F5121632A_MEM_FREQ,             \
         .size = 64,                                            \
