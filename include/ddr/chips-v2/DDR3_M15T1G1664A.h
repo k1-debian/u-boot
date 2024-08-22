@@ -100,7 +100,7 @@ static inline void DDR3_M15T1G1664A_init(void *data)
 
 #define DDR3_M15T1G1664A {                    \
     .name    = "M15T1G1664A",                    \
-    .id      = DDR_CHIP_ID(VENDOR_WINBOND, TYPE_DDR3, MEM_128M),    \
+    .id      = DDR_CHIP_ID(VENDOR_ESMT, TYPE_DDR3, MEM_128M),    \
     .type    = DDR3,                        \
     .freq    = CONFIG_DDR3_M15T1G1664A_MEM_FREQ,            \
     .size    = 128,                        \
