@@ -86,7 +86,7 @@ LIBS-$(CONFIG_SPL_ETH_SUPPORT) += drivers/net/libnet.o
 LIBS-$(CONFIG_SPL_ETH_SUPPORT) += drivers/net/phy/libphy.o
 LIBS-$(CONFIG_SPL_MUSB_NEW_SUPPORT) += drivers/usb/musb-new/libusb_musb-new.o
 LIBS-$(CONFIG_SPL_USBETH_SUPPORT) += drivers/usb/gadget/libusb_gadget.o
-LIBS-$(CONFIG_JZ_WATCHDOG) += drivers/watchdog/jz_wdt.o
+LIBS-$(CONFIG_JZ_WATCHDOG) += drivers/watchdog/libwatchdog.o
 
 ifdef CONFIG_JZ_SCBOOT
 ifneq ($(findstring y, $(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)),)
