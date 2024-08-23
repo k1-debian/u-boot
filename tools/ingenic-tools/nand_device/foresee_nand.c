@@ -16,6 +16,7 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0x70, 2048, 2, 4, 2, 2, fs_eccerr),
 	DEVICE_STRUCT(0x72, 2048, 2, 4, 2, 2, fs_eccerr),
 	DEVICE_STRUCT(0x53, 4096, 2, 4, 3, 1, fs_eccerr1),
+	DEVICE_STRUCT(0x52, 2048, 2, 4, 2, 2, fs_eccerr),
 };
 
 static struct nand_desc fs_nand = {
