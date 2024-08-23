@@ -62,10 +62,11 @@ char* spl_ota_load_image(void)
 	unsigned int bootimg_addr = 0;
 	struct jz_sfcnand_partition_param *partitions;
 	struct nv_flags nv;
-    int len;
-    unsigned short degree;
-    unsigned int dec_degree;
-    unsigned int hightBits;
+	int len;
+	unsigned short degree;
+	unsigned int dec_degree;
+	unsigned int hightBits;
+	unsigned char *kname;
 
 	ota_init();
 	partitions = ota_ops->flash_get_partitions();
@@ -75,6 +76,23 @@ char* spl_ota_load_image(void)
 	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%x\n nv.rot_angle \t%x\n nv.partition \t%x\n",
 			nv.boot, nv.step, nv.start, nv.finish, nv.needfullpkg, nv.rot_angle, nv.partition);
 
+#ifdef CONFIG_OTA_ABUPDATE
+    /* AB partition upgrade */
+	if (nv.partition == 0xa5) {
+		kname = CONFIG_PATB_KERNEL_NAME;
+		cmdargs = CONFIG_SPL_BOOT_PARTITION_B;
+		printf("The startup area for this time is partitionB !!! \n");
+	} else {
+		kname = CONFIG_PATA_KERNEL_NAME;
+		cmdargs = CONFIG_SPL_BOOT_PARTITION_A;
+		printf("The startup area for this time is partitionA !!! \n");
+	}
+
+	bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, kname);
+	ota_ops->flash_load_kernel(bootimg_addr, kname);
+
+#else
+	/* recovery Upgrade method */
 	if(get_signature(RECOVERY_SIGNATURE) || (nv.start == 0x5a5a5a5a)) {
 		if(nv.boot) {
 			bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_RECOVERY_NAME);
@@ -87,6 +105,9 @@ char* spl_ota_load_image(void)
 		bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_KERNEL_NAME);
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 	}
+
+	ota_ops->flash_load_kernel(bootimg_addr, CONFIG_PAT_KERNEL_NAME);
+#endif
 
 #ifdef CONFIG_NV_ROTATE
     {
@@ -107,6 +128,6 @@ char* spl_ota_load_image(void)
     }
 #endif
 
-    ota_ops->flash_load_kernel(bootimg_addr, CONFIG_PAT_KERNEL_NAME);
+
     return cmdargs;
 }
