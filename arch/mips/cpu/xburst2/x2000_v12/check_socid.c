@@ -69,6 +69,16 @@ static int checkbit(unsigned int *s,unsigned int *d,int ss,int ds,int bsz)
         return bsz;
 }
 
+void enable_efuse_pd(void)
+{
+	REG32(EFUSE_CTRL) &= ~EFUSE_CTRL_PD;
+}
+
+void disable_efuse_pd(void)
+{
+	REG32(EFUSE_CTRL) |= EFUSE_CTRL_PD;
+}
+
 unsigned int check_socid()
 {
 	unsigned int vendor = 0;

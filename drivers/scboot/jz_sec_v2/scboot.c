@@ -88,6 +88,8 @@ static int setup_sckeys(void *addr, unsigned int *len)
 }
 
 extern void flush_cache_all(void);
+extern void enable_efuse_pd(void);
+extern void disable_efuse_pd(void);
 static int start_scboot(void *input, void *output, unsigned int binlen)
 {
 	struct sc_args *args = (struct sc_args *)(MCU_TCSM_SECALL_MSG);
@@ -175,6 +177,8 @@ int secure_scboot(void *input, void *output)
 //	tmp &= ~(CPM_CLKGR_AES | CPM_CLKGR_PDMA);
 //	cpm_writel(tmp, CPM_CLKGR);
 
+	enable_efuse_pd();
+
 	for (i = 0; i < 6; i++)
 		pdma_bank0_off[i] = pdma_ins[i];
 
@@ -210,6 +214,7 @@ int secure_scboot(void *input, void *output)
 		}
 	}
 
+	disable_efuse_pd();
 	return ret;
 }
 

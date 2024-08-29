@@ -645,13 +645,12 @@ void spl_load_kernel(long offset, const char *name)
 	header->ih_name[IH_NMLEN - 1] = 0;
 
 	spl_parse_image_header(header);
-	image_size = spl_image.size - sizeof(struct image_header);
+	image_size = spl_image.size;
 	load_addr = spl_image.load_addr;
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	/* 读的长度增加2K(rootfs signature) */
-	image_size += + 2048;
-	load_addr -= 2048;
+	image_size += 2048;
 #endif
 
 	sfc_nand_load(offset, image_size, (void *)load_addr);
