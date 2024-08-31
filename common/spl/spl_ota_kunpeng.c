@@ -18,7 +18,8 @@ struct nv_flags {
     unsigned int needfullpkg;
     unsigned int rot_angle;
     unsigned int partition;
-    unsigned int reservedspace[14];
+    unsigned int slave_rot_angle;
+    unsigned int reservedspace[13];
 };
 
 static struct ota_ops *ota_ops = NULL;
