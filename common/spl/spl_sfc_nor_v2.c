@@ -38,6 +38,11 @@ struct sfc_flash *flash = (struct sfc_flash *)(CONFIG_SYS_TEXT_BASE + 0x500000);
 struct sfc *sfc = (struct sfc *)(CONFIG_SYS_TEXT_BASE + 0x504000);
 struct spi_nor_cmd_info sector_erase;
 
+#ifdef CONFIG_NOR_COMMON_PARAMS
+struct mini_spi_nor_info *nor_common_params = (struct mini_spi_nor_info *)(CONFIG_SYS_TEXT_BASE + 0x508000);
+struct nor_id_info *nor_info_list = (struct nor_id_info *)(CONFIG_SYS_TEXT_BASE + 0x509000);
+#endif
+
 #ifdef CONFIG_X2580
 static int x2580_sfc_change_io_function(int is_quad)
 {
@@ -835,6 +840,57 @@ void sfc_init(void)
 			serial_debug("not found extra nor info array\n");
 		}
 	}
+#endif
+
+#ifdef CONFIG_NOR_COMMON_PARAMS
+	if (nor_id != flash->g_nor_info.id) {
+                unsigned int nor_common_params_offset = CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct builtin_params);
+                unsigned int nor_common_params_length = sizeof(struct mini_spi_nor_info) * CONFIG_NOR_COMMON_PARAMS_COUNT;
+
+                unsigned int nor_info_list_offset = nor_common_params_offset + nor_common_params_length;
+                unsigned int nor_info_list_length = sizeof(struct nor_id_info) - sizeof(struct nor_id *);
+
+                unsigned int nor_id_list_offset = 0;
+                unsigned int nor_id_list_length = 0;
+                unsigned int found_cmd_type = 0;
+                struct nor_id *id_list = NULL;
+                int i = 0, j = 0;
+
+                for (i = 0; i < CONFIG_NOR_COMMON_PARAMS_COUNT; i++) {
+                        sfc_nor_read_params(nor_info_list_offset, (unsigned char *)nor_info_list, nor_info_list_length);
+
+                        nor_id_list_offset = nor_info_list_offset + nor_info_list_length;
+                        nor_id_list_length = sizeof(struct nor_id) * nor_info_list[i].id_count;
+                        sfc_nor_read_params(nor_id_list_offset, (unsigned char *)nor_info_list + nor_info_list_length, nor_id_list_length);
+                        for (j = 0; j < nor_info_list[i].id_count; j++) {
+                                id_list = ((struct nor_id *)&(nor_info_list[i].id_list)) + j;
+                                if (id_list->id == nor_id) {
+                                        found_cmd_type = nor_info_list[i].cmd_type;
+                                        break;
+                                }
+                        }
+
+                        if (found_cmd_type != 0) {
+                                break;
+                        }
+
+                        nor_info_list_offset += nor_info_list_length + nor_id_list_length;
+                }
+
+                sfc_nor_read_params(nor_common_params_offset, (unsigned char *)nor_common_params, nor_common_params_length);
+                for (i = 0; i < CONFIG_NOR_COMMON_PARAMS_COUNT; i++) {
+                        if (found_cmd_type == nor_common_params[i].id) {
+                                memset(&flash->g_nor_info, 0, sizeof(struct mini_spi_nor_info));
+                                memcpy(&flash->g_nor_info, &nor_common_params[i], sizeof(struct mini_spi_nor_info));
+                                break;
+                        }
+                }
+
+                if (i == CONFIG_NOR_COMMON_PARAMS_COUNT) {
+			serial_debug("not found nor common parameters\n");
+                }
+
+        }
 #endif
 
 	serial_debug("%s %x %x\n", flash->g_nor_info.name, flash->g_nor_info.id, nor_id);
