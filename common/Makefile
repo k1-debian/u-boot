@@ -70,7 +70,11 @@ COBJS-$(CONFIG_ENV_IS_IN_SFC) += env_sfc.o
 COBJS-$(CONFIG_ENV_IS_IN_FAT) += env_fat.o
 COBJS-$(CONFIG_ENV_IS_IN_NAND) += env_nand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_NAND) += env_spinand.o
+ifndef CONFIG_ENV_IS_IN_SFC_NAND_PARTITION
 COBJS-$(CONFIG_ENV_IS_IN_SFC_NAND) += env_sfcnand.o
+else
+COBJS-$(CONFIG_ENV_IS_IN_SFC_NAND_PARTITION) += env_sfcnand_partition.o
+endif
 COBJS-$(CONFIG_ENV_IS_IN_NAND_ZM) += env_nand_zm.o
 COBJS-$(CONFIG_ENV_IS_IN_NAND_JZMTD) += env_nand_jzmtd.o
 COBJS-$(CONFIG_ENV_IS_IN_NVRAM) += env_nvram.o
