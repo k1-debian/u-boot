@@ -56,6 +56,7 @@ static int get_signature(const int signature)
 	return 0;
 }
 
+
 char* spl_ota_load_image(void)
 {
 	char *cmdargs = NULL;
@@ -79,7 +80,33 @@ char* spl_ota_load_image(void)
 
 #ifdef CONFIG_OTA_ABUPDATE
     /* AB partition upgrade */
-	if (nv.partition == 0xa5) {
+
+#define SLPC_BASIC_COUNT 0xaa55aa00
+#define CHANGE_NUM 6
+#define MAX_NUM 12
+#define PARTITIONA 0
+#define PARTITIONB 0xa5
+	unsigned int rsr_data;
+	unsigned int slpc_data;
+
+	/*CPM_SLPC software restart without loss*/
+	slpc_data = cpm_readl(CPM_SLPC);
+	printf("slpc:%x\n",slpc_data);
+	if ((slpc_data >> 8) == (SLPC_BASIC_COUNT >> 8)){
+		if ((slpc_data & 0xff) >= CHANGE_NUM) {
+			nv.partition = nv.partition == PARTITIONA ? PARTITIONB : PARTITIONA;
+			if ((slpc_data & 0xff) >= MAX_NUM) {
+				while(1){
+					printf("Both partitions A/B failed to start!!! \n");
+				}
+			}
+		}
+		cpm_writel(++slpc_data, CPM_SLPC);
+	} else {
+		cpm_writel(SLPC_BASIC_COUNT, CPM_SLPC);
+	}
+
+	if (nv.partition == PARTITIONB) {
 		kname = CONFIG_PATB_KERNEL_NAME;
 		cmdargs = CONFIG_SPL_BOOT_PARTITION_B;
 		printf("The startup area for this time is partitionB !!! \n");
