@@ -52,6 +52,7 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/tc_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/zb_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/kowin_mid01_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/kowin_midc9_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/gsto_nand.o
 
 endif
 

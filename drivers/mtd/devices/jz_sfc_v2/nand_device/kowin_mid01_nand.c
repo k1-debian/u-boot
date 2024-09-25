@@ -35,7 +35,7 @@ static struct jz_sfcnand_base_param kowin_mid01_param[KOWIN_MID01_DEVICES_NUM] =
 		.tBE = TBE,
 
 		.plane_select = 0,
-		.ecc_max = 0x4,
+		.ecc_max = 0x6,
 		.need_quad = 1,
 	},
 
@@ -71,9 +71,9 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 				case 0x0:
 					return 0;
 				case 0x1:
-					return 2;
-				case 0x2:
 					return 4;
+				case 0x2:
+					return 6;
 				case 0x3:
 					return -EBADMSG;
 				default:

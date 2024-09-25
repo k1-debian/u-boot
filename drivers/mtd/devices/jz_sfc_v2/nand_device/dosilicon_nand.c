@@ -289,7 +289,6 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 					return -EBADMSG;
 					break;
 				case 0x3:
-					return 6;
 				case 0x5:
 					return 8;
 				default:
