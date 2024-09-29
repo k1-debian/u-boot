@@ -86,6 +86,8 @@ char* spl_ota_load_image(void)
 #define MAX_NUM 12
 #define PARTITIONA 0
 #define PARTITIONB 0xa5
+
+#ifdef CONFIG_OTA_ABUPDATE_ROLLBACK
 	unsigned int rsr_data;
 	unsigned int slpc_data;
 
@@ -105,6 +107,7 @@ char* spl_ota_load_image(void)
 	} else {
 		cpm_writel(SLPC_BASIC_COUNT, CPM_SLPC);
 	}
+#endif
 
 	if (nv.partition == PARTITIONB) {
 		kname = CONFIG_PATB_KERNEL_NAME;
