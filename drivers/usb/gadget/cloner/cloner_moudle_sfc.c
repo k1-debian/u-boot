@@ -114,18 +114,6 @@ int clmd_sfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 			ret = sfc_nand_program(cloner);
 			break;
 #endif
-#if (defined CONFIG_FLASH_RESERVED_PART) && (defined CONFIG_BURNER)
-		case SFC_NAND_RESERVED_WRITE:
-			nand_enable_reserved_part_writable();
-			ret = sfc_nand_program(cloner);
-			nand_disable_reserved_part_writable();
-			break;
-		case SFC_NOR_RESERVED_WRITE:
-			nor_enable_reserved_part_writable();
-			ret = sfc_nor_program(cloner);
-			nor_disable_reserved_part_writable();
-			break;
-#endif
 #ifdef CONFIG_JZ_SPINAND_SN
 		case SFC_NAND_SN_WRITE:
 			ret = spinand_sn_program(cloner);

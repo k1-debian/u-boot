@@ -40,12 +40,6 @@ static int do_sfcnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		if(ret)
 			printf("do sfcnand read error ! please check your param !!\n");
 	}
-#ifdef CONFIG_FLASH_RESERVED_PART
-	else if(!strcmp(argv[1],"enable_reserved_part_writable"))
-		nand_enable_reserved_part_writable();
-	else if(!strcmp(argv[1],"disable_reserved_part_writable"))
-		nand_disable_reserved_part_writable();
-#endif
 
 	return CMD_RET_SUCCESS;
 }
@@ -72,8 +66,4 @@ void sfc_nand_init(void)
 U_BOOT_CMD(sfcnand, 5, 1, do_sfcnand,
 		"sfcnand    - SFC_NAND sub-system\n",
 		"sfcnand read from(offs) size dst_addr\n"
-#ifdef CONFIG_FLASH_RESERVED_PART
-		"sfcnor enable_reserved_part_writable -- make reserved partitions writeable\n"
-		"sfcnor disable_reserved_part_writable\n"
-#endif
 		);

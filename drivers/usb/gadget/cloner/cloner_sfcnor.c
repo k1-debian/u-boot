@@ -1,4 +1,5 @@
 #ifdef CONFIG_MTD_SFCNOR
+#include <asm/arch/sfc.h>
 #include <asm/arch/spinor.h>
 
 extern struct debug_param *debug_args;
@@ -78,8 +79,6 @@ int sfc_nor_program(struct cloner *cloner)
 	struct spi_flash *flash;
 	struct nor_partition *partition;
 
-	volatile int pt_offset;
-	volatile int pt_size;
 	volatile int pt_index;
 	static pt_index_bak = -1;
 
@@ -95,14 +94,14 @@ int sfc_nor_program(struct cloner *cloner)
 		BURNNER_PRI("the length = %x, is no enough %x\n",len,blk_size);
 	}
 
-	partition = get_partition_index(offset,len, &pt_index);
+	partition = get_sfc_nor_partition(offset,len, &pt_index);
 
 	if(pt_index < 0 || partition == NULL){
 		printf("out of partition\n");
 		return -EIO;
 	}
 
-	if (!spi_args->spi_erase) {
+	if (spi_args->spi_erase == PART_ERASE || partition->mask_flags == PART_RO) {
 		if (partition->manager_mode == MTD_D_MODE)
 			pt_index = offset / blk_size;
 		if(pt_index != pt_index_bak){

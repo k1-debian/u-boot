@@ -13,9 +13,8 @@ struct jz_sfcnand_partition {
 	uint32_t manager_mode;     /* manager_mode mtd or ubi */
 };
 
-
 struct jz_sfcnand_partition_param {
-	uint8_t num_partition;
+	int32_t num_partition;
 	struct jz_sfcnand_partition *partition;
 };
 
@@ -117,8 +116,6 @@ struct jz_sfcnand_flashinfo {
 #define X_COMMAND_LENGTH    128
 
 
-#define MTD_MODE        0x0
-#define UBI_MANAGER     0x1
 
 int jz_sfcnand_register(struct jz_sfcnand_device *flash);
 typedef int32_t (*spinand_regcall_t)(void);

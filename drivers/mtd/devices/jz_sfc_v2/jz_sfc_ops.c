@@ -10,8 +10,10 @@
 
 #include <asm/io.h>
 #include <asm/arch/sfc.h>
-#include <asm/arch/spinor.h>
 #include "jz_sfc_common.h"
+#ifdef CONFIG_MTD_SFCNOR
+#include <asm/arch/spinor.h>
+#endif
 
 #define STATUS_MAX_LEN  4      //4 * byte = 32 bit
 
@@ -178,6 +180,7 @@ static int set_4byte_mode_wren(struct sfc_flash *flash)
 	return ret;
 }
 
+#ifdef CONFIG_MTD_SFCNOR
 
 struct spi_nor_flash_ops nor_flash_ops;
 
@@ -218,4 +221,4 @@ int sfc_nor_get_special_ops(struct sfc_flash *flash)
 
 	return 0;
 }
-
+#endif

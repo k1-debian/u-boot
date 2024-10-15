@@ -56,10 +56,6 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/gsto_nand.o
 
 endif
 
-ifdef CONFIG_FLASH_RESERVED_PART
-COBJS-y += reserved_part.o
-endif
-
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

@@ -5,6 +5,7 @@ int dosilicon_nand_register_func(void);
 int fm_nand_register_func(void);
 int foresee_nand_register_func(void);
 int gd_nand_register_func(void);
+int gsto_nand_register_func(void);
 int issi_nand_register_func(void);
 int kowin_mid01_nand_register_func(void);
 int kowin_midc9_nand_register_func(void);
@@ -34,6 +35,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)gd_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)gsto_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)issi_nand_register_func,
