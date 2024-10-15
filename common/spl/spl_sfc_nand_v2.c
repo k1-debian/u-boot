@@ -587,6 +587,51 @@ struct jz_sfcnand_partition *get_part_by_name(struct jz_sfcnand_partition_param 
 	return NULL;
 }
 
+#ifdef CONFIG_JZ_WATCHDOG
+#include <asm/arch/cpm.h>
+
+#define OPEN_WRITE_CPSPR	0x00005a5a
+#define CLOSE_WRITE_CPSPR	0x0000a5a5
+
+#define SPL_OTA_RUN_FLAG 		0x4f5441
+#define SPL_OTA_FAIL_FLAG 		0x41544f
+#define SYS_PANIC_SIGNATURE		0x004343
+
+#ifndef CONFIG_OTA_WDT_TIMEOUT_MS
+#define CONFIG_OTA_WDT_TIMEOUT_MS	(20 * 1000)
+#endif
+
+
+extern int wdt_start(unsigned long ms);
+extern int wdt_init(void);
+
+static inline void cpm_write_cpspr(int val)
+{
+	cpm_outl(OPEN_WRITE_CPSPR, CPM_CPSPPR);
+	cpm_outl(val, CPM_CPSPR);
+	cpm_outl(CLOSE_WRITE_CPSPR, CPM_CPSPPR);
+}
+
+static inline int spl_test_ota_result(void)
+{
+	unsigned int val = cpm_inl(CPM_CPSPR);
+	if (val == SPL_OTA_RUN_FLAG || val == SYS_PANIC_SIGNATURE ) {
+		cpm_write_cpspr(SPL_OTA_FAIL_FLAG);
+		return 1;
+	}
+
+	return 0;
+}
+
+static inline int spl_ota_set_flag_and_boot_wdt(void)
+{
+	wdt_init();
+	cpm_write_cpspr(SPL_OTA_RUN_FLAG);
+	wdt_start(CONFIG_OTA_WDT_TIMEOUT_MS);
+}
+#endif
+
+
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
 extern int is_security_boot(void);
@@ -1041,6 +1086,7 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 	partitions = get_partitions();
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
+	int is_kernel2 = 0;
 	unsigned int ota_addr = 0;
 	ota_addr = get_part_offset_by_name(partitions, CONFIG_SPL_OTA_NAME);
 	if (ota_addr != -1) {
@@ -1048,9 +1094,20 @@ static char *spl_sfc_nand_boot_rtos_load_os(void)
 		const char *kernel2 = "ota:"CONFIG_SPL_OS_NAME2;
 		sfc_nand_load(ota_addr, sizeof(buf), (unsigned int)buf);
 		if (!strncmp(kernel2, buf, strlen(kernel2))) {
+			is_kernel2 = 1;
 #ifdef CONFIG_SPL_OF_LIBFDT
 			dtbname = CONFIG_DTB_NAME2;
 #endif /* CONFIG_SPL_OF_LIBFDT */
+		}
+
+#ifdef CONFIG_JZ_WATCHDOG
+		if (spl_test_ota_result()) {
+			serial_debug("ota fail!\n");
+			is_kernel2 = is_kernel2 ? 0 : 1;
+		} else
+			spl_ota_set_flag_and_boot_wdt();
+#endif
+		if (is_kernel2) {
 			kernel_name = CONFIG_SPL_OS_NAME2;
 			rtos_name = CONFIG_SPL_RTOS_NAME2;
 			cmdargs = CONFIG_SYS_SPL_ARGS_ADDR2;
@@ -1116,50 +1173,6 @@ void spl_sfc_nand_rtos_load(void)
 
 	spl_image.entry_point = CONFIG_LOAD_ADDR;
 	sfc_nand_load(partition->offset, partition->size, (unsigned int*)CONFIG_LOAD_ADDR);
-}
-#endif
-
-#ifdef CONFIG_JZ_WATCHDOG
-#include <asm/arch/cpm.h>
-
-#define OPEN_WRITE_CPSPR	0x00005a5a
-#define CLOSE_WRITE_CPSPR	0x0000a5a5
-
-#define SPL_OTA_RUN_FLAG 		0x4f5441
-#define SPL_OTA_FAIL_FLAG 		0x41544f
-#define SYS_PANIC_SIGNATURE		0x004343
-
-#ifndef CONFIG_OTA_WDT_TIMEOUT_MS
-#define CONFIG_OTA_WDT_TIMEOUT_MS	(20 * 1000)
-#endif
-
-
-extern int wdt_start(unsigned long ms);
-extern int wdt_init(void);
-
-static inline void cpm_write_cpspr(int val)
-{
-	cpm_outl(OPEN_WRITE_CPSPR, CPM_CPSPPR);
-	cpm_outl(val, CPM_CPSPR);
-	cpm_outl(CLOSE_WRITE_CPSPR, CPM_CPSPPR);
-}
-
-static inline int spl_test_ota_result(void)
-{
-	unsigned int val = cpm_inl(CPM_CPSPR);
-	if (val == SPL_OTA_RUN_FLAG || val == SYS_PANIC_SIGNATURE ) {
-		cpm_write_cpspr(SPL_OTA_FAIL_FLAG);
-		return 1;
-	}
-
-	return 0;
-}
-
-static inline int spl_ota_set_flag_and_boot_wdt(void)
-{
-	wdt_init();
-	cpm_write_cpspr(SPL_OTA_RUN_FLAG);
-	wdt_start(CONFIG_OTA_WDT_TIMEOUT_MS);
 }
 #endif
 
