@@ -3,6 +3,7 @@
 #include <nand.h>
 #include <linux/mtd/mtd.h>
 #include <ingenic_nand_mgr/nand_param.h>
+#include <asm/arch/sfc.h>
 #include <asm/arch/spinand.h>
 
 extern struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
@@ -96,10 +97,14 @@ int sfc_nand_program(struct cloner *cloner)
 	nand_info_t *nand;
 	nand = &nand_info[0];
 	unsigned int block_size = nand->erasesize;
+        uint32_t erase_type_backup = spi_args->spi_erase;
 
-	partition = get_partion_index(startaddr,length,&pt_index);
+	partition = get_sfc_nand_partition(startaddr,length,&pt_index);
 	if (pt_index < 0)
 		return -EIO;
+
+        if (spi_args->spi_erase == CHIP_ERASE && partition->mask_flags == PART_RO)
+                spi_args->spi_erase = PART_ERASE;
 
 	if (startaddr==0 && spi_args->download_params != 0) {
 		sfcnand_add_info_to_flash(databuf);
@@ -110,7 +115,7 @@ int sfc_nand_program(struct cloner *cloner)
 			bad_len = 0;
 		}
 		startaddr = sfc_nand_skip_bad(startaddr);
-		if (!spi_args->spi_erase) {
+		if (spi_args->spi_erase == PART_ERASE || partition->mask_flags == PART_RO) {
 			if (pt_index != pt_index_bak || (partition->manager_mode == MTD_D_MODE && !(startaddr % block_size))) {
 				memset(command, 0 , 128);
 				if (partition->manager_mode == MTD_D_MODE)
@@ -142,7 +147,7 @@ int sfc_nand_program(struct cloner *cloner)
 
 	} else if (partition->manager_mode == UBI_MANAGER) {
 		if (startaddr == partition->offset) {
-			if (!spi_args->spi_erase) {
+			if (spi_args->spi_erase == PART_ERASE || partition->mask_flags == PART_RO) {
 				if (pt_index != pt_index_bak) {
 					pt_index_bak = pt_index;
 					memset(command, 0 , 128);
@@ -194,6 +199,9 @@ int sfc_nand_program(struct cloner *cloner)
 	}
 	if (cloner->full_size)
 		cloner->full_size = 0;
+
+        spi_args->spi_erase = erase_type_backup;
+
 	return 0;
 out:
 	BURNNER_PRI("...error\n");

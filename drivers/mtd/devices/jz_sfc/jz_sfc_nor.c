@@ -14,6 +14,7 @@ struct burner_params params;
 
 struct mini_spi_nor_info mini_params;
 
+static int is_readonly_partition(uint32_t offset, uint32_t size);
 
 //#define SFC_NOR_CLONER_DEBUG
 //#define SFC_REG_DEBUG
@@ -411,22 +412,6 @@ static int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
 int sfc_nor_read(unsigned int from, unsigned int len, unsigned char *buf)
 {
 	struct spinor_flashinfo *nor_info = flash->flash_info;
-
-#ifndef CONFIG_BURNER
-	int i;
-	if(nor_info->norflash_partitions->num_partition_info && (nor_info->norflash_partitions->num_partition_info != 0xffffffff)) {
-		for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
-			if(from >= nor_info->norflash_partitions->nor_partition[i].offset && \
-					from < (nor_info->norflash_partitions->nor_partition[i].offset + \
-						nor_info->norflash_partitions->nor_partition[i].size) && \
-					(nor_info->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_WO)){
-				printf("the partiton can't read,please check the partition RW mode\n");
-				return 0;
-			}
-		}
-	}
-#endif
-
 	sfc_read(from, len, buf);
 	return 0;
 }
@@ -443,19 +428,10 @@ int sfc_nor_page_write(unsigned int to, unsigned int len, unsigned char *buf)
 /*	writesize = spi_nor_info->page_size;*/
 
 #ifndef CONFIG_BURNER
-	int i;
-	if(nor_info->norflash_partitions->num_partition_info && (nor_info->norflash_partitions->num_partition_info != 0xffffffff)) {
-		for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
-			if(to >= nor_info->norflash_partitions->nor_partition[i].offset && \
-					to < (nor_info->norflash_partitions->nor_partition[i].offset + \
-						nor_info->norflash_partitions->nor_partition[i].size) && \
-					(nor_info->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_RO)){
-				printf("the partiton can't write,please check the partition RW mode\n");
-				return 0;
-			}
-		}
-	}
+        if (is_readonly_partition((uint32_t)to, len))
+		return -EROFS;
 #endif
+
 
 	page_offset = to & (spi_nor_info->page_size - 1);
 	/* do all the bytes fit onto one page? */
@@ -537,7 +513,8 @@ struct legacy_params *params_compatibility()
 int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
 	int ret = 0;
-	ret = sfc_nor_page_write(to, len, buf);
+
+        ret = sfc_nor_page_write(to, len, buf);
 
 	return 0;
 }
@@ -551,19 +528,10 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	int ret;
 
 #ifndef CONFIG_BURNER
-	int i;
-	if(nor_info->norflash_partitions->num_partition_info && (nor_info->norflash_partitions->num_partition_info != 0xffffffff)) {
-		for(i = 0; i < nor_info->norflash_partitions->num_partition_info; i++){
-			if(addr >= nor_info->norflash_partitions->nor_partition[i].offset && \
-					addr < (nor_info->norflash_partitions->nor_partition[i].offset + \
-						nor_info->norflash_partitions->nor_partition[i].size) && \
-					(nor_info->norflash_partitions->nor_partition[i].mask_flags & NORFLASH_PART_RO)){
-				printf("the partiton can't erase,please check the partition RW mode\n");
-				return 0;
-			}
-		}
-	}
+        if (is_readonly_partition((uint32_t)addr, len))
+		return -EROFS;
 #endif
+
 	if(len % erasesize != 0){
 		len = len - (len % erasesize) + erasesize;
 	}
@@ -688,6 +656,60 @@ int32_t sfc_nor_flash_init(void)
 	return 0;
 }
 
+struct nor_partition *get_sfc_nor_partition(u32 offset, u32 length, int *pt_index)
+{
+	struct spinor_flashinfo *nor_info = flash->flash_info;
+	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
+        struct norflash_partitions *nor_parts = nor_info->norflash_partitions;
+	struct nor_partition *partition = nor_parts->nor_partition;
+
+	int i;
+
+	if (offset > spi_nor_info->chip_size) {
+		printf("offset address exceeds flash size.\n");
+		return NULL;
+	}
+
+	for (i = 0; i < nor_parts->num_partition_info; i++) {
+		if (offset >= partition[i].offset) {
+			if ((int)partition[i].size <= 0) {
+				partition[i].size = spi_nor_info->chip_size - partition[i].offset;
+			}
+
+			if ((offset + length) <= (partition[i].offset + partition[i].size)) {
+				*pt_index = i;
+				break;
+			}
+		}
+	}
+	if (i == nor_parts->num_partition_info) {
+		*pt_index = -1;
+		printf("offset address is not in the partition or the data length exceeds the partition size.\n");
+		return NULL;
+	}
+
+	return &partition[i];
+}
+
+
+static int is_readonly_partition(uint32_t offset, uint32_t size)
+{
+        int index;
+        struct nor_partition *partition = get_sfc_nor_partition(offset, size, &index);
+
+        if (!partition)
+                return -EINVAL;
+
+        if (partition->mask_flags && (partition->mask_flags & PART_RO)) {
+                printf("\n%s partition is read-only and does not allow erase or write operation.\n", partition->name);
+                return 1;
+        }
+
+        return 0;
+}
+
+
+#ifdef CONFIG_BURNER
 
 int sfc_do_chip_erase()
 {
@@ -738,7 +760,7 @@ int jz_sfc_chip_erase(void)
 	int ret;
 
 	do {
-		printf("chip erasing...die%d\n", die_id);
+		printf("die%d", die_id);
 
 		if (flash->die_num > 1) {
 			sfc_active_die(die_id);
@@ -756,42 +778,34 @@ int jz_sfc_chip_erase(void)
 	return 0;
 }
 
-#ifdef CONFIG_BURNER
-struct nor_partition *get_partition_index(u32 offset, u32 length, int *pt_index)
+
+static int sfc_nor_partition_erase()
 {
 	struct spinor_flashinfo *nor_info = flash->flash_info;
 	struct spi_nor_info *spi_nor_info = nor_info->nor_flash_info;
-	int i;
+        struct norflash_partitions *nor_parts = nor_info->norflash_partitions;
+	struct nor_partition *partition = nor_parts->nor_partition;
+        uint32_t offset, size, flag;
+        char *name = NULL;
+        int ret;
+        int i;
 
-	if (offset > spi_nor_info->chip_size) {
-		printf("offset address exceeds flash size.\n");
-		return NULL;
-	}
+        for (i = 0; i < nor_parts->num_partition_info; i++) {
+                offset = partition[i].offset;
+                size = partition[i].size;
+                if ((int)size <= 0)
+                        size = spi_nor_info->chip_size - offset;
+                name = partition[i].name;
+                flag = partition[i].mask_flags;
+                if (flag == PART_RO)
+                        printf("\n%s is read-only partition.\n", name);
+                else
+                        ret = sfc_nor_erase(offset, size);
+        }
 
-	for (i = 0; i < nor_info->norflash_partitions->num_partition_info; i++) {
-		if (offset >= nor_info->norflash_partitions->nor_partition[i].offset) {
-			if (nor_info->norflash_partitions->nor_partition[i].size == 0UL ||
-					nor_info->norflash_partitions->nor_partition[i].size == -1UL) {
-
-				nor_info->norflash_partitions->nor_partition[i].size =
-					spi_nor_info->chip_size - nor_info->norflash_partitions->nor_partition[i].offset;
-			}
-
-			if ((offset + length) <= (nor_info->norflash_partitions->nor_partition[i].offset +
-						nor_info->norflash_partitions->nor_partition[i].size)){
-				*pt_index = i;
-				break;
-			}
-		}
-	}
-	if (i >= nor_info->norflash_partitions->num_partition_info) {
-		*pt_index = -1;
-		printf("offset address is not in the partition or the data length exceeds the partition size.\n");
-		return NULL;
-	}
-
-	return &nor_info->norflash_partitions->nor_partition[i];
+        return ret;
 }
+
 
 #ifdef SFC_NOR_CLONER_DEBUG
 static void dump_cloner_params()
@@ -945,6 +959,7 @@ int norflash_get_params_from_burner()
 	unsigned int id_addr_len = 0;
 	unsigned int dummy = 0;
 	struct spiflash_info *spiflash_info;
+        int ret;
 
 	spiflash_info = (struct spiflash_info *)((unsigned char *)spi_args + sizeof(struct spi_param));
 
@@ -992,15 +1007,18 @@ int norflash_get_params_from_burner()
 		printf("p[%d].offset=%x\n", i, nor_info->norflash_partitions->nor_partition[i].offset);
 	}
 #endif
+        printf("chip eraseing ... ");
+        switch(spi_args->spi_erase){
+                case CHIP_ERASE:
+                        ret = sfc_nor_partition_erase();
+                        break;
 
-	if (spi_args->spi_erase) {
-		int ret = jz_sfc_chip_erase();
-		if (ret < 0)
-			printf("sfc chip erese failed!\n");
-		else
-			printf("sfc chip erase ok\n");
-		return ret;
-	}
+                case FORCE_ERASE:
+                        ret = jz_sfc_chip_erase();
+                        break;
+        }
+
+        printf("%s\n", ret == 0 ? "successful\n" : "failed\n");
 
 	return 0;
 }

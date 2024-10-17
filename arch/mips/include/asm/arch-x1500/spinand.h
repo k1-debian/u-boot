@@ -116,8 +116,6 @@ struct jz_sfcnand_flashinfo {
 #define X_COMMAND_LENGTH    128
 
 
-#define MTD_MODE        0x0
-#define UBI_MANAGER     0x1
 
 int jz_sfcnand_register(struct jz_sfcnand_device *flash);
 typedef int32_t (*spinand_regcall_t)(void);

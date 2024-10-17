@@ -342,7 +342,6 @@
 
 #define PARTITION_NUM 10
 
-#define CONFIG_FLASH_RESERVED_PART
 
 
 /**

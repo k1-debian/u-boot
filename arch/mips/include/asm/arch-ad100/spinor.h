@@ -12,14 +12,6 @@
 #define NOR_VERSION             (NOR_MAJOR_VERSION_NUMBER | (NOR_MINOR_VERSION_NUMBER << 8) | (NOR_REVERSION_NUMBER << 16))
 
 #define NOR_PART_NUM		10
-#define NORFLASH_PART_RW	0
-#define NORFLASH_PART_WO	1
-#define NORFLASH_PART_RO	2
-
-#define MTD_MODE                0x0     //use mtd mode, erase partition when write
-#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
-#define UBI_MANAGER             0x1
-
 
 #define NOR_CMD_TYPE_1        0x00010001
 #define NOR_CMD_TYPE_2        0x00020002

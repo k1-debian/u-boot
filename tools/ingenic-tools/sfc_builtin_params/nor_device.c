@@ -253,17 +253,17 @@ struct norflash_partitions builtin_norflash_partitions = {
 		[0].name = "uboot",
 		[0].offset = 0x0,
 		[0].size =   0x40000,
-		[0].mask_flags = NORFLASH_PART_RW,
+		[0].mask_flags = PART_RW,
 
 		[1].name = "kernel",
 		[1].offset = 0x40000,
 		[1].size =   0x300000,
-		[1].mask_flags = NORFLASH_PART_RW,
+		[1].mask_flags = PART_RW,
 
 		[2].name = "rootfs",
 		[2].offset = 0x360000,
 		[2].size = 0xca0000,
-		[2].mask_flags = NORFLASH_PART_RW,
+		[2].mask_flags = PART_RW,
 	},
 };
 

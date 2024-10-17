@@ -5,10 +5,6 @@
 #include <linux/types.h>
 #include <linker_lists.h>
 
-#define MTD_MODE                0x0     //use mtd mode, erase partition when write
-#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
-#define UBI_MANAGER             0x1
-
 #define SPINAND_MAGIC_NUM	0x646e616e   //ascii "nand"
 
 struct jz_sfcnand_partition {
@@ -24,6 +20,7 @@ struct jz_sfcnand_burner_param {
 	int32_t partition_num;
 	struct jz_sfcnand_partition *partition;
 };
+
 struct jz_sfcnand_partition_param {
 	uint8_t num_partition;
 /*	struct mtd_partition *partition;*/
@@ -126,6 +123,7 @@ struct jz_sfcnand_flashinfo {
 	struct jz_sfcnand_ops *ops;
 	cdt_params_t *cdt_params;
 };
+
 #define X_ENV_LENGTH		1024
 #define X_COMMAND_LENGTH	128
 

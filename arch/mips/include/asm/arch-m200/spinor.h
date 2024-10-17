@@ -11,9 +11,6 @@
 #define NOR_VERSION             (NOR_MAJOR_VERSION_NUMBER | (NOR_MINOR_VERSION_NUMBER << 8) | (NOR_REVERSION_NUMBER << 16))
 
 #define NOR_PART_NUM	10
-#define NORFLASH_PART_RW	0
-#define NORFLASH_PART_WO	1
-#define NORFLASH_PART_RO	2
 
 
 struct spi_nor_cmd_info {
