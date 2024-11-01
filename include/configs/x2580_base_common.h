@@ -48,12 +48,22 @@
 
 /*#define CONFIG_FAST_BOOT*/
 /* X2580 */
+#if defined(CONFIG_X2580_DDR)
 #if defined(CONFIG_LP)
 #define APLL_1008M
 #define DDR_550M
 #else
 #define APLL_1104M
 #define DDR_750M
+#endif
+#elif defined(CONFIG_X2580E_DDR)
+#if defined(CONFIG_LP)
+#define APLL_1008M
+#define DDR_550M
+#else
+#define APLL_1104M
+#define DDR_700M
+#endif
 #endif
 
 #ifdef APLL_804M
@@ -369,11 +379,11 @@
 #define CONFIG_DDR_TYPE_DDR3
 #define CONFIG_DDR_DW32                        0       /* 1-32bit-width, 0-16bit-width */
 #ifdef CONFIG_X2580_DDR
-#define CONFIG_DDR3_W631GU6NG
+#define CONFIG_DDR3_W631GU6NG_T
 #endif
 
 #ifdef CONFIG_X2580E_DDR
-#define CONFIG_DDR3L_W632GU6QG_11
+#define CONFIG_DDR3_W632GU6NG_T
 #endif
 
 #define CONFIG_DDR_INNOPHY
@@ -406,7 +416,6 @@
 
 #define CONFIG_DDR_PHY_IMPEDANCE 40
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE 120
-#define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
 
 /* Device Tree Configuration*/

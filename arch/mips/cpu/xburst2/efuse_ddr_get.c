@@ -370,6 +370,16 @@ static void ddr_par_init(unsigned int *ddr_drv_config)
                                            0x09, 0x09, 0x01, 0x07, 0x07, 0x07, 0x01};
                                        //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
 
+#elif defined(CONFIG_X2580_DDR)            //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF  K_RTT KGD_DS RTT&DIC
+    unsigned int init_ddr_par[INDEX_EN] = {0x00, 0x00, 0x0f, 0x0f, 0x02, 0x02, 0x0f, 0x0f, 0x8b, 0x01, 0x01, 0x06,
+                                           0x12, 0x12, 0x0b, 0x09, 0x09, 0x09, 0x03};
+                                       //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
+
+#elif defined(CONFIG_X2580E_DDR)            //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF  K_RTT KGD_DS RTT&DIC
+    unsigned int init_ddr_par[INDEX_EN] = {0x00, 0x00, 0x05, 0x05, 0x05, 0x05, 0x0f, 0x0f, 0x8b, 0x01, 0x01, 0x06,
+                                           0x12, 0x12, 0x0b, 0x08, 0x08, 0x0b, 0x03};
+                                       //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
+
 #else                                  //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
     unsigned int init_ddr_par[INDEX_EN] = {0x01, 0x01, 0x0e, 0x0e, 0x0e, 0x0e, 0x14, 0x14, 0x96, 0x01, 0x01, 0x06,
                                            0x0f, 0x0f, 0x07, 0x07, 0x07, 0x07, 0x00}; /* old version */
@@ -444,7 +454,15 @@ void get_ddr_par(unsigned int *ddr_drv_config, int par_size)
 
     ddr_par_init(efuse_ddr_data);
 
-    spl_efuse_read_ddrpar(hamming_data);
+    #ifdef CONFIG_X2580
+        hamming_data[0] = *((volatile unsigned int *)(0xb3540240)) & 0xffffff00;
+        hamming_data[1] = *((volatile unsigned int *)(0xb3540244)) & 0xffff;
+
+        hamming_data[0] = ((hamming_data[0] >> 8) & 0xffffff) | (((hamming_data[1] & 0xff) << 24) & 0xff000000);
+        hamming_data[1] = (hamming_data[1] >> 8) & 0xff;
+    #else
+        spl_efuse_read_ddrpar(hamming_data);
+    #endif
 
     serial_debug("DDR_PAR of eFuse: %x %x\n", hamming_data[0], hamming_data[1]);
 

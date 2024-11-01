@@ -61,7 +61,7 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	_machine_restart();
 
-	fprintf(stderr, "*** reset failed ***\n");
+	// fprintf(stderr, "*** reset failed ***\n");
 	return 0;
 }
 

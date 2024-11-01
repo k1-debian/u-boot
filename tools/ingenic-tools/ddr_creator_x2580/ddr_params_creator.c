@@ -408,7 +408,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	}
 
 	/* CTRL */
-	ddrc->ctrl = DDRC_CTRL_PDT_32  | DDRC_CTRL_CKE |
+	ddrc->ctrl = DDRC_CTRL_ACTPD | DDRC_CTRL_PDT_32  | DDRC_CTRL_CKE |
 		DDRC_CTRL_PD_CCE | DDRC_CTRL_SR_CCE;
 
 	/* MMAP0,1 */

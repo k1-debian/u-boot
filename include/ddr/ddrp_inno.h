@@ -46,6 +46,16 @@ typedef union ddrp_mem_cfg {
 		unsigned int reserved6_7:2;
 	}b;
 }ddrp_mem_cfg_t;
+#elif defined(CONFIG_X2580)
+typedef union ddrp_mem_cfg {
+	uint32_t d32;
+	struct {
+		unsigned int memsel:3;
+		unsigned int brusel:1;
+		unsigned int reserved5_31:28;
+	}b;
+}ddrp_mem_cfg_t;
+
 #else
 typedef union ddrp_mem_cfg {
 	uint32_t d32;

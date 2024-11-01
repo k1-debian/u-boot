@@ -23,6 +23,14 @@
 #include "chips-v2/LPDDR2_SCKX4BL512160AAC.h"
 #endif
 
+#ifdef CONFIG_DDR3_W631GU6NG_T
+#include "chips-v2/DDR3_W631GU6NG_T.h"
+#endif
+
+#ifdef CONFIG_DDR3_W632GU6NG_T
+#include "chips-v2/DDR3_W632GU6NG_T.h"
+#endif
+
 #ifdef CONFIG_DDR3_W631GU6NG
 #include "chips-v2/DDR3_W631GU6NG.h"
 #endif

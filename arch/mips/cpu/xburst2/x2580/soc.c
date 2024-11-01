@@ -29,6 +29,7 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
 #include <asm/arch/wdt.h>
+#include <asm/jz_cache.h>
 #include <spl.h>
 
 
@@ -50,7 +51,7 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 #endif
 
 extern void pll_init(void);
-extern void sdram_init(void);
+extern void sdram_init(int pll_sel);
 extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 void reallocate_cache(void)
@@ -122,12 +123,108 @@ void gpio_set_driver_strength_init(void)
 #endif
 }
 
+static int ddr_mem_test12(void)
+{
+	int i = 0;
+	int j = 0;
+	int ret = 8;
+	unsigned int addr;
+	unsigned int value_get;
+	unsigned int data;
+	unsigned int test_size =  64;
+	unsigned int test_data =  0xffffffff;
+	//serial_debug("mem test12 start!\n");
+	for(i = 0; i < 1; i++) {
+
+
+		addr = 0x81000000;
+		for (j = 0; j < test_size; j+=4) {
+			data = (j/4)%2?test_data:0;
+			*(volatile unsigned int *)(addr+j) = data;
+		}
+
+		//flush cache
+		flush_dcache_range(addr, addr+test_size);
+		flush_scache_range(addr, addr+test_size);
+
+		//read cached
+		addr = 0x81000000;
+		for (j = 0; j < test_size; j+=4) {
+			value_get = *(volatile unsigned int *)(addr+j);
+		}
+#if 0
+		//write uncached
+		addr = 0xa1000000;
+		for (j = 0; j < test_size; j+=4) {
+			data = (j/4)%2?test_data:0;
+			*(volatile unsigned int *)(addr+j) = data;
+		}
+#endif
+		//invalid cache
+		addr = 0x81000000;
+		invalid_dcache_range(addr, addr+test_size);
+		invalid_scache_range(addr, addr+test_size);
+		//read cached
+		addr = 0x81000000;
+		serial_debug("mem data:\n");
+		for (j = 0; j < test_size; j+=4) {
+			value_get = *(volatile unsigned int *)(addr+j);
+			if(j/4%4%2)
+				if(test_data == value_get)
+					ret -= 1;
+			if (0 == j/4%4)
+				serial_debug("%x: ", addr+j);
+			serial_debug("  %x", value_get);
+			if (3 == j/4%4)
+				serial_debug("\n");
+		}
+	}
+	//serial_debug("mem test12 end!\n");
+	return ret;
+}
+
+static int ddr_mem_test4(void)
+{
+	volatile u32 tmp = 0;
+	u32 tmp_data = 0;
+
+#ifdef CONFIG_DDR_TYPE_DDR2
+	for (tmp = 0xa0000000; tmp < 0xa4000000; tmp+=0x104) {
+		u32 td = 0x5a5a5a5a;
+		*(u32*)tmp = td;
+		tmp_data = *(u32*)tmp;
+		if (tmp_data != td) {
+			serial_debug("\n##### addr = %p, want = %x, get = %x\n", tmp, td, tmp_data);
+			return -1;
+		}
+	}
+#else
+	for (tmp = 0xa0000000; tmp < 0xa8000000; tmp+=0x104) {
+		u32 td = 0x5a5a5a5a;
+		*(u32*)tmp = td;
+		tmp_data = *(u32*)tmp;
+		if (tmp_data != td) {
+			serial_debug("\n##### addr = %p, want = %x, get = %x\n", tmp, td, tmp_data);
+			return -1;
+		}
+	}
+#endif
+	return 0;
+}
+
 void board_init_f(ulong dummy)
 {
+	unsigned int ccu_value = 0;
+	int pll_sel = 0;
+
 	zboost_is_run();
 
 	/* Set global data pointer */
 	gd = &gdata;
+
+    /* close ccu IFU simple Loop */
+	ccu_value = *((volatile unsigned int *)(0xb2200fe0));
+	*((volatile unsigned int *)(0xb2200fe0)) = (ccu_value | 0x00000078);
 
 	/* Setup global info */
 #ifndef CONFIG_BURNER
@@ -171,9 +268,15 @@ void board_init_f(ulong dummy)
 	clk_init();
 #endif
 
-	sdram_init();
+	sdram_init(0);
 
-	debug("SDRAM init\n");
+	while(ddr_mem_test4())
+	{
+		pll_sel++;
+		sdram_init(pll_sel);
+	}
+
+	serial_debug("SDRAM init\n");
 #ifdef CONFIG_DDR_AUTO_REFRESH_TEST
 	ddr_test_refresh(0xa0000000, 0xa1000000);
 #endif
@@ -183,6 +286,12 @@ void board_init_f(ulong dummy)
 #endif
 
 	reallocate_cache();
+
+	if(ddr_mem_test12())
+	{
+		serial_debug("ddr error!\n");
+		do_reset(NULL, 0, 0, NULL);
+	}
 
 #ifndef CONFIG_BURNER
 	/* Clear the BSS */
