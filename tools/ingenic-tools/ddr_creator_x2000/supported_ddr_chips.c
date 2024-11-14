@@ -73,6 +73,7 @@ struct ddr_chip_info supported_ddr_chips[] = {
 
 void dump_ddr_info(struct ddr_chip_info *c)
 {
+	printf("/** Only DDR test\n");
 	printf("name 		= %s\n", c->name);
 	printf("id 		= %x\n", c->id);
 	printf("type 		= %x\n", c->type);
@@ -107,10 +108,8 @@ void dump_ddr_info(struct ddr_chip_info *c)
 	printf("DDR_tCKESR 	= %d\n", c->DDR_tCKESR);
 	printf("DDR_tXSR 	= %d\n", c->DDR_tXSR);
 	printf("DDR_tXP 	= %d\n", c->DDR_tXP);
-
-
+	printf("**/ \n");
 }
-
 
 int init_supported_ddr(void)
 {

@@ -44,6 +44,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
+static struct phy_drvodt_config *drvodt = NULL;
+static struct phy_deskew_config *deskew = NULL;
+
 /* #define CONFIG_DDRP_SOFTWARE_TRAINING */
 
 extern struct ddr_reg_value supported_ddr_reg_values[];
@@ -207,37 +210,46 @@ void dump_generated_reg(struct ddr_reg_value *reg){}
 #define DDRP_INNOPHY_PD_DRV_DQ15_8      (DDR_PHY_OFFSET + (0xd2<<2))        //0x152
 #define DDRP_INNOPHY_PU_DRV_DQ15_8      (DDR_PHY_OFFSET + (0xd3<<2))        //0x153
 
-static void ddrp_set_dq_odt(unsigned int pu, unsigned int pd)
+static void ddrp_set_dq_odt(struct phy_drvodt_config *drvodt)
 {
+	unsigned int pu = drvodt->phy_pu_odt_dq7_0;
+        unsigned int pd = drvodt->phy_pd_odt_dq7_0;
+
 	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ7_0);
 	ddr_writel(pu, DDRP_INNOPHY_PU_ODT_DQ15_8);
 	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ7_0);
 	ddr_writel(pd, DDRP_INNOPHY_PD_ODT_DQ15_8);
 
 }
-static void ddrp_set_dq_drv(unsigned int pu, unsigned int pd)
+static void ddrp_set_dq_drv(struct phy_drvodt_config *drvodt)
 {
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ7_0);
+	unsigned int pu = drvodt->phy_pu_drv_dq7_0;
+        unsigned int pd = drvodt->phy_pd_drv_dq7_0;
+
+        ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ7_0);
 	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_DQ15_8);
 	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ7_0);
 	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_DQ15_8);
 }
-static void ddrp_set_cmd_drv(unsigned int pu, unsigned int pd)
+static void ddrp_set_cmd_drv(struct phy_drvodt_config *drvodt)
 {
-	ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
+	unsigned int pu = drvodt->phy_pu_drv_cmd;
+        unsigned int pd = drvodt->phy_pd_drv_cmd;
+
+        ddr_writel(pu, DDRP_INNOPHY_PU_DRV_CMD);
 	ddr_writel(pd, DDRP_INNOPHY_PD_DRV_CMD);
 }
 
-static void ddrp_zq_calibration(int bypass, char cmd_drv, char ck_drv, char dq_drv, char dq_odt)
+static void ddrp_zq_calibration(int bypass, struct phy_drvodt_config *drvodt)
 {
 	unsigned tmp;
 	unsigned int pu_drv = 0;
 	unsigned int pd_drv = 0;
 	unsigned int pu_odt = 0;
 	unsigned int pd_odt = 0;
-	ddrp_set_dq_odt(dq_odt, dq_odt);
-	ddrp_set_dq_drv(dq_drv, dq_drv);
-	ddrp_set_cmd_drv(cmd_drv, cmd_drv);
+	ddrp_set_dq_odt(drvodt);
+	ddrp_set_dq_drv(drvodt);
+	ddrp_set_cmd_drv(drvodt);
 #if 0
 	serial_debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
 	serial_debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
@@ -394,7 +406,10 @@ void ddrp_auto_calibration(void)
 	unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA;
 	unsigned int al, ah;
 
-	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
+        drvodt = &global_reg_value->phy_drvodt;
+        deskew = &global_reg_value->phy_deskew;
+
+        reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
 	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
 	ddr_writel(reg_val, DDRP_INNOPHY_TRAINING_CTRL);
 
@@ -497,14 +512,34 @@ void debug_date_eye(void) {
 	int mem_count = 1;
 	int restart_count_max = 3;
 
+        unsigned char default_drv = 0x6;
+        unsigned char default_odt = 0x5;
+
 	slpc = cpm_inl(CPM_SLPC);
 	drv_value = (slpc & 0xff);
 	odt_value = (slpc >> 8) & 0xff;
 	restart_count = (slpc >> 16) & 0xff;
 
+
+
 	if(restart_count >= 0 && restart_count < restart_count_max) {
 		if(drv_value <= 0x1f && odt_value <= 0x1f){
-			ddrp_zq_calibration(1, drv_value,drv_value, drv_value, odt_value);
+
+                        drvodt->phy_pu_drv_cmd    = drv_value;
+                        drvodt->phy_pd_drv_cmd    = drv_value;
+                        drvodt->phy_pu_drv_ck     = drv_value;
+                        drvodt->phy_pd_drv_ck     = drv_value;
+                        drvodt->phy_pu_drv_dq7_0  = drv_value;
+                        drvodt->phy_pd_drv_dq7_0  = drv_value;
+                        drvodt->phy_pu_drv_dq15_8 = drv_value;
+                        drvodt->phy_pd_drv_dq15_8 = drv_value;
+
+                        drvodt->phy_pu_odt_dq7_0  = odt_value;
+                        drvodt->phy_pd_odt_dq7_0  = odt_value;
+                        drvodt->phy_pu_odt_dq15_8 = odt_value;
+                        drvodt->phy_pd_odt_dq15_8 = odt_value;
+
+                        ddrp_zq_calibration(1, drvodt);
 			ddrp_auto_calibration();
 
 			for(i = 0;i < mem_count;i++){
@@ -523,8 +558,22 @@ void debug_date_eye(void) {
 						cpm_outl(slpc,CPM_SLPC);
 						_machine_restart();
 					}else {
-						/*inno phy default drv value is 0x6 odt value is 0x5*/
-						ddrp_zq_calibration(1, 0x6,0x6, 0x6, 0x5);
+                                                /*inno phy default drv value is 0x6 odt value is 0x5*/
+                                                drvodt->phy_pu_drv_cmd    = default_drv;
+                                                drvodt->phy_pd_drv_cmd    = default_drv;
+                                                drvodt->phy_pu_drv_ck     = default_drv;
+                                                drvodt->phy_pd_drv_ck     = default_drv;
+                                                drvodt->phy_pu_drv_dq7_0  = default_drv;
+                                                drvodt->phy_pd_drv_dq7_0  = default_drv;
+                                                drvodt->phy_pu_drv_dq15_8 = default_drv;
+                                                drvodt->phy_pd_drv_dq15_8 = default_drv;
+
+                                                drvodt->phy_pu_odt_dq7_0  = default_odt;
+                                                drvodt->phy_pd_odt_dq7_0  = default_odt;
+                                                drvodt->phy_pu_odt_dq15_8 = default_odt;
+                                                drvodt->phy_pd_odt_dq15_8 = default_odt;
+
+						ddrp_zq_calibration(1, drvodt);
 						ddrp_auto_calibration();
 						slpc = drv_value | (odt_value << 8) | (restart_count << 16);
 						cpm_outl(slpc,CPM_SLPC);
@@ -559,7 +608,21 @@ void debug_date_eye(void) {
 			_machine_restart();
 		} else {
 			/*inno phy default drv value is 0x6 odt value is 0x5*/
-			ddrp_zq_calibration(1, 0x6,0x6, 0x6, 0x5);
+                        drvodt->phy_pu_drv_cmd    = default_drv;
+                        drvodt->phy_pd_drv_cmd    = default_drv;
+                        drvodt->phy_pu_drv_ck     = default_drv;
+                        drvodt->phy_pd_drv_ck     = default_drv;
+                        drvodt->phy_pu_drv_dq7_0  = default_drv;
+                        drvodt->phy_pd_drv_dq7_0  = default_drv;
+                        drvodt->phy_pu_drv_dq15_8 = default_drv;
+                        drvodt->phy_pd_drv_dq15_8 = default_drv;
+
+                        drvodt->phy_pu_odt_dq7_0  = default_odt;
+                        drvodt->phy_pd_odt_dq7_0  = default_odt;
+                        drvodt->phy_pu_odt_dq15_8 = default_odt;
+                        drvodt->phy_pd_odt_dq15_8 = default_odt;
+
+                        ddrp_zq_calibration(1, drvodt);
 			ddrp_auto_calibration();
 			drv_value = (slpc & 0xff);
 			odt_value = (slpc >> 8) & 0xff;
@@ -992,6 +1055,8 @@ void get_ddr_params_burner(void)
 	 * with ddr_registers the same
 	 * */
 	global_reg_value = g_ddr_param;
+        memset(&global_reg_value->phy_drvodt, 0, sizeof(struct phy_drvodt_config));
+        memset(&global_reg_value->phy_deskew, 0, sizeof(struct phy_deskew_config));
 }
 #endif
 
