@@ -11,21 +11,21 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_AD100		/* ad100 SoC */
 
-#if defined(CONFIG_AD101P_DDR)
-  #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+#if defined(CONFIG_AD101P_DDR) || (CONFIG_AD102P_DDR)
+  #define CONFIG_SYS_APLL_FREQ		1152000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1800000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_CPU_SEL_PLL		APLL
   #define CONFIG_DDR_SEL_PLL		MPLL
-  #define CONFIG_SYS_CPU_FREQ		1200000000
+  #define CONFIG_SYS_CPU_FREQ		1152000000
   #define CONFIG_SYS_MEM_FREQ		900000000
-#elif defined(CONFIG_AD100N_DDR)
-  #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
+#elif defined(CONFIG_AD100N_DDR) || (CONFIG_AD102N_DDR)
+  #define CONFIG_SYS_APLL_FREQ		1152000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_CPU_SEL_PLL		APLL
   #define CONFIG_DDR_SEL_PLL		MPLL
-  #define CONFIG_SYS_CPU_FREQ		1200000000
+  #define CONFIG_SYS_CPU_FREQ		1152000000
   #define CONFIG_SYS_MEM_FREQ		600000000
 #else
   #error "please add more define here"
@@ -115,9 +115,9 @@
 
 #define CONFIG_SPL_EFUSE
 
-#if defined(CONFIG_AD101P_DDR)
+#if defined(CONFIG_AD101P_DDR) || (CONFIG_AD102P_DDR)
   #define CONFIG_DDR_TYPE_DDR3
-#elif defined(CONFIG_AD100N_DDR)
+#elif defined(CONFIG_AD100N_DDR) || (CONFIG_AD102N_DDR)
   #define CONFIG_DDR_TYPE_DDR2
 #else
   #error "please add more define here"

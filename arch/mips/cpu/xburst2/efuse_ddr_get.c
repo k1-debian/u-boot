@@ -360,12 +360,12 @@ static void ddr_par_init(unsigned int *ddr_drv_config)
     S_TRX = 0x2; // Set only the RX skew parameter
     S_TRX = 0x3; // The RX/TX skew parameters are set
 */
-#ifdef CONFIG_AD100N_DDR                   //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
+#if defined(CONFIG_AD100N_DDR) || (CONFIG_AD102N_DDR)     //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
     unsigned int init_ddr_par[INDEX_EN] = {0x01, 0x01, 0x0e, 0x0e, 0x0e, 0x0e, 0x14, 0x14, 0x96, 0x01, 0x01, 0x06,
                                            0x2a, 0x2a, 0x1b, 0x11, 0x11, 0x16, 0x03};
                                        //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
 
-#elif defined(CONFIG_AD101P_DDR)           //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
+#elif defined(CONFIG_AD101P_DDR) || (CONFIG_AD102P_DDR)   //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
     unsigned int init_ddr_par[INDEX_EN] = {0x01, 0x01, 0x0e, 0x0e, 0x0e, 0x0e, 0x14, 0x14, 0x96, 0x01, 0x01, 0x06,
                                            0x09, 0x09, 0x01, 0x07, 0x07, 0x07, 0x01};
                                        //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
@@ -380,7 +380,7 @@ static void ddr_par_init(unsigned int *ddr_drv_config)
                                            0x12, 0x12, 0x0b, 0x08, 0x08, 0x0b, 0x03};
                                        //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
 
-#else                                  //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
+#else                                  //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC                                                    //  ODT_D ODT_U CMD_D CMD_U CLK_D CLK_U DQX_D DQX_U VREF K_RTT KGD_DS RTT&DIC
     unsigned int init_ddr_par[INDEX_EN] = {0x01, 0x01, 0x0e, 0x0e, 0x0e, 0x0e, 0x14, 0x14, 0x96, 0x01, 0x01, 0x06,
                                            0x0f, 0x0f, 0x07, 0x07, 0x07, 0x07, 0x00}; /* old version */
                                        //  DQS0R DQS1R DQRX  DQS0T DQS1T DQTX  S_TRX
