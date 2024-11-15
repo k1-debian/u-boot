@@ -612,6 +612,8 @@ void get_ddr_params_burner(void)
 	 * with ddr_registers the same
 	 * */
 	global_reg_value = g_ddr_param;
+        memset(&global_reg_value->phy_drvodt, 0, sizeof(struct phy_drvodt_config));
+        memset(&global_reg_value->phy_deskew, 0, sizeof(struct phy_deskew_config));
 }
 #endif
 

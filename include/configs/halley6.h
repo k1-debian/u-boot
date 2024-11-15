@@ -34,6 +34,9 @@
 #define CONFIG_X1600
 #define CONFIG_SOC_NAME		x1600
 
+#define CONFIG_ALL_DDR
+#include "x1600_ddr.h"
+
 /* #define CONFIG_SPL_ALIOS_BOOT */
 
 #ifdef CONFIG_SPL_ALIOS_BOOT
@@ -78,70 +81,6 @@
 		{CIM, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
-
-/*
- *#define CONFIG_DDR_TEST_CPU
- *#define CONFIG_DDR_TEST
- */
-/*#define CONFIG_DDR_DRVODT_DEBUG*/
-/*#define CONFIG_DDR_DLL_OFF*/
-#define CONFIG_DDR_DLL_RESET_EN
-#define CONFIG_DDR_PARAMS_CREATOR
-#define CONFIG_DDR_HOST_CC
-/*#define CONFIG_DDR_FORCE_SELECT_CS1*/
-
-#define CONFIG_X1600_KGD_COMPATIBLE
-
-#define CONFIG_DDR_TYPE_DDR2
-#define CONFIG_DDR_TYPE_LPDDR2
-
-#ifdef CONFIG_DDR_TYPE_LPDDR2
-	#define CONFIG_LPDDR2_SCB4BL256160AFL19GI
-	#if defined CONFIG_X1600_KGD_COMPATIBLE
-		#define CONFIG_X1600E_LPDDR2
-	#else
-		#define CONFIG_LPDDR2_M54D5121632A
-		#define CONFIG_LPDDR2_SCKX4BL512160AAC
-	#endif
-#endif
-
-#ifdef CONFIG_DDR_TYPE_DDR2
-	#define CONFIG_LVDDR_INNOPHY
-	#define CONFIG_DDR2_M14D2561616A
-	#define CONFIG_LVDDR2_A3L28E40BGD
-	#if defined CONFIG_X1600_KGD_COMPATIBLE
-		#define CONFIG_X1600EN_DDR2
-		#define CONFIG_X1600HN_DDR2
-	#else
-		#define CONFIG_DDR2_W975116NG18I
-		#define CONFIG_DDR2_W971GV6NG
-		#define CONFIG_DDR2_M14D1G1664A
-	#endif
-#endif
-
-
-#define CONFIG_DDR_INNOPHY
-#define CONFIG_DDR_CS0          1   /* 1-connected, 0-disconnected */
-#define CONFIG_DDR_CS1          0   /* 1-connected, 0-disconnected */
-#define CONFIG_DDR_DW32         0   /* 1-32bit-width, 0-16bit-width */
-
-#define CONFIG_DDR_PHY_IMPEDANCE 40
-#define CONFIG_DDR_PHY_ODT_IMPEDANCE 120
-
-
-#define CONFIG_DDR_AUTO_SELF_REFRESH
-#define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
-
-
-/* #define CONFIG_DDR_DLL_OFF */
-/*
- * #define CONFIG_DDR_CHIP_ODT
- * #define CONFIG_DDR_PHY_ODT
- * #define CONFIG_DDR_PHY_DQ_ODT
- * #define CONFIG_DDR_PHY_DQS_ODT
- * #define CONFIG_DDR_PHY_IMPED_PULLUP		0xe
- * #define CONFIG_DDR_PHY_IMPED_PULLDOWN	0xe
- */
 
 /**
  * Boot arguments definitions.
@@ -247,9 +186,11 @@
 #define CONFIG_NOR_MINOR_VERSION_NUMBER		0
 #define CONFIG_NOR_REVERSION_NUMBER		0
 #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
+/*
 #define CONFIG_NOR_BUILTIN_PARAMS
 #define CONFIG_NOR_COMMON_PARAMS
 #define CONFIG_NOR_COMMON_PARAMS_COUNT          3
+*/
 #endif
 
 /* sfc nand config */

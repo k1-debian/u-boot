@@ -676,6 +676,9 @@ int create_one_ddr_params(struct ddr_chip_info *chip, struct ddr_reg_value *reg)
 	reg->h.type = chip->type;
 	memcpy(reg->h.name, chip->name, sizeof(reg->h.name));
 
+        memcpy(&reg->phy_drvodt, &chip->phy_drvodt, sizeof(struct phy_drvodt_config));
+        memcpy(&reg->phy_deskew, &chip->phy_deskew, sizeof(struct phy_deskew_config));
+
 	fill_reg_value(reg, &ddrc, &ddrp, &ddr_params);
 
 }
@@ -764,7 +767,38 @@ void dump_generated_reg_struct(struct ddr_reg_value *reg)
 	for(i = 0; i < REMAP_ARR_SIZE; i++) {
 		printf("	.REMMAP_ARRAY[%d] = 0x%08x,\n", i, reg->REMMAP_ARRAY[i]);
 	}
-	printf("},\n");
+        printf("	.phy_drvodt = {\n");
+        printf("                .use_drvodt_config    = 0x%02x,\n", reg->phy_drvodt.use_drvodt_config);
+        printf("                .phy_pu_drv_cmd       = 0x%02x,\n", reg->phy_drvodt.phy_pu_drv_cmd);
+        printf("                .phy_pd_drv_cmd       = 0x%02x,\n", reg->phy_drvodt.phy_pd_drv_cmd);
+        printf("                .phy_pu_drv_ck        = 0x%02x,\n", reg->phy_drvodt.phy_pu_drv_ck);
+        printf("                .phy_pd_drv_ck        = 0x%02x,\n", reg->phy_drvodt.phy_pd_drv_ck);
+        printf("                .phy_pu_drv_dq7_0     = 0x%02x,\n", reg->phy_drvodt.phy_pu_drv_dq7_0);
+        printf("                .phy_pd_drv_dq7_0     = 0x%02x,\n", reg->phy_drvodt.phy_pd_drv_dq7_0);
+        printf("                .phy_pu_drv_dq15_8    = 0x%02x,\n", reg->phy_drvodt.phy_pu_drv_dq15_8);
+        printf("                .phy_pd_drv_dq15_8    = 0x%02x,\n", reg->phy_drvodt.phy_pd_drv_dq15_8);
+        printf("                .phy_pu_odt_dq7_0     = 0x%02x,\n", reg->phy_drvodt.phy_pu_odt_dq7_0);
+        printf("                .phy_pd_odt_dq7_0     = 0x%02x,\n", reg->phy_drvodt.phy_pd_odt_dq7_0);
+        printf("                .phy_pu_odt_dq15_8    = 0x%02x,\n", reg->phy_drvodt.phy_pu_odt_dq15_8);
+        printf("                .phy_pd_odt_dq15_8    = 0x%02x,\n", reg->phy_drvodt.phy_pd_odt_dq15_8);
+        printf("        },\n");
+        printf("	.phy_deskew = {\n");
+        printf("                .use_deskew_config    = 0x%02x,\n", reg->phy_deskew.use_deskew_config);
+        printf("                .phy_deskew_cmd       = 0x%02x,\n", reg->phy_deskew.phy_deskew_cmd);
+        printf("                .phy_deskew_rx_dm0    = 0x%02x,\n", reg->phy_deskew.phy_deskew_rx_dm0);
+        printf("                .phy_deskew_tx_dm0    = 0x%02x,\n", reg->phy_deskew.phy_deskew_tx_dm0);
+        printf("                .phy_deskew_rx_dq7_0  = 0x%02x,\n", reg->phy_deskew.phy_deskew_rx_dq7_0);
+        printf("                .phy_deskew_tx_dq7_0  = 0x%02x,\n", reg->phy_deskew.phy_deskew_tx_dq7_0);
+        printf("                .phy_deskew_rx_dqs0   = 0x%02x,\n", reg->phy_deskew.phy_deskew_rx_dqs0);
+        printf("                .phy_deskew_tx_dqs0   = 0x%02x,\n", reg->phy_deskew.phy_deskew_tx_dqs0);
+        printf("                .phy_deskew_rx_dm1    = 0x%02x,\n", reg->phy_deskew.phy_deskew_rx_dm1);
+        printf("                .phy_deskew_tx_dm1    = 0x%02x,\n", reg->phy_deskew.phy_deskew_tx_dm1);
+        printf("                .phy_deskew_rx_dq15_8 = 0x%02x,\n", reg->phy_deskew.phy_deskew_rx_dq15_8);
+        printf("                .phy_deskew_tx_dq15_8 = 0x%02x,\n", reg->phy_deskew.phy_deskew_tx_dq15_8);
+        printf("                .phy_deskew_rx_dqs1   = 0x%02x,\n", reg->phy_deskew.phy_deskew_rx_dqs1);
+        printf("                .phy_deskew_tx_dqs1   = 0x%02x,\n", reg->phy_deskew.phy_deskew_tx_dqs1);
+        printf("        },\n");
+        printf("},\n");
 
 }
 

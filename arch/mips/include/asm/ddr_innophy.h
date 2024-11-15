@@ -23,7 +23,7 @@
 #define __DDR_INNOPHY_H__
 
 #include <asm/arch/base.h>
-
+#include <ddr/chips-v2/ddr_chip.h>
 /*
  * DDR Controller Registers
  **/
@@ -653,6 +653,8 @@ struct ddr_reg_value {
 	unsigned int DDR_CHIP_0_SIZE;
 	unsigned int DDR_CHIP_1_SIZE;
 	unsigned int REMMAP_ARRAY[5];
+        struct phy_drvodt_config phy_drvodt;
+        struct phy_deskew_config phy_deskew;
 };
 #elif defined(CONFIG_X2600) ||defined(CONFIG_AD100)
 struct ddr_reg_value {
@@ -688,6 +690,8 @@ struct ddr_reg_value {
 	unsigned int DDR_CHIP_0_SIZE;
 	unsigned int DDR_CHIP_1_SIZE;
 	unsigned int REMMAP_ARRAY[6];
+        struct phy_drvodt_config phy_drvodt;
+        struct phy_deskew_config phy_deskew;
 };
 #else
 struct ddr_reg_value {
@@ -723,6 +727,8 @@ struct ddr_reg_value {
 	unsigned int DDR_CHIP_0_SIZE;
 	unsigned int DDR_CHIP_1_SIZE;
 	unsigned int REMMAP_ARRAY[5];
+        struct phy_drvodt_config phy_drvodt;
+        struct phy_deskew_config phy_deskew;
 };
 #endif
 
