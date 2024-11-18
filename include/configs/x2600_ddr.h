@@ -1,5 +1,5 @@
-#ifndef __X2000_DDR__
-#define __X2000_DDR__
+#ifndef __X2600_DDR__
+#define __X2600_DDR__
 
 
 #define CONFIG_DDR_INNOPHY

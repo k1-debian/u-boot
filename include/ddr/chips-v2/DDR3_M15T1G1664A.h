@@ -209,8 +209,14 @@
 #endif
 #if defined(CONFIG_DDR_DLL_OFF)
         #define CONFIG_DDR3_M15T1G1664A_KGD_MR1_DLL_EN        0x1
-#elif !defined(CONFIG_DDR3_M15T1G1664A_KGD_MR1_DLL_EN)
+        #define CONFIG_DDR3_M15T1G1664A_KGD_MR0_PD            0x0
+#else
+#if !defined(CONFIG_DDR3_M15T1G1664A_KGD_MR1_DLL_EN)
         #define CONFIG_DDR3_M15T1G1664A_KGD_MR1_DLL_EN        0x0
+#endif
+#if !defined(CONFIG_DDR3_M15T1G1664A_KGD_MR0_PD)
+        #define CONFIG_DDR3_M15T1G1664A_KGD_MR0_PD            0x1
+#endif
 #endif
 #if defined(CONFIG_DDR_DRIVER_OUT_STRENGTH)
         #define CONFIG_DDR3_M15T1G1664A_KGD_MR1_DIC       \
@@ -230,9 +236,6 @@
         #define CONFIG_DDR3_M15T1G1664A_KGD_MR2_RTT_WR        CONFIG_DDR_CHIP_ODT_VAL_RTT_WR
 #elif !defined(CONFIG_DDR3_M15T1G1664A_KGD_MR2_RTT_WR)
         #define CONFIG_DDR3_M15T1G1664A_KGD_MR2_RTT_WR        0x0
-#endif
-#if !defined(CONFIG_DDR3_M15T1G1664A_KGD_MR0_PD)
-        #define CONFIG_DDR3_M15T1G1664A_KGD_MR0_PD            0x0
 #endif
 
 #endif
