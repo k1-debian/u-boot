@@ -8,9 +8,9 @@
 static unsigned char xcsp_eccerr[] = {0x03};
 
 static struct device_struct device[XCSP_NAND_DEVICD_COUNT] = {
-	DEVICE_STRUCT(0x01, 2048, 2, 4, 2, 1, xcsp_eccerr),
-	DEVICE_STRUCT(0xa1, 2048, 2, 4, 2, 1, xcsp_eccerr),
-	DEVICE_STRUCT(0xb1, 2048, 2, 4, 2, 1, xcsp_eccerr),
+	DEVICE_STRUCT(0x01, 2048, 2, 4, 2, 1, xcsp_eccerr, 0),
+	DEVICE_STRUCT(0xa1, 2048, 2, 4, 2, 1, xcsp_eccerr, 0),
+	DEVICE_STRUCT(0xb1, 2048, 2, 4, 2, 1, xcsp_eccerr, 0),
 };
 
 static struct nand_desc xcsp_nand = {

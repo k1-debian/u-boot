@@ -13,11 +13,6 @@
 
 #define NOR_PART_NUM		10
 
-#define MTD_MODE                0x0     //use mtd mode, erase partition when write
-#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
-#define UBI_MANAGER             0x1
-
-
 #define NOR_CMD_TYPE_1        0x00010001
 #define NOR_CMD_TYPE_2        0x00020002
 #define NOR_CMD_TYPE_3        0x00030003

@@ -2,12 +2,13 @@
 #include "nand_common.h"
 
 #define TC_MID			    0x98
-#define TC_NAND_DEVICD_COUNT	    1
+#define TC_NAND_DEVICD_COUNT	    2
 
-static unsigned char tc_eccerr[] = {0x2, 0x3};
+static unsigned char tc_eccerr[] = {0x2};
 
 static struct device_struct device[1] = {
-	DEVICE_STRUCT(0xC2, 2048, 2, 4, 2, 1, tc_eccerr),
+	DEVICE_STRUCT(0xC2, 2048, 2, 4, 2, 1, tc_eccerr, 0),
+	DEVICE_STRUCT(0xed, 4096, 2, 4, 2, 1, tc_eccerr, 0),
 };
 
 static struct nand_desc tc_nand = {

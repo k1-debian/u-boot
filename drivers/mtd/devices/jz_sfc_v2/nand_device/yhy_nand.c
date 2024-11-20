@@ -56,7 +56,8 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tRD = TRD,
 		.tPP = TPP,
 		.tBE = TBE,
-
+                
+                .plane_select = 0,
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
@@ -77,6 +78,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
+                .plane_select = 0,
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
@@ -97,6 +99,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
+                .plane_select = 0,
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},

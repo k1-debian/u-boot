@@ -9,7 +9,7 @@
 static unsigned char toshiba_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[TOSHIBA_NAND_DEVICE_COUNT] = {
-        DEVICE_STRUCT(0xed, 4096, 2, 4, 2, 1, toshiba_eccerr),
+        DEVICE_STRUCT(0xed, 4096, 2, 4, 2, 1, toshiba_eccerr, 0),
  };
 
 

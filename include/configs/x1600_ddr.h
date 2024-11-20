@@ -38,8 +38,13 @@
 	#define CONFIG_LVDDR_INNOPHY
 
         #if defined(CONFIG_X1660L) || defined(CONFIG_ALL_DDR)
-                #define CONFIG_LVDDR_W9464L6KH-5I
-                #define CONFIG_LVDDR_W9464L6KH_MEM_FREQ              200000000
+                #if defined CONFIG_X1600_KGD_COMPATIBLE
+                        #define CONFIG_X1660L_LVDDR
+                        #define CONFIG_X1660L_LVDDR_MEM_FREQ                 200000000
+                #else
+                        #define CONFIG_LVDDR_W9464L6KH
+                        #define CONFIG_LVDDR_W9464L6KH_MEM_FREQ              200000000
+                #endif
         #endif
 
         #if defined(CONFIG_X1600N) || defined(CONFIG_ALL_DDR)

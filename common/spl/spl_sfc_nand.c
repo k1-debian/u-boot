@@ -181,10 +181,7 @@ read_oob:
 	}
 
 	/* plane select */
-	if(curr_device->device_id == 0x22			/* MX35LF2GE4AB */
-			|| curr_device->device_id == 0x72	/* DS35Q2GAXXX,	ZD35Q2GA */
-			|| curr_device->device_id == 0xF2	/* DS35Q2GBXXX */
-			|| curr_device->device_id == 0x24)	/* XT26G02E */
+	if(curr_device->plane_select)
 		column |= (((page >> 6) & 1) << 12);
 
 #ifndef CONFIG_SPI_STANDARD

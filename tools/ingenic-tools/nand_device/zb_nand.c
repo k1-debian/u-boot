@@ -2,12 +2,15 @@
 #include "nand_common.h"
 
 #define ZB_MID			    0x5E
-#define ZB_NAND_DEVICD_COUNT	    1
+#define ZB_NAND_DEVICD_COUNT	    4
 
 static unsigned char zb_errstat[]= {0x2};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x41, 2048, 2, 4, 2, 1, zb_errstat),
+	DEVICE_STRUCT(0x41,   2048, 2, 4, 2, 1, zb_errstat, 0),
+	DEVICE_STRUCT(0xA1A1, 2048, 2, 4, 2, 1, zb_errstat, 0),
+	DEVICE_STRUCT(0xA2A1, 2048, 2, 4, 2, 1, zb_errstat, 0),
+	DEVICE_STRUCT(0xA3,   2048, 2, 4, 2, 1, zb_errstat, 0),
 };
 
 static struct nand_desc zb_nand = {

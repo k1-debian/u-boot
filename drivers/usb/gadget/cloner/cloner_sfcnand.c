@@ -100,8 +100,11 @@ int sfc_nand_program(struct cloner *cloner)
         uint32_t erase_type_backup = spi_args->spi_erase;
 
 	partition = get_sfc_nand_partition(startaddr,length,&pt_index);
-	if (pt_index < 0)
+	if (pt_index < 0) {
+		printf("startaddr 0x%x can't find the pt_index or you partition size 0x%x is not align with %x\n",
+                                startaddr, length, block_size);
 		return -EIO;
+        }
 
         if (spi_args->spi_erase == CHIP_ERASE && partition->mask_flags == PART_RO)
                 spi_args->spi_erase = PART_ERASE;

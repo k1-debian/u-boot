@@ -875,7 +875,7 @@ int32_t jz_sfc_nand_init()
 	struct mtd_info *mtd;
 	struct jz_sfcnand_flashinfo *flash_info;
 	int32_t ret = 0;
-	uint32_t sfc_rate = 200000000;
+	uint32_t sfc_rate = 100000000;
 #ifdef CONFIG_BURNER
 	struct jz_sfcnand_burner_param *param = spi_args->flash_info;
 #endif
@@ -912,8 +912,8 @@ int32_t jz_sfc_nand_init()
 		goto failed;
 	}
 
-#define THOLD   5
-#define TSETUP  5
+#define THOLD       50
+#define TSETUP      50
 #define TSHSL_R     100
 #define TSHSL_W     100
 
@@ -1044,7 +1044,6 @@ struct jz_sfcnand_partition *get_sfc_nand_partition(u32 startaddr,u32 length,int
 		}
 	}
 	if(i >= ptcount){
-		printf("startaddr 0x%x can't find the pt_index or you partition size 0x%x is not align with 128K\n",startaddr, length);
 		*pt_index = -1;
 		return NULL;
 	}

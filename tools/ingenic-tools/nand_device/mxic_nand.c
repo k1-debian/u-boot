@@ -8,11 +8,11 @@ static unsigned char mxic_eccerr[] = {0x2, 0x3};
 
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x12, 2048, 2, 4, 2, 1,  mxic_eccerr),
-	DEVICE_STRUCT(0x22, 2048, 2, 4, 2, 1,  mxic_eccerr),
-	DEVICE_STRUCT(0x26, 2048, 2, 4, 2, 1,  mxic_eccerr),
-	DEVICE_STRUCT(0x37, 4096, 2, 4, 2, 1,  mxic_eccerr),
-	DEVICE_STRUCT(0xA6, 2048, 2, 4, 2, 1,  mxic_eccerr),
+	DEVICE_STRUCT(0x12, 2048, 2, 4, 2, 1,  mxic_eccerr, 0),
+	DEVICE_STRUCT(0x22, 2048, 2, 4, 2, 1,  mxic_eccerr, 1),
+	DEVICE_STRUCT(0x26, 2048, 2, 4, 2, 1,  mxic_eccerr, 0),
+	DEVICE_STRUCT(0x37, 4096, 2, 4, 2, 1,  mxic_eccerr, 0),
+	DEVICE_STRUCT(0xA6, 2048, 2, 4, 2, 1,  mxic_eccerr, 0),
 };
 
 static struct nand_desc mxic_nand = {

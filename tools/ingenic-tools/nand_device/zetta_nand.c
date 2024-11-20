@@ -7,8 +7,8 @@
 static unsigned char zetta_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x71, 2048, 2, 4, 2, 1, zetta_eccerr),
-	DEVICE_STRUCT(0x72, 2048, 2, 4, 2, 1, zetta_eccerr),
+	DEVICE_STRUCT(0x71, 2048, 2, 4, 2, 1, zetta_eccerr, 0),
+	DEVICE_STRUCT(0x72, 2048, 2, 4, 2, 1, zetta_eccerr, 1),
 };
 
 static struct nand_desc zetta_nand = {

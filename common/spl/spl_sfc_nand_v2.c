@@ -317,11 +317,7 @@ read_oob:
 	}
 
 	/* plane select */
-	if(curr_device->device_id == 0x22			/* MX35LF2GE4AB */
-			|| curr_device->device_id == 0x72	/* DS35Q2GAXXX,	ZD35Q2GA */
-		        || curr_device->device_id == 0xF1	/* DS35X1GBXXX*/
-			|| curr_device->device_id == 0xF2	/* DS35Q2GBXXX */
-			|| curr_device->device_id == 0x24)	/* XT26G02E */
+	if(curr_device->plane_select)
 		column |= (((page >> 6) & 1) << 12);
 
 #ifdef CONFIG_SFC_QUAD
@@ -379,13 +375,17 @@ static int  spinand_write_page(unsigned int page,unsigned int column,unsigned ch
 		return 1;
 	}
 
-	/*send write command*/
-	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_PRO_LOAD,len,column,2,0,1,1);
-	spl_sfc_write_data((unsigned int *)dst_addr, len);
-
 	/* write enable */
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_WREN, 0, 0, 0, 0, 0, 0);
 	clear_end();
+
+	/* plane select */
+	if(curr_device->plane_select)
+		column |= (((page >> 6) & 1) << 12);
+
+	/*send write command*/
+	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_PRO_LOAD,len,column,2,0,1,1);
+	spl_sfc_write_data((unsigned int *)dst_addr, len);
 
 	/*send program execute command*/
 	SFC_SEND_COMMAND(&sfc, SPINAND_CMD_PRO_EN,0,page, 3,0,0,0);

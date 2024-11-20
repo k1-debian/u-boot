@@ -6,7 +6,7 @@
 
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x12, 2048, 2, 0, 0, 0, NULL),
+	DEVICE_STRUCT(0x12, 2048, 2, 0, 0, 0, NULL, 0),
 };
 
 static struct nand_desc ato_nand = {

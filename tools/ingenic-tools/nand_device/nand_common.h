@@ -9,6 +9,7 @@ struct device_struct {
 	unsigned char bit_counts;
 	unsigned char eccstat_count;
 	unsigned char *eccerrstatus;
+        unsigned char plane_select;
 };
 
 struct nand_desc {
@@ -17,7 +18,7 @@ struct nand_desc {
 	struct device_struct *device;
 };
 
-#define DEVICE_STRUCT(id, pagesize, addrlen, bit, bitcounts,  eccstatcount, err) {  \
+#define DEVICE_STRUCT(id, pagesize, addrlen, bit, bitcounts, eccstatcount, err, plane) {  \
 		.device_id = id, 	\
 		.page_size = pagesize,  \
 		.addr_len = addrlen,    \
@@ -25,6 +26,7 @@ struct nand_desc {
 		.bit_counts = bitcounts,	\
 		.eccstat_count = eccstatcount, \
 		.eccerrstatus = err,	\
+		.plane_select = plane, 	\
 }
 
 

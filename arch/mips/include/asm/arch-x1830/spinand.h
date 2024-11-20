@@ -142,6 +142,7 @@ struct spl_nand_param {
 
 		unsigned char eccstat_count;
 		unsigned char eccerrstatus[2];
+		unsigned char plane_select;
 } __attribute__((aligned(4)));
 #endif
 

@@ -7,7 +7,7 @@
 static unsigned char gsto_eccerr[] = {0x2};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0xca13, 2048, 2, 4, 2, 1, gsto_eccerr),
+	DEVICE_STRUCT(0xca13, 2048, 2, 4, 2, 1, gsto_eccerr, 0),
 };
 
 static struct nand_desc gsto_nand = {

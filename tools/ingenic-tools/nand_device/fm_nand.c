@@ -7,8 +7,8 @@
 static unsigned char fm_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[FM_NAND_DEVICD_COUNT] = {
-	DEVICE_STRUCT(0xE4, 2048, 2, 4, 2, 2, fm_eccerr),
-	DEVICE_STRUCT(0xE5, 2048, 2, 4, 2, 2, fm_eccerr),
+	DEVICE_STRUCT(0xE4, 2048, 2, 4, 2, 2, fm_eccerr, 0),
+	DEVICE_STRUCT(0xE5, 2048, 2, 4, 2, 2, fm_eccerr, 0),
 };
 
 static struct nand_desc fm_nand = {

@@ -31,8 +31,7 @@ static struct jz_sfcnand_base_param ato25d1ga_param = {
 	.tPP = TPP,
 	.tBE = TBE,
 
-	.ecc_max = 0,//0x3,
-
+	.ecc_max = 0,
 	.need_quad = 1,
 
 };

@@ -9,9 +9,9 @@
 static unsigned char yhy_c9_eccerr[] = {0x02,0x03};
 
 static struct device_struct device[YHY_C9_NAND_DEVICD_COUNT] = {
-        DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 2, yhy_c9_eccerr),
-        DEVICE_STRUCT(0x52, 2048, 2, 4, 2, 2, yhy_c9_eccerr),
-        DEVICE_STRUCT(0xD4, 4096, 2, 4, 2, 2, yhy_c9_eccerr),
+        DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 2, yhy_c9_eccerr, 0),
+        DEVICE_STRUCT(0x52, 2048, 2, 4, 2, 2, yhy_c9_eccerr, 0),
+        DEVICE_STRUCT(0xD4, 4096, 2, 4, 2, 2, yhy_c9_eccerr, 0),
  };
 
 static struct nand_desc yhy_c9_nand = {

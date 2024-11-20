@@ -7,7 +7,7 @@
 static unsigned char issi_eccerr[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
-	DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 1, issi_eccerr),
+	DEVICE_STRUCT(0x21, 2048, 2, 4, 2, 1, issi_eccerr, 0),
 };
 
 static struct nand_desc issi_nand = {

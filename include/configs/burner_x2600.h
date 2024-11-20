@@ -213,7 +213,7 @@
 #define CONFIG_CMD_DATE
 
 #define CONFIG_CMD_EFUSE
-#define	CONFIG_JZ_EFUSE
+#define CONFIG_JZ_EFUSE
 #define CONFIG_JZ_SCBOOT
 
 /**
