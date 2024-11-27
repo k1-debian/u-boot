@@ -22,7 +22,7 @@ void otg_phy_init(enum otg_mode_t mode,unsigned extclk) {
 	udelay(500);
 	cpm_outl(0x80000000, CPM_USBPCR);
 	cpm_outl(0x70000000, CPM_USBPCR1);
-	udelay(500);
+	mdelay(10);
 
 	value = phy_inl(0x30);
 	value |= 0x7 << 0;
