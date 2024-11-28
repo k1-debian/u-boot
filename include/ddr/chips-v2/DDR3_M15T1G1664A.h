@@ -1,6 +1,17 @@
 #ifndef __DDR3_M15T1G1664A_H__
 #define __DDR3_M15T1G1664A_H__
 
+/* 
+ * CL  WL    MIN      MAX     UNIT   频率范围
+ * 6   5     2.5      3.3      ns    303Mhz <= MEM_FREQ <= 400Mhz
+ * 7   6     1.875   <2.5      ns    400Mhz <  MEM_FREQ <= 533Mhz
+ * 8   6     1.875   <2.5      ns    400Mhz <  MEM_FREQ <= 533Mhz
+ * 9   7     1.5     <1.875    ns    533Mhz <  MEM_FREQ <= 667Mhz
+ * 10  7     1.5     <1.875    ns    533Mhz <  MEM_FREQ <= 667Mhz
+ * 11  8     1.25    <1.5      ns    667Mhz <  MEM_FREQ <= 800Mhz
+ * 13  9     1.07    <1.25     ns    800Mhz <  MEM_FREQ <= 933Mhz
+ * 13  9     1.07    <1.25     ns    933Mhz <  MEM_FREQ <= 1067Mhz
+ */
 
 #ifndef CONFIG_DDR3_M15T1G1664A_MEM_FREQ
 #define CONFIG_DDR3_M15T1G1664A_MEM_FREQ CONFIG_SYS_MEM_FREQ
@@ -20,32 +31,22 @@
 #error DDR memoryclock division ratio should be an integer between 1 and 16, check CONFIG_SYS_MPLL_FREQ and CONFIG_DDR3_M15T1G1664A_MEM_FREQ
 #endif
 
-/* 
- * CL  WL    MIN      MAX     UNIT   频率范围
- * 6   5     2.5      3.3      ns    303M <= MEM_FREQ <= 400M
- * 7   6     1.875   <2.5      ns    400M <  MEM_FREQ <= 533M
- * 8   6     1.875   <2.5      ns    400M <  MEM_FREQ <= 533M
- * 9   7     1.5     <1.875    ns    533M <  MEM_FREQ <= 667M
- * 10  7     1.5     <1.875    ns    533M <  MEM_FREQ <= 667M
- * 11  8     1.25    <1.5      ns    667M <  MEM_FREQ <= 800M
- * 13  9     1.07    <1.25     ns    800M <  MEM_FREQ <= 933M
- */
-#if ((CONFIG_DDR3_M15T1G1664A_MEM_FREQ >= 303000000) && (CONFIG_DDR3_M15T1G1664A_MEM_FREQ <= 400000000))
+#if ((CONFIG_DDR_DATA_RATE >= 606000000) && (CONFIG_DDR_DATA_RATE <= 800000000))
 #define CONFIG_DDR_CL    6
 #define CONFIG_DDR_CWL   5
-#elif((CONFIG_DDR3_M15T1G1664A_MEM_FREQ > 400000000) && (CONFIG_DDR3_M15T1G1664A_MEM_FREQ <= 533000000))
+#elif((CONFIG_DDR_DATA_RATE > 800000000) && (CONFIG_DDR_DATA_RATE <= 1066000000))
 #define CONFIG_DDR_CL    8  // or CONFIG_DDR_CL 7
 #define CONFIG_DDR_CWL   6
-#elif((CONFIG_DDR3_M15T1G1664A_MEM_FREQ > 533000000) && (CONFIG_DDR3_M15T1G1664A_MEM_FREQ <= 667000000))
+#elif((CONFIG_DDR_DATA_RATE > 1066000000) && (CONFIG_DDR_DATA_RATE <= 1333000000))
 #define CONFIG_DDR_CL    10 // or CONFIG_DDR_CL 9
 #define CONFIG_DDR_CWL    7
-#elif((CONFIG_DDR3_M15T1G1664A_MEM_FREQ > 667000000) && (CONFIG_DDR3_M15T1G1664A_MEM_FREQ <= 800000000))
+#elif((CONFIG_DDR_DATA_RATE > 1333000000) && (CONFIG_DDR_DATA_RATE <= 1600000000))
 #define CONFIG_DDR_CL    11
 #define CONFIG_DDR_CWL    8
-#elif((CONFIG_DDR3_M15T1G1664A_MEM_FREQ > 800000000) && (CONFIG_DDR3_M15T1G1664A_MEM_FREQ <= 933000000))
+#elif((CONFIG_DDR_DATA_RATE > 1600000000) && (CONFIG_DDR_DATA_RATE <= 1866000000))
 #define CONFIG_DDR_CL    13
 #define CONFIG_DDR_CWL    9
-#elif((CONFIG_DDR3_M15T1G1664A_MEM_FREQ > 933000000) && (CONFIG_DDR3_M15T1G1664A_MEM_FREQ <= 1066000000))
+#elif((CONFIG_DDR_DATA_RATE > 1866000000) && (CONFIG_DDR_DATA_RATE <= 2133000000))
 #define CONFIG_DDR_CL    13
 #define CONFIG_DDR_CWL    9
 #else
@@ -56,7 +57,6 @@
 #if(-1 == CONFIG_DDR_CL)
 #error CONFIG_DDR3_M15T1G1664A_MEM_FREQ don't support, check data_rate range
 #endif
-
 
 #if !defined(CONFIG_DDR3_M15T1G1664A_KGD_CONFIG) && \
         defined(CONFIG_DDR3_KGD_CONFIG)
@@ -239,7 +239,6 @@
 #endif
 
 #endif
-
 
 static inline void DDR3_M15T1G1664A_init(void *data)
 {

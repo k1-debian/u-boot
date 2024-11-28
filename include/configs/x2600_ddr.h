@@ -14,19 +14,10 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR3
 
-        #if defined(CONFIG_X2600) || defined(CONFIG_X2600N) || \
-                defined(CONFIG_X2660) || defined(CONFIG_X2670N) || \
-                defined(CONFIG_ALL_DDR)
-                #define CONFIG_DDR3_W631GU6NG
-        #endif
-
-        #if defined(CONFIG_X2600E) || defined(CONFIG_ALL_DDR)
-        	#define CONFIG_DDR3L_W632GU6QG_11
-        #endif
-
-        #if defined(CONFIG_X2600H) || defined(CONFIG_ALL_DDR)
-        	#define CONFIG_DDR3L_W634GU6QG_11
-        #endif
+ 
+        #define CONFIG_X2600_DDR3
+	#define CONFIG_X2600E_DDR3
+        #define CONFIG_DDR3L_W634GU6QG_11
 
         #define CONFIG_DDR3_KGD_CONFIG               0x1
         #define CONFIG_DDR3_KGD_MR0_DLL_RST          0x1
@@ -39,11 +30,11 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR2
 
-        #if defined(CONFIG_X2600M) || defined(CONFIG_X2670M) || defined(CONFIG_ALL_DDR)
-	        /*#define CONFIG_DDR2_W9751V6NG*/
-                #define CONFIG_X2670M_DDR2
-                #define CONFIG_X2670M_DDR2_MEM_FREQ		600000000
-        #endif
+       
+        #define CONFIG_X2600M_DDR2
+        #define CONFIG_X2670M_DDR2
+        #define CONFIG_X2670M_DDR2_MEM_FREQ		600000000
+
 
         #define CONFIG_DDR2_KGD_CONFIG               0x1
         #define CONFIG_DDR2_KGD_MR0_DLL_RST          0x1

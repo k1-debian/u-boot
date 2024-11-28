@@ -2,12 +2,12 @@
 #define	__DDR2_W9751V6NG_CONFIG_H
 
 /*
- * CL:4,50M ~ 333M
- * CL:5,333M ~ 400M
- * CL:6,
- * CL:7,400M ~ 533M
+ * CL:5,133Mhz ~ 400Mhz
+ * CL:7 400Mhz ~ 533Mhz
+ * CL:9,533Mhz ~ 667Mhz
  *
  * */
+
 #ifndef CONFIG_DDR2_W9751V6NG_MEM_FREQ
 #define CONFIG_DDR2_W9751V6NG_MEM_FREQ CONFIG_SYS_MEM_FREQ
 #endif
@@ -26,13 +26,13 @@
 #error DDR memoryclock division ratio should be an integer between 1 and 16, check CONFIG_SYS_MPLL_FREQ and CONFIG_DDR2_W9751V6NG_MEM_FREQ;
 #endif
 
-#if ((CONFIG_DDR_DATA_RATE > 266000000) &&\
+#if ((CONFIG_DDR_DATA_RATE >= 266000000) &&\
 		(CONFIG_DDR_DATA_RATE < 800000000))
 #define CONFIG_DDR_CL	5
 #elif((CONFIG_DDR_DATA_RATE >= 800000000) &&\
-		(CONFIG_DDR_DATA_RATE <= 1066000000))
+		(CONFIG_DDR_DATA_RATE < 1066000000))
 #define CONFIG_DDR_CL	7
-#elif((CONFIG_DDR_DATA_RATE > 1066000000) &&\
+#elif((CONFIG_DDR_DATA_RATE >= 1066000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 1333000000))
 #define CONFIG_DDR_CL	9
 #else
@@ -229,7 +229,6 @@
 
 #endif
 
-
 static inline void DDR2_W9751V6NG_init(void *data)
 {
 	struct ddr_chip_info *c = (struct ddr_chip_info *)data;
@@ -246,8 +245,8 @@ static inline void DDR2_W9751V6NG_init(void *data)
 
 	c->DDR_tRAS = DDR__ns(45);
 	c->DDR_tRTP = DDR_SELECT_MAX__tCK_ps(4,7500);
-	c->DDR_tRP = DDR__ns(12);
-	c->DDR_tRCD = DDR__ns(12);
+	c->DDR_tRP = DDR_SELECT_MAX__tCK_ps(9,12000);
+	c->DDR_tRCD = DDR_SELECT_MAX__tCK_ps(9,12000);
 	c->DDR_tRC = DDR__ns(57);
 	c->DDR_tRRD = DDR__ns(10);
 	c->DDR_tWR = DDR__ps(13500);

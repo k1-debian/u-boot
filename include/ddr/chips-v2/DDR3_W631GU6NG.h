@@ -22,14 +22,14 @@
 
 
 /*
- * CL:5, CWL:5  300M ~ 330M
- * CL:6, CWL:5	300M ~ 400M
+ * CL:5, CWL:5  303Mhz ~ 330Mhz
+ * CL:6, CWL:5	300Mhz ~ 400Mhz
  * CL:7, CWL:6
- * CL:8, CWL:6	400M ~ 533M
+ * CL:8, CWL:6	400Mhz ~ 533Mhz
  * CL:9, CWL:7
- * CL:10, CWL:7 533M ~ 666M
- * CL:11, CWL:8
- * CL:13, CWL:9 800M ~ 933M
+ * CL:10, CWL:7 533Mhz ~ 667Mhz
+ * CL:11, CWL:8 667Mhz ~ 800Mhz
+ * CL:13, CWL:9 800Mhz ~ 933Mhz
  * CL:14, CWL:10
  *
  * */
@@ -52,22 +52,23 @@
 #error DDR memoryclock division ratio should be an integer between 1 and 16, check CONFIG_SYS_MPLL_FREQ and CONFIG_DDR3_W631GU6NG_MEM_FREQ
 #endif
 
-#if ((CONFIG_DDR_DATA_RATE > 600000000) && (CONFIG_DDR_DATA_RATE < 660000000))
+#if ((CONFIG_DDR_DATA_RATE >= 606000000) && (CONFIG_DDR_DATA_RATE <= 660000000))
 #define CONFIG_DDR_CL	5
 #define CONFIG_DDR_CWL	5
 #elif((CONFIG_DDR_DATA_RATE > 660000000) && (CONFIG_DDR_DATA_RATE <= 800000000))
 #define CONFIG_DDR_CL	6
 #define CONFIG_DDR_CWL	5
-#elif((CONFIG_DDR_DATA_RATE > 800000000) && (CONFIG_DDR_DATA_RATE < 1066000000))
+#elif((CONFIG_DDR_DATA_RATE > 800000000) && (CONFIG_DDR_DATA_RATE <= 1066000000))
 #define CONFIG_DDR_CL	8
 #define CONFIG_DDR_CWL	6
-#elif((CONFIG_DDR_DATA_RATE > 1066000000) && (CONFIG_DDR_DATA_RATE < 1333000000))
+#elif((CONFIG_DDR_DATA_RATE > 1066000000) && (CONFIG_DDR_DATA_RATE <= 1333000000))
 #define CONFIG_DDR_CL	10
 #define CONFIG_DDR_CWL	7
-#elif((CONFIG_DDR_DATA_RATE >= 1400000000) && (CONFIG_DDR_DATA_RATE <= 1600000000))
+/*When the DDR frequency is 800MHz, use this parameter to test for high and low temperatures*/
+#elif((CONFIG_DDR_DATA_RATE > 1333000000) && (CONFIG_DDR_DATA_RATE <= 1600000000))
 #define CONFIG_DDR_CL	11
 #define CONFIG_DDR_CWL	8
-#elif((CONFIG_DDR_DATA_RATE > 1600000000) && (CONFIG_DDR_DATA_RATE < 1868000000))
+#elif((CONFIG_DDR_DATA_RATE > 1600000000) && (CONFIG_DDR_DATA_RATE <= 1866000000))
 #define CONFIG_DDR_CL	13
 #define CONFIG_DDR_CWL	9
 #else
@@ -78,7 +79,6 @@
 #if(-1 == CONFIG_DDR_CL)
 #error CONFIG_DDR3_W631GU6NG_MEM_FREQ don't support, check data_rate range
 #endif
-
 
 #if !defined(CONFIG_DDR3_W631GU6NG_KGD_CONFIG) && \
         defined(CONFIG_DDR3_KGD_CONFIG)
@@ -261,7 +261,6 @@
 #endif
 
 #endif
-
 
 static inline void DDR3_W631GU6NG_init(void *data)
 {

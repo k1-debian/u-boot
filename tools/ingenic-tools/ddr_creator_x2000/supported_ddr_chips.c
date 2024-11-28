@@ -65,6 +65,18 @@ struct ddr_chip_info supported_ddr_chips[] = {
 	X2670M_DDR2,
 #endif
 
+#ifdef CONFIG_X2600M_DDR2
+	X2600M_DDR2,
+#endif
+
+#ifdef CONFIG_X2600_DDR3
+	X2600_DDR3,
+#endif
+
+#ifdef CONFIG_X2600E_DDR3
+	X2600E_DDR3,
+#endif
+
 #ifdef CONFIG_DDR3L_W634GU6QG_11
 	DDR3L_W634GU6QG_11
 #endif
