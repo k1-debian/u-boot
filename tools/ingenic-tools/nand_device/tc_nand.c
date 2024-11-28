@@ -6,7 +6,7 @@
 
 static unsigned char tc_eccerr[] = {0x2};
 
-static struct device_struct device[1] = {
+static struct device_struct device[] = {
 	DEVICE_STRUCT(0xC2, 2048, 2, 4, 2, 1, tc_eccerr, 0),
 	DEVICE_STRUCT(0xed, 4096, 2, 4, 2, 1, tc_eccerr, 0),
 };
