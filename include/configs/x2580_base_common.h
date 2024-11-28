@@ -54,7 +54,7 @@
 #define DDR_550M
 #else
 #define APLL_1104M
-#define DDR_750M
+#define DDR_700M
 #endif
 #elif defined(CONFIG_X2580E_DDR)
 #if defined(CONFIG_LP)
