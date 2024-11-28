@@ -22,19 +22,19 @@
 
 
 /*
- * CL:6, CWL:5	303M ~ 400M
+ * CL:6, CWL:5	303Mhz ~ 400Mhz
  *
- * CL:7, CWL:6	400M ~ 533M
- * CL:8, CWL:6	400M ~ 533M
+ * CL:7, CWL:6	400Mhz ~ 533Mhz
+ * CL:8, CWL:6	400Mhz ~ 533Mhz
  *
- * CL:9, CWL:7  533M ~ 666M
- * CL:10, CWL:7 533M ~ 666M
+ * CL:9, CWL:7  533Mhz ~ 667Mhz
+ * CL:10, CWL:7 533Mhz ~ 667Mhz
  *
- * CL:11, CWL:8 666M ~ 800M
+ * CL:11, CWL:8 667Mhz ~ 800Mhz
  *
- * CL:13, CWL:9 800M ~ 933M
+ * CL:13, CWL:9 800Mhz ~ 934Mhz
  *
- * CL:14, CWL:9 933M ~ 1066M
+ * CL:14, CWL:10 934Mhz ~ 1066Mhz
  *
  * */
 
@@ -82,7 +82,6 @@
 #if(-1 == CONFIG_DDR_CL)
 #error CONFIG_DDR3_NT5CB128M16JR_MEM_FREQ don't support, check data_rate range
 #endif
-
 
 #if !defined(CONFIG_DDR3_NT5CB128M16JR_KGD_CONFIG) && \
         defined(CONFIG_DDR3_KGD_CONFIG)
@@ -265,7 +264,6 @@
 #endif
 
 #endif
-
 
 static inline void DDR3_NT5CB128M16JR_init(void *data)
 {

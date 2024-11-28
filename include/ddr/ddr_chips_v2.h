@@ -135,4 +135,16 @@
 #include "chips-v2/DDR3L_GDP1BFLM-CB.h"
 #endif
 
+#ifdef CONFIG_X2600M_DDR2
+#include "chips-v2/X2600M_DDR2_64M_COMPATIBLE_PARAM.h"
+#endif
+
+#ifdef CONFIG_X2600_DDR3
+#include "chips-v2/X2600_DDR3_128M_COMPATIBLE_PARAM.h"
+#endif
+
+#ifdef CONFIG_X2600E_DDR3
+#include "chips-v2/X2600E_DDR3_256M_COMPATIBLE_PARAM.h"
+#endif
+
 #endif

@@ -2,12 +2,12 @@
 #define	__DDR2_SCKL18T512XX0AAE1_CONFIG_H
 
 /*
- * CL:4,50M ~ 333M
- * CL:5,333M ~ 400M
- * CL:6,
- * CL:7,400M ~ 533M
+ * CL:5,200Mhz ~ 400Mhz
+ * CL:6,400Mhz ~ 533Mhz
+ * CL:7,533Mhz ~ 667Mhz
  *
  * */
+
 #ifndef CONFIG_DDR2_SCKL18T512XX0AAE1_MEM_FREQ
 #define CONFIG_DDR2_SCKL18T512XX0AAE1_MEM_FREQ CONFIG_SYS_MEM_FREQ
 #endif
@@ -26,8 +26,8 @@
 #error DDR memoryclock division ratio should be an integer between 1 and 16, check CONFIG_SYS_MPLL_FREQ and CONFIG_DDR2_SCKL18T512XX0AAE1_MEM_FREQ;
 #endif
 
-#if ((CONFIG_DDR_DATA_RATE > 266000000) &&\
-		(CONFIG_DDR_DATA_RATE <= 800000000))
+#if ((CONFIG_DDR_DATA_RATE >= 400000000) &&\
+		(CONFIG_DDR_DATA_RATE < 800000000))
 #define CONFIG_DDR_CL	5
 #elif((CONFIG_DDR_DATA_RATE > 800000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 1066000000))
@@ -35,9 +35,6 @@
 #elif((CONFIG_DDR_DATA_RATE > 1066000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 1333000000))
 #define CONFIG_DDR_CL	7
-#elif((CONFIG_DDR_DATA_RATE > 1333000000) &&\
-		(CONFIG_DDR_DATA_RATE <= 1800000000))
-#define CONFIG_DDR_CL	8
 #else
 #define CONFIG_DDR_CL	-1
 #endif
@@ -47,7 +44,6 @@
 #if(-1 == CONFIG_DDR_CL)
 #error CONFIG_DDR2_SCKL18T512XX0AAE1_MEM_FREQ don't support, check %s\n, check data_rate range
 #endif
-
 
 #if !defined(CONFIG_DDR2_SCKL18T512XX0AAE1_KGD_CONFIG) && \
         defined(CONFIG_DDR2_KGD_CONFIG)
@@ -248,7 +244,7 @@ static inline void DDR2_SCKL18T512XX0AAE1_init(void *data)
 	c->DDR_AL = CONFIG_DDR_AL;
 
 	c->DDR_tRAS = DDR__ns(45);
-	c->DDR_tRTP = DDR_SELECT_MAX__tCK_ps(2,7500);
+	c->DDR_tRTP = DDR__ps(7500);
 	c->DDR_tRP = DDR_SELECT_MAX__tCK_ps(9,13500);
 	c->DDR_tRCD = DDR_SELECT_MAX__tCK_ps(9,13500);
 	c->DDR_tRC = DDR__ns(59);
