@@ -152,6 +152,9 @@
 #define CPM_CLKGR1_PDMA1   (1 <<1)
 #define CPM_CLKGR1_PDMA    (1 <<0)
 
+/*USB Reset Detect Timer Register*/
+#define USBRDT_IDDIG_EN			(1 << 24)
+#define USBRDT_IDDIG_REG                (1 << 23)
 
 /* MSC EXTCLK enable BIT */
 #define MSCCDR_EXCK_E           (1 << 21)
