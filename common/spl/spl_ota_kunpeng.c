@@ -107,6 +107,8 @@ char* spl_ota_load_image(void)
 	} else {
 		cpm_writel(SLPC_BASIC_COUNT, CPM_SLPC);
 	}
+#else
+	cpm_writel(SLPC_BASIC_COUNT, CPM_SLPC);
 #endif
 
 	if (nv.partition == PARTITIONB) {
