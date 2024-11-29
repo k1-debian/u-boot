@@ -30,10 +30,10 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR2
 
-       
         #define CONFIG_X2600M_DDR2
         #define CONFIG_X2670M_DDR2
         #define CONFIG_X2670M_DDR2_MEM_FREQ		600000000
+        #define CONFIG_X2600M_DDR2_MEM_FREQ		600000000
 
 
         #define CONFIG_DDR2_KGD_CONFIG               0x1
