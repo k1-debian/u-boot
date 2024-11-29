@@ -6,7 +6,7 @@
 #include "nand_common.h"
 #include <ubi_uboot.h>
 
-#define	YHY_MIDC9_DEVICES_NUM         3
+
 #define TSETUP		20
 #define THOLD		20
 #define	TSHSL_R		50
@@ -16,7 +16,7 @@
 #define TPP		800
 #define TBE		10
 
-static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 
 	[0] = {
 		/*HYF1GQ4U */
@@ -80,7 +80,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[YHY_MIDC9_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[YHY_MIDC9_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x21, "HYF1GQ4U", &yhy_midc9_param[0]),
 	DEVICE_ID_STRUCT(0x52, "HYF2GQ4U", &yhy_midc9_param[1]),
 	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
@@ -153,7 +153,7 @@ static int yhy_midc9_nand_init(void) {
 	}
 	yhy_midc9_nand->id_manufactory = 0xC9;
 	yhy_midc9_nand->id_device_list = device_id;
-	yhy_midc9_nand->id_device_count = YHY_MIDC9_DEVICES_NUM;
+	yhy_midc9_nand->id_device_count = ARRAY_SIZE(yhy_midc9_param);
 	yhy_midc9_nand->ops.nand_read_ops.get_feature = yhy_midc9_get_read_feature;
 	return jz_sfcnand_register(yhy_midc9_nand);
 }

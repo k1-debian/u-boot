@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_MID2C_DEVICES_NUM         1
 #define TSETUP		4
 #define THOLD		4
 #define	TSHSL_R		30
@@ -15,9 +14,7 @@
 #define TPP		600
 #define TBE		10
 
-static struct jz_sfcnand_device *xtx_mid2c_nand;
-
-static struct jz_sfcnand_base_param xtx_mid2c_param[XTX_MID2C_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param xtx_mid2c_param[] = {
 
 	[0] = {
 		/*XT26G02E */
@@ -42,7 +39,7 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[XTX_MID2C_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[XTX_MID2C_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x24, "XT26G02E ", &xtx_mid2c_param[0]),
 };
 
@@ -281,7 +278,7 @@ static int xtx_mid2c_nand_init(void) {
 
 	xtx_mid2c_nand->id_manufactory = 0x2C;
 	xtx_mid2c_nand->id_device_list = device_id;
-	xtx_mid2c_nand->id_device_count = XTX_MID2C_DEVICES_NUM;
+	xtx_mid2c_nand->id_device_count = ARRAY_SIZE(xtx_mid2c_param);
 
 	xtx_mid2c_nand->ops.nand_read_ops.pageread_to_cache = xtx_mid2c_pageread_to_cache;
 	xtx_mid2c_nand->ops.nand_read_ops.get_feature = xtx_mid2c_get_read_feature;

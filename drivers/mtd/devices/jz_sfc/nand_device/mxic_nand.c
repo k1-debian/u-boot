@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define MXIC_DEVICES_NUM         5
 #define MXIC_CMD_GET_ECC	0x7c
 #define THOLD	    4
 #define TSETUP	    4
@@ -16,7 +15,7 @@
 #define TPP	    600
 #define TBE	    4
 
-static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param mxic_param[] = {
 	[0] = {
 		/*MX35LF1GE4AB*/
 		.pagesize = 2 * 1024,
@@ -115,7 +114,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x12, "MX35LF1GE4AB", &mxic_param[0]),
 	DEVICE_ID_STRUCT(0x22, "MX35LF2GE4AB", &mxic_param[1]),
 	DEVICE_ID_STRUCT(0x26, "MX35LF2GE4AD", &mxic_param[2]),
@@ -211,6 +210,7 @@ retry:
 				case 0x0:
 					return 0;
 				case 0x1:
+				case 0x3:
 					return 4;
 				case 0x2:
 					return -EBADMSG;
@@ -233,6 +233,8 @@ retry:
 					return ret;
 			    case 0x2:
 				    return -EBADMSG;
+			    case 0x3:
+				    return 8;
 			    default:
 				    break;
 			}
@@ -424,7 +426,7 @@ static int mxic_nand_init(void) {
 
 	mxic_nand->id_manufactory = 0xC2;
 	mxic_nand->id_device_list = device_id;
-	mxic_nand->id_device_count = MXIC_DEVICES_NUM;
+	mxic_nand->id_device_count = ARRAY_SIZE(mxic_param);
 
 	mxic_nand->ops.nand_read_ops.pageread_to_cache = mxic_pageread_to_cache;
 	mxic_nand->ops.nand_read_ops.get_feature = mxic_get_read_feature;

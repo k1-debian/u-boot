@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_MID0B_DEVICES_NUM         4
 #define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
@@ -15,7 +14,7 @@
 #define TPP		350
 #define TBE		3
 
-static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param xtx_mid0b_param[] = {
 
 	[0] = {
 		/*XT26G01A */
@@ -96,10 +95,28 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[4] = {
+		/*XT26G02D */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
 
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 130,
+		.tPP = 360,
+		.tBE = 4,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
-static struct device_id_struct device_id[XTX_MID0B_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xE1, "XT26G01A ", &xtx_mid0b_param[0]),
 	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[1]),
 	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[2]),
@@ -144,12 +161,13 @@ retry:
 
 	switch(device_id) {
 		case 0xE1:
-			switch((ecc_status >> 2) & 0xf) {
-				case 0x0 ... 0x4:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
 					return 0;
-				case 0x5 ... 0x8:
+				case 0x1:
+				case 0x3:
 					return 8;
-				case 0xf:
+				case 0x2:
 					return -EBADMSG;
 				default:
 					break;
@@ -181,6 +199,20 @@ retry:
 					break;
 			}
 			break;
+		case 0x32:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return ((ecc_status >> 6) & 0x3) + 4;
+				case 0x2:
+					return -EBADMSG;
+				case 0x3:
+					return 8;
+				default:
+					break;
+			}
+			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
 			break;
@@ -199,7 +231,7 @@ static int xtx_mid0b_nand_init(void) {
 
 	xtx_nand->id_manufactory = 0x0B;
 	xtx_nand->id_device_list = device_id;
-	xtx_nand->id_device_count = XTX_MID0B_DEVICES_NUM;
+	xtx_nand->id_device_count = ARRAY_SIZE(xtx_mid0b_param);
 
 	xtx_nand->ops.nand_read_ops.get_feature = xtx_mid0b_get_read_feature;
 	return jz_sfcnand_register(xtx_nand);

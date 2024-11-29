@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define TC_DEVICES_NUM         2
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		100
@@ -15,7 +14,7 @@
 #define TPP		360
 #define TBE		2
 
-static struct jz_sfcnand_base_param tc_param[TC_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param tc_param[] = {
 
 	[0] = {
 		/*TC58CVG0S3HRAIG*/
@@ -57,7 +56,7 @@ static struct jz_sfcnand_base_param tc_param[TC_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[TC_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xC2, "TC58CVG0S3HRAIG", &tc_param[0]),
 	DEVICE_ID_STRUCT(0xed, "TC58CVG2S0HRAIJ", &tc_param[1]),
 };
@@ -144,7 +143,7 @@ static int tc_nand_init(void) {
 
 	tc_nand->id_manufactory = 0x98;
 	tc_nand->id_device_list = device_id;
-	tc_nand->id_device_count = TC_DEVICES_NUM;
+	tc_nand->id_device_count = ARRAY_SIZE(tc_param);
 
 	tc_nand->ops.nand_read_ops.get_feature = tc_get_read_feature;
 	return jz_sfcnand_register(tc_nand);

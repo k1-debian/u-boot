@@ -54,11 +54,51 @@ static struct jz_sfcnand_base_param fm_param[] = {
 		.ecc_max = 0x1,
 		.need_quad = 1,
 	},
+	[2] = {
+		/*FM25S01B*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 1024,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 105,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+	[3] = {
+		/*FM25S02B*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 70,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xE4, "FM25S01A", &fm_param[0]),
 	DEVICE_ID_STRUCT(0xE5, "FM25S02A", &fm_param[1]),
+	DEVICE_ID_STRUCT(0xD4, "FM25S01B", &fm_param[2]),
+	DEVICE_ID_STRUCT(0xD6, "FM25S02B", &fm_param[3]),
 };
 
 
@@ -92,6 +132,23 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 				case 0x2:
 				case 0x3:
 					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
+		case 0xD4:
+		case 0xD6:
+			switch((ecc_status >> 4) & 0xf) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 3;
+				case 0x2:
+					return -EBADMSG;
+				case 0x3:
+					return 6;
+				case 0x5:
+					return 8;
 				default:
 					break;
 			}

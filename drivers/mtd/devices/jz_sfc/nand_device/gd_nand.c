@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GD_DEVICES_NUM          15
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -20,7 +19,7 @@
 #define TPP_Q5	        600
 #define TRD_QH          60
 
-static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param gd_param[] = {
 
 	[0] = {
 		/*GD5F1GQ4UB*/
@@ -330,24 +329,45 @@ static struct jz_sfcnand_base_param gd_param[GD_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[15] = {
+		/*GD5F1GQ4UExxH*/
+		/* Not aging test */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 80,
+		.tPP = 700,
+		.tBE = 5,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
-static struct device_id_struct device_id[GD_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xD1, "GD5F1GQ4UB",&gd_param[0]),
-	DEVICE_ID_STRUCT(0xD2, "GD5F2GQ4UB",&gd_param[1]),
-	DEVICE_ID_STRUCT(0xD4, "GD5F4GQ4UB",&gd_param[2]),
-	DEVICE_ID_STRUCT(0xB1, "GD5F1GQ4UC",&gd_param[3]),
-	DEVICE_ID_STRUCT(0xB2, "GD5F2GQ4UC",&gd_param[4]),
-	DEVICE_ID_STRUCT(0xB468, "GD5F4GQ4UC",&gd_param[5]),
-	DEVICE_ID_STRUCT(0xA1, "GD5F1GQ4RF",&gd_param[6]),
-	DEVICE_ID_STRUCT(0x51, "GD5F1GQ5UE",&gd_param[7]),
-	DEVICE_ID_STRUCT(0x52, "GD5F2GQ5UE",&gd_param[8]),
-	DEVICE_ID_STRUCT(0x55, "GD5F4GQ6UE",&gd_param[9]),
-	DEVICE_ID_STRUCT(0x61, "GD5F2GQ5UF",&gd_param[10]),
-	DEVICE_ID_STRUCT(0x92, "GD5F2GM7UE",&gd_param[11]),
-	DEVICE_ID_STRUCT(0x91, "GD5F1GM7UE",&gd_param[12]),
-	DEVICE_ID_STRUCT(0x32, "GD5F2GQ5UExxH",&gd_param[13]),
-	DEVICE_ID_STRUCT(0x95, "GD5F4GM8UE",&gd_param[14]),
+static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0xD1,   "GD5F1GQ4UB",    &gd_param[0]),
+	DEVICE_ID_STRUCT(0xD2,   "GD5F2GQ4UB",    &gd_param[1]),
+	DEVICE_ID_STRUCT(0xD4,   "GD5F4GQ4UB",    &gd_param[2]),
+	DEVICE_ID_STRUCT(0xB1,   "GD5F1GQ4UC",    &gd_param[3]),
+	DEVICE_ID_STRUCT(0xB2,   "GD5F2GQ4UC",    &gd_param[4]),
+	DEVICE_ID_STRUCT(0xB468, "GD5F4GQ4UC",    &gd_param[5]),
+	DEVICE_ID_STRUCT(0xA1,   "GD5F1GQ4RF",    &gd_param[6]),
+	DEVICE_ID_STRUCT(0x51,   "GD5F1GQ5UE",    &gd_param[7]),
+	DEVICE_ID_STRUCT(0x52,   "GD5F2GQ5UE",    &gd_param[8]),
+	DEVICE_ID_STRUCT(0x55,   "GD5F4GQ6UE",    &gd_param[9]),
+	DEVICE_ID_STRUCT(0x61,   "GD5F2GQ5UF",    &gd_param[10]),
+	DEVICE_ID_STRUCT(0x92,   "GD5F2GM7UE",    &gd_param[11]),
+	DEVICE_ID_STRUCT(0x91,   "GD5F1GM7UE",    &gd_param[12]),
+	DEVICE_ID_STRUCT(0x32,   "GD5F2GQ5UExxH", &gd_param[13]),
+	DEVICE_ID_STRUCT(0x95,   "GD5F4GM8UE",    &gd_param[14]),
+	DEVICE_ID_STRUCT(0xD9,   "GD5F1GQ4UExxH", &gd_param[15]),
 };
 
 static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -369,6 +389,7 @@ static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation
 	    case 0x92:
 	    case 0x91:
 		case 0x95:
+		case 0xd9:
 			addr_len = 2;
 			break;
 		default:
@@ -412,6 +433,7 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 		case 0x91:
 		case 0x92:
 		case 0x95:
+		case 0xd9:
 			addr_len = 2;
 			break;
 		default:
@@ -503,6 +525,7 @@ retry:
 		case 0x92:
 		case 0x91:
 		case 0x95:
+		case 0xD9:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
@@ -556,7 +579,7 @@ static int gd_nand_init(void) {
 
 	gd_nand->id_manufactory = 0xC8;
 	gd_nand->id_device_list = device_id;
-	gd_nand->id_device_count = GD_DEVICES_NUM;
+	gd_nand->id_device_count = ARRAY_SIZE(gd_param);
 
 	gd_nand->ops.nand_read_ops.get_feature = gd_get_read_feature;
 	gd_nand->ops.nand_read_ops.single_read = gd_single_read;

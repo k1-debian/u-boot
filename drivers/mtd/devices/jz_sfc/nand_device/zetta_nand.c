@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define ZETTA_DEVICES_NUM         2
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		100
@@ -15,7 +14,7 @@
 #define TPP		320
 #define TBE		2
 
-static struct jz_sfcnand_base_param zetta_param[ZETTA_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param zetta_param[] = {
 
 	[0] = {
 		/*ZD35Q1GA*/
@@ -58,7 +57,7 @@ static struct jz_sfcnand_base_param zetta_param[ZETTA_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[ZETTA_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x71, "ZD35Q1GA", &zetta_param[0]),
 	DEVICE_ID_STRUCT(0x72, "ZD35Q2GA", &zetta_param[1]),
 };
@@ -282,7 +281,7 @@ static int zetta_nand_init(void)
 
 	zetta_nand->id_manufactory = 0xBA;
 	zetta_nand->id_device_list = device_id;
-	zetta_nand->id_device_count = ZETTA_DEVICES_NUM;
+	zetta_nand->id_device_count = ARRAY_SIZE(zetta_param);
 
 	zetta_nand->ops.nand_read_ops.single_read = zetta_single_read;
 	zetta_nand->ops.nand_read_ops.quad_read = zetta_quad_read;

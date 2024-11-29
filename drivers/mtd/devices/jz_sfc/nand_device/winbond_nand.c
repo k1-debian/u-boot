@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define WINBOND_DEVICES_NUM         3
 
 #define WINDOND_DIE_SELECT	0xC2
 #define WINDOND_RESET		0xFF
@@ -18,7 +17,7 @@
 #define TPP		700
 #define TBE		10
 
-static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param winbond_param[] = {
 	[0] = {
 		/*W25N01GV*/
 		.pagesize = 2 * 1024,
@@ -78,7 +77,7 @@ static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xAA21, "W25N01GVZEIG", &winbond_param[0]),
 	DEVICE_ID_STRUCT(0xAB21, "W25M02GV", &winbond_param[1]),
 	DEVICE_ID_STRUCT(0xAA22, "W25N02KVxxIR/U", &winbond_param[2]),
@@ -432,7 +431,7 @@ static int winbond_nand_init(void) {
 
 	winbond_nand->id_manufactory = 0xEF;
 	winbond_nand->id_device_list = device_id;
-	winbond_nand->id_device_count = WINBOND_DEVICES_NUM;
+	winbond_nand->id_device_count = ARRAY_SIZE(winbond_param);
 
 	winbond_nand->ops.nand_read_ops.pageread_to_cache = winbond_pageread_to_cache;
 	winbond_nand->ops.nand_read_ops.single_read = winbond_single_read;

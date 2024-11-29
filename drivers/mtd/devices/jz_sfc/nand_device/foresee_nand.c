@@ -5,7 +5,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define FS_DEVICES_NUM         8
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -15,7 +14,7 @@
 #define TPP		400
 #define TBE		3
 
-static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param fs_param[] = {
 
 	[0] = {
 		/*FS35ND01G-V1*/
@@ -169,9 +168,28 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[8] = {
+		/*FS35SQB002G*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 135,
+		.tPP = 750,
+		.tBE = 10,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
-static struct device_id_struct device_id[FS_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xA1, "FS35ND01G-V1", &fs_param[0]),
 	DEVICE_ID_STRUCT(0xB1, "FS35ND01G-V2", &fs_param[1]),
 	DEVICE_ID_STRUCT(0xEB, "FS35ND02G",    &fs_param[2]),
@@ -180,6 +198,7 @@ static struct device_id_struct device_id[FS_DEVICES_NUM] = {
 	DEVICE_ID_STRUCT(0x70, "FS35SQA512M",  &fs_param[5]),
 	DEVICE_ID_STRUCT(0x72, "FS35SQA002G",  &fs_param[6]),
 	DEVICE_ID_STRUCT(0x53, "FS35SQA004G",  &fs_param[7]),
+	DEVICE_ID_STRUCT(0x52, "FS35SQB002G",  &fs_param[8]),
 };
 
 static int32_t fs_get_read_feature(struct flash_operation_message *op_info) {
@@ -235,8 +254,6 @@ retry:
 		case 0x70:
 		case 0x71:
 		case 0x72:
-		case 0xEB:
-		case 0xEA:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
@@ -248,7 +265,21 @@ retry:
 					break;
 			}
 			break;
+                case 0xEB:
+		case 0xEA:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
+				case 0x2:
+					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
 		case 0x53:
+		case 0x52:
 			switch((ecc_status >> 4) & 0x7) {
 				case 0x0:
 					return 0;
@@ -278,7 +309,7 @@ static int fs_nand_init(void) {
 
 	fs_nand->id_manufactory = 0xCD;
 	fs_nand->id_device_list = device_id;
-	fs_nand->id_device_count = FS_DEVICES_NUM;
+	fs_nand->id_device_count = ARRAY_SIZE(fs_param);
 
 	fs_nand->ops.nand_read_ops.get_feature = fs_get_read_feature;
 	return jz_sfcnand_register(fs_nand);
