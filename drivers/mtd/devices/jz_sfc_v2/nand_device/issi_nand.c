@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define ISSI_DEVICES_NUM         1
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -16,7 +15,7 @@
 
 struct jz_sfcnand_device *issi_nand;
 
-static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param issi_param[] = {
 	[0] = {
 		/*IS37SML01G1*/
 		.pagesize = 2 * 1024,
@@ -39,9 +38,10 @@ static struct jz_sfcnand_base_param issi_param[ISSI_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[ISSI_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x21, "IS37SML01G1", &issi_param[0]),
 };
+
 static cdt_params_t *issi_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
 	CDT_PARAMS_INIT(issi_nand->cdt_params);
@@ -88,7 +88,7 @@ static int issi_nand_init(void) {
 
 	issi_nand->id_manufactory = 0xC8;
 	issi_nand->id_device_list = device_id;
-	issi_nand->id_device_count = ISSI_DEVICES_NUM;
+	issi_nand->id_device_count = ARRAY_SIZE(issi_param);
 
 	issi_nand->ops.get_cdt_params = issi_get_cdt_params;
 	issi_nand->ops.deal_ecc_status = deal_ecc_status;

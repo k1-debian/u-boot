@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define GSTO_DEVICES_NUM         1
 #define TSETUP		5
 #define THOLD		5
 #define TSHSL_R	20
@@ -16,7 +15,7 @@
 
 static struct jz_sfcnand_device *gsto_nand;
 
-static struct jz_sfcnand_base_param gsto_param[GSTO_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param gsto_param[] = {
 
 	[0] = {
 		/*GSS01GSAX1*/
@@ -40,8 +39,8 @@ static struct jz_sfcnand_base_param gsto_param[GSTO_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[GSTO_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xca13, "GSS01GSAX1", &gsto_param[0]),
+static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0xCA13, "GSS01GSAX1", &gsto_param[0]),
 };
 
 
@@ -50,7 +49,7 @@ static cdt_params_t *gsto_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 	CDT_PARAMS_INIT(gsto_nand->cdt_params);
 
 	switch(device_id) {
-		case 0xca13:
+		case 0xCA13:
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
@@ -64,7 +63,7 @@ static cdt_params_t *gsto_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
 {
 	switch(device_id) {
-		case 0xca13:
+		case 0xCA13:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
@@ -94,7 +93,7 @@ static int gsto_nand_init(void) {
 
 	gsto_nand->id_manufactory = 0x52;
 	gsto_nand->id_device_list = device_id;
-	gsto_nand->id_device_count = GSTO_DEVICES_NUM;
+	gsto_nand->id_device_count = ARRAY_SIZE(gsto_param);
 
 	gsto_nand->ops.get_cdt_params = gsto_get_cdt_params;
 	gsto_nand->ops.deal_ecc_status = deal_ecc_status;

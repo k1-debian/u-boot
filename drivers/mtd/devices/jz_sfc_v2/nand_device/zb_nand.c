@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define ZB_DEVICES_NUM          4
 #define TSETUP                  5
 #define THOLD                   5
 #define TSHSL_R                 20
@@ -16,7 +15,7 @@
 
 static struct jz_sfcnand_device *zb_nand;
 
-static struct jz_sfcnand_base_param zb_param[ZB_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param zb_param[] = {
 
 	[0] = {
 		/*ZB35Q01A*/
@@ -101,7 +100,7 @@ static struct jz_sfcnand_base_param zb_param[ZB_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[ZB_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x41,   "ZB35Q01A", &zb_param[0]),
 	DEVICE_ID_STRUCT(0xA1A1, "ZB35Q01B", &zb_param[1]),
 	DEVICE_ID_STRUCT(0xA2A1, "ZB35Q02B", &zb_param[2]),
@@ -186,7 +185,7 @@ static int zb_nand_init(void) {
 
 	zb_nand->id_manufactory = 0x5E;
 	zb_nand->id_device_list = device_id;
-	zb_nand->id_device_count = ZB_DEVICES_NUM;
+	zb_nand->id_device_count = ARRAY_SIZE(zb_param);
 
 	zb_nand->ops.get_cdt_params = zb_get_cdt_params;
 	zb_nand->ops.deal_ecc_status = deal_ecc_status;

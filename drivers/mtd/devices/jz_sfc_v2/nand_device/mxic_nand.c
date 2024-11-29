@@ -4,8 +4,8 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define MXIC_DEVICES_NUM         5
 #define MXIC_CMD_GET_ECC	0x7c
+
 #define THOLD	    4
 #define TSETUP	    4
 #define TSHSL_R	    100
@@ -17,7 +17,7 @@
 
 static struct jz_sfcnand_device *mxic_nand;
 
-static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param mxic_param[] = {
 	[0] = {
 		/*MX35LF1GE4AB*/
 		.pagesize = 2 * 1024,
@@ -121,7 +121,7 @@ static struct jz_sfcnand_base_param mxic_param[MXIC_DEVICES_NUM] = {
 
 };
 
-static struct device_id_struct device_id[MXIC_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x12, "MX35LF1GE4AB", &mxic_param[0]),
 	DEVICE_ID_STRUCT(0x22, "MX35LF2GE4AB", &mxic_param[1]),
 	DEVICE_ID_STRUCT(0x26, "MX35LF2GE4AD", &mxic_param[2]),
@@ -243,7 +243,7 @@ static int mxic_nand_init(void) {
 
 	mxic_nand->id_manufactory = 0xC2;
 	mxic_nand->id_device_list = device_id;
-	mxic_nand->id_device_count = MXIC_DEVICES_NUM;
+	mxic_nand->id_device_count = ARRAY_SIZE(mxic_param);
 
 	mxic_nand->ops.get_cdt_params = mxic_get_cdt_params;
 	mxic_nand->ops.deal_ecc_status = deal_ecc_status;

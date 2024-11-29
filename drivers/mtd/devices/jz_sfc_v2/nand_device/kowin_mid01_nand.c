@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define KOWIN_MID01_DEVICES_NUM         1
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		30
@@ -16,7 +15,7 @@
 
 static struct jz_sfcnand_device *kowin_mid01_nand;
 
-static struct jz_sfcnand_base_param kowin_mid01_param[KOWIN_MID01_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param kowin_mid01_param[] = {
 
 	[0] = {
 		/*KANY1D4S2WD*/
@@ -41,7 +40,7 @@ static struct jz_sfcnand_base_param kowin_mid01_param[KOWIN_MID01_DEVICES_NUM] =
 
 };
 
-static struct device_id_struct device_id[KOWIN_MID01_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x15, "KANY1D4S2WD", &kowin_mid01_param[0]),
 };
 
@@ -98,7 +97,7 @@ static int kowin_mid01_nand_init(void) {
 
 	kowin_mid01_nand->id_manufactory = 0x01;
 	kowin_mid01_nand->id_device_list = device_id;
-	kowin_mid01_nand->id_device_count = KOWIN_MID01_DEVICES_NUM;
+	kowin_mid01_nand->id_device_count = ARRAY_SIZE(kowin_mid01_param);
 
 	kowin_mid01_nand->ops.get_cdt_params = kowin_mid01_get_cdt_params;
 	kowin_mid01_nand->ops.deal_ecc_status = deal_ecc_status;

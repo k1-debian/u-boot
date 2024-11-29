@@ -11,7 +11,6 @@ int kowin_mid01_nand_register_func(void);
 int kowin_midc9_nand_register_func(void);
 int mxic_nand_register_func(void);
 int tc_nand_register_func(void);
-int toshiba_nand_register_func(void);
 int winbond_nand_register_func(void);
 int xcsp_nand_register_func(void);
 int xtx_mid0b_nand_register_func(void);
@@ -53,9 +52,6 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)tc_nand_register_func,
-/*##################*/
-/*##################*/
-(void *)toshiba_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)winbond_nand_register_func,

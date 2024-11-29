@@ -1,19 +1,17 @@
 #include <stdio.h>
 #include "nand_common.h"
 
-#define KOWIN_C9_MID			    0xC9
-#define KOWIN_C9_NAND_DEVICD_COUNT	    1
 
-static unsigned char kowin_c9_errstat[]= {0x3};
+static unsigned char kowin_c9_errstat_1[]= {0x3};
 
-static struct device_struct device[KOWIN_C9_NAND_DEVICD_COUNT] = {
-	DEVICE_STRUCT(0xD4, 4096, 2, 4, 2, 1, kowin_c9_errstat, 0),
+static struct device_struct device[] = {
+	DEVICE_STRUCT(0xD4, 4096, 2, 4, 2, 1, kowin_c9_errstat_1, 0),
 };
 
 static struct nand_desc kowin_c9_nand = {
 
-	.id_manufactory = KOWIN_C9_MID,
-	.device_counts = KOWIN_C9_NAND_DEVICD_COUNT,
+	.id_manufactory = 0xC9,
+	.device_counts = ARRAY_SIZE(device),
 	.device = device,
 };
 

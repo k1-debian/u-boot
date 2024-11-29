@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define DOSILICON_DEVICES_NUM         9
 #define THOLD	    5
 #define TSETUP	    5
 #define TSHSL_R	    100
@@ -16,7 +15,7 @@
 
 struct jz_sfcnand_device *dosilicon_nand;
 
-static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param dosilicon_param[] = {
 	[0] = {
 		/*DS35Q1GAXXX*/
 		.pagesize = 2 * 1024,
@@ -206,16 +205,16 @@ static struct jz_sfcnand_base_param dosilicon_param[DOSILICON_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[DOSILICON_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x71, "DS35Q1GAXXX", &dosilicon_param[0]),
-	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX", &dosilicon_param[1]),
-	DEVICE_ID_STRUCT(0xF2, "DS35Q2GBXXX", &dosilicon_param[2]),
+static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0x71, "DS35Q1GAXXX",     &dosilicon_param[0]),
+	DEVICE_ID_STRUCT(0x72, "DS35Q2GAXXX",     &dosilicon_param[1]),
+	DEVICE_ID_STRUCT(0xF2, "DS35Q2GBXXX",     &dosilicon_param[2]),
 	DEVICE_ID_STRUCT(0x21, "DS35M1GAXXX-1V8", &dosilicon_param[3]),
 	DEVICE_ID_STRUCT(0x22, "DS35Q2GAXXX-1V8", &dosilicon_param[4]),
-	DEVICE_ID_STRUCT(0xF1, "DS35X1GBXXX", &dosilicon_param[5]),
-	DEVICE_ID_STRUCT(0xB4, "DS35Q4GBXXX", &dosilicon_param[6]),
-	DEVICE_ID_STRUCT(0x75, "DS35Q12C-1B", &dosilicon_param[7]),
-	DEVICE_ID_STRUCT(0xF4, "LC35X4GMXXX", &dosilicon_param[8]),
+	DEVICE_ID_STRUCT(0xF1, "DS35X1GBXXX",     &dosilicon_param[5]),
+	DEVICE_ID_STRUCT(0xB4, "DS35Q4GBXXX",     &dosilicon_param[6]),
+	DEVICE_ID_STRUCT(0x75, "DS35Q12C-1B",     &dosilicon_param[7]),
+	DEVICE_ID_STRUCT(0xF4, "LC35X4GMXXX",     &dosilicon_param[8]),
 };
 
 
@@ -269,7 +268,6 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 					return 0;
 				case 0x2:
 					return -EBADMSG;
-					break;
 				case 0x3:
 				case 0x5:
 					return 8;
@@ -313,7 +311,7 @@ static int dosilicon_nand_init(void) {
 
 	dosilicon_nand->id_manufactory = 0xE5;
 	dosilicon_nand->id_device_list = device_id;
-	dosilicon_nand->id_device_count = DOSILICON_DEVICES_NUM;
+	dosilicon_nand->id_device_count = ARRAY_SIZE(dosilicon_param);
 
 	dosilicon_nand->ops.get_cdt_params = dosilicon_get_cdt_params;
 	dosilicon_nand->ops.deal_ecc_status = deal_ecc_status;

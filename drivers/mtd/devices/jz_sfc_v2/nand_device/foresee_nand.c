@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define FS_DEVICES_NUM         9
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		20
@@ -16,7 +15,7 @@
 
 static struct jz_sfcnand_device *fs_nand;
 
-static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param fs_param[] = {
 
 	[0] = {
 		/*FS35ND01G-V1*/
@@ -200,7 +199,7 @@ static struct jz_sfcnand_base_param fs_param[FS_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[FS_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xA1, "FS35ND01G-V1", &fs_param[0]),
 	DEVICE_ID_STRUCT(0xB1, "FS35ND01G-V2", &fs_param[1]),
 	DEVICE_ID_STRUCT(0xEB, "FS35ND02G",    &fs_param[2]),
@@ -312,7 +311,7 @@ static int fs_nand_init(void) {
 
 	fs_nand->id_manufactory = 0xCD;
 	fs_nand->id_device_list = device_id;
-	fs_nand->id_device_count = FS_DEVICES_NUM;
+	fs_nand->id_device_count = ARRAY_SIZE(fs_param);
 
 	fs_nand->ops.get_cdt_params = fs_get_cdt_params;
 	fs_nand->ops.deal_ecc_status = deal_ecc_status;

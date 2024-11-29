@@ -1,6 +1,7 @@
 #ifndef __NAND_COMMON_H
 #define __NAND_COMMON_H
 
+
 struct device_struct {
 	unsigned short device_id;
 	unsigned int  page_size;
@@ -29,6 +30,7 @@ struct nand_desc {
 		.plane_select = plane, 	\
 }
 
+#define ARRAY_SIZE(x)		((sizeof(x))/(sizeof(x[0])))
 
 int nand_register(struct nand_desc *);
 #endif

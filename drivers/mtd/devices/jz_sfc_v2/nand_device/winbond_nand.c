@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define WINBOND_DEVICES_NUM         3
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		10
@@ -16,7 +15,7 @@
 
 static struct jz_sfcnand_device *winbond_nand;
 
-static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param winbond_param[] = {
 	[0] = {
 		/*W25N01GV*/
 		.pagesize = 2 * 1024,
@@ -80,8 +79,8 @@ static struct jz_sfcnand_base_param winbond_param[WINBOND_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[WINBOND_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0xAA21, "W25N01GVZEIG", &winbond_param[0]),
+static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0xAA21, "W25N01GVZEIG",   &winbond_param[0]),
 	DEVICE_ID_STRUCT(0xAA22, "W25N02KVxxIR/U", &winbond_param[1]),
 	DEVICE_ID_STRUCT(0xAE21, "W25N01KVxxIR/U", &winbond_param[2]),
 };
@@ -158,7 +157,7 @@ static int winbond_nand_init(void) {
 
 	winbond_nand->id_manufactory = 0xEF;
 	winbond_nand->id_device_list = device_id;
-	winbond_nand->id_device_count = WINBOND_DEVICES_NUM;
+	winbond_nand->id_device_count = ARRAY_SIZE(winbond_param);
 
 	winbond_nand->ops.get_cdt_params = winbond_get_cdt_params;
 	winbond_nand->ops.deal_ecc_status = deal_ecc_status;

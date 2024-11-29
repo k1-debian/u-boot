@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define XTX_MID0B_DEVICES_NUM         5
 #define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
@@ -16,7 +15,7 @@
 
 static struct jz_sfcnand_device *xtx_mid0b_nand;
 
-static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
+static struct jz_sfcnand_base_param xtx_mid0b_param[] = {
 
 	[0] = {
 		/*XT26G01A */
@@ -123,7 +122,7 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[XTX_MID0B_DEVICES_NUM] = {
 	},
 };
 
-static struct device_id_struct device_id[XTX_MID0B_DEVICES_NUM] = {
+static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xE1, "XT26G01A ", &xtx_mid0b_param[0]),
 	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[1]),
 	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[2]),
@@ -227,7 +226,7 @@ static int xtx_mid0b_nand_init(void) {
 
 	xtx_mid0b_nand->id_manufactory = 0x0B;
 	xtx_mid0b_nand->id_device_list = device_id;
-	xtx_mid0b_nand->id_device_count = XTX_MID0B_DEVICES_NUM;
+	xtx_mid0b_nand->id_device_count = ARRAY_SIZE(xtx_mid0b_param);
 
 	xtx_mid0b_nand->ops.get_cdt_params = xtx_mid0b_get_cdt_params;
 	xtx_mid0b_nand->ops.deal_ecc_status = deal_ecc_status;

@@ -4,7 +4,6 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define ATO_DEVICES_NUM         1
 #define TSETUP		5
 #define THOLD		5
 #define	TSHSL_R		30
@@ -16,30 +15,31 @@
 
 static struct jz_sfcnand_device *ato_nand;
 
-static struct jz_sfcnand_base_param ato25d1ga_param = {
+static struct jz_sfcnand_base_param ato_param[] = {
+	{
+		.pagesize = 2 * 1024,
+		.oobsize = 64,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
 
-	.pagesize = 2 * 1024,
-	.oobsize = 64,
-	.blocksize = 2 * 1024 * 64,
-	.flashsize = 2 * 1024 * 64 * 1024,
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
 
-	.tSETUP = TSETUP,
-	.tHOLD  = THOLD,
-	.tSHSL_R = TSHSL_R,
-	.tSHSL_W = TSHSL_W,
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
 
-	.tRD = TRD,
-	.tPP = TPP,
-	.tBE = TBE,
-
-	.plane_select = 0,
-	.ecc_max = 0,//0x3,
-	.need_quad = 1,
+		.plane_select = 0,
+		.ecc_max = 0,
+		.need_quad = 1,
+	},
 
 };
 
-static struct device_id_struct device_id[ATO_DEVICES_NUM] = {
-	DEVICE_ID_STRUCT(0x12, "ATO25D1GA", &ato25d1ga_param),
+static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0x12, "ATO25D1GA", &ato_param[0]),
 };
 
 
@@ -82,7 +82,7 @@ static int ato_nand_init(void) {
 
 	ato_nand->id_manufactory = 0x9B;
 	ato_nand->id_device_list = device_id;
-	ato_nand->id_device_count = ATO_DEVICES_NUM;
+	ato_nand->id_device_count = ARRAY_SIZE(ato_param);
 
 	ato_nand->ops.get_cdt_params = ato_get_cdt_params;
 	ato_nand->ops.deal_ecc_status = deal_ecc_status;

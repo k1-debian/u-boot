@@ -1,24 +1,22 @@
 #include <stdio.h>
 #include "nand_common.h"
 
-#define XTX_0B_MID			    0x0B
 
-#define XTX_0B_NAND_DEVICD_COUNT	    4
+static unsigned char xtx_0b_errstat_2[] = {0x2, 0x3};
+static unsigned char xtx_0b_errstat_1[] = {0xf};
 
-static unsigned char xtx_0b_eccerr[] = {0x2, 0x3};
-static unsigned char xtx_0b_eccerr1[] = {0xf};
-
-static struct device_struct device[XTX_0B_NAND_DEVICD_COUNT] = {
-	DEVICE_STRUCT(0xF2, 2048, 2, 4, 3, 1, xtx_0b_eccerr , 0),
-	DEVICE_STRUCT(0x11, 2048, 2, 4, 4, 1, xtx_0b_eccerr1, 0),
-	DEVICE_STRUCT(0x12, 2048, 2, 4, 4, 1, xtx_0b_eccerr1, 0),
-	DEVICE_STRUCT(0x32, 2048, 2, 4, 4, 1, xtx_0b_eccerr , 0),
+static struct device_struct device[] = {
+	DEVICE_STRUCT(0xE1, 2048, 2, 4, 3, 1, xtx_0b_errstat_2, 0),
+	DEVICE_STRUCT(0xF2, 2048, 2, 4, 3, 1, xtx_0b_errstat_2, 0),
+	DEVICE_STRUCT(0x11, 2048, 2, 4, 4, 1, xtx_0b_errstat_1, 0),
+	DEVICE_STRUCT(0x12, 2048, 2, 4, 4, 1, xtx_0b_errstat_1, 0),
+	DEVICE_STRUCT(0x32, 2048, 2, 4, 4, 1, xtx_0b_errstat_2, 0),
 };
 
 static struct nand_desc xtx_0b_nand = {
 
-	.id_manufactory = XTX_0B_MID,
-	.device_counts  = XTX_0B_NAND_DEVICD_COUNT,
+	.id_manufactory = 0x0B,
+	.device_counts  = ARRAY_SIZE(device),
 	.device = device,
 };
 
