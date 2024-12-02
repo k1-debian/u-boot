@@ -173,6 +173,9 @@
 #define MSCCDR_MPCS_MASK        (3 << MSCCDR_MPCS)
 #define MSCCDR_MPCS_EXCLK       (3 << MSCCDR_MPCS)
 
+/*USBRDT*/
+#define USBRDT_IDDIG_EN		0
+#define USBRDT_IDDIG_REG        0
 
 /*USBCDR*/
 #define USBCDR_UCS_PLL		(1 << 31)
