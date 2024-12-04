@@ -553,6 +553,33 @@ static struct multi_die_flash die_flash[MULTI_DIE_FLASH_NUM] = {
 	[0] = {0xc84019, 2, "GD25S512MD"},
 };
 
+static void sfc_nor_clear_status(struct sfc_flash *flash)
+{
+	unsigned char val;
+	unsigned int tmp;
+
+	tmp = get_status(flash, SPINOR_OP_RDSR, 1);
+	printf("status register 1 = %#x\n",tmp);
+	tmp = get_status(flash, SPINOR_OP_RDSR_1, 1);
+	printf("status register 2 = %#x\n",tmp);
+	tmp = get_status(flash, SPINOR_OP_RDSR_2, 1);
+	printf("status register 3 = %#x\n",tmp);
+
+	val = 0x0;
+	set_status(flash, SPINOR_OP_WRSR,   1, val);
+	set_status(flash, SPINOR_OP_WRSR_1, 1, val);
+	set_status(flash, SPINOR_OP_WRSR_2, 1, val);
+
+	tmp = get_status(flash, SPINOR_OP_RDSR, 1);
+	printf("status register 1 = %#x\n",tmp);
+	tmp = get_status(flash, SPINOR_OP_RDSR_1, 1);
+	printf("status register 2 = %#x\n",tmp);
+	tmp = get_status(flash, SPINOR_OP_RDSR_2, 1);
+	printf("status register 3 = %#x\n",tmp);
+
+}
+
+
 int32_t sfc_nor_do_special_func()
 {
 	struct spinor_flashinfo *nor_info = flash->flash_info;
@@ -985,19 +1012,8 @@ int norflash_get_params_from_burner()
 		clk_set_rate(SFC,spi_args->sfc_frequency);
 #endif
 
-#if 0
-	set_status(flash, SPINOR_OP_WRSR, 1, 0);
-	set_status(flash, SPINOR_OP_WRSR_1, 1, 0);
-	set_status(flash, SPINOR_OP_WRSR_2, 1, 0);
-	printf("SR0=%02x\n", get_status(flash, SPINOR_OP_RDSR, 1));
-	printf("SR1=%02x\n", get_status(flash, SPINOR_OP_RDSR_1, 1));
-	printf("SR2=%02x\n", get_status(flash, SPINOR_OP_RDSR_2, 1));
-#endif
 	sfc_nor_do_special_func();
-
-	printf("SR0=%02x\n", get_status(flash, SPINOR_OP_RDSR, 1));
-	printf("SR1=%02x\n", get_status(flash, SPINOR_OP_RDSR_1, 1));
-	printf("SR2=%02x\n", get_status(flash, SPINOR_OP_RDSR_2, 1));
+	sfc_nor_clear_status(flash);
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	printf("partition num=%d\n", nor_info->norflash_partitions->num_partition_info);

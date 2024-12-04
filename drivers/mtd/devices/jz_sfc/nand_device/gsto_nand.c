@@ -112,4 +112,4 @@ static int gsto_nand_init(void) {
 	return jz_sfcnand_register(gsto_nand);
 }
 
-fs_initcall(gsto_nand_init);
+SPINAND_MOUDLE_INIT(gsto_nand_init);

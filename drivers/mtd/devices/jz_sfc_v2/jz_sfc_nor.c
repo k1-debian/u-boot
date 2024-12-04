@@ -22,6 +22,31 @@ static int is_readonly_partition(uint32_t offset, uint32_t size);
 //#define SFC_NOR_CLONER_DEBUG
 //#define SFC_REG_DEBUG
 
+
+
+static struct spi_nor_cmd_info set_status_info[3] = {
+	[0] = {
+		.cmd = SPINOR_OP_WRSR,
+		.dummy_byte = 0,
+		.addr_nbyte = 0,
+		.transfer_mode = 0,
+	},
+	[1] = {
+		.cmd = SPINOR_OP_WRSR_1,
+		.dummy_byte = 0,
+		.addr_nbyte = 0,
+		.transfer_mode = 0,
+	},
+	[2] = {
+		.cmd = SPINOR_OP_WRSR_2,
+		.dummy_byte = 0,
+		.addr_nbyte = 0,
+		.transfer_mode = 0,
+	},
+};
+
+
+
 #define MULTI_DIE_FLASH_NUM 1
 
 #define ACTIVE_DIE(addr)					\
@@ -447,6 +472,32 @@ static struct multi_die_flash die_flash[MULTI_DIE_FLASH_NUM] = {
 	[0] = {0xc84019, 2, "GD25S512MD"},
 };
 
+static void sfc_nor_clear_status(struct sfc_flash *flash)
+{
+	unsigned char val;
+	unsigned int tmp;
+
+	tmp = get_status(flash, NOR_GET_STATUS, 1);
+	printf("status register 1 = %#x\n",tmp);
+	tmp = get_status(flash, NOR_GET_STATUS_1, 1);
+	printf("status register 2 = %#x\n",tmp);
+	tmp = get_status(flash, NOR_GET_STATUS_2, 1);
+	printf("status register 3 = %#x\n",tmp);
+
+	val = 0x0;
+	set_status(flash, NOR_SET_STATUS_1_ENABLE, 1, &val);
+	set_status(flash, NOR_SET_STATUS_2_ENABLE, 1, &val);
+	set_status(flash, NOR_SET_STATUS_3_ENABLE, 1, &val);
+
+	tmp = get_status(flash, NOR_GET_STATUS, 1);
+	printf("status register 1 = %#x\n",tmp);
+	tmp = get_status(flash, NOR_GET_STATUS_1, 1);
+	printf("status register 2 = %#x\n",tmp);
+	tmp = get_status(flash, NOR_GET_STATUS_2, 1);
+	printf("status register 3 = %#x\n",tmp);
+
+}
+
 void sfc_nor_do_special_func(void)
 {
 	int tchsh;
@@ -565,6 +616,21 @@ static inline void params_to_cdt(struct spi_nor_info *params, struct sfc_cdt *cd
 	cdt[NOR_READ_ACTIVE_DIE_ID].staExp = 0;
 	cdt[NOR_READ_ACTIVE_DIE_ID].staMsk = 0;
 
+	/* 15. write status register 1 */
+	MK_CMD(cdt[NOR_SET_STATUS_1_ENABLE], params->wr_en, 1, DEFAULT_ADDRMODE, DISABLE);
+	MK_CMD(cdt[NOR_SET_STATUS_1], set_status_info[0], 1, DEFAULT_ADDRMODE, ENABLE);
+	MK_ST(cdt[NOR_SET_STATUS_1_FINISH], params->busy, 0, DEFAULT_ADDRMODE, 0, ENABLE, DISABLE, TM_STD_SPI);
+
+
+	/* 16. write status register 2 */
+	MK_CMD(cdt[NOR_SET_STATUS_2_ENABLE], params->wr_en, 1, DEFAULT_ADDRMODE, DISABLE);
+	MK_CMD(cdt[NOR_SET_STATUS_2], set_status_info[1], 1, DEFAULT_ADDRMODE, ENABLE);
+	MK_ST(cdt[NOR_SET_STATUS_2_FINISH], params->busy, 0, DEFAULT_ADDRMODE, 0, ENABLE, DISABLE, TM_STD_SPI);
+
+	/* 17. write status register 3 */
+	MK_CMD(cdt[NOR_SET_STATUS_3_ENABLE], params->wr_en, 1, DEFAULT_ADDRMODE, DISABLE);
+	MK_CMD(cdt[NOR_SET_STATUS_3], set_status_info[2], 1, DEFAULT_ADDRMODE, ENABLE);
+	MK_ST(cdt[NOR_SET_STATUS_3_FINISH], params->busy, 0, DEFAULT_ADDRMODE, 0, ENABLE, DISABLE, TM_STD_SPI);
 }
 
 static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
@@ -626,7 +692,7 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 		params_to_cdt(nor_flash_info, cdt);
 
 		/* second create cdt table */
-		write_cdt(flash->sfc, cdt, NOR_READ_STANDARD, NOR_READ_ACTIVE_DIE_ID);
+		write_cdt(flash->sfc, cdt, NOR_READ_STANDARD, INDEX_MAX_NUM);
 	}
 #ifdef SFC_REG_DEBUG
 	dump_cdt(flash->sfc);
@@ -987,6 +1053,7 @@ int norflash_get_params_from_burner()
 		sfc_clk_set(flash->sfc, spi_args->sfc_frequency);
 
 	sfc_nor_do_special_func();
+	sfc_nor_clear_status(flash);
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	printf("partition num=%d\n", flash->norflash_partitions->num_partition_info);

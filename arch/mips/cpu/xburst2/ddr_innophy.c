@@ -558,7 +558,7 @@ int get_ddr_params_socid(void)
 
 	ddrid = check_socid();
 	if ((int)ddrid < 0) {
-		debug("Check socid return invalid ddr id %x\n",ddrid);
+		printf("Check socid return invalid ddr id %x\n",ddrid);
 		return -1;
 	}
 
@@ -571,7 +571,7 @@ int get_ddr_params_socid(void)
 	}
 
 	if(found == 0) {
-		debug("Check socid not match to %x\n",ddrid);
+		printf("Check socid not match to %x\n",ddrid);
 		return -1;
 	}
 
@@ -586,8 +586,12 @@ void get_ddr_params_normal(void)
 	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
 	uint32_t mask = ~(7 << 3);
 
+#if defined(CONFIG_X2600) || defined(CONFIG_AD100)
+	printf("DDR parameter auto-detection function, the USBCloner version must be greater then v2.5.49.");
+#endif
+
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
-		debug("invalid burned ddr id\n");
+		printf("invalid burned ddr id\n");
 	}
 
 	burned_ddr_id &= 0xffff;
@@ -601,7 +605,7 @@ void get_ddr_params_normal(void)
 	}
 
 	if(found == 0) {
-		debug("No match to %x\n",burned_ddr_id);
+		printf("No match to %x\n",burned_ddr_id);
 	}
 
 }

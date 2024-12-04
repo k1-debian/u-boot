@@ -115,4 +115,4 @@ static int kowin_midc9_nand_init(void) {
 	return jz_sfcnand_register(kowin_nand);
 }
 
-fs_initcall(kowin_midc9_nand_init);
+SPINAND_MOUDLE_INIT(kowin_midc9_nand_init);

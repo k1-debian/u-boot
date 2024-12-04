@@ -738,24 +738,26 @@ static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_fla
 			return -EIO;
 		}
 
-		printf("id_manufactory = %x, id_device1%x id_device2%x\n", id_buf[0], id_buf[1],id_buf[2]);
+		printf("id_manufactory 0x%02x, id_device 0x%02x %02x\n", id_buf[0], id_buf[1], id_buf[2]);
 		list_for_each_entry(nand_device, &nand_list, list) {
 			if(nand_device->id_manufactory == id_buf[0]) {
 				device_id = nand_device->id_device_list;
 				id_count = nand_device->id_device_count;
 				while(id_count--) {
-					if(device_id->id_device >0x0 && device_id->id_device <= 0xff &&
-									(device_id->id_device == id_buf[1])) {
+					if(device_id->id_device > 0x0 &&
+							device_id->id_device <= 0xff &&
+							(device_id->id_device == id_buf[1])) {
 						nand_info->id_manufactory = id_buf[0];
 						nand_info->id_device = id_buf[1];
 						nand_info->param = *device_id->param;
 						goto found_param;
 					}
-					else if(device_id->id_device >0xff && device_id->id_device <= 0xffff &&
-									device_id->id_device == (id_buf[2] | (id_buf[1]<<8))) {
+					else if(device_id->id_device > 0xff &&
+							device_id->id_device <= 0xffff &&
+							device_id->id_device == (id_buf[2] | (id_buf[1]<<8))) {
 						nand_info->id_manufactory = id_buf[0];
 						nand_info->id_device = id_buf[1]<<8;
-						nand_info->id_device  |= id_buf[2];
+						nand_info->id_device |= id_buf[2];
 						nand_info->param = *device_id->param;
 						goto found_param;
 					}
@@ -787,7 +789,13 @@ int jz_sfcnand_register(struct jz_sfcnand_device *flash) {
 
 static int32_t sfc_nand_clear_write_protect(struct sfc_flash *flash)
 {
-	return sfc_nand_set_feature(flash, 0xa0, 0);
+	uint8_t val = 0;
+	sfc_nand_get_feature(flash, 0xa0, &val);
+	// HWP_EN must be enabled first before block unlock region is set.
+	val |= (1 << 1);
+	sfc_nand_set_feature(flash, 0xa0, val);
+	sfc_nand_set_feature(flash, 0xa0, 0);
+	return 0;
 }
 
 static int32_t sfc_nand_enable_ecc(struct sfc_flash *flash)

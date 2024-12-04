@@ -193,9 +193,6 @@ struct multi_die_flash {
 };
 
 
-/* SFC CDT Maximum INDEX number */
-#define INDEX_MAX_NUM 32
-
 /* SFC CDT INDEX */
 enum {
 	/* 1. nor reset */
@@ -254,8 +251,27 @@ enum {
 	/* 14. read die id */
 	NOR_READ_ACTIVE_DIE_ID,
 
+	/* 15. write status register 1 */
+	NOR_SET_STATUS_1_ENABLE,
+	NOR_SET_STATUS_1,
+	NOR_SET_STATUS_1_FINISH,
+
+	/* 16. write status register 2 */
+	NOR_SET_STATUS_2_ENABLE,
+	NOR_SET_STATUS_2,
+	NOR_SET_STATUS_2_FINISH,
+
+	/* 17. write status register 3 */
+	NOR_SET_STATUS_3_ENABLE,
+	NOR_SET_STATUS_3,
+	NOR_SET_STATUS_3_FINISH,
+
 	/* index count */
 	NOR_MAX_INDEX,
 };
+
+/* SFC CDT Maximum INDEX number */
+#define INDEX_MAX_NUM  NOR_MAX_INDEX
+
 
 #endif

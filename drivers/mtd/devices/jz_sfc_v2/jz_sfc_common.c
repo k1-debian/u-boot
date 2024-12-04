@@ -91,7 +91,7 @@ void dump_cdt(struct sfc *sfc)
 
 	cdt = sfc->cdt_addr;
 
-	for(i = 0; i < 32; i++){
+	for(i = 0; i < INDEX_MAX_NUM; i++){
 		printf("\nnum------->%d\n", i);
 		printf("link:%02x, ENDIAN:%02x, WORD_UINT:%02x, TRAN_MODE:%02x, ADDR_KIND:%02x\n",
 				(cdt[i].link >> 31) & 0x1, (cdt[i].link >> 18) & 0x1,

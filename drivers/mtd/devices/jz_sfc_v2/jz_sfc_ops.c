@@ -54,6 +54,37 @@ int get_status(struct sfc_flash *flash, unsigned short cmd_index, int len)
 	return val;
 }
 
+int set_status(struct sfc_flash *flash, unsigned short cmd_index, int len, unsigned char *buf)
+{
+	struct sfc_cdt_xfer xfer;
+
+	memset(&xfer, 0, sizeof(xfer));
+	len = (len > STATUS_MAX_LEN ? STATUS_MAX_LEN : len);
+
+	/* set index */
+	xfer.cmd_index = cmd_index;
+
+	/* set addr */
+	xfer.rowaddr = 0;
+	xfer.columnaddr = 0;
+
+	/* set transfer config */
+	xfer.dataen = ENABLE;
+	xfer.config.datalen = len;
+	xfer.config.data_dir = GLB_TRAN_DIR_WRITE;
+	xfer.config.ops_mode = CPU_OPS;
+	xfer.config.buf = (uint8_t *)buf;
+
+
+	if(sfc_sync_cdt(flash->sfc, &xfer)) {
+		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+
+	return 0;
+}
+
+
 /* do nothing to set quad mode, use cmd directly */
 static int set_quad_mode_cmd(struct sfc_flash *flash)
 {

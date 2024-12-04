@@ -720,7 +720,13 @@ static int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8
 
 static int32_t sfc_nand_clear_write_protect(struct sfc_flash *flash)
 {
-	return sfc_nand_set_feature(flash, 0xa0, 0);
+	uint8_t val = 0;
+	sfc_nand_get_feature(flash, 0xa0, &val);
+	// HWP_EN must be enabled first before block unlock region is set.
+	val |= (1 << 1);
+	sfc_nand_set_feature(flash, 0xa0, val);
+	sfc_nand_set_feature(flash, 0xa0, 0);
+	return 0;
 }
 
 static int32_t sfc_nand_enable_ecc(struct sfc_flash *flash)
