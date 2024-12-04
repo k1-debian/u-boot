@@ -131,7 +131,7 @@
 #endif
 #if !defined(CONFIG_X2600_DDR3_PHY_PD_DRV_DQ7_0) && \
         defined(CONFIG_PHY_PD_DRV_DQ7_0)
-        #define CONFIG_X2600DDR3_PHY_PD_DRV_DQ7_0      CONFIG_PHY_PD_DRV_DQ7_0
+        #define CONFIG_X2600_DDR3_PHY_PD_DRV_DQ7_0      CONFIG_PHY_PD_DRV_DQ7_0
 #endif
 #if !defined(CONFIG_X2600_DDR3_PHY_PU_DRV_DQ15_8) && \
         defined(CONFIG_PHY_PU_DRV_DQ15_8)
@@ -297,6 +297,48 @@ static inline void X2600_DDR3_init(void *data)
 	c->DDR_tXSDLL		= DDR__tck(512);
 	c->DDR_tMOD   		= DDR_SELECT_MAX__tCK_ps(12, 15 * 1000);
 	c->DDR_tXPDLL 		= DDR_SELECT_MAX__tCK_ps(10, 24 * 1000);
+
+#ifdef CONFIG_X2600_DDR3_KGD_CONFIG
+        struct ddr3_mr_config *mr_cfg      = &c->kgd_config.mr_config;
+        c->kgd_config.use_kgd_config       = CONFIG_X2600_DDR3_KGD_CONFIG     ;
+        mr_cfg->kgd_mr0_dll_rst            = CONFIG_X2600_DDR3_KGD_MR0_DLL_RST;
+        mr_cfg->kgd_mr0_pd                 = CONFIG_X2600_DDR3_KGD_MR0_PD     ;
+        mr_cfg->kgd_mr1_dll_en             = CONFIG_X2600_DDR3_KGD_MR1_DLL_EN ;
+        mr_cfg->kgd_mr1_dic                = CONFIG_X2600_DDR3_KGD_MR1_DIC    ;
+        mr_cfg->kgd_mr1_rtt_nom            = CONFIG_X2600_DDR3_KGD_MR1_RTT_NOM;
+        mr_cfg->kgd_mr2_rtt_wr             = CONFIG_X2600_DDR3_KGD_MR2_RTT_WR ;
+#endif
+#ifdef CONFIG_X2600_DDR3_PHY_DRVODT_CONFIG
+        c->phy_drvodt.use_drvodt_config    = CONFIG_X2600_DDR3_PHY_DRVODT_CONFIG;
+        c->phy_drvodt.phy_pu_drv_cmd       = CONFIG_X2600_DDR3_PHY_PU_DRV_CMD   ;
+        c->phy_drvodt.phy_pd_drv_cmd       = CONFIG_X2600_DDR3_PHY_PD_DRV_CMD   ;
+        c->phy_drvodt.phy_pu_drv_ck        = CONFIG_X2600_DDR3_PHY_PU_DRV_CK    ;
+        c->phy_drvodt.phy_pd_drv_ck        = CONFIG_X2600_DDR3_PHY_PD_DRV_CK    ;
+        c->phy_drvodt.phy_pu_drv_dq7_0     = CONFIG_X2600_DDR3_PHY_PU_DRV_DQ7_0 ;
+        c->phy_drvodt.phy_pd_drv_dq7_0     = CONFIG_X2600_DDR3_PHY_PD_DRV_DQ7_0 ;
+        c->phy_drvodt.phy_pu_drv_dq15_8    = CONFIG_X2600_DDR3_PHY_PU_DRV_DQ15_8;
+        c->phy_drvodt.phy_pd_drv_dq15_8    = CONFIG_X2600_DDR3_PHY_PD_DRV_DQ15_8;
+        c->phy_drvodt.phy_pu_odt_dq7_0     = CONFIG_X2600_DDR3_PHY_PU_ODT_DQ7_0 ;
+        c->phy_drvodt.phy_pd_odt_dq7_0     = CONFIG_X2600_DDR3_PHY_PD_ODT_DQ7_0 ;
+        c->phy_drvodt.phy_pu_odt_dq15_8    = CONFIG_X2600_DDR3_PHY_PU_ODT_DQ15_8;
+        c->phy_drvodt.phy_pd_odt_dq15_8    = CONFIG_X2600_DDR3_PHY_PD_ODT_DQ15_8;
+#endif
+#ifdef CONFIG_X2600_DDR3_PHY_DESKEW_CONFIG
+        c->phy_deskew.use_deskew_config    = CONFIG_X2600_DDR3_PHY_DESKEW_CONFIG   ;
+        c->phy_deskew.phy_deskew_cmd       = CONFIG_X2600_DDR3_PHY_DESKEW_CMD      ;
+        c->phy_deskew.phy_deskew_rx_dm0    = CONFIG_X2600_DDR3_PHY_DESKEW_RX_DM0   ;
+        c->phy_deskew.phy_deskew_tx_dm0    = CONFIG_X2600_DDR3_PHY_DESKEW_TX_DM0   ;
+        c->phy_deskew.phy_deskew_rx_dq7_0  = CONFIG_X2600_DDR3_PHY_DESKEW_RX_DQ7_0 ;
+        c->phy_deskew.phy_deskew_tx_dq7_0  = CONFIG_X2600_DDR3_PHY_DESKEW_TX_DQ7_0 ;
+        c->phy_deskew.phy_deskew_rx_dqs0   = CONFIG_X2600_DDR3_PHY_DESKEW_RX_DQS0  ;
+        c->phy_deskew.phy_deskew_tx_dqs0   = CONFIG_X2600_DDR3_PHY_DESKEW_TX_DQS0  ;
+        c->phy_deskew.phy_deskew_rx_dm1    = CONFIG_X2600_DDR3_PHY_DESKEW_RX_DM1   ;
+        c->phy_deskew.phy_deskew_tx_dm1    = CONFIG_X2600_DDR3_PHY_DESKEW_TX_DM1   ;
+        c->phy_deskew.phy_deskew_rx_dq15_8 = CONFIG_X2600_DDR3_PHY_DESKEW_RX_DQ15_8;
+        c->phy_deskew.phy_deskew_tx_dq15_8 = CONFIG_X2600_DDR3_PHY_DESKEW_TX_DQ15_8;
+        c->phy_deskew.phy_deskew_rx_dqs1   = CONFIG_X2600_DDR3_PHY_DESKEW_RX_DQS1  ;
+        c->phy_deskew.phy_deskew_tx_dqs1   = CONFIG_X2600_DDR3_PHY_DESKEW_TX_DQS1  ;
+#endif
 }
 
 #define X2600_DDR3 {					\

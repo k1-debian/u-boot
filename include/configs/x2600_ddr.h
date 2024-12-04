@@ -14,10 +14,10 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR3
 
- 
-        #define CONFIG_X2600_DDR3
 	#define CONFIG_X2600E_DDR3
-        #define CONFIG_DDR3L_W634GU6QG_11
+        #define CONFIG_X2600H_DDR3L
+        #define CONFIG_X2600N_DDR3
+        #define CONFIG_X2670N_DDR3
 
         #define CONFIG_DDR3_KGD_CONFIG               0x1
         #define CONFIG_DDR3_KGD_MR0_DLL_RST          0x1

@@ -147,4 +147,16 @@
 #include "chips-v2/X2600E_DDR3_256M_COMPATIBLE_PARAM.h"
 #endif
 
+#ifdef CONFIG_X2600H_DDR3L
+#include "chips-v2/X2600H_DDR3L_512M_COMPATIBLE_PARAM.h"
+#endif
+
+#ifdef CONFIG_X2600N_DDR3
+#include "chips-v2/X2600N_DDR3_128M_COMPATIBLE_PARAM.h"
+#endif
+
+#ifdef CONFIG_X2670N_DDR3
+#include "chips-v2/X2670N_DDR3_128M_COMPATIBLE_PARAM.h"
+#endif
+
 #endif
