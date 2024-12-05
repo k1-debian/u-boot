@@ -257,7 +257,7 @@ static inline void LVDDR2_A3L28E40BGD_AHJA_init(void *data)
 
 	c->DDR_tRFC = DDR__ns(75);
 
-	c->DDR_tXP = DDR__tck(2);
+	c->DDR_tXP = DDR__tck(3);
 	c->DDR_tMRD = DDR__tck(2);
 
 	c->DDR_BL = 8;
@@ -274,7 +274,7 @@ static inline void LVDDR2_A3L28E40BGD_AHJA_init(void *data)
 	c->DDR_tRTW = (((c->DDR_BL > 4) ? 6 : 4) + 1);
 	c->DDR_tFAW = DDR__ns(45);
 
-	c->DDR_tXARD = DDR__tck(2);
+	c->DDR_tXARD = DDR__tck(3);
 	c->DDR_tXARDS = DDR__tck(7);
 	c->DDR_tXSNR = (c->DDR_tRFC + DDR__ns(10));
 	c->DDR_tXSRD = DDR__tck(200);

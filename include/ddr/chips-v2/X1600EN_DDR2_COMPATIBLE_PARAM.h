@@ -35,7 +35,7 @@
 #define CONFIG_DDR_CL	5
 #elif((CONFIG_DDR_DATA_RATE > 666000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 800000000))
-#define CONFIG_DDR_CL	6
+#define CONFIG_DDR_CL	7
 #elif((CONFIG_DDR_DATA_RATE > 800000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 1066000000))
 #define CONFIG_DDR_CL	7
@@ -251,15 +251,15 @@ static inline void X1600EN_DDR2_init(void *data)
 
 	c->DDR_tRAS    = DDR__ns(45);
 	c->DDR_tRTP    = DDR__ns(8);
-	c->DDR_tRP 	   = DDR__ps(13250);
-	c->DDR_tRCD    = DDR__ps(13125);
+	c->DDR_tRP 	   = DDR__ps(16000);
+	c->DDR_tRCD    = DDR__ps(16000);
 	c->DDR_tRC     = DDR__ps(58125);
 	c->DDR_tRRD    = DDR__ns(10);
 	c->DDR_tWR     = DDR__ns(15);
 	c->DDR_tWTR    = DDR__ps(7500);
-	c->DDR_tRFC    = DDR__ns(105);
+	c->DDR_tRFC    = DDR__ns(130);
 	c->DDR_tXP     = DDR__tck(3);
-	c->DDR_tMRD    = DDR__tck(2);
+	c->DDR_tMRD    = DDR__tck(4);
 
 	c->DDR_BL      = 8;
 	c->DDR_RL      = DDR__tck(RL);
