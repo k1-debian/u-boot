@@ -235,7 +235,7 @@ static void ddrc_config_creator(struct ddrc_reg *ddrc, struct ddr_params *p)
 	ddrc->cfg.b.BA1 = p->bank8;
 	ddrc->cfg.b.IMBA = 1;
 	ddrc->cfg.b.BSL = (p->bl == 8) ? 1 : 0;
-#ifdef CONFIG_DDR_CHIP_ODT
+#if(CONFIG_DDR2_KGD_MR1_RTT_NOM > 0)
 	ddrc->cfg.b.ODTEN = 1;
 #else
 	ddrc->cfg.b.ODTEN = 0;
