@@ -260,6 +260,7 @@ retry:
 				case 0x1:
 					return 1;
 				case 0x2:
+				case 0x3:
 					return -EBADMSG;
 				default:
 					break;
