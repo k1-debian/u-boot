@@ -14,18 +14,17 @@
 
 #ifdef CONFIG_DDR_TYPE_LPDDR2
 
-	#if defined(CONFIG_X2000E) || defined(CONFIG_M300) || defined(CONFIG_ALL_DDR)
-	        #define CONFIG_LPDDR2_W97BV6MK
-        	#define CONFIG_LPDDR2_W97BV6MK_MEM_FREQ                 500000000
-	#endif
-        #if defined(CONFIG_X2100) || defined(CONFIG_ALL_DDR)
-	        #define CONFIG_LPDDR2_M54D5121632A
-        	#define CONFIG_LPDDR2_M54D5121632A_MEM_FREQ             500000000
-	#endif
-        #if defined(CONFIG_X2100L) || defined(CONFIG_ALL_DDR)
-	        #define CONFIG_LPDDR2_SCB4BL256160AFL19GI
-        	#define CONFIG_LPDDR2_SCB4BL256160AFL19GI_MEM_FREQ      500000000
-	#endif
+	/*X2000E M300*/
+	#define CONFIG_LPDDR2_W97BV6MK
+        #define CONFIG_LPDDR2_W97BV6MK_MEM_FREQ                 500000000
+
+	/*X2100*/
+	#define CONFIG_LPDDR2_M54D5121632A
+        #define CONFIG_LPDDR2_M54D5121632A_MEM_FREQ             500000000
+
+	/*X2100L*/
+	#define CONFIG_LPDDR2_SCB4BL256160AFL19GI
+        #define CONFIG_LPDDR2_SCB4BL256160AFL19GI_MEM_FREQ      500000000
 
         #define CONFIG_LPDDR2_KGD_CONFIG             0x1
         #define CONFIG_LPDDR2_KGD_MR3_DS             0x1
@@ -33,13 +32,11 @@
 
 #ifdef CONFIG_DDR_TYPE_LPDDR3
 
-        #if defined(CONFIG_X2000_V12) || defined(CONFIG_ALL_DDR)
-	        #define CONFIG_LPDDR3_W63AH6NKB_BI
-	#endif
+	/*X2000*/
+	#define CONFIG_LPDDR3_W63AH6NKB_BI
 
-        #if defined(CONFIG_X2000H) || defined(CONFIG_ALL_DDR)
-		#define CONFIG_LPDDR3_NK6CL256M16DKX_H1
-	#endif
+	/*X2000H*/
+	#define CONFIG_LPDDR3_NK6CL256M16DKX_H1
 
         #define CONFIG_LPDDR3_KGD_CONFIG             0x1
         #define CONFIG_LPDDR3_KGD_MR3_DS             0x2

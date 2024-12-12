@@ -31,7 +31,6 @@
 /* #define CONFIG_FPGA		/1* x2600 FPGA *1/ */
 #define CONFIG_X2600		/* x2600 SoC */
 
-#define CONFIG_X2600H
 #include "x2600_ddr.h"
 
 #define CONFIG_SYS_APLL_FREQ		1152000000	/*If APLL not use mast be set 0*/

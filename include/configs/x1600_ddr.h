@@ -15,19 +15,10 @@
 #define CONFIG_X1600_KGD_COMPATIBLE
 
 #ifdef CONFIG_DDR_TYPE_LPDDR2
+	/*X1600*/
+        #define CONFIG_LPDDR2_SCB4BL256160AFL19GI
 
-        #if defined(CONFIG_X1600) || defined(CONFIG_ALL_DDR)
-        	#define CONFIG_LPDDR2_SCB4BL256160AFL19GI
-        #endif
-
-        #if defined(CONFIG_X1600E) || defined(CONFIG_ALL_DDR)
-                #if defined CONFIG_X1600_KGD_COMPATIBLE
-	        	#define CONFIG_X1600E_LPDDR2
-        	#else
-	        	#define CONFIG_LPDDR2_M54D5121632A
-		        #define CONFIG_LPDDR2_SCKX4BL512160AAC
-	        #endif
-	#endif
+	#define CONFIG_X1600E_LPDDR2
 
         #define CONFIG_LPDDR2_KGD_CONFIG             0x1
         #define CONFIG_LPDDR2_KGD_MR3_DS             0x1
@@ -37,40 +28,18 @@
 
 	#define CONFIG_LVDDR_INNOPHY
 
-        #if defined(CONFIG_X1660L) || defined(CONFIG_ALL_DDR)
-                #if defined CONFIG_X1600_KGD_COMPATIBLE
-                        #define CONFIG_X1660L_LVDDR
-                        #define CONFIG_X1660L_LVDDR_MEM_FREQ                 200000000
-                #else
-                        #define CONFIG_LVDDR_W9464L6KH
-                        #define CONFIG_LVDDR_W9464L6KH_MEM_FREQ              200000000
-                #endif
-        #endif
+        #define CONFIG_X1660L_LVDDR
+        #define CONFIG_X1660L_LVDDR_MEM_FREQ                 200000000
 
-        #if defined(CONFIG_X1600N) || defined(CONFIG_ALL_DDR)
-                #define CONFIG_DDR2_M14D2561616A
-        #endif
+	/*X1600N*/
+        #define CONFIG_DDR2_M14D2561616A
 
-        #if defined(CONFIG_X1600MN) || defined(CONFIG_ALL_DDR)
-        	#define CONFIG_LVDDR2_A3L28E40BGD
-        #endif
+	/*X1600MN*/
+        #define CONFIG_LVDDR2_A3L28E40BGD
 
-        #if defined(CONFIG_X1600EN) || defined(CONFIG_ALL_DDR)
-                #if defined CONFIG_X1600_KGD_COMPATIBLE
-	        	#define CONFIG_X1600EN_DDR2
-        	#else
-		        #define CONFIG_DDR2_W975116NG18I
-                #endif
-        #endif
+	#define CONFIG_X1600EN_DDR2
 
-        #if defined(CONFIG_X1600HN) || defined(CONFIG_ALL_DDR)
-                #if defined CONFIG_X1600_KGD_COMPATIBLE
-		        #define CONFIG_X1600HN_DDR2
-                #else
-                        #define CONFIG_DDR2_W971GV6NG
-                        #define CONFIG_DDR2_M14D1G1664A
-                #endif
-	#endif
+	#define CONFIG_X1600HN_DDR2
 
         #define CONFIG_DDR2_KGD_CONFIG               0x1
         #define CONFIG_DDR2_KGD_MR0_DLL_RST          0x1

@@ -14,7 +14,6 @@
 #define CONFIG_X1600
 #define CONFIG_SOC_NAME		x1600
 
-#define CONFIG_ALL_DDR
 #include "x1600_ddr.h"
 
 
