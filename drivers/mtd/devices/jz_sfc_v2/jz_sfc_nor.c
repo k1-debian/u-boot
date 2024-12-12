@@ -1052,8 +1052,8 @@ int norflash_get_params_from_burner()
 	if(spi_args->sfc_frequency)
 		sfc_clk_set(flash->sfc, spi_args->sfc_frequency);
 
-	sfc_nor_do_special_func();
 	sfc_nor_clear_status(flash);
+	sfc_nor_do_special_func();
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	printf("partition num=%d\n", flash->norflash_partitions->num_partition_info);
