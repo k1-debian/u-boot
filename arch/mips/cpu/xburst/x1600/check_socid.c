@@ -48,6 +48,10 @@ unsigned int check_socid()
 	unsigned int ddrid  = 0;
 
 	socid = read_socid();
+	if (socid == 0) {
+		printf("invalid soc id %x%x\n", socid);
+		return -1;
+	}
 	vendor = socid >> 11 & 0x7;
 	type   = socid >> 14 & 0x1;
 	capacity = socid >> 8 & 0x7;

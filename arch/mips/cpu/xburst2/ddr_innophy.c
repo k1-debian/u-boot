@@ -558,7 +558,7 @@ int get_ddr_params_socid(void)
 
 	ddrid = check_socid();
 	if ((int)ddrid < 0) {
-		printf("Check socid return invalid ddr id %x\n",ddrid);
+		printf("Check socid return invalid ddr id.\n");
 		return -1;
 	}
 
@@ -587,7 +587,7 @@ void get_ddr_params_normal(void)
 	uint32_t mask = ~(7 << 3);
 
 #if defined(CONFIG_X2600) || defined(CONFIG_AD100)
-	printf("DDR parameter auto-detection function, the USBCloner version must be greater then v2.5.49.");
+	printf("DDR parameter auto-detection function, the USBCloner version must be greater then v2.5.49.\n");
 #endif
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {

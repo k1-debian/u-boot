@@ -1001,7 +1001,7 @@ int get_ddr_params_socid(void)
 
 	ddrid = check_socid();
 	if ((int)ddrid < 0) {
-		debug("Check socid return invalid ddr id %x\n",ddrid);
+		printf("Check socid return invalid ddr id\n");
 		return -1;
 	}
 
@@ -1014,7 +1014,7 @@ int get_ddr_params_socid(void)
 	}
 
 	if(found == 0) {
-		debug("Check socid not match to %x\n",ddrid);
+		printf("Check socid not match to %x\n",ddrid);
 		return -1;
 	}
 
@@ -1030,7 +1030,7 @@ void get_ddr_params_normal(void)
 	uint32_t mask = ~(7 << 3);
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
-		debug("invalid burned ddr id\n");
+		printf("invalid burned ddr id\n");
 	}
 
 	burned_ddr_id &= 0xffff;
@@ -1044,7 +1044,7 @@ void get_ddr_params_normal(void)
 	}
 
 	if(found == 0) {
-		debug("No match to %x\n",burned_ddr_id);
+		printf("No match to %x\n",burned_ddr_id);
 	}
 
 }

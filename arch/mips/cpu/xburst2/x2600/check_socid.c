@@ -82,13 +82,13 @@ unsigned int check_socid()
 
 	read_socid(data);
 	ret = checkbit(data, data, BYTE_TO_BITS(start_pos), BYTE_TO_BITS(start_pos) + SOCINFO_BITS / 2, SOCINFO_BITS / 2);
-	if(ret != 0) {
-		printf("invalid soc id %x %x\n", data[1], data[0]);
+	if(ret != 0 || data[0] == 0) {
+		printf("invalid soc id %x%x\n", data[1], data[0]);
 		return -1;
 	}
 	socid  = data[1] >> (32 - SOCINFO_BITS / 2);
 	vendor = socid >> 11 & 0xf;
-	type   = (socid >> 15 & 0x1) == 0x0 ? 0x3 : 0x2;
+	type   = (socid >> 15 & 0x1) ? TYPE_DDR3 : TYPE_DDR2;
 	capacity = socid >> 7 & 0xf;
 	ddrid = DDR_CHIP_ID(vendor, type, capacity);
 
