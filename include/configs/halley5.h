@@ -27,7 +27,6 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X2000_V12	/* x2000_v12 SoC */
 
-#define CONFIG_ALL_DDR
 #include "x2000_ddr.h"
 
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/

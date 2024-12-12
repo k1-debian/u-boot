@@ -34,7 +34,6 @@
 #define CONFIG_X1600
 #define CONFIG_SOC_NAME		x1600
 
-#define CONFIG_X1660L
 #include "x1600_ddr.h"
 
 #define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
