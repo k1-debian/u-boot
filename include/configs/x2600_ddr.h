@@ -83,6 +83,11 @@
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT     257
 
+#define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
+#define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
+#define CONFIG_BOOTARGS_MEM_256M		"mem=256M@0x0"
+#define CONFIG_BOOTARGS_MEM_512M		"mem=256M@0x0 mem=256M@0x30000000"
+
 /*
 #define CONFIG_DDR_CHIP_ODT
 #define CONFIG_DDR_PHY_ODT

@@ -79,7 +79,14 @@
 /**
  * Boot arguments definitions.
  */
-#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=8M@0x0 "
+
+#define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
+
+#if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
+	#define BOOTARGS_COMMON "console=ttyS2,115200n8 "
+#else
+	#define BOOTARGS_COMMON "console=ttyS2,115200n8 mem=8M@0x0 "
+#endif
 /**
  * Boot command definitions.
  */

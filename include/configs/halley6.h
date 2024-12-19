@@ -94,10 +94,6 @@
  */
 
 #define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
-#define CONFIG_BOOTARGS_MEM_16M			"mem=16M@0x0"	/* customize bootargs for default env.*/
-#define CONFIG_BOOTARGS_MEM_32M			"mem=32M@0x0"	/* customize bootargs for default env.*/
-#define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
-#define CONFIG_BOOTARGS_MEM_128M		"mem=128M@0x0"
 
 #if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
 	#define BOOTARGS_COMMON "console=ttyS2,115200n8 "

@@ -251,6 +251,11 @@ static void linux_params_init(ulong start, char *line)
 			mem_str = CONFIG_BOOTARGS_MEM_16M;
 			mem_strlen = strlen(CONFIG_BOOTARGS_MEM_16M);
 #endif
+		} else if(ram_size == 8) {
+#ifdef CONFIG_BOOTARGS_MEM_8M
+			mem_str = CONFIG_BOOTARGS_MEM_8M;
+			mem_strlen = strlen(CONFIG_BOOTARGS_MEM_8M);
+#endif
 		} else {
 			printf("Warining ... bootargs for ram_size (%d)M not defined!\n");
 		}

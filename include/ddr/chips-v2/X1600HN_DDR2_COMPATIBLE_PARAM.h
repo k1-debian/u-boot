@@ -27,7 +27,7 @@
 #error DDR memoryclock division ratio should be an integer between 1 and 16, check CONFIG_SYS_MPLL_FREQ and CONFIG_X1600HN_DDR2_MEM_FREQ
 #endif
 
-#if ((CONFIG_DDR_DATA_RATE > 400000000) &&\
+#if ((CONFIG_DDR_DATA_RATE >= 400000000) &&\
 		(CONFIG_DDR_DATA_RATE <= 533000000))
 #define CONFIG_DDR_CL	3
 #elif((CONFIG_DDR_DATA_RATE > 533000000) &&\

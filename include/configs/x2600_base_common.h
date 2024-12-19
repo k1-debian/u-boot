@@ -477,6 +477,9 @@
 
 /* boot args mem define
  */
+
+#define CONFIG_BOOTARGS_AUTO_MODIFY     1       /*auto detect memory size, and modify bootargs for kernel.*/
+
 #define CONFIG_SPL_AUTO_PROBE_ARGS_MEM
 #define ARGS_MEM_RESERVED "[mem-start------------------------------------------------------------mem-end]"
 #ifndef CONFIG_RMEM_MB
