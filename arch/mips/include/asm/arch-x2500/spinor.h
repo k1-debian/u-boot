@@ -270,8 +270,5 @@ enum {
 	NOR_MAX_INDEX,
 };
 
-/* SFC CDT Maximum INDEX number */
-#define INDEX_MAX_NUM  NOR_MAX_INDEX
-
 
 #endif

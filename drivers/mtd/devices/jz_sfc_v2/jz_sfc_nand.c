@@ -822,7 +822,7 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 {
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	cdt_params_t *cdt_params;
-	struct sfc_cdt sfc_cdt[INDEX_MAX_NUM];
+	struct sfc_cdt sfc_cdt[NAND_MAX_INDEX];
 
 	memset(sfc_cdt, 0, sizeof(sfc_cdt));
 	if(flag == DEFAULT_CDT)

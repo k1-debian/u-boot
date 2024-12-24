@@ -524,7 +524,7 @@ static void params_to_cdt(struct mini_spi_nor_info *params, struct sfc_cdt *cdt)
 static void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 {
 	struct mini_spi_nor_info *nor_flash_info;
-	struct sfc_cdt cdt[INDEX_MAX_NUM];
+	struct sfc_cdt cdt[NOR_MAX_INDEX];
 
 	memset(cdt, 0, sizeof(cdt));
 

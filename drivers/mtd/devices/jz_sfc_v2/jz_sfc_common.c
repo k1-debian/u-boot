@@ -83,6 +83,7 @@ void dump_cdt(struct sfc *sfc)
 {
 	struct sfc_cdt *cdt;
 	int i;
+	int cnt = NOR_MAX_INDEX > NAND_MAX_INDEX ? NOR_MAX_INDEX : NAND_MAX_INDEX;
 
 	if(sfc->cdt_addr == NULL){
 		printf("%s error: sfc res not init !\n", __func__);
@@ -91,7 +92,7 @@ void dump_cdt(struct sfc *sfc)
 
 	cdt = sfc->cdt_addr;
 
-	for(i = 0; i < INDEX_MAX_NUM; i++){
+	for(i = 0; i < cnt; i++){
 		printf("\nnum------->%d\n", i);
 		printf("link:%02x, ENDIAN:%02x, WORD_UINT:%02x, TRAN_MODE:%02x, ADDR_KIND:%02x\n",
 				(cdt[i].link >> 31) & 0x1, (cdt[i].link >> 18) & 0x1,

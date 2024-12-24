@@ -140,8 +140,6 @@ typedef int32_t (*spinand_regcall_t)(void);
 #define SPINAND_MOUDLE_INIT(fn)      \
 	ingenic_entry_declare(spinand_regcall_t, _1##fn, flash) = fn
 
-/* SFC CDT Maximum INDEX number */
-#define INDEX_MAX_NUM 32
 
 /* SFC CDT INDEX */
 enum {
