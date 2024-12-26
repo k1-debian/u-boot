@@ -55,6 +55,10 @@ extern void validate_cache(void);
 extern int gpio_spi_to_uart_init(void);
 #endif
 
+#ifdef CONFIG_SPL_USB_BOOT
+extern int spl_usb_boot;
+#endif
+
 #ifdef CONFIG_SIMULATION
 volatile noinline void hello_word(void)
 {
@@ -71,6 +75,9 @@ void release_soft_reset(void)
 
 void board_init_f(ulong dummy)
 {
+	*(volatile unsigned int *)0xb000202c |= 1 << 16; // wdt disable.
+	*(volatile unsigned int *)0xb0002004 &= ~(1 << 0); // wdt disable.
+
 	/* Set global data pointer */
 	gd = &gdata;
 
@@ -79,13 +86,16 @@ void board_init_f(ulong dummy)
 	gd->arch.gi = &ginfo;
 #else
 	burner_param_info();
+
+#ifdef CONFIG_SPL_USB_BOOT
+	if (!!spl_usb_boot) {
+		usb_boot_loop();
+		return;
+	}
+#endif
 #endif
 
-
 	gpio_init();
-
-	*(volatile unsigned int *)0xb000202c |= 1 << 16; // wdt disable.
-	*(volatile unsigned int *)0xb0002004 &= ~(1 << 0); // wdt disable.
 
 #ifndef CONFIG_FPGA
 	/* Init uart first */

@@ -31,7 +31,7 @@
 
 #define REG32(addr) *(volatile unsigned int *)(addr)
 
-static void read_socid(unsigned int *data)
+void read_socid(unsigned int *data)
 {
 	int word_num = BITS_TO_WORD(SOCINFO_BITS);
 	int i = 0;

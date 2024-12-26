@@ -5,14 +5,29 @@
 */
 #include <common.h>
 #include <asm/io.h>
-#include "usb/otg_dwc2.h"
-#include "usb/usb_boot.h"
-
-
+#include <usb_boot/otg_dwc2.h>
+#include <usb_boot/usb_boot.h>
 
 #define DEBUG(n) 	do {} while(0)
 #define DEBUG_HEX(n)	do {} while(0)
 
+__weak void jump_to_entry_point(unsigned long entry_point)
+{
+        flush_cache_all();
+        __asm__ volatile (
+                        ".set push              \n\t"
+                        ".set noreorder         \n\t"
+                        ".set mips32r2          \n\t"
+                        "jr.hb %0              \n\t"
+                        "nop    \n\t"
+                        :
+                        :"r"(entry_point));
+}
+
+__weak void read_socid(unsigned int *buf)
+{
+	/* Nothing to do! */
+}
 
 static u32 status_map;
 
@@ -28,6 +43,7 @@ enum {
 	DWC_CONFIG,
 };
 
+static int usb_loop = 1;
 static int enum_done_speed = HIGH_SPEED;
 
 static  int DEP_EP_MAXPKT_SIZE(int epnum)
@@ -511,6 +527,7 @@ static int handle_setup_packet(USB_STATUS *status,int *config)
 	u32 usb_stall = 0;
 	int desc_size = 0;
 	status[0].length = 0;
+	unsigned int buffer[2] = {0,0};
 
 	if ((word1 & 0x60) == 0x40 && (*config >= DWC_CONFIG)) {
 		u32 addr_start = 0, addr_end = 0;
@@ -520,8 +537,14 @@ static int handle_setup_packet(USB_STATUS *status,int *config)
 		case EP0_GET_CPU_INFO:
 			DEBUG("EP0_GET_CPU_INFO \n");
 			dwc_disable_in_ep(1);
+#if defined(CONFIG_CHECK_SOCID) && defined(CONFIG_SPL_USB_BOOT)
+			read_socid(buffer);
+			status[0].addr_in = (u8* )buffer;
+			status[0].length = sizeof(buffer);
+#else
 			status[0].addr_in = (u8* )cpu_info_data;
 			status[0].length = sizeof(cpu_info_data);
+#endif
 			break;
 
 		case EP0_SET_DATA_ADDRESS:
@@ -565,6 +588,9 @@ static int handle_setup_packet(USB_STATUS *status,int *config)
 				DEBUG("bootrom start stage 2\n");
 				jump_to_entry_point(addr);
 			}
+			break;
+		case EP0_EXIT_LOOP:
+			usb_loop = 0;
 			break;
 		default:
 			usb_stall = 1;
@@ -698,9 +724,9 @@ int usb_boot_loop(void)
 	status_map = 0;
 	enum_done_speed = HIGH_SPEED;
 
-	printf("====%s, %d\n", __func__, __LINE__);
+//	printf("==== enter %s, %d\n", __func__, __LINE__);
 	/* Main loop of polling the usb commands */
-	while (1) {
+	while (usb_loop) {
 
 		intpending = usb_readl(GINT_STS_OFF) & usb_readl(GINT_MASK_OFF);
 
@@ -723,5 +749,6 @@ int usb_boot_loop(void)
 			handle_rxfifo_nempty(status);
 
 	}
-
+//	printf("==== exit %s, %d\n", __func__, __LINE__);
 }
+

@@ -59,6 +59,10 @@ extern void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr);
 extern void flush_cache_all(void);
 extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
+#ifdef CONFIG_SPL_USB_BOOT
+extern int spl_usb_boot;
+#endif
+
 void gpio_set_driver_strength_init(void)
 {
 #if 0
@@ -69,6 +73,13 @@ void gpio_set_driver_strength_init(void)
 
 void board_init_f(ulong dummy)
 {
+	/* OST clk gate set 0 */
+	cpm_outl(cpm_inl(CPM_CLKGR0) & (~CPM_CLKGR_OST), CPM_CLKGR0);
+	/* wtd disable */
+	writel(0, WDT_BASE + WDT_TCER);
+
+	cpm_outl(cpm_inl(CPM_MESTSEL) | 0x7, CPM_MESTSEL);
+
 	/* Set global data pointer */
 	gd = &gdata;
 
@@ -77,16 +88,18 @@ void board_init_f(ulong dummy)
 	gd->arch.gi = &ginfo;
 #else
 	burner_param_info();
+
+#ifdef CONFIG_SPL_USB_BOOT
+	if (!!spl_usb_boot) {
+		timer_init();
+		usb_boot_loop();
+		return;
+	}
+#endif
 #endif
 
 	gpio_init();
 	gpio_set_driver_strength_init();
-	/* OST clk gate set 0 */
-	cpm_outl(cpm_inl(CPM_CLKGR0) & (~CPM_CLKGR_OST), CPM_CLKGR0);
-	/* wtd disable */
-	writel(0, WDT_BASE + WDT_TCER);
-
-	cpm_outl(cpm_inl(CPM_MESTSEL) | 0x7, CPM_MESTSEL);
 
 	/* Init uart first */
 #ifndef CONFIG_X2000_FPGA
@@ -96,6 +109,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 	if(*(volatile unsigned int *)0xbfc00084 == 0x244232c8) {
 		serial_debug("Current Version: V2\n");
 	} else {

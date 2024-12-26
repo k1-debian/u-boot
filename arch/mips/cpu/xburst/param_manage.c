@@ -1,7 +1,10 @@
 #include <config.h>
 #include <common.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 struct ddr_registers *g_ddr_param = 0;
+int spl_usb_boot = 0;
+
 struct param_info
 {
 	unsigned int magic_id;
@@ -23,6 +26,12 @@ void *find_param(unsigned int magic_id)
 }
 void burner_param_info(void)
 {
-	gd->arch.gi = find_param(('B' << 24) | ('D' << 16) | ('I' << 8) | ('F' << 0));
-	g_ddr_param = find_param(('D' << 24) | ('D' << 16) | ('R' << 8) | 0);
+#ifdef CONFIG_SPL_USB_BOOT
+	spl_usb_boot = *(int *)find_param(('B' << 24) | ('O' << 16) | ('O' << 8) | ('T' << 0));
+	if (!spl_usb_boot)
+#endif
+	{
+		gd->arch.gi = find_param(('B' << 24) | ('D' << 16) | ('I' << 8) | ('F' << 0));
+		g_ddr_param = find_param(('D' << 24) | ('D' << 16) | ('R' << 8) | 0);
+	}
 }

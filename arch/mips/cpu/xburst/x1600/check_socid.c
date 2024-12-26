@@ -23,9 +23,9 @@
 
 #define REG32(addr) *(volatile unsigned int *)(addr)
 
-static unsigned int read_socid()
+void read_socid(unsigned int *data)
 {
-	unsigned int val, data;
+	unsigned int val;
 
 	REG32(EFUSE_CFG) = 0x2 << EFUSE_CFG_RD_ADJ_POS | 0x5 << EFUSE_CFG_RD_STROBE_POS;
 
@@ -33,10 +33,9 @@ static unsigned int read_socid()
 	REG32(EFUSE_CTRL) = SOCINFO_ADDR << EFUSE_CTRL_ADDR_POS | 2 << EFUSE_CTRL_LEN_POS | EFUSE_CTRL_RDEN;
 	while(!(REG32(EFUSE_STATE) & EFUSE_STAT_RDDONE));
 
-	data = REG32(EFUSE_DATA);
-	val = data & 0xFFFF;
+	val = REG32(EFUSE_DATA);
 
-	return val;
+	*data = val & 0xFFFF;
 }
 
 unsigned int check_socid()
@@ -47,7 +46,7 @@ unsigned int check_socid()
 	unsigned int socid  = 0;
 	unsigned int ddrid  = 0;
 
-	socid = read_socid();
+	read_socid(&socid);
 	if (socid == 0) {
 		printf("invalid soc id %x%x\n", socid);
 		return -1;

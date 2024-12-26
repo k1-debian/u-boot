@@ -36,8 +36,6 @@ COBJS-y += ../ddr_innophy.o
 COBJS-y += ../ddr_innophy_x2600.o
 COBJS-y += check_socid.o
 
-COBJS-$(CONFIG_RUN_FIRMWARE_VIA_USB_BOOT) += usb_boot.o
-
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o
 COBJS-$(CONFIG_DDR_AUTO_REFRESH_TEST) += ../ddr_test_auto_refresh.o
 COBJS-$(CONFIG_BURNER) += ../param_manage.o

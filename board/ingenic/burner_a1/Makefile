@@ -1,5 +1,5 @@
 #
-# Ingenic burner_a1 makefile
+# Ingenic burner makefile
 #
 # Copyright (c) 2013 Ingenic Semiconductor Co.,Ltd
 # Author: Zoro <ykli@ingenic.cn>

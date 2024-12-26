@@ -53,6 +53,9 @@ COBJS-$(CONFIG_SPL_RISCV) += spl_riscv.o
 
 COBJS-$(CONFIG_SPL_EFUSE) += spl_efuse.o
 
+COBJS-$(CONFIG_RUN_FIRMWARE_VIA_USB_BOOT) += usb_boot.o
+COBJS-$(CONFIG_SPL_USB_BOOT) += usb_boot.o
+
 endif
 
 COBJS	:= $(sort $(COBJS-y))

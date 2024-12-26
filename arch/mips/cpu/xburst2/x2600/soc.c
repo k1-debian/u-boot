@@ -62,6 +62,10 @@ extern int dump_icache_tag(unsigned int start, unsigned int len);
 extern int debug_cache_2(void);
 extern void dump_c0_regs(void);
 
+#ifdef CONFIG_SPL_USB_BOOT
+extern int spl_usb_boot;
+#endif
+
 void change_lcd_ddrc_process_priority(void)
 {
 	*(unsigned int *)0x13012024 = 0xFF404030;   //DDRC-APB-CCHC0
@@ -78,6 +82,9 @@ void gpio_set_driver_strength_init(void)
 
 void board_init_f(ulong dummy)
 {
+	*(volatile unsigned int *)0xb363002c |= 1 << 16; // wdt disable.
+	*(volatile unsigned int *)0xb3630004 &= ~(1 << 0); // wdt disable.
+
 	/* Set global data pointer */
 	gd = &gdata;
 
@@ -87,13 +94,18 @@ void board_init_f(ulong dummy)
 	gd->arch.gi = &ginfo;
 #else
 	burner_param_info();
+
+#ifdef CONFIG_SPL_USB_BOOT
+	if (!!spl_usb_boot) {
+		timer_init();
+		usb_boot_loop();
+		return;
+	}
 #endif
+#endif
+
 	gpio_init();
 	gpio_set_driver_strength_init();
-
-	*(volatile unsigned int *)0xb363002c |= 1 << 16; // wdt disable.
-	*(volatile unsigned int *)0xb3630004 &= ~(1 << 0); // wdt disable.
-
 
 	/* Init uart first */
 	enable_uart_clk();
@@ -103,6 +115,7 @@ void board_init_f(ulong dummy)
 #endif
 
 	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 	//dump_c0_regs();
 
 	debug("Timer init\n");

@@ -37,6 +37,7 @@
 #define EP0_PROG_START1			0x04
 #define EP0_PROG_START2			0x05
 #define EP0_BOOTROM_TEST		0x07
+#define EP0_EXIT_LOOP                   0x08
 
 /* Descriptor types ... USB 2.0 spec table 9.5 */
 #define USB_DT_DEVICE			0x01
@@ -69,8 +70,8 @@ typedef struct usb_status {
 
 /*---------------------------------------------------------*/
 
-static u8 cpu_info_data[] = {'X', '2', '6', '0', '0'};// X2600
+static u8 cpu_info_data[] = "ingenic";
 
-
+int usb_boot_loop(void);
 
 #endif  /* __USB_BOOT_H__ */
