@@ -277,7 +277,12 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
      #endif /* CONFIG_BOOT_VMLINUX */
 
-     #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #if defined(CONFIG_JZ_MMC_MSC0) ||defined(CONFIG_JZ_MMC_MSC1)
+	#define CONFIG_GPT_TAB_BUILT_IN
+	#define CONFIG_SPL_OS_NAME        "boot" /* sd offset of xImage being loaded */
+    #else
+	#define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+    #endif
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
      #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
