@@ -377,10 +377,10 @@
 #define CONFIG_HALLEY6_MAC_POWER_EN
 #define CONFIG_GAMAC_MODE_CTRL_ADDR	0xb00000e4
 #define JZ_GMAC_BASE			0xb34b0000
-#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_B
-#define CONFIG_GMAC_CRLT_PORT_PINS (0x3ff << 19)
-#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_1
-#define CONFIG_GMAC_PHY_RESET	GPIO_PB(31)
+#define CONFIG_GMAC_CRLT_PORT GPIO_PORT_C
+#define CONFIG_GMAC_CRLT_PORT_PINS (0x3ff << 15)
+#define CONFIG_GMAC_CRTL_PORT_INIT_FUNC GPIO_FUNC_0
+#define CONFIG_GMAC_PHY_RESET	GPIO_PC(15)
 #define CONFIG_GMAC_TX_CLK_DELAY 0x3f
 #define CONFIG_GMAC_RX_CLK_DELAY 0
 #endif
@@ -407,7 +407,9 @@
 #define CONFIG_CMD_LOADS	/* loads			*/
 #define CONFIG_CMD_MEMORY	/* md mm nm mw cp cmp crc base loop mtest */
 #define CONFIG_CMD_MISC		/* Misc functions like sleep etc*/
+#ifdef CONFIG_NET_X2600
 #define CONFIG_CMD_NET		/* networking support			*/
+#endif
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_RUN		/* run command in env variable	*/
 #define CONFIG_CMD_SETGETDCR	/* DCR support on 4xx		*/
