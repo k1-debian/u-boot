@@ -95,6 +95,11 @@
 #define CONFIG_SPL_VERSION	1
 #endif
 
+#ifdef CONFIG_JZ_WATCHDOG
+#define CONFIG_HW_WATCHDOG
+#define CONFIG_WDT_TIMEOUT_BY_MS (20*000)
+#endif
+
 /**
  * Boot command definitions.
  */

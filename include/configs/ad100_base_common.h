@@ -39,6 +39,11 @@
 #define CONFIG_SPL_RTOS_LOAD_KERNEL
 #endif
 
+#ifdef CONFIG_JZ_WATCHDOG
+#define CONFIG_HW_WATCHDOG
+#define CONFIG_WDT_TIMEOUT_BY_MS (20*000)
+#endif
+
 /* Device Tree Configuration*/
 /*#define CONFIG_OF_LIBFDT 1*/
 #ifdef CONFIG_OF_LIBFDT

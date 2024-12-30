@@ -1,14 +1,19 @@
 #include <common.h>
-#include <asm/arch/clk.h>
 #include <asm/io.h>
+#include <watchdog.h>
+#include <asm/io.h>
+#include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
+#include <asm/arch/base.h>
+#include <asm/arch/wdt.h>
+#include <asm/arch/tcu.h>
+#include <asm/arch/rtc.h>
 
-#define TCU_TSCLR       0x3C
+#define wdt_write(value, reg) writel(value, WDT_BASE + reg)
+#define wdt_read(reg) readl(WDT_BASE + reg)
 
-#define WDT_TDR     0x0
-#define WDT_TCER    0x4
-#define WDT_TCNT    0x8
-#define WDT_TCSR    0xC
+#define tcu_writel(value, reg) writel(value, reg)
+#define tcu_readl(reg) readl(reg)
 
 #define WDT_CLK_DIV_1       0
 #define WDT_CLK_DIV_4       1
@@ -21,19 +26,6 @@
 #define RTC_EN              2
 
 #define OPCR_ERCS_BIT       2
-#define CLKGR_TCU_BIT       18
-
-#define WDT0_IOBASE         0xb3630000
-
-static inline void wdt_write_reg(unsigned int reg, unsigned int value)
-{
-    writel(value, WDT0_IOBASE+reg);
-}
-
-static inline unsigned int wdt_read_reg(unsigned int reg)
-{
-    return readl(WDT0_IOBASE + reg);
-}
 
 unsigned long get_rtc_internal_clk_rate(void)
 {
@@ -65,36 +57,43 @@ static int jz_wdt_set_timeout(unsigned long ms)
         clock_div += 1;
     }
 
-    wdt_write_reg(WDT_TCER, 0);
+    cpm_clear_bit(CPM_CLKGR1_TCU0, CPM_CLKGR1);
+    tcu_writel(1 << 16, TCU_TSCR);
+
+    wdt_write(0, WDT_TCER);
 
     val = (clock_div << 3) | RTC_EN;
 
-    wdt_write_reg(WDT_TCSR, val);
+    wdt_write(val, WDT_TCSR);
 
-    wdt_write_reg(WDT_TDR, count);
+    wdt_write(count, WDT_TDR);
 
-    wdt_write_reg(WDT_TCNT, 0);
+    wdt_write(0, WDT_TCNT);
 
-    wdt_write_reg(WDT_TCER, 1);
+    wdt_write(1, WDT_TCER);
 
     return 0;
 }
 
-int wdt_start(unsigned long ms)
+void hw_watchdog_disable(void)
 {
-    wdt_write_reg(TCU_TSCLR, 1 << 16);// 使能看门狗计数器
+    wdt_write(0, WDT_TCER);
+    tcu_writel(1 << 16, TCU_TSSR);
+}
 
-    if (jz_wdt_set_timeout(ms)) {
+void hw_watchdog_reset(void)
+{
+    debug("watchdog reset\n");
+    hw_watchdog_disable();
+
+    if (jz_wdt_set_timeout(0)) {
         serial_debug("wdt set time error\n");
-        return -1;
     }
-
-    wdt_write_reg(WDT_TCER, 1);
-    return 0;
 }
 
-int wdt_init(void)
+void hw_watchdog_init(void)
 {
-    cpm_clear_bit(CLKGR_TCU_BIT, CPM_CLKGR0);     // open tcu clk
-    return 0;
+    if (jz_wdt_set_timeout(CONFIG_WDT_TIMEOUT_BY_MS)) {
+        serial_debug("wdt set time error\n");
+    }
 }

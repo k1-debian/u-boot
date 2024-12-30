@@ -40,8 +40,6 @@ COBJS-y += x2600_wdt.o
 else ifeq ($(CONFIG_AD100),y)
 COBJS-y += ad100_wdt.o
 else ifeq ($(CONFIG_X1600),y)
-COBJS-y += x1600_wdt.o
-else
 COBJS-y += jz_wdt.o
 endif
 endif

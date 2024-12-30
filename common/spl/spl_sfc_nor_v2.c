@@ -638,6 +638,7 @@ unsigned int get_part_size_by_name(struct norflash_partitions partition, char *n
 
 #ifdef CONFIG_JZ_WATCHDOG
 #include <asm/arch/cpm.h>
+#include <watchdog.h>
 
 #define OPEN_WRITE_CPSPR	0x00005a5a
 #define CLOSE_WRITE_CPSPR	0x0000a5a5
@@ -645,13 +646,6 @@ unsigned int get_part_size_by_name(struct norflash_partitions partition, char *n
 #define SPL_OTA_RUN_FLAG 		0x4f5441
 #define SPL_OTA_FAIL_FLAG 		0x41544f
 #define SYS_PANIC_SIGNATURE		0x004343
-
-#ifndef CONFIG_OTA_WDT_TIMEOUT_MS
-#define CONFIG_OTA_WDT_TIMEOUT_MS	(20 * 1000)
-#endif
-
-extern int wdt_start(unsigned long ms);
-extern int wdt_init(void);
 
 static inline void cpm_write_cpspr(int val)
 {
@@ -673,9 +667,8 @@ static inline int spl_test_ota_result(void)
 
 static inline int spl_ota_set_flag_and_boot_wdt(void)
 {
-	wdt_init();
 	cpm_write_cpspr(SPL_OTA_RUN_FLAG);
-	wdt_start(CONFIG_OTA_WDT_TIMEOUT_MS);
+	hw_watchdog_init();
 }
 #endif
 

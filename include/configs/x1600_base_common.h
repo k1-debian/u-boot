@@ -77,6 +77,13 @@
 #define CONFIG_SPL_PAD_TO		26624  /* equal to spl max size in x1600 */
 #define CONFIG_UBOOT_OFFSET             26624 /* equal to spl max size in x1600 */
 
+#ifdef CONFIG_JZ_WATCHDOG
+#define CONFIG_HW_WATCHDOG
+#define CONFIG_WDT_TIMEOUT_BY_MS (20*000)
+#define CONFIG_WDT_FREQ_BY_RTC
+#define CONFIG_RTC_SELEXC_BY_RTC
+#endif
+
 /********** RTOS **********/
 #ifdef CONFIG_SPL_RTOS_BOOT
 
