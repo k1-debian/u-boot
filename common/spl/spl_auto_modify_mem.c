@@ -29,11 +29,11 @@ static char *board_process_mem_arg(char *arg)
 		arg = linux_cmdline_set(arg, CONFIG_BOOTARGS_MEM_16M, strlen(CONFIG_BOOTARGS_MEM_16M));
 #endif
         } else if(ram_size == 32) {
-#ifdef CONFIG_BOOTARGS_MEM_128M
+#ifdef CONFIG_BOOTARGS_MEM_32M
 		arg = linux_cmdline_set(arg, CONFIG_BOOTARGS_MEM_32M, strlen(CONFIG_BOOTARGS_MEM_32M));
 #endif
         } else if(ram_size == 64) {
-#ifdef CONFIG_BOOTARGS_MEM_128M
+#ifdef CONFIG_BOOTARGS_MEM_64M
 		arg = linux_cmdline_set(arg, CONFIG_BOOTARGS_MEM_64M, strlen(CONFIG_BOOTARGS_MEM_64M));
 #endif
 	} else if(ram_size == 128) {
