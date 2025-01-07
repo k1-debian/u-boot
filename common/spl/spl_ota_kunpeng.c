@@ -9,6 +9,14 @@
 #include <asm/arch/cpm.h>
 #include "spl_ota_kunpeng.h"
 
+#define ENV_DATA_SIZE 1024
+
+typedef struct env_flags {
+    unsigned char   flags;                    /* active/obsolete flags    */
+    unsigned char   data[ENV_DATA_SIZE];      /* Environment data     */
+} env_t;
+
+
 struct nv_flags {
     unsigned int version;
     unsigned int boot;
@@ -20,6 +28,7 @@ struct nv_flags {
     unsigned int partition;
     unsigned int slave_rot_angle;
     unsigned int reservedspace[13];
+    env_t env;
 };
 
 static struct ota_ops *ota_ops = NULL;
@@ -69,7 +78,6 @@ char* spl_ota_load_image(void)
 	unsigned int dec_degree;
 	unsigned int hightBits;
 	unsigned char *kname;
-
 	ota_init();
 	partitions = ota_ops->flash_get_partitions();
 	addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_NV_NAME);
@@ -142,6 +150,10 @@ char* spl_ota_load_image(void)
 	ota_ops->flash_load_kernel(bootimg_addr, CONFIG_PAT_KERNEL_NAME);
 #endif
 
+#if defined(USE_NV_CMDARGS) && defined(CONFIG_NV_ROTATE)
+#error "Both CONFIG_NV_ROTATE and USE_NV_CMDARGS are defined. This is not allowed."
+#endif
+
 #ifdef CONFIG_NV_ROTATE
     {
         static char buffer[512];
@@ -159,8 +171,20 @@ char* spl_ota_load_image(void)
             }
         }
     }
+#elif defined(USE_NV_CMDARGS)
+#define ENV_FLAG 0xA5
+    static env_t env;
+    env_t *env_p = &nv.env;
+    if (nv.env.flags == ENV_FLAG) {
+        if (nv.env.data[0]!=0 && nv.env.data[0]!=0xff) {
+            memcpy(&env, env_p, sizeof(env_t));
+            cmdargs = env.data;
+            printf("use env new cmdargs\n");
+        } else {
+            printf("env cmdargs error,use default old cmdargs\n");
+        }
+    }
 #endif
-
 
     return cmdargs;
 }
