@@ -6,6 +6,7 @@ static unsigned char gsto_errstat_2[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
 	DEVICE_STRUCT(0xca13, 2048, 2, 4, 2, 1, gsto_errstat_2, 0),
+	DEVICE_STRUCT(0xca23, 2048, 2, 4, 2, 1, gsto_errstat_2, 0),
 };
 
 static struct nand_desc gsto_nand = {
