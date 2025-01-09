@@ -329,6 +329,9 @@ void clk_init(void)
 #ifdef CONFIG_JZ_SCBOOT
 		| CPM_CLKGR_DTRNG
 #endif
+#ifdef CONFIG_GMAC0
+		| CPM_CLKGR_GMAC0
+#endif
 		| CPM_CLKGR_EFUSE
 		;
 	reg_clkgr &=  ~gate;
@@ -336,9 +339,6 @@ void clk_init(void)
 
 	reg_clkgr = cpm_inl(CPM_CLKGR1);
 	gate = CPM_CLKGR1_DDR
-#ifdef CONFIG_GMAC0
-		| CPM_CLKGR_GMAC0
-#endif
 #ifdef CONFIG_JZ_SCBOOT
 		| CPM_CLKGR1_HASH
 		| CPM_CLKGR1_AES
@@ -350,7 +350,6 @@ void clk_init(void)
 		;
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR1);
-
 	cgu_clks_set();
 #endif
 }
