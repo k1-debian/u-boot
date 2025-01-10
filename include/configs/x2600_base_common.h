@@ -9,7 +9,11 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X2600		/* x2600 SoC */
 
+#if defined(CONFIG_X2670_DDR) || defined(CONFIG_X2670M_DDR)
+#include "x2670_ddr.h"
+#else
 #include "x2600_ddr.h"
+#endif
 
 #define CONFIG_SYS_APLL_FREQ		1152000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1800000000	/*If MPLL not use mast be set 0*/

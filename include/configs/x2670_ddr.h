@@ -1,5 +1,5 @@
-#ifndef __X2600_DDR__
-#define __X2600_DDR__
+#ifndef __X2670_DDR__
+#define __X2670_DDR__
 
 
 #define CONFIG_DDR_INNOPHY
@@ -14,9 +14,7 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR3
 
-	#define CONFIG_X2600E_DDR3
-        #define CONFIG_X2600H_DDR3L
-        #define CONFIG_X2600N_DDR3
+        #define CONFIG_X2670N_DDR3
 
         #define CONFIG_DDR3_KGD_CONFIG               0x1
         #define CONFIG_DDR3_KGD_MR0_DLL_RST          0x1
@@ -29,9 +27,8 @@
 
 #ifdef CONFIG_DDR_TYPE_DDR2
 
-        #define CONFIG_X2600M_DDR2
-        #define CONFIG_X2600M_DDR2_MEM_FREQ		600000000
-
+        #define CONFIG_X2670M_DDR2
+        #define CONFIG_X2670M_DDR2_MEM_FREQ		600000000
 
         #define CONFIG_DDR2_KGD_CONFIG               0x1
         #define CONFIG_DDR2_KGD_MR0_DLL_RST          0x1
