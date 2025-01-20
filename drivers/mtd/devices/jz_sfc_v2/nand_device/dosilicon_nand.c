@@ -203,6 +203,26 @@ static struct jz_sfcnand_base_param dosilicon_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[9] = {
+		/*DS35Q2GBSXX*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
@@ -215,6 +235,7 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xB4, "DS35Q4GBXXX",     &dosilicon_param[6]),
 	DEVICE_ID_STRUCT(0x75, "DS35Q12C-1B",     &dosilicon_param[7]),
 	DEVICE_ID_STRUCT(0xF4, "LC35X4GMXXX",     &dosilicon_param[8]),
+	DEVICE_ID_STRUCT(0xB2, "DS35Q2GBSXX",     &dosilicon_param[9]),
 };
 
 
@@ -232,6 +253,7 @@ static cdt_params_t *dosilicon_get_cdt_params(struct sfc_flash *flash, uint16_t 
 		case 0xB4:
 		case 0x75:
 		case 0xF4:
+		case 0xB2:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -275,6 +297,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 					break;
 			}
 			break;
+		case 0xB2:
 		case 0xB4:
 		case 0x75:
 		case 0xF4:
