@@ -97,10 +97,13 @@
 /**
  * Boot arguments definitions.
  */
+#define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
 
-/* #define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0 mem=768M@0x30000000" */
-#define BOOTARGS_COMMON "console=ttyS0,115200 mem=256M@0x0"
-
+#if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
+	#define BOOTARGS_COMMON " console=ttyS0,115200 "
+#else
+	#define BOOTARGS_COMMON " console=ttyS0,115200 mem=128M@0x0 "
+#endif
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)

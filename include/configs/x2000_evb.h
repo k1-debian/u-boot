@@ -97,7 +97,14 @@
  */
 
 /* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
-#define BOOTARGS_COMMON "console=ttyS2,115200 mem=128M@0x0"
+#define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
+
+#if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
+	#define BOOTARGS_COMMON LINUX_LOGLEVEL " console=ttyS2,115200 "
+#else
+	#define BOOTARGS_COMMON LINUX_LOGLEVEL " console=ttyS2,115200 mem=128M@0x0 "
+#endif
+
 
 #ifdef CONFIG_BOOT_ANDROID
   #if defined(CONFIG_SPL_NOR_SUPPORT)
