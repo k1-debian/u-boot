@@ -102,8 +102,7 @@
 #define CONFIG_JZ_MMC_MSC1
 #define CONFIG_CMD_MMC
 #define CONFIG_MMC
-#define CONFIG_SDHCI
-#define CONFIG_JZ_SDHCI
+#define CONFIG_JZ_MMC
 #define CONFIG_GENERIC_MMC
 
 
