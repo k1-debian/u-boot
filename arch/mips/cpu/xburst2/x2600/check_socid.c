@@ -31,6 +31,32 @@
 
 #define REG32(addr) *(volatile unsigned int *)(addr)
 
+static enum soc_type {
+	SOC_X2600,
+	SOC_X2600E,
+	SOC_X2600M,
+	SOC_X2600H,
+	SOC_X2660,
+	SOC_X2670,
+	SOC_X2670M,
+	SOC_UNKNOWN = 0xF,
+};
+
+static struct soc_desc {
+	const enum soc_type soc;
+	const char *chip;
+};
+
+static const struct soc_desc desc[] = {
+	{SOC_X2600,  "X2600" },
+	{SOC_X2600E, "X2600E"},
+	{SOC_X2600M, "X2600M"},
+	{SOC_X2600H, "X2600H"},
+	{SOC_X2660,  "X2660" },
+	{SOC_X2670,  "X2670" },
+	{SOC_X2670M, "X2670M"},
+};
+
 void read_socid(unsigned int *data)
 {
 	int word_num = BITS_TO_WORD(SOCINFO_BITS);
@@ -78,6 +104,8 @@ unsigned int check_socid()
 	unsigned int data[BITS_TO_WORD(SOCINFO_BITS)] = {0};
 	unsigned int start_pos = SOCINFO_BYTE_ADDR - WORD_ALIGNED(SOCINFO_BYTE_ADDR);
 	int ret = 0;
+	int i = 0;
+	enum soc_type soc = SOC_UNKNOWN;
 
 	read_socid(data);
 	ret = checkbit(data, data, BYTE_TO_BITS(start_pos), BYTE_TO_BITS(start_pos) + SOCINFO_BITS / 2, SOCINFO_BITS / 2);
@@ -86,10 +114,19 @@ unsigned int check_socid()
 		printf("invalid soc id %x%x\n", data[1], data[0]);
 		return -1;
 	}
+
+	soc = socid >> 16 & 0xf;
 	vendor = socid >> 11 & 0xf;
 	type   = (socid >> 15 & 0x1) ? TYPE_DDR3 : TYPE_DDR2;
 	capacity = socid >> 7 & 0xf;
 	ddrid = DDR_CHIP_ID(vendor, type, capacity);
+
+	for (i = 0; i < ARRAY_SIZE(desc); i++) {
+		if (desc[i].soc == soc) {
+			printf("SOC: %s\n", desc[i].chip);
+			break;
+		}
+	}
 
 	return ddrid;
 }

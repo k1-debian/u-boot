@@ -31,6 +31,29 @@
 
 #define REG32(addr) *(volatile unsigned int *)(addr)
 
+static enum soc_type {
+	SOC_X2000,
+	SOC_X2000E,
+	SOC_RESERVED,
+	SOC_X2100,
+	SOC_X2000H,
+	SOC_X2100L,
+	SOC_UNKNOWN = 0xF,
+};
+
+static struct soc_desc {
+	const enum soc_type soc;
+	const char *chip;
+};
+
+static const struct soc_desc desc[] = {
+	{SOC_X2000,  "X2000" },
+	{SOC_X2000E, "X2000E"},
+	{SOC_X2100,  "X2100" },
+	{SOC_X2000H, "X2000H"},
+	{SOC_X2100L, "X2100L"},
+};
+
 void read_socid(unsigned int *data)
 {
 	int word_num = BITS_TO_WORD(SOCINFO_BITS);
@@ -48,7 +71,6 @@ void read_socid(unsigned int *data)
 	for(i = 0; i < word_num; i++) {
 		data[i] = REG32(EFUSE_DATA(i));
 	}
-
 }
 
 static int checkbit(unsigned int *s,unsigned int *d,int ss,int ds,int bsz)
@@ -89,6 +111,8 @@ unsigned int check_socid()
 	unsigned int data[BITS_TO_WORD(SOCINFO_BITS)] = {0};
 	unsigned int start_pos = SOCINFO_BYTE_ADDR - WORD_ALIGNED(SOCINFO_BYTE_ADDR);
 	int ret = 0;
+	int i = 0;
+	enum soc_type soc = SOC_UNKNOWN;
 
 	read_socid(data);
 	ret = checkbit(data, data, BYTE_TO_BITS(start_pos), BYTE_TO_BITS(start_pos) + SOCINFO_BITS / 2, SOCINFO_BITS / 2);
@@ -97,10 +121,19 @@ unsigned int check_socid()
 		printf("invalid soc id %x%x\n", data[1], data[0]);
 		return -1;
 	}
+
+	soc = socid >> 6 & 0x1f;
 	vendor = socid >> 14 & 0x7;
 	type   = socid >> 17 & 0x1;
 	capacity = socid >> 11 & 0x7;
 	ddrid = DDR_CHIP_ID(vendor, type, capacity);
+
+	for (i = 0; i < ARRAY_SIZE(desc); i++) {
+		if (desc[i].soc == soc) {
+			printf("SOC: %s\n", desc[i].chip);
+			break;
+		}
+	}
 
 	return ddrid;
 }
