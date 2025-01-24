@@ -1,85 +1,327 @@
-# --
-build-halley6_uImage_msc0-job:       # This job runs in the build stage, which runs first.
+.build_base:
   stage: build
+  resource_group: building
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG && make O=$BUILD_DIR
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/include/generated/
+
+# 生成的 build-xxx-job
+build-x1660_evb_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_evb_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_evb_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_evb_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660l_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660l_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660l_evb_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660l_evb_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_uImage_msc1-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_uImage_msc1
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_xImage_msc1-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_xImage_msc1
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-halley6_uImage_msc0-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: halley6_uImage_msc0
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-
-# --
-build-halley6_uImage_msc1-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-halley6_uImage_msc1-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: halley6_uImage_msc1
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-
-# --
-build-halley6_uImage_sfc_nor-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-halley6_uImage_sfc_nor-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: halley6_uImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-
-# --
-build-halley6_uImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-halley6_uImage_sfc_nand-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: halley6_uImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
+build-halley6_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: halley6_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-burner_x1600-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-halley6_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: halley6_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-halley6_xImage_msc1_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: halley6_xImage_msc1_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-halley6_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: halley6_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-halley6_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: halley6_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-halley6_xImage_msc1-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: halley6_xImage_msc1
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600mn_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600mn_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600mn_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600mn_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_rtos_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_rtos_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600_base_xImage_sfc_nor_use_gpio_spi_uart-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600_base_xImage_sfc_nor_use_gpio_spi_uart
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600_base_xImage_sfc_nor_use_gpio_spi_uart2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600_base_xImage_sfc_nor_use_gpio_spi_uart2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_xImage_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_xImage_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_rtos_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_rtos_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_halley6_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_halley6_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_halley6_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_halley6_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_xImage_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_xImage_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600hn_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600hn_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600hn_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600hn_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-burner_x1600-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: burner_x1600
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
-
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-      - $BUILD_DIR/spl/u-boot-spl.bin
 

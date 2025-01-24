@@ -1,123 +1,674 @@
-# --
-build-x2670_base_xImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
+
+.build_base:
   stage: build
+  resource_group: building
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG && make O=$BUILD_DIR
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/include/generated/
+
+build-x2670_hare_v10_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_v10_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_rtos_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_rtos_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_base_xImage_sfc_nand-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: x2670_base_xImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
+build-x2600_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-# --
-build-x2670_halley_uImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-x2670_base_uImage_quickstart_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_base_uImage_quickstart_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_ota_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_ota_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_base_rtos_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_base_rtos_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_base_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_base_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_base_rtos_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_base_rtos_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_ota_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_ota_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_vast_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_vast_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_vast_uImage_quickstart_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_vast_uImage_quickstart_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_uImage_quickstart_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_uImage_quickstart_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_uImage_quickstart_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_uImage_quickstart_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_uImage_quickstart_album_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_uImage_quickstart_album_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_rtos_sfc_nor_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_rtos_sfc_nor_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_rtos_sfc_nor_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_rtos_sfc_nor_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_base_rtos_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_base_rtos_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_base_rtos_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_base_rtos_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_vast_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_vast_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_vast_rtos_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_vast_rtos_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley7_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley7_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley7_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley7_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_tucana_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_tucana_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_tucana_uImage_sfcnand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_tucana_uImage_sfcnand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley7_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley7_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_tucana_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_tucana_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_tucana_uImage_sfcnand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_tucana_uImage_sfcnand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_evb_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_evb_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_evb_uImage_msc0_aenv-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_evb_uImage_msc0_aenv
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_evb_uImage_sfcnand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_evb_uImage_sfcnand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_evb_uImage_sfcnor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_evb_uImage_sfcnor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_evb_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_evb_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_evb_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_evb_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_uImage_msc1-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_uImage_msc1
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_xImage_msc1-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_xImage_msc1
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2660_halley_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2660_halley_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_hare_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_hare_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670_halley_uImage_sfc_nand-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: x2670_halley_uImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-
-# --
-build-x2670_halley_uImage_sfc_nor-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-x2670_halley_uImage_sfc_nor-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: x2670_halley_uImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-
-# --
-build-x2670_halley_xImage_sfc_nand-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-x2670_halley_xImage_sfc_nand-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: x2670_halley_xImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-      - $BUILD_DIR/spl/u-boot-spl-pad.bin
-
-# --
-build-x2670_halley_xImage_sfc_nand_ota-job:       # This job runs in the build stage, which runs first.
-  stage: build
-  variables:
-    BUILD_CONFIG: x2670_halley_xImage_sfc_nand_ota
-    BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
-
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-      - $BUILD_DIR/spl/u-boot-spl-pad.bin
-
-
-# --
-build-x2670_halley_xImage_sfc_nor-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-x2670_halley_xImage_sfc_nor-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: x2670_halley_xImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
 
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot-with-spl.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-      - $BUILD_DIR/spl/u-boot-spl-pad.bin
+build-x2670_halley_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670_halley_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-burner_x2600-job:       # This job runs in the build stage, which runs first.
-  stage: build
+build-x2670m_hare_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_hare_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670m_hare_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_hare_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670m_hare_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_hare_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670m_hare_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_hare_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_hare_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_hare_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_halley7_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_halley7_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_halley7_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_halley7_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_halley7_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_halley7_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_halley7_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_halley7_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600m_halley7_xImage_msc0_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600m_halley7_xImage_msc0_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670m_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670m_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2670m_hare_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2670m_hare_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600e_halley_xImage_msc0_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600e_halley_xImage_msc0_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley7_xImage_msc0_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley7_xImage_msc0_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_halley7_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_halley7_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_halley7_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_halley7_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_halley7_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_halley7_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_halley7_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_halley7_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600h_halley7_xImage_msc0_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600h_halley7_xImage_msc0_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2600_halley_xImage_msc0_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2600_halley_xImage_msc0_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-burner_x2600-job:
+  extends: .build_base
   variables:
     BUILD_CONFIG: burner_x2600
     BUILD_DIR: tmp.build.$BUILD_CONFIG
-  script:
-    - echo "开始编译 <$BUILD_CONFIG>..."
-    - mkdir -p $BUILD_DIR
-    - make O=$BUILD_DIR -C . $BUILD_CONFIG
-
-  artifacts:
-    paths:
-      - $BUILD_DIR/u-boot.bin
-      - $BUILD_DIR/u-boot
-      - $BUILD_DIR/spl/u-boot-spl
-      - $BUILD_DIR/spl/u-boot-spl.bin
-
