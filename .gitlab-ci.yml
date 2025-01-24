@@ -1,3 +1,2 @@
 include:
-   - project: pzqi/ingenic-cicd
-     file: uboot/ci-cd.yml
+    - local: .gitlab/ci/ci-cd.yml

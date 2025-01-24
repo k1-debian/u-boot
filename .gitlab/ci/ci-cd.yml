@@ -1,0 +1,54 @@
+
+stages:          # List of stages for jobs, and their order of execution
+  - check_git_hooks
+  - build
+  - notify
+  - test
+  - deploy
+
+before_script:
+  - echo "Before script section"
+  - echo "setup cross compile toolchain mips-linux-gnu-gcc"
+  - export PATH=/etc/gitlab-runner/bin:$PATH
+  - mips-linux-gnu-gcc -v
+
+include:
+   - local: .gitlab/ci/x16xx.yml
+   - local: .gitlab/ci/x2000.yml
+   - local: .gitlab/ci/x2500.yml
+   - local: .gitlab/ci/x26xx.yml
+
+check_git_hooks-job:
+  stage: check_git_hooks
+  script:
+    - .gitlab/check_git_hooks_setup.sh
+
+
+
+notify_failure_status:
+    stage: notify
+    script:
+        - echo "notify to build results to users"
+        - .gitlab/report_failure.sh
+
+    when: on_failure
+
+notify_success_status:
+    stage: notify
+    script:
+        - echo "notify to build results to users"
+        - .gitlab/report_success.sh
+
+    when: on_success
+
+test-job:
+    stage: test
+    script:
+      - echo "Test stage ..."
+
+
+deploy-job:      # This job runs in the deploy stage.
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  environment: production
+  script:
+    - echo "Deploying stage ..."
