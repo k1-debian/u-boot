@@ -1,1 +1,1 @@
-include/configs/panda.h
+panda.h
