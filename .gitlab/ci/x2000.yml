@@ -49,64 +49,64 @@ build-zebra_uImage_sfc_nor-job:
     BUILD_CONFIG: zebra_uImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_uImage_msc2-job:
+build-x2000_halley5_uImage_msc2-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_uImage_msc2
+    BUILD_CONFIG: x2000_halley5_uImage_msc2
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_android_msc2-job:
+build-x2000_halley5_android_msc2-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_android_msc2
+    BUILD_CONFIG: x2000_halley5_android_msc2
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_uImage_msc0-job:
+build-x2000_halley5_uImage_msc0-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_uImage_msc0
+    BUILD_CONFIG: x2000_halley5_uImage_msc0
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_uImage_sfc_nand-job:
+build-x2000_halley5_uImage_sfc_nand-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_uImage_sfc_nand
+    BUILD_CONFIG: x2000_halley5_uImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_uImage_sfc_nor-job:
+build-x2000_halley5_uImage_sfc_nor-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_uImage_sfc_nor
+    BUILD_CONFIG: x2000_halley5_uImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_xImage_sfc_nand_ota-job:
+build-x2000_halley5_xImage_sfc_nand_ota-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_xImage_sfc_nand_ota
+    BUILD_CONFIG: x2000_halley5_xImage_sfc_nand_ota
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_xImage_msc2_ota-job:
+build-x2000_halley5_xImage_msc2_ota-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_xImage_msc2_ota
+    BUILD_CONFIG: x2000_halley5_xImage_msc2_ota
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_xImage_sfc_nand-job:
+build-x2000_halley5_xImage_sfc_nand-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_xImage_sfc_nand
+    BUILD_CONFIG: x2000_halley5_xImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_xImage_sfc_nor-job:
+build-x2000_halley5_xImage_sfc_nor-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_xImage_sfc_nor
+    BUILD_CONFIG: x2000_halley5_xImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
-build-halley5_xImage_msc2-job:
+build-x2000_halley5_xImage_msc2-job:
   extends: .build_base
   variables:
-    BUILD_CONFIG: halley5_xImage_msc2
+    BUILD_CONFIG: x2000_halley5_xImage_msc2
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
 build-x2000_epd_android_msc0-job:
@@ -277,6 +277,24 @@ build-x2000_base_rtos_ota_xImage_sfc_nand-job:
     BUILD_CONFIG: x2000_base_rtos_ota_xImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
+build-x2100_base_xImage_mmc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_mmc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_video_720p_mmc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_video_720p_mmc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_video_1080p_mmc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_video_1080p_mmc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
 build-x2100_base_xImage_sfc_nand-job:
   extends: .build_base
   variables:
@@ -361,8 +379,92 @@ build-huaby_x2000_uImage_msc0-job:
     BUILD_CONFIG: huaby_x2000_uImage_msc0
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
+build-burner_x2000_lpddr2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: burner_x2000_lpddr2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
 build-burner_x2000-job:
   extends: .build_base
   variables:
     BUILD_CONFIG: burner_x2000
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_mmc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_mmc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_video_720p_mmc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_video_720p_mmc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_video_1080p_mmc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_video_1080p_mmc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_video_720p_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_video_720p_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_xImage_video_1080p_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_xImage_video_1080p_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x2100_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x2100_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-robam_x2100_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: robam_x2100_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-robam_x2100_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: robam_x2100_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-huaby_x2100_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: huaby_x2100_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-huaby_x2100_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: huaby_x2100_xImage_sfc_nand
     BUILD_DIR: tmp.build.$BUILD_CONFIG

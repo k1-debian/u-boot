@@ -127,6 +127,24 @@ build-x1600_halley6_xImage_msc1-job:
     BUILD_CONFIG: x1600_halley6_xImage_msc1
     BUILD_DIR: tmp.build.$BUILD_CONFIG
 
+build-x1600mn_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600mn_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600mn_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600mn_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-panda_rtos_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: panda_rtos_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
 build-x1600_base_rtos_sfc_nand-job:
   extends: .build_base
   variables:
@@ -161,4 +179,118 @@ build-x1600_base_xImage_sfc_nor_use_gpio_spi_uart2-job:
   extends: .build_base
   variables:
     BUILD_CONFIG: x1600_base_xImage_sfc_nor_use_gpio_spi_uart2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_xImage_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_xImage_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1660_base_rtos_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1660_base_rtos_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_rtos_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_rtos_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_halley6_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_halley6_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_halley6_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_halley6_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600e_base_xImage_mmc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600e_base_xImage_mmc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600hn_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600hn_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600hn_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600hn_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_rtos_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_rtos_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_rtos_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_rtos_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-x1600en_base_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: x1600en_base_xImage_sfc_nor
     BUILD_DIR: tmp.build.$BUILD_CONFIG

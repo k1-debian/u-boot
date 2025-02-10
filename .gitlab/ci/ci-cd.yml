@@ -17,6 +17,7 @@ include:
    - local: .gitlab/ci/x2000.yml
    - local: .gitlab/ci/x2500.yml
    - local: .gitlab/ci/x26xx.yml
+   - local: .gitlab/ci/m300.yml
 
 check_git_hooks-job:
   stage: check_git_hooks

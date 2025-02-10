@@ -1,0 +1,74 @@
+
+.build_base:
+  stage: build
+  resource_group: building
+  script:
+    - echo "开始编译 <$BUILD_CONFIG>..."
+    - make O=$BUILD_DIR -C . $BUILD_CONFIG && make O=$BUILD_DIR
+  artifacts:
+    paths:
+      - $BUILD_DIR/u-boot-with-spl.bin
+      - $BUILD_DIR/u-boot-with-spl-mbr-gpt.bin
+      - $BUILD_DIR/u-boot
+      - $BUILD_DIR/spl/u-boot-spl
+      - $BUILD_DIR/include/generated/
+
+build-gewu_uImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_uImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_uImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_uImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_uImage_msc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_uImage_msc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_uImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_uImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_xImage_sfc_nand_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_xImage_sfc_nand_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_xImage_sfc_nand-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_xImage_sfc_nand
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_xImage_sfc_nor-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_xImage_sfc_nor
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_xImage_msc0-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_xImage_msc0
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_xImage_msc0_ota-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_xImage_msc0_ota
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
+
+build-gewu_xImage_msc2-job:
+  extends: .build_base
+  variables:
+    BUILD_CONFIG: gewu_xImage_msc2
+    BUILD_DIR: tmp.build.$BUILD_CONFIG
