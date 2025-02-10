@@ -224,7 +224,7 @@ static inline void LPDDR2_M54D5121632A_init(void *data)
 	c->DDR_WL	   	= CONFIG_DDR_WL,
 
 	c->DDR_tMRW  		= DDR__tck(5);
-	c->DDR_tDQSCK 		= DDR__ps(2000);
+	c->DDR_tDQSCK 		= DDR__ps(2500);
 	c->DDR_tDQSCKMAX 	= DDR__ps(10000);
 	c->DDR_tRAS  		= DDR_SELECT_MAX__tCK_ps(3, 42 * 1000);
 	c->DDR_tRTP  		= DDR_SELECT_MAX__tCK_ps(2, 7500);

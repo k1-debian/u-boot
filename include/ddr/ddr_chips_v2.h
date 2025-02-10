@@ -135,6 +135,10 @@
 #include "chips-v2/DDR3L_GDP1BFLM-CB.h"
 #endif
 
+#ifdef CONFIG_X2100_LPDDR2
+#include "chips-v2/X2100_LPDDR2_64M_COMPATIBLE_PARAM.h"
+#endif
+
 #ifdef CONFIG_X2600M_DDR2
 #include "chips-v2/X2600M_DDR2_64M_COMPATIBLE_PARAM.h"
 #endif

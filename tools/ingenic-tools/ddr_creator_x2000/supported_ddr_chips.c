@@ -92,6 +92,10 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_DDR3L_W634GU6QG_11
 	DDR3L_W634GU6QG_11
 #endif
+
+#ifdef CONFIG_X2100_LPDDR2
+	X2100_LPDDR2
+#endif
 };
 
 
