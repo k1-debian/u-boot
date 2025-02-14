@@ -109,6 +109,8 @@ static cdt_params_t *fm_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 	switch(device_id) {
 		case 0xE4:
 		case 0xE5:
+		case 0xD4:
+		case 0xD6:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);

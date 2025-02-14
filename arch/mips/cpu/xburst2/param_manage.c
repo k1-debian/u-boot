@@ -30,13 +30,14 @@ void burner_param_info(void)
 				g_ddr_param = (struct ddr_reg_value *)&pi->data;
 				break;
 			case PI_MAGIC_BOOT:
-				spl_usb_boot = *(int *)pi->data;
+				spl_usb_boot = pi->data;
 				if (spl_usb_boot)
 					return;
 				break;
 			default:
-				break;
+				return;
 		}
+
 		pi = (const struct param_info *)((char *)pi + pi->size + 8);
 	}
 }
