@@ -1,5 +1,5 @@
-#ifndef __X2000_DDR__
-#define __X2000_DDR__
+#ifndef __X2100_DDR__
+#define __X2100_DDR__
 
 
 #define CONFIG_DDR_INNOPHY
@@ -10,30 +10,21 @@
 #define CONFIG_DDR_DW32                     0    /* 1-32bit-width, 0-16bit-width */
 
 #define CONFIG_DDR_TYPE_LPDDR2
-#define CONFIG_DDR_TYPE_LPDDR3
 
 #ifdef CONFIG_DDR_TYPE_LPDDR2
 
-	/*X2000E M300*/
-	#define CONFIG_LPDDR2_W97BV6MK
-        #define CONFIG_LPDDR2_W97BV6MK_MEM_FREQ                 500000000
+	/*X2100*/
+	#define CONFIG_X2100_LPDDR2
+        #define CONFIG_X2100_LPDDR2_64M_MEM_FREQ		500000000
+
+	/*X2100L*/
+	#define CONFIG_LPDDR2_SCB4BL256160AFL19GI
+        #define CONFIG_LPDDR2_SCB4BL256160AFL19GI_MEM_FREQ      500000000
 
         #define CONFIG_LPDDR2_KGD_CONFIG             0x1
         #define CONFIG_LPDDR2_KGD_MR3_DS             0x2
 #endif
 
-#ifdef CONFIG_DDR_TYPE_LPDDR3
-
-	/*X2000*/
-	#define CONFIG_LPDDR3_W63AH6NKB_BI
-
-	/*X2000H*/
-	#define CONFIG_LPDDR3_NK6CL256M16DKX_H1
-
-        #define CONFIG_LPDDR3_KGD_CONFIG             0x1
-        #define CONFIG_LPDDR3_KGD_MR3_DS             0x2
-        #define CONFIG_LPDDR3_KGD_MR11_ODT           0x0
-#endif
 
 #define CONFIG_PHY_DRVODT_CONFIG             0x0
 #define CONFIG_PHY_PU_DRV_CMD                0x8
