@@ -1,2 +1,4 @@
 include:
-    - local: .gitlab/ci/ci-cd.yml
+    - project: pzqi/ingenic-cicd
+      file: uboot/uboot-2013/ci-cd.yml
+
