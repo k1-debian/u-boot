@@ -41,6 +41,7 @@
 
 	#define CONFIG_X1600HN_DDR2
 
+	#define CONFIG_DDR_CHIP_ODT
         #define CONFIG_DDR2_KGD_CONFIG               0x1
         #define CONFIG_DDR2_KGD_MR0_DLL_RST          0x1
         #define CONFIG_DDR2_KGD_MR0_PD               0x0

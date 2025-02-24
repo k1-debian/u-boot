@@ -74,7 +74,7 @@ static void dump_ddrp_register(void)
 #define dump_ddrc_register()
 #define dump_ddrp_register()
 #endif
-#ifdef CONFIG_DDR_DRVODT_DEBUG
+
 unsigned int pass_count = 0;
 #define DDRP_INNOPHY_PD_DRV_CMD         (DDR_PHY_OFFSET + (0x10<<2))        //0x130
 #define DDRP_INNOPHY_PU_DRV_CMD         (DDR_PHY_OFFSET + (0x11<<2))        //0x131
@@ -169,7 +169,7 @@ static void ddrp_zq_calibration(int bypass, struct phy_drvodt_config *drvodt)
 	serial_debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 #endif
 }
-#endif
+
 void ddrp_pll_init(void)
 {
 	unsigned int val;
@@ -481,6 +481,10 @@ void ddrp_auto_calibration(void)
 	debug_date_eye();
 	debug_date_eye_printf();
 #endif
+
+        if (drvodt->use_drvodt_config)
+		ddrp_zq_calibration(1, drvodt);
+
 	ddrp_rx_dqs_auto_calibration();
 }
 
