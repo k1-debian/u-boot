@@ -41,7 +41,9 @@
 
 #ifdef CONFIG_JZ_WATCHDOG
 #define CONFIG_HW_WATCHDOG
-#define CONFIG_WDT_TIMEOUT_BY_MS (20*000)
+#ifndef CONFIG_WDT_TIMEOUT_BY_MS
+#define CONFIG_WDT_TIMEOUT_BY_MS (20*1000)
+#endif
 #endif
 
 /* Device Tree Configuration*/
