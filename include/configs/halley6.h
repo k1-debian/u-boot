@@ -86,6 +86,7 @@
 		{MSC0, MPLL},			\
 		{SFC, MPLL},			\
 		{CIM, MPLL},			\
+		{MACPHY, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
 

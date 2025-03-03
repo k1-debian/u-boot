@@ -56,6 +56,7 @@
 		{LCD, MPLL},			\
 		{MSC0, MPLL},			\
 		{SFC, MPLL},			\
+		{MACPHY, MPLL},			\
 		{SRC_EOF,SRC_EOF}		\
 	}
 
