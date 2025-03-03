@@ -84,11 +84,7 @@ void hw_watchdog_disable(void)
 void hw_watchdog_reset(void)
 {
     debug("watchdog reset\n");
-    hw_watchdog_disable();
-
-    if (jz_wdt_set_timeout(0)) {
-        serial_debug("wdt set time error\n");
-    }
+    wdt_write(0, WDT_TCNT);
 }
 
 void hw_watchdog_init(void)
