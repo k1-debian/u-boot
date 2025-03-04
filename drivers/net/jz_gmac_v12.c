@@ -405,6 +405,19 @@ static int jz_recv(struct eth_device* dev)
 	return length;
 }
 
+static int ingenic_phy_clock_judge(int clk_id, unsigned int rate)
+{
+	if (clk_id >= CGU_CNT) {
+		printf("mac: set clk id error\n");
+		return -1;
+	}
+	if(clk_get_rate(clk_id) != rate){
+		printf("mac: The frequency you selected cannot be divided accurately. Please select another PLL or change the frequency you want. \n");
+		return -1;
+	}
+	return 0;
+}
+
 static int jz_init(struct eth_device* dev, bd_t * bd)
 {
 	int i;
@@ -461,10 +474,19 @@ static int jz_init(struct eth_device* dev, bd_t * bd)
 #endif
 	if(gmacdev->Speed == SPEED10) {
 		clk_set_rate(clk_id, 2500000);
+		if(ingenic_phy_clock_judge(clk_id, 2500000)){
+			return -1;
+		}
 	} else if(gmacdev->Speed == SPEED100) {
 		clk_set_rate(clk_id, 25000000);
+		if(ingenic_phy_clock_judge(clk_id, 25000000)){
+			return -1;
+		}
 	} else if(gmacdev->Speed == SPEED1000) {
 		clk_set_rate(clk_id, 125000000);
+		if(ingenic_phy_clock_judge(clk_id, 125000000)){
+			return -1;
+		}
 	}
 #endif
 
@@ -567,6 +589,9 @@ static void jz_gmac_phy_reset(void)
 {
 #ifndef CONFIG_FPGA
 	clk_set_rate(MACPHY, 50000000);
+	if(ingenic_phy_clock_judge(MACPHY, 50000000)){
+		return;
+	}
 #endif
 
 
@@ -588,6 +613,9 @@ static void jz_gmac_phy_reset(void)
 	clk_id = MACTX1;
 #endif
 	clk_set_rate(clk_id, 125000000);
+	if(ingenic_phy_clock_judge(clk_id, 125000000)){
+		return;
+	}
 #endif
 
 	gpio_set_func(CONFIG_GMAC_CRLT_PORT, CONFIG_GMAC_CRTL_PORT_SET_FUNC,\
