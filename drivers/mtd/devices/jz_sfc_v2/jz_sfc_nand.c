@@ -299,6 +299,7 @@ static int jz_sfcnand_erase(struct mtd_info *mtd, struct erase_info *instr)
         if (
 #ifdef CONFIG_BURNER
                 spi_args->spi_erase == CHIP_ERASE &&
+		!spi_args->reserve_space &&
 #else
                 !instr->scrub &&
 #endif
