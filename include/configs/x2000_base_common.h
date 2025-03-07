@@ -9,7 +9,11 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X2000_V12	/* x2000_v12 SoC */
 
+#ifdef CONFIG_X2100
+#include "x2100_ddr.h"
+#else
 #include "x2000_ddr.h"
+#endif
 
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
