@@ -160,7 +160,7 @@
 #define MSCCDR_EXCK_E           (1 << 21)
 #define MSCCDR_MPCS             (30)
 #define MSCCDR_MPCS_MASK        (3 << MSCCDR_MPCS)
-#define MSCCDR_MPCS_EXCLK       (3 << MSCCDR_MPCS)
+#define MSCCDR_MPCS_EXCLK       (2 << MSCCDR_MPCS)
 
 
 /* CPM scratch pad protected register(CPSPPR) */

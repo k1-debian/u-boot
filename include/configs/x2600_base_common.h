@@ -165,8 +165,10 @@
 #endif
 
 /* SFC */
+#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
 #define CONFIG_SFC_V20
-#define CONFIG_JZ_SFC_PD
+#define CONFIG_JZ_SFC_PD  /* set gpio */
+#endif
 
 #if defined(CONFIG_X2660_DDR)
 /* sfc ota config */

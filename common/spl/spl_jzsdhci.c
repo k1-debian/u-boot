@@ -393,12 +393,11 @@ static u8* mmc_cmd(u32 cmdidx, u32 arg, u32 cmdat, u32 rtype)
 	if(wait_cmd_complete(cmdidx))
 		goto exit;
 
-#ifdef DEBUG_MSC
-	if(cmd_err_stat_check())
-		goto exit;
-#endif
 	resp = msc_get_resp();
 
+#ifdef DEBUG_MSC
+	cmd_err_stat_check();
+#endif
 
 exit:
 	if(!(cmdat & MSC_DATA_PRESENT_SEL_BIT)) {
@@ -1306,9 +1305,9 @@ static int jzmmc_init(void)
 	resp = mmc_cmd(8, 0x1aa, 0, MSC_CMDAT_RESPONSE_R1);
 
 	resp = mmc_cmd(55, 0, 0, MSC_CMDAT_RESPONSE_R1);
-	if (resp[1] & 1 << 5) {
+	if (resp && (resp[1] & 1 << 5)) {
 		resp = mmc_cmd(41, 0x40ff8000, 0, MSC_CMDAT_RESPONSE_R3);
-		if(*(u32*)resp)
+		if(resp && (*(u32*)resp))
 			ret = sd_found();
 		else
 			ret = mmc_found();

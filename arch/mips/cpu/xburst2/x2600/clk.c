@@ -154,15 +154,9 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 	unsigned regval = 0, reg = 0;
 	unsigned int ret = 0;
 
-	if (clk_id == MSC1) {
-		cgu = &cgusetting[clk_id - 1];
-		reg = cgu->addr;
-		regval = readl(reg);
-	} else {
-		cgu = &cgusetting[clk_id];
-		reg = cgu->addr;
-		regval = readl(reg);
-	}
+	cgu = &cgusetting[clk_id];
+	reg = cgu->addr;
+	regval = readl(reg);
 
 	if (clk_id == DDR) {
 		switch (regval >> 30) {
@@ -255,19 +249,10 @@ void clk_set_rate(int clk_id, unsigned long rate)
 		return;
 	}
 
+	cgu = &cgusetting[clk_id];
+	reg = cgu->addr;
+	pll_rate = pll_get_rate(cgu->sel_src);
 
-	if (clk_id == MSC1) {
-		cgu = &cgusetting[clk_id-1];
-		reg = cgu->addr;
-		pll_rate = pll_get_rate(cgu->sel_src);
-
-		cgu = &cgusetting[clk_id];
-		reg = cgu->addr;
-	} else {
-		cgu = &cgusetting[clk_id];
-		reg = cgu->addr;
-		pll_rate = pll_get_rate(cgu->sel_src);
-	}
 	if(!pll_rate) {
 		debug("clk id %d: get pll error\n", clk_id);
 		return;
