@@ -1960,6 +1960,46 @@ static void mmc_load_rtos_ota_boot(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_MCU_RTOS_BOOT
+#ifdef CONFIG_X2600
+#include "x2600_riscv.h"
+#define MMC_BLOCK_SIZE 512
+#endif
+
+int sfc_mmc_load(unsigned int src_addr, unsigned int size, unsigned int dst_addr)
+{
+	unsigned int *temp = CONFIG_SYS_TEXT_BASE;		// 临时地址,存放超出目标地址空间的数据
+	unsigned int block_num = size / MMC_BLOCK_SIZE;
+	unsigned int remain_bytes = size % MMC_BLOCK_SIZE;
+	unsigned int offset = block_num * MMC_BLOCK_SIZE;
+
+	mmc_block_read(src_addr, block_num , dst_addr);
+	if (remain_bytes){
+		mmc_block_read(src_addr + offset, 1, temp);
+		/* 将临时地址拷贝到目标地址的剩余部分 */
+		memcpy((void *)(dst_addr + offset), temp, remain_bytes);
+	}
+
+	return 0;
+}
+
+void spl_mmc_mcu_rtos_boot(void)
+{
+	int ret;
+	unsigned int riscv_offset;
+
+	ret = spl_get_built_in_gpt_partition("riscv", &riscv_offset, NULL);
+	if (ret)
+		printf("riscv partition not found\n");
+
+	spl_load_riscv(sfc_mmc_load, riscv_offset);
+
+	flush_cache_all();
+
+	riscv_reset();
+}
+#endif
+
 char *spl_mmc_load_image(void)
 {
 #ifdef CONFIG_JZ_MMC_MSC0
@@ -1989,6 +2029,10 @@ char *spl_mmc_load_image(void)
 #ifdef CONFIG_SPL_RISCV
 	spl_mmc_load_riscv();
 	spl_start_riscv();
+#endif
+
+#ifdef CONFIG_SPL_MCU_RTOS_BOOT
+	spl_mmc_mcu_rtos_boot();
 #endif
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
