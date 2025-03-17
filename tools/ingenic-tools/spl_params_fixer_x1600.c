@@ -170,10 +170,14 @@ struct params {
 
 			/*slect sclk_a; div = 1/16 frq=39M*/
 #define SFC_VAL		((0 << 30) | (1 << 29) | (15 << 0))
+
+#define OTG_SOFT_RESET	0x00001000
+
 struct desc descriptors[14] = {
 	/*
 	 * saddr,	paddr,		value,		poll_h_mask,	poll_l_mask
 	 */
+	{CPM_SRBC,	0,		OTG_SOFT_RESET,	0,		0x0},		/* set otg ctrl reset, place otg-phy in dedicated state.*/
 	{CPM_CPAPCR,	CPM_CPAPCR,	APLL_VAL,	APLL_POLL,	0},
 	{CPM_CPCCR,	CPM_CPCSR,	CPCCR_FRQ_VAL,	0,		CPCCR_FRQ_POLL},
 	{CPM_CPCCR,	CPM_CPCSR,	CPCCR_SEL_VAL,	CPCCR_SEL_POLL,	0},
@@ -185,6 +189,7 @@ struct desc descriptors[14] = {
 	{CPM_MSC1CDR,	CPM_MSC1CDR,	MSC1_VAL,	0,		0x10000000},
 #endif
 	{CPM_SFCCDR,	CPM_SFCCDR,	SFC_VAL,	0,		0x10000000},
+	{CPM_SRBC,	0,		0,		0,		0x0},		/* release otg ctrl reset. */
 	{0xffff,	0xffff, 	0,		0,		0},
 };
 
