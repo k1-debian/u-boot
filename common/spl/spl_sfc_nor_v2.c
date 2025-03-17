@@ -683,7 +683,8 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 	struct norflash_partitions partition;
 	unsigned int rootfs_offset;
 	unsigned int code_len;
-	unsigned int *ptr = (unsigned int *)(buffer - 2048);
+	unsigned int *ptr = (unsigned int *)buffer;
+	unsigned int rootfs_load_addr = buffer + 2048;
 	unsigned int ram_size = get_ddr_size() << 20;
 	int ret;
 
@@ -704,14 +705,14 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 	}
 
 	code_len = ptr[128];
-	if ((virt_to_phys(buffer) + code_len) > ram_size) {
+	if ((virt_to_phys(rootfs_load_addr) + code_len) > ram_size) {
 		printf("rootfs load add + size exceed ram size, please check load rootfs addr and size!!!\n");
 		hang();
 	}
 
-	sfc_read_data(rootfs_offset, code_len, buffer);
+	sfc_read_data(rootfs_offset, code_len, rootfs_load_addr);
 
-	ret = secure_scboot(buffer - 2048, buffer);
+	ret = secure_scboot(buffer, rootfs_load_addr);
 	if(ret) {
 		serial_debug("Error check rootfs hash\n");
 		hang();
@@ -744,28 +745,18 @@ void spl_load_kernel(long offset, const char *name)
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	struct mini_spi_nor_info *spi_nor_info = &flash->g_nor_info;
 	u32 pagesize = spi_nor_info->page_size;
-	u32 unalign_size;
-	unsigned int entry_addr;
-
-	entry_addr = spl_image.entry_point;
-	unalign_size = image_size & (pagesize - 1);
-
-	//向下对齐
-	u32 sig_offset_align = offset + (image_size & ~(pagesize - 1));
-	u32 sig_size_align = (2048 + unalign_size + pagesize - 1) & ~(pagesize - 1);
-	sfc_read_data(sig_offset_align, sig_size_align, entry_addr);
-
-	memcpy(entry_addr - 2048, entry_addr + unalign_size - sizeof(struct image_header), 2048);
+	image_size = (image_size + 2048 + pagesize - 1) & ~(pagesize - 1);
 #endif
 
+	sfc_read_data(offset, image_size, (void *)load_addr);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	/* signature address */
-	secure_check_hash_rootfs(name, (void *)entry_addr);
+	unsigned int sig_buf = load_addr + (spl_image.size - sizeof(struct image_header));
+	secure_check_hash_rootfs(name, (void *)sig_buf);
 #endif
 
 	//load kernel
-	sfc_read_data(offset, image_size, (void *)load_addr);
 	ret = secure_scboot(load_addr, spl_image.load_addr);
 	if(ret) {
 		serial_debug("Error spl secure load kernel.\n");
