@@ -1370,12 +1370,14 @@ static inline int spl_ota_set_flag_and_boot_wdt(void)
 extern int secure_scboot (void *, void *);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
-#define LOAD_ROOTFS_ADDR 0x82000000
+extern unsigned int get_ddr_size(void);
 static void secure_check_hash_rootfs(const char *name, void *buffer)
 {
 	unsigned int rootfs_offset;
 	unsigned int code_len;
-	unsigned int *ptr = (unsigned int *)(LOAD_ROOTFS_ADDR - 2048);
+	unsigned int *ptr = (unsigned int *)buffer;
+	unsigned int rootfs_load_addr = buffer + 2048;
+	unsigned int ram_size = get_ddr_size() << 20;
 	int ret;
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
@@ -1392,8 +1394,11 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 		hang();
 	}
 
-	memcpy(LOAD_ROOTFS_ADDR - 2048, buffer, 2048);
 	code_len = ptr[128];
+	if((virt_to_phys(rootfs_load_addr) + code_len) > ram_size) {
+		printf("rootfs load add + size exceed ram size, please check load rootfs addr and size!!!\n");
+		hang();
+	}
 
 	/* 非DMA模式块数量不能超过0xffff */
 	int max_load_length = 31 * 1024 * 1024;
@@ -1403,11 +1408,11 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 	int temp_offset = 0;
 	while (temp_offset < code_len) {
 		int temp_size = (code_len - temp_offset) > max_load_length ? max_load_length : (code_len - temp_offset);
-		mmc_block_read(rootfs_offset + temp_offset / 512, temp_size / 512, LOAD_ROOTFS_ADDR + temp_offset);
+		mmc_block_read(rootfs_offset + temp_offset / 512, temp_size / 512, rootfs_load_addr + temp_offset);
 		temp_offset += temp_size;
 	}
 
-	ret = secure_scboot(LOAD_ROOTFS_ADDR - 2048, LOAD_ROOTFS_ADDR);
+	ret = secure_scboot(buffer, rootfs_load_addr);
 	if(ret) {
 		serial_debug("Error check rootfs hash.\n");
 		hang();
@@ -1421,6 +1426,7 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 	int err = 0;
 	u32 image_size_sectors;
 	struct image_header *header;
+	unsigned int load_addr;
 
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE -
 					 sizeof(struct image_header));
@@ -1440,9 +1446,14 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 #endif
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
+	load_addr = spl_image.load_addr;
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
-	/* 读的长度增加2K(rootfs signature) */
+	/*
+	 * rootfs的签名存储在xImage尾部：
+	 * 1. 启用rootfs验签，则加载xImage + signature到DDR中
+	 * 2. 不启用rootfs验签，则仅读取xImage到DDR中
+	 */
 	image_size_sectors = (spl_image.size + 2048 + 0x200 - 1) / 0x200;
 #else
 	/* convert size to sectors - round up */
@@ -1451,22 +1462,17 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 
 	/* Read the header too to avoid extra memcpy */
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
-	/* 跳过2Kbyte大小的安全启动签名数据 */
+	/* 加载地址前移2048,使kernel签名加载到kernel起始地址前2048 */
+	load_addr -= 2048;
+#endif
 	err = mmc_block_read(sector, image_size_sectors,
-			     (void *)spl_image.load_addr - 2048);
+			     (void *)load_addr);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
-	unsigned int *info =  (void *)spl_image.load_addr - 2048 + 512;
-	unsigned int sig_offset = *info + (16 - 1);
-	sig_offset = sig_offset & ~(16 - 1);
-	sig_offset = sig_offset + 2048;
+	/* sig_buf指向DDR中签名的起始地址 */
+	unsigned int sig_buf = load_addr +  (spl_image.size - sizeof(struct image_header));
 	/* signature address */
-	secure_check_hash_rootfs(name, (void *)spl_image.load_addr - 2048 + sig_offset);
-#endif
-
-#else
-	err = mmc_block_read(sector, image_size_sectors,
-			     (void *)spl_image.load_addr);
+	secure_check_hash_rootfs(name, (void *)sig_buf);
 #endif
 
 #ifdef DEBUG_DDR_CONTENT

@@ -743,15 +743,21 @@ void spl_load_kernel(long offset, const char *name)
 	load_addr = spl_image.load_addr;
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
+	/*
+	 * rootfs的签名存储在xImage尾部：
+	 * 1. 启用rootfs验签，则加载xImage + signature到DDR中
+	 * 2. 不启用rootfs验签，则仅读取xImage到DDR中
+	 */
 	struct mini_spi_nor_info *spi_nor_info = &flash->g_nor_info;
 	u32 pagesize = spi_nor_info->page_size;
+	/* 向上页对齐，获取包括signature的2k大小对齐数据到DDR中 */
 	image_size = (image_size + 2048 + pagesize - 1) & ~(pagesize - 1);
 #endif
 
 	sfc_read_data(offset, image_size, (void *)load_addr);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
-	/* signature address */
+	/* sig_buf指向DDR中签名的起始地址 */
 	unsigned int sig_buf = load_addr + (spl_image.size - sizeof(struct image_header));
 	secure_check_hash_rootfs(name, (void *)sig_buf);
 #endif
