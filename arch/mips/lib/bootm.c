@@ -50,12 +50,6 @@ static void boot_prep_linux(bootm_headers_t *images)
 	char env_buf[12];
 	char *cp;
 
-	if (IMAGE_ENABLE_OF_LIBFDT && images->ft_len) {
-		if (image_setup_linux(images)) {
-			printf("FDT Creating Failed:hanging ...\n");
-		}
-	}
-
 	linux_params_init(UNCACHED_SDRAM(gd->bd->bi_boot_params), commandline);
 
 #ifdef CONFIG_MEMSIZE_IN_BYTES
@@ -88,6 +82,12 @@ static void boot_prep_linux(bootm_headers_t *images)
 	cp = getenv("eth1addr");
 	if (cp)
 		linux_env_set("eth1addr", cp);
+
+	if (IMAGE_ENABLE_OF_LIBFDT && images->ft_len) {
+		if (image_setup_linux(images)) {
+			printf("FDT Creating Failed:hanging ...\n");
+		}
+	}
 }
 
 static void linux_cmdline_set(const char *value, size_t len)
@@ -259,6 +259,22 @@ static void linux_params_init(ulong start, char *line)
 		} else {
 			printf("Warining ... bootargs for ram_size (%d)M not defined!\n");
 		}
+
+		if (mem_str) {
+			char *old_bootargs = getenv("bootargs");
+			char new_bootargs[LINUX_MAX_ARGS];
+			if (!old_bootargs || !old_bootargs[0]) {
+				snprintf(new_bootargs, sizeof(new_bootargs), "%s", mem_str);
+			} else {
+				size_t len = strlen(old_bootargs);
+				while (len > 0 && old_bootargs[len - 1] == ' ') {
+					len--;
+				}
+				snprintf(new_bootargs, sizeof(new_bootargs), "%.*s %s", (int)len, old_bootargs, mem_str);
+			}
+			setenv("bootargs", new_bootargs);
+		}
+
 		linux_cmdline_set(mem_str, mem_strlen);
 		printf("bootargs for mem adjust to : %s\n", mem_str);
 	}
