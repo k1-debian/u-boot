@@ -296,16 +296,17 @@ static int jz_sfcnand_erase(struct mtd_info *mtd, struct erase_info *instr)
 {
 	int ret;
 
-        if (
 #ifdef CONFIG_BURNER
-                spi_args->spi_erase == CHIP_ERASE &&
-		!spi_args->reserve_space &&
+	if ((spi_args->spi_erase == CHIP_ERASE || spi_args->spi_erase == FACTORY_ERASE) &&
+			instr->addr < mtd->size)
 #else
-                !instr->scrub &&
+        if (!instr->scrub)
 #endif
-                is_readonly_partition((uint32_t)instr->addr, (uint32_t)instr->len)
-        )
-		return -EROFS;
+	{
+		ret = is_readonly_partition((uint32_t)instr->addr, (uint32_t)instr->len);
+		if (ret)
+			return -EROFS;
+	}
 
 	if((ret = jz_sfc_nand_erase(mtd, instr))) {
 		printf("WARNING: block %d erase fail !\n",(uint32_t)instr->addr / mtd->erasesize);

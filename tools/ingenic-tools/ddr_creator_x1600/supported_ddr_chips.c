@@ -40,6 +40,9 @@ struct ddr_chip_info supported_ddr_chips[] = {
 #ifdef CONFIG_X1600E_LPDDR2
 	X1600E_LPDDR2,
 #endif
+#ifdef CONFIG_X1660L_LVDDR
+	X1660L_LVDDR,
+#endif
 };
 
 
