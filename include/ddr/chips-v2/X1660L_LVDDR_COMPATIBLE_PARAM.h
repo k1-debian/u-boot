@@ -244,13 +244,13 @@ static inline void X1660L_LVDDR_init(void *data)
 	c->DDR_tRRD    = DDR__ns(10);
 	c->DDR_tWR     = DDR__ns(15);
 	c->DDR_tWTR    = DDR__tck(2);
-	c->DDR_tRFC    = DDR__ns(72);
+	c->DDR_tRFC    = DDR__ns(70);
 	c->DDR_tXP     = DDR__ns(25);
 	c->DDR_tMRD    = DDR__tck(2);
 
 	c->DDR_BL      = 4;
 	c->DDR_RL = DDR__tck(RL);
-	c->DDR_WL = DDR__tck(RL - 1);
+	c->DDR_WL = DDR__tck(1);
 	c->DDR_tCKE    = DDR__tck(2);
 	c->DDR_tXSR    = DDR__tck(200);
 	c->DDR_tREFI   = DDR__ns(3900);
