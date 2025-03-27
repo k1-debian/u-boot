@@ -1158,13 +1158,12 @@ static int spl_sfc_nor_rtos_load(struct rtos_header *rtos, unsigned int offset)
 
 	int size = rtos->img_end - rtos->img_start;
 	debug("size = %d tag = 0x%x 0x%x\n",size,rtos->tag,offset);
-#ifdef CONFIG_JZ_SCBOOT
-	int start = rtos->img_end + 4096;
-	sfc_read_data(offset, size, start);
-	int ret = secure_scboot((void *)(start + sizeof(struct rtos_header)), (void*)rtos->img_start);
+#ifdef CONFIG_JZ_SECURE_SUPPORT
+	sfc_read_data(offset, size, rtos->img_start);
+	int ret = secure_scboot(rtos->img_start + sizeof(struct rtos_header), rtos->img_start);
 	if(ret) {
-		serial_debug("Error spl secure load freertos\n");
-		return -1;
+		serial_debug("Error rtos decryption.\n");
+		hang();
 	}
 #else
 	sfc_read_data(offset, size, (unsigned char *)rtos->img_start);
@@ -1481,7 +1480,7 @@ change_part:
 		}
 		if(crc_try--)
 			goto change_part;
-		
+
 		serial_debug("crc error, boot failed!\n");
 		hang();
 	}
