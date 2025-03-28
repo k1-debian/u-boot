@@ -1037,7 +1037,6 @@ static void spl_sfc_rtos_boot(void)
 static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitions, char *kernel_name, char *cmdargs)
 {
 	u32 image_size;
-	unsigned int rootfs_offset;
 	unsigned int img_addr = 0;
 
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
@@ -1066,6 +1065,8 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 	cmdargs = spl_board_process_mem_bootargs(cmdargs);
 #endif
 
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	unsigned int rootfs_offset;
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 	if (!strncmp(kernel_name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2)))
 		rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME2);
@@ -1075,7 +1076,6 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 	rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME);
 #endif
 
-#ifdef CONFIG_JZ_SECURE_ROOTFS
 	/*
 	 * rootfs的签名存储在xImage尾部：
 	 * 1. 启用rootfs验签，则传递xImage + signature的大小到RTOS中，由RTOS加载
