@@ -1,0 +1,14 @@
+property:
+    disk_size = 7450m
+    gpt_header_lba = 512
+    custom_signature = 0
+
+partition:
+	#name     =  start,   size, fstype
+	xboot     =     0m,     1m,
+	ota       =     1m,     1m, EMPTY
+	sn_mac    =     2m,     1m, EMPTY
+        kernel    =     3m,     8m, EMPTY
+        data      =    11m,  7439m, LINUX_FS
+
+#fstype could be: LINUX_FS, FAT_FS, EMPTY

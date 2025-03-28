@@ -101,3 +101,5 @@ GTAGS
 # spl ais files
 /spl/*.ais
 /out_spl_source/
+
+uboot.tar.gz
