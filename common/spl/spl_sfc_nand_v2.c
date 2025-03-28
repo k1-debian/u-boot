@@ -1036,6 +1036,8 @@ static void spl_sfc_rtos_boot(void)
 
 static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitions, char *kernel_name, char *cmdargs)
 {
+	u32 image_size;
+	unsigned int rootfs_offset;
 	unsigned int img_addr = 0;
 
 	img_addr = get_part_offset_by_name(partitions, kernel_name);
@@ -1057,16 +1059,42 @@ static void spl_sfc_nand_cfg_os_args(struct jz_sfcnand_partition_param *partitio
 
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
+	image_size = spl_image.size;
 
 	cmdargs = cmdargs ? cmdargs : CONFIG_SYS_SPL_ARGS_ADDR;
 #ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
 	cmdargs = spl_board_process_mem_bootargs(cmdargs);
 #endif
 
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+	if (!strncmp(kernel_name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2)))
+		rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME2);
+	else
+		rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME);
+#else
+	rootfs_offset = get_part_offset_by_name(partitions, CONFIG_SPL_ROOTFS_NAME);
+#endif
+
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+	/*
+	 * rootfs的签名存储在xImage尾部：
+	 * 1. 启用rootfs验签，则传递xImage + signature的大小到RTOS中，由RTOS加载
+	 * 2. 不启用rootfs验签，则仅传递xImage的大小到RTOS中
+	 * 不单独读取signature，避免出现坏块跳块烧写，导致读取数据不对
+	 */
+	unsigned int ram_size = get_ddr_size() << 20;
+	unsigned int pagesize = curr_device->pagesize;
+	// 向上页对齐，获取包括signature的2k大小对齐数据到DDR中
+	image_size = (image_size + 2048 + pagesize - 1) & ~(pagesize - 1);
+	os_boot_args.rootfs_offset = rootfs_offset;
+	os_boot_args.ram_size = ram_size;
+	os_boot_args.sig_buff = spl_image.load_addr + (spl_image.size - sizeof(struct image_header));
+#endif
+
 	/* 由RTOS 加载OS镜像, SPL等待OS加载完成, 并由SPL完成后续引导 */
 	os_boot_args.magic = 0x53475241;  /* ARGS */
 	os_boot_args.offset = img_addr;
-	os_boot_args.size = spl_image.size;
+	os_boot_args.size = image_size;
 	os_boot_args.cmdargs = cmdargs;
 	os_boot_args.entry_point = spl_image.entry_point;
 	os_boot_args.load_addr = spl_image.load_addr;

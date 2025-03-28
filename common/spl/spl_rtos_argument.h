@@ -30,6 +30,9 @@ struct rtos_boot_os_args {
     unsigned int offset; /* OS 偏移地址 单位:Byte */
     unsigned int size; /* OS 大小 单位:Byte */
     unsigned int entry_point;
+    unsigned int rootfs_offset;
+    unsigned int ram_size;
+    unsigned int sig_buff;
     char *cmdargs;
 };
 

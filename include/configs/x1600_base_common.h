@@ -28,6 +28,10 @@
 #define CONFIG_SYS_AHB0_FREQ		280000000
 #define CONFIG_SYS_AHB2_FREQ		280000000	/*APB = AHB2/2*/
 
+#ifdef CONFIG_QUICK_START
+#define CONFIG_SPL_RTOS_LOAD_KERNEL
+#endif
+
 #define CONFIG_SYS_EXTAL		24000000	/* EXTAL freq: 48 MHz */
 #define CONFIG_SYS_HZ			1000		/* incrementer freq */
 
@@ -591,6 +595,7 @@
 #endif
     #define CONFIG_SPL_OTA_NAME         "ota"
     #define CONFIG_SPL_OS_NAME2         "kernel2"
+    #define CONFIG_SPL_ROOTFS_NAME2   "rootfs2"
     #define CONFIG_SPL_BOOTARGS2        BOOTARGS_COMMON " " ARGS_ROOTFS2
     #define CONFIG_SYS_SPL_ARGS_ADDR2   CONFIG_SPL_BOOTARGS2
 #endif
