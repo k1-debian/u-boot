@@ -22,6 +22,8 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0x61,   2048, 3, 4, 3, 1, gd_errstat_1, 0),
 	DEVICE_STRUCT(0xD9,   2048, 2, 4, 2, 1, gd_errstat_2, 0),
 	DEVICE_STRUCT(0x41,   2048, 2, 4, 2, 1, gd_errstat_2, 0),
+	DEVICE_STRUCT(0x31,   2048, 2, 4, 2, 1, gd_errstat_2, 0),
+	DEVICE_STRUCT(0x21,   2048, 2, 4, 2, 1, gd_errstat_2, 0),
 };
 
 static struct nand_desc gd_nand = {

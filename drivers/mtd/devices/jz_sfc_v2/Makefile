@@ -57,6 +57,7 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/hik_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/etron_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/unim_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/micron_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/wodposit_nand.o
 
 endif
 
