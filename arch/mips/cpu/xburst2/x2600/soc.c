@@ -131,6 +131,11 @@ void board_init_f(ulong dummy)
 	debug("CLK init\n");
 	clk_init();
 
+#ifdef CONFIG_HW_WATCHDOG
+	debug("WATCHDOG init\n");
+	hw_watchdog_init();
+#endif
+
 	debug("SDRAM init\n");
 	sdram_init();
 
