@@ -116,28 +116,8 @@ static struct jz_sfcnand_base_param gd_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
-#if 1
 	[5] = {
 		/*GD5F4GQ4UC*/
-		.pagesize = 4 * 1024,
-		.blocksize = 4 * 1024 * 64,
-		.oobsize = 256,
-		.flashsize = 4 * 1024 * 64 * 2048,
-
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = TRD_4G,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.ecc_max = 0x8,
-		.need_quad = 1,
-	},
-#else
-      [5] = {
 		/*GD5F4GM5UF*/
 		.pagesize = 4 * 1024,
 		.blocksize = 4 * 1024 * 64,
@@ -156,7 +136,6 @@ static struct jz_sfcnand_base_param gd_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
-#endif
       [6] = {
 		/*GD5F1GQ4RF*/
 		.pagesize = 2 * 1024,
