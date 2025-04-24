@@ -53,6 +53,8 @@ COBJS-$(CONFIG_BOOTARGS_AUTO_MODIFY) += spl_auto_modify_mem.o
 endif
 COBJS-$(CONFIG_SPL_RISCV) += spl_riscv.o
 
+COBJS-$(CONFIG_SPL_PDMA_MCU) += spl_pdma_mcu.o
+
 COBJS-$(CONFIG_SPL_EFUSE) += spl_efuse.o
 
 COBJS-$(CONFIG_RUN_FIRMWARE_VIA_USB_BOOT) += usb_boot.o

@@ -38,6 +38,9 @@
 #ifdef CONFIG_JZSD_OTA_VERSION20
 #include "spl_ota_jzsd.h"
 #endif
+#ifdef CONFIG_SPL_PDMA_MCU
+#include "spl_pdma_mcu.h"
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -273,6 +276,11 @@ char *spl_mmc_load_image(void)
 #endif
 		hang();
 	}
+#ifdef CONFIG_SPL_PDMA_MCU
+        spl_start_mcu();
+        spl_mmc_load_mcu();
+	boot_up_mcu();
+#endif
 
 #ifdef CONFIG_SPL_RTOS_BOOT
 	mmc_load_rtos_boot(mmc);
