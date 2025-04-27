@@ -52,7 +52,7 @@
         #define CONFIG_DDR2_KGD_MR2_DCC_EN           0x0
 #endif
 
-#define CONFIG_PHY_DRVODT_CONFIG             0x1
+#define CONFIG_PHY_DRVODT_CONFIG             0x0
 #define CONFIG_PHY_PU_DRV_CMD                0x8
 #define CONFIG_PHY_PD_DRV_CMD                0x8
 #define CONFIG_PHY_PU_DRV_CK                 0x8

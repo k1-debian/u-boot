@@ -198,7 +198,6 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 void dump_generated_reg(struct ddr_reg_value *reg){}
 #endif
 
-#ifdef CONFIG_DDR_DRVODT_DEBUG
 #define DDRP_INNOPHY_PD_DRV_CMD         (DDR_PHY_OFFSET + (0xb0<<2))        //0x130
 #define DDRP_INNOPHY_PU_DRV_CMD         (DDR_PHY_OFFSET + (0xb1<<2))        //0x131
 #define DDRP_INNOPHY_PD_ODT_DQ7_0       (DDR_PHY_OFFSET + (0xc0<<2))        //0x140
@@ -262,7 +261,7 @@ static void ddrp_zq_calibration(int bypass, struct phy_drvodt_config *drvodt)
 	serial_debug("DDRP_INNOPHY_PD_ODT_DQ15_8: %x\n", ddr_readl(DDRP_INNOPHY_PD_ODT_DQ15_8));
 #endif
 }
-#endif
+
 void ddrp_pll_init(void)
 {
 	unsigned int val;
@@ -408,6 +407,10 @@ void ddrp_auto_calibration(void)
 
         drvodt = &global_reg_value->phy_drvodt;
         deskew = &global_reg_value->phy_deskew;
+
+#if CONFIG_PHY_DRVODT_CONFIG
+	ddrp_zq_calibration(1,drvodt);
+#endif
 
         reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
 	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
