@@ -1,6 +1,5 @@
 #
-# Ingenic AD100 makefile
-#
+# Ingenic x2600E configuration
 # Copyright (c) 2023 Ingenic Semiconductor Co.,Ltd
 # Author: cxtan <chenxi.tan@ingenic.cn>
 #
@@ -20,24 +19,6 @@
 # MA 02111-1307 USA
 #
 
-include $(TOPDIR)/config.mk
-
-LIB	= $(obj)lib$(BOARD).o
-
-COBJS-y	:= board.o
-
-SRCS	:= $(SOBJS-y:.o=.S) $(COBJS-y:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS-y))
-SOBJS   := $(addprefix $(obj),$(SOBJS-y))
-
-$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
-	$(call cmd_link_o_target, $(OBJS))
-
-#########################################################################
-
-# defines $(obj).depend target
-include $(SRCTREE)/rules.mk
-
-sinclude $(obj).depend
-
-#########################################################################
+ifndef TEXT_BASE
+TEXT_BASE = 0x80100000
+endif
