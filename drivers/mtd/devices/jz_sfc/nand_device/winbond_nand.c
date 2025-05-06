@@ -271,6 +271,7 @@ retry:
 				case 0x0:
 					return 0;
 				case 0x1:
+				case 0x3:
 					return 4;
 				case 0x2:
 					return -EBADMSG;
@@ -290,6 +291,8 @@ retry:
 					return ret;
 				case 0x2:
 					return -EBADMSG;
+				case 0x3:
+					return 4;
 				default:
 					break;
 			}

@@ -11,9 +11,12 @@ int hik_nand_register_func(void);
 int issi_nand_register_func(void);
 int kowin_mid01_nand_register_func(void);
 int kowin_midc9_nand_register_func(void);
+int micron_nand_register_func(void);
 int mxic_nand_register_func(void);
 int tc_nand_register_func(void);
+int unim_nand_register_func(void);
 int winbond_nand_register_func(void);
+int wodposit_nand_register_func(void);
 int xcsp_nand_register_func(void);
 int xtx_mid0b_nand_register_func(void);
 int xtx_mid2c_nand_register_func(void);
@@ -56,13 +59,22 @@ static void *nand_param[] = {
 (void *)kowin_midc9_nand_register_func,
 /*##################*/
 /*##################*/
+(void *)micron_nand_register_func,
+/*##################*/
+/*##################*/
 (void *)mxic_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)tc_nand_register_func,
 /*##################*/
 /*##################*/
+(void *)unim_nand_register_func,
+/*##################*/
+/*##################*/
 (void *)winbond_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)wodposit_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)xcsp_nand_register_func,
