@@ -88,6 +88,11 @@
  * Command configuration.
  */
 #define CONFIG_CMD_CONSOLE
+#define CONFIG_CMD_MEMORY
+#define CONFIG_CMD_MEMTEST
+
+#define CONFIG_SYS_MEMTEST_START	0x80000000
+#define CONFIG_SYS_MEMTEST_END          (CONFIG_SYS_MEMTEST_START + 0x700000)
 
 #define CONFIG_SYS_CBSIZE               1024 /* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE               (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
