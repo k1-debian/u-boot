@@ -71,6 +71,7 @@ char* spl_ota_load_image(void)
 	char *cmdargs = NULL;
 	unsigned int addr = 0;
 	unsigned int bootimg_addr = 0;
+	unsigned int  bootimg_size = 0;
 	struct jz_sfcnand_partition_param *partitions;
 	struct nv_flags nv;
 	int len;
@@ -85,6 +86,19 @@ char* spl_ota_load_image(void)
 
 	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%x\n nv.rot_angle \t%x\n nv.partition \t%x\n",
 			nv.boot, nv.step, nv.start, nv.finish, nv.needfullpkg, nv.rot_angle, nv.partition);
+/* load logo数据 */
+#ifdef CONFIG_SFC_LOAD_LOGO
+	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
+	bootimg_size = get_part_size_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
+	if (bootimg_addr == -1){
+		serial_debug("LOGO not found: "CONFIG_XIMAGE_LOGO_NAME"\n");
+		hang();
+	}
+	printf("SFC_LOAD_LOGO: bootimg_addr is: %x size: %x\n", bootimg_addr, bootimg_size);
+	sfc_nand_load(bootimg_addr, bootimg_size, (void *)CONFIG_XIMAGE_LOGO_DDR);
+
+#endif
+
 
 #ifdef CONFIG_OTA_ABUPDATE
     /* AB partition upgrade */
