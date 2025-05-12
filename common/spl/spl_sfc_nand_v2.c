@@ -561,6 +561,19 @@ struct jz_sfcnand_partition_param *get_partitions(void)
 	return &partitions;
 }
 
+unsigned int get_part_size_by_name(struct jz_sfcnand_partition_param *partitions, char *name)
+{
+	int i = 0;
+
+	for(i = 0; i < partitions->num_partition; i++) {
+		if (!strcmp(partitions->partition[i].name, name)) {
+			return partitions->partition[i].size;
+		}
+	}
+
+	return -1;
+}
+
 unsigned int get_part_offset_by_name(struct jz_sfcnand_partition_param *partitions, char *name)
 {
 	int i = 0;
