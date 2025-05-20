@@ -357,6 +357,7 @@ int32_t nand_get_ecc_conf(struct sfc_flash *flash, uint8_t addr)
 	uint32_t buf = 0;
 
 	memset(&transfer, 0, sizeof(transfer));
+	sfc_list_init(&transfer);
 
 	transfer.cmd_info.cmd = SPINAND_CMD_GET_FEATURE;
 	transfer.sfc_mode = TM_STD_SPI;
@@ -367,6 +368,7 @@ int32_t nand_get_ecc_conf(struct sfc_flash *flash, uint8_t addr)
 	transfer.cmd_info.dataen = ENABLE;
 	transfer.direction = GLB_TRAN_DIR_READ;
 	transfer.data = (uint8_t *)&buf;
+        transfer.len = 1;
 
 	transfer.data_dummy_bits = 0;
 	transfer.ops_mode = CPU_OPS;
@@ -375,6 +377,7 @@ int32_t nand_get_ecc_conf(struct sfc_flash *flash, uint8_t addr)
 		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
+
 	return buf;
 }
 EXPORT_SYMBOL_GPL(nand_get_ecc_conf);
