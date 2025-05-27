@@ -118,6 +118,18 @@ void board_init_f(ulong dummy)
 	serial_debug("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 	//dump_c0_regs();
 
+#ifdef CONFIG_VDD_CIM_VOLTAGE_1V8
+	ingenic_set_vddcim_voltage(GPIO_VOLTAGE_1V8);
+#else
+	ingenic_set_vddcim_voltage(GPIO_VOLTAGE_3V3);
+#endif
+
+#ifdef CONFIG_VDD_SD_VOLTAGE_1V8
+	ingenic_set_vddsd_voltage(GPIO_VOLTAGE_1V8);
+#else
+	ingenic_set_vddsd_voltage(GPIO_VOLTAGE_3V3);
+#endif
+
 	debug("Timer init\n");
 	timer_init();
 

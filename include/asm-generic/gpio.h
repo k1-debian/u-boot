@@ -94,4 +94,11 @@ int gpio_get_value(unsigned gpio);
  * @return 0 if ok, -1 on error
  */
 int gpio_set_value(unsigned gpio, int value);
+
+void ingenic_set_vddcim_voltage(unsigned int voltage);
+void ingenic_set_vddsd_voltage(unsigned int voltage);
+
+#define GPIO_VOLTAGE_1V8	1
+#define GPIO_VOLTAGE_3V3	2
+
 #endif	/* _ASM_GENERIC_GPIO_H_ */

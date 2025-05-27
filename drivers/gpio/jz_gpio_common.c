@@ -504,6 +504,64 @@ void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
 #endif
 }
 
+void ingenic_set_vddcim_voltage(u32 voltage)
+{
+	u32 value, reg_orig, reg_new;
+	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
+		printf("Invalid CIM voltage setting (%d)\n", voltage);
+		voltage = GPIO_VOLTAGE_3V3;
+	}
+
+#ifdef CONFIG_SOC_X2500
+#define GPIO_PA_GPDCR	0xB0010100
+	reg_orig = readl(GPIO_PA_GPDCR);
+	value = reg_orig;
+	if (voltage == GPIO_VOLTAGE_1V8)
+		value |= 0x1;    /* X2500: 1.8V */
+	else
+		value &= ~0x1;   /* X2500: 3.3V */
+	writel(value, GPIO_PA_GPDCR);
+	reg_new = readl(GPIO_PA_GPDCR);
+#else
+	reg_orig = cpm_inl(CPM_EXCLK_DS);
+	value = reg_orig;
+	if (voltage == GPIO_VOLTAGE_1V8)
+		value |= (1 << 30);  /* 1.8V */
+	else
+		value &= ~(1 << 30); /* 3.3V */
+	cpm_outl(value, CPM_EXCLK_DS);
+	reg_new = cpm_inl(CPM_EXCLK_DS);
+#endif
+
+	printf("Set CIM voltage: %s (reg: 0x%x -> 0x%x)\n",
+			(voltage == GPIO_VOLTAGE_1V8) ? "1.8V" : "3.3V",
+			reg_orig, reg_new);
+}
+
+void ingenic_set_vddsd_voltage(u32 voltage)
+{
+#ifndef CONFIG_SOC_X2500
+	u32 value, reg_orig, reg_new;
+	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
+		printf("Invalid SD voltage setting (%d)\n", voltage);
+		voltage = GPIO_VOLTAGE_3V3;
+	}
+
+	value = cpm_inl(CPM_EXCLK_DS);
+	reg_orig = value;
+	if (voltage == GPIO_VOLTAGE_1V8)
+		value |= (1 << 31);  /* 1.8V */
+	else
+		value &= ~(1 << 31); /* 3.3V */
+	cpm_outl(value, CPM_EXCLK_DS);
+	reg_new = cpm_inl(CPM_EXCLK_DS);
+
+	printf("Set SD voltage: %s (reg: 0x%x -> 0x%x)\n",
+			(voltage == GPIO_VOLTAGE_1V8) ? "1.8V" : "3.3V",
+			reg_orig, reg_new);
+#endif
+}
+
 void dump_gpio_func( unsigned int gpio);
 void gpio_init(void)
 {

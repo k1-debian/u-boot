@@ -139,6 +139,13 @@ void board_init_f(ulong dummy)
 	printf("ERROR EPC %x\n", read_c0_errorepc());
 #endif
 #ifndef CONFIG_X2000_FPGA
+
+#ifdef CONFIG_VDD_CIM_VOLTAGE_1V8
+	ingenic_set_vddcim_voltage(GPIO_VOLTAGE_1V8);
+#else
+	ingenic_set_vddcim_voltage(GPIO_VOLTAGE_3V3);
+#endif
+
 	debug("Timer init\n");
 	timer_init();
 

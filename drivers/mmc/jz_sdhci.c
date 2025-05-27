@@ -34,13 +34,11 @@ struct sdhci_host jz_sdhci_host[1];
 
 static char *JZ_NAME = "MSC";
 
-
 #ifdef CONFIG_SDHCI_SDR_PIN
 void jz_sdhci_set_voltage(struct sdhci_host *host,int pwr)
 {
 	int port = 0;
 	int pin = 0;
-	int val = 0;
 	if(!host->sdr_pin)
 		return;
 	port = host->sdr_pin / 32;
@@ -48,14 +46,12 @@ void jz_sdhci_set_voltage(struct sdhci_host *host,int pwr)
 	switch(pwr){
 		case SDHCI_POWER_180:
 			/*controlled SD voltage to 1.8V*/
-			val = cpm_inl(CPM_EXCLK_DS) | (1 << 31);
-			cpm_outl(val, CPM_EXCLK_DS);
+			ingenic_set_vddsd_voltage(GPIO_VOLTAGE_1V8);
 			gpio_set_func(port,GPIO_OUTPUT1,pin);
 			break;
 		case SDHCI_POWER_330:
 		default:
-			val = cpm_inl(CPM_EXCLK_DS) & ~(1 << 31);
-			cpm_outl(val, CPM_EXCLK_DS);
+			ingenic_set_vddsd_voltage(GPIO_VOLTAGE_3V3);
 			gpio_set_func(port,GPIO_OUTPUT0,pin);
 			break;
 	}
