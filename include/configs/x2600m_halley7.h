@@ -578,7 +578,7 @@
 #else
 #define CONFIG_SPL_TEXT_BASE		0x80001000
 #endif	/*CONFIG_SPL_NOR_SUPPORT*/
-#define CONFIG_SPL_MAX_SIZE		(24 * 1024)
+#define CONFIG_SPL_MAX_SIZE		(22 * 1024)
 
 
 

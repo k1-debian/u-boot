@@ -70,6 +70,7 @@
 #define CPM_CPCSR		(0xd4)
 #define CPM_DDRCDR		(0x2c)
 #define CPM_SLPC        (0xCC)
+#define CPM_EXCLK_DS		(0xE0)
 
 #define cpm_inl(off)		readl(CPM_BASE + (off))
 #define cpm_outl(val,off)	writel(val,CPM_BASE + (off))
