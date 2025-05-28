@@ -512,7 +512,7 @@ void ingenic_set_vddcim_voltage(u32 voltage)
 		voltage = GPIO_VOLTAGE_3V3;
 	}
 
-#ifdef CONFIG_SOC_X2500
+#ifdef CONFIG_X2500
 #define GPIO_PA_GPDCR	0xB0010100
 	reg_orig = readl(GPIO_PA_GPDCR);
 	value = reg_orig;
@@ -540,7 +540,7 @@ void ingenic_set_vddcim_voltage(u32 voltage)
 
 void ingenic_set_vddsd_voltage(u32 voltage)
 {
-#ifndef CONFIG_SOC_X2500
+#ifndef CONFIG_X2500
 	u32 value, reg_orig, reg_new;
 	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
 		printf("Invalid SD voltage setting (%d)\n", voltage);
