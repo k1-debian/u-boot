@@ -506,6 +506,9 @@ void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
 
 void ingenic_set_vddcim_voltage(u32 voltage)
 {
+#if defined(CONFIG_X2600) || defined(CONFIG_AD100)	\
+	|| defined(CONFIG_X2000_V12) ||defined(CONFIG_X2000)	\
+	|| defined(CONFIG_M300) || defined(CONFIG_X2500)
 	u32 value, reg_orig, reg_new;
 	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
 		printf("Invalid CIM voltage setting (%d)\n", voltage);
@@ -536,11 +539,14 @@ void ingenic_set_vddcim_voltage(u32 voltage)
 	printf("Set CIM voltage: %s (reg: 0x%x -> 0x%x)\n",
 			(voltage == GPIO_VOLTAGE_1V8) ? "1.8V" : "3.3V",
 			reg_orig, reg_new);
+#endif
 }
 
 void ingenic_set_vddsd_voltage(u32 voltage)
 {
-#ifndef CONFIG_X2500
+#if defined(CONFIG_X2600) || defined(CONFIG_AD100) \
+	|| defined(CONFIG_X2000_V12) || defined(CONFIG_X2000)	\
+	|| defined(CONFIG_M300)
 	u32 value, reg_orig, reg_new;
 	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
 		printf("Invalid SD voltage setting (%d)\n", voltage);
