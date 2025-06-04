@@ -479,6 +479,8 @@
 /* GPIO */
 #define CONFIG_JZ_GPIO
 
+/* VDDIO_CIM configuration */
+#define CONFIG_VDD_CIM_VOLTAGE	GPIO_VOLTAGE_1V8
 /**
  * Command configuration.
  */

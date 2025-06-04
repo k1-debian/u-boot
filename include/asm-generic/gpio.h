@@ -97,6 +97,7 @@ int gpio_set_value(unsigned gpio, int value);
 
 void ingenic_set_vddcim_voltage(unsigned int voltage);
 void ingenic_set_vddsd_voltage(unsigned int voltage);
+void ingenic_setup_voltage_config(void);
 
 #define GPIO_VOLTAGE_1V8	1
 #define GPIO_VOLTAGE_3V3	2

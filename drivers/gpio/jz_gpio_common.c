@@ -506,9 +506,10 @@ void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
 
 void ingenic_set_vddcim_voltage(u32 voltage)
 {
-#if defined(CONFIG_X2600) || defined(CONFIG_AD100)	\
-	|| defined(CONFIG_X2000_V12) ||defined(CONFIG_X2000)	\
-	|| defined(CONFIG_M300) || defined(CONFIG_X2500)
+#if (defined(CONFIG_X2600) || defined(CONFIG_X2500)	\
+	|| defined(CONFIG_X2000_V12) || defined(CONFIG_X2000)	\
+	|| defined(CONFIG_X2100) || defined(CONFIG_M300))	\
+	&& !defined(CONFIG_BURNER)
 	u32 value, reg_orig, reg_new;
 	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
 		printf("Invalid CIM voltage setting (%d)\n", voltage);
@@ -544,9 +545,9 @@ void ingenic_set_vddcim_voltage(u32 voltage)
 
 void ingenic_set_vddsd_voltage(u32 voltage)
 {
-#if defined(CONFIG_X2600) || defined(CONFIG_AD100) \
+#if (defined(CONFIG_X2600) || defined(CONFIG_X2100)	\
 	|| defined(CONFIG_X2000_V12) || defined(CONFIG_X2000)	\
-	|| defined(CONFIG_M300)
+	|| defined(CONFIG_M300)) && !defined(CONFIG_BURNER)
 	u32 value, reg_orig, reg_new;
 	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
 		printf("Invalid SD voltage setting (%d)\n", voltage);
@@ -565,6 +566,29 @@ void ingenic_set_vddsd_voltage(u32 voltage)
 	printf("Set SD voltage: %s (reg: 0x%x -> 0x%x)\n",
 			(voltage == GPIO_VOLTAGE_1V8) ? "1.8V" : "3.3V",
 			reg_orig, reg_new);
+#endif
+}
+
+void ingenic_setup_voltage_config(void)
+{
+#if (defined(CONFIG_X2600) || defined(CONFIG_X2100)	\
+	|| defined(CONFIG_X2000_V12) || defined(CONFIG_X2000) \
+	|| defined(CONFIG_M300)) && !defined(CONFIG_BURNER)
+
+#ifdef CONFIG_VDD_CIM_VOLTAGE
+    ingenic_set_vddcim_voltage(CONFIG_VDD_CIM_VOLTAGE);
+#else
+    #error "CONFIG_VDD_CIM_VOLTAGE must be defined in board config! (GPIO_VOLTAGE_1V8 or GPIO_VOLTAGE_3V3)"
+#endif
+
+#ifndef CONFIG_X2500
+#ifdef CONFIG_VDD_SD_VOLTAGE
+    ingenic_set_vddsd_voltage(CONFIG_VDD_SD_VOLTAGE);
+#else
+    #error "CONFIG_VDD_SD_VOLTAGE must be defined in board config! (GPIO_VOLTAGE_1V8 or GPIO_VOLTAGE_3V3)"
+#endif
+#endif
+
 #endif
 }
 
