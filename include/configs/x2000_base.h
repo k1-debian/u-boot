@@ -6,6 +6,10 @@
 #define CONFIG_ARG_QUIET
 #define CONFIG_SPL_SERIAL_SUPPORT
 
+/* VDDIO_CIM/VDDIO_SD configurations */
+#define CONFIG_VDD_CIM_VOLTAGE	GPIO_VOLTAGE_3V3
+#define CONFIG_VDD_SD_VOLTAGE	GPIO_VOLTAGE_3V3
+
 #include "x2000_base_common.h"
 
 #endif /* __X2000_BASE_H__ */
