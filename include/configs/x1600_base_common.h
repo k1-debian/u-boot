@@ -111,8 +111,6 @@
 
 /* SFC */
 #if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
-/* serial support */
-#define CONFIG_SPL_SERIAL_SUPPORT
 /* sfc gpio */
 #define CONFIG_SPL_SFC_SUPPORT
 /* spl version */
