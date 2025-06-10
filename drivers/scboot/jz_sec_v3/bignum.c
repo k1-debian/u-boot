@@ -3,13 +3,13 @@
 #include <common.h>
 #include "bignum.h"
 
-#define CONFIG_SPCE_SIZE                800                         //默认1024*4 = 4096B 800*4 = 3200B 匹配安全启动时打印
+#define CONFIG_SPACE_SIZE                800                         //默认1024*4 = 4096B 800*4 = 3200B 匹配安全启动时打印
 
 static bn_t bn_sub_digit_mul(bn_t *a, bn_t *b, bn_t c, bn_t *d, u32 digits);
 static bn_t bn_add_digit_mul(bn_t *a, bn_t *b, bn_t c, bn_t *d, u32 digits);
 static u32 bn_digit_bits(bn_t a);
 
-static u32 cache_space[CONFIG_SPCE_SIZE];
+static u32 cache_space[CONFIG_SPACE_SIZE];
 static int cache_space_pos = 0;
 void * rsa_malloc(int size){
 	u32 *d = (u32 *)&cache_space[cache_space_pos];
