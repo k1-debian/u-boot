@@ -476,7 +476,7 @@ int cpu_burn_ukey(void *idata)
 
 	debug("xxxxxxxxxxx func : %s\n",__func__);
 
-	if(EFUSTATE_UK_PRT || EFUSTATE_UK1_PRT) {
+	if(EFUSTATE_UK_PRT && EFUSTATE_UK1_PRT) {
 		serial_debug("EFUSTATE: userkey protect bit have been written\n");
 		return 0;
 	}
@@ -489,74 +489,76 @@ int cpu_burn_ukey(void *idata)
 #define UKEY_F_OFFSET    0x02
 #define UKEY1_F_OFFSET   0x03
 
-	debug("UK0 %d WORD\n", UKEY_LEN_WORD);
-	for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
-		ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
+        if (!EFUSTATE_UK_PRT) {
+                debug("UK0 %d WORD\n", UKEY_LEN_WORD);
+                for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
+                        ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
 
-		debug("%08x ",ukey[iLoop]);
-		if((iLoop + 1) % 4 == 0)
-			debug("\n");
-	}
+                        debug("%08x ",ukey[iLoop]);
+                        if((iLoop + 1) % 4 == 0)
+                                debug("\n");
+                }
 
-	args->arg[0] = (0x01 << UKEY_F_OFFSET);
-	args->arg[1] = MCU_TCSM_PADDR(ukey);
+                args->arg[0] = (0x01 << UKEY_F_OFFSET);
+                args->arg[1] = MCU_TCSM_PADDR(ukey);
 
-	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
+                ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("burn ukey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
-		return -ESEC;
-	}
+                if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+                        serial_debug("burn ukey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
+                        return -ESEC;
+                }
 
-	if (cpu_wtotp(WT_OTP_UK) < 0) {
-		serial_debug("write ukey error!\n");
-		return -ESEC;
-	}
+                if (cpu_wtotp(WT_OTP_UK) < 0) {
+                        serial_debug("write ukey error!\n");
+                        return -ESEC;
+                }
 
-	otp_w(EFUSE_PTCOFF_UKP);
+                otp_w(EFUSE_PTCOFF_UKP);
 
-
-	if(!EFUSTATE_UK_PRT) {
-		serial_debug("write ukey protect bit error!\n");
-		return -ESEC;
-	}
-
-
-	memset(ukey, 0, MCU_TCSM_KEYLEN);
-	debug("UK1 %d WORD\n", UKEY_LEN_WORD);
-	for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
-		ukey[iLoop] = rsaukey[iLoop + UKEY_LEN_WORD] /*encukey[iLoop]*/;
-
-		debug("%08x ",ukey[iLoop]);
-		if((iLoop + 1) % 4 == 0)
-			debug("\n");
-	}
+                if(!EFUSTATE_UK_PRT) {
+                        serial_debug("write ukey protect bit error!\n");
+                        return -ESEC;
+                }
+        }
 
 
-	args->arg[0] = (0x01 << UKEY1_F_OFFSET);
-	args->arg[2] = MCU_TCSM_PADDR(ukey);
+        if (!EFUSTATE_UK1_PRT) {
+                memset(ukey, 0, MCU_TCSM_KEYLEN);
+                debug("UK1 %d WORD\n", UKEY_LEN_WORD);
+                for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
+                        ukey[iLoop] = rsaukey[iLoop + UKEY_LEN_WORD] /*encukey[iLoop]*/;
 
-	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
-
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("burn ukey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
-		return -ESEC;
-	}
+                        debug("%08x ",ukey[iLoop]);
+                        if((iLoop + 1) % 4 == 0)
+                                debug("\n");
+                }
 
 
+                args->arg[0] = (0x01 << UKEY1_F_OFFSET);
+                args->arg[2] = MCU_TCSM_PADDR(ukey);
 
-	if (cpu_wtotp(WT_OTP_UK1) < 0) {
-		serial_debug("write ukey1 protect err\n");
-		return -ESEC;
-	}
+                ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
-	otp_w(EFUSE_PTCOFF_UKP1);
+                if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+                        serial_debug("burn ukey err, ret val %x\n",*(volatile unsigned int *)(MCU_TCSM_RETVAL));
+                        return -ESEC;
+                }
 
-	if(!EFUSTATE_UK1_PRT) {
-		serial_debug("write ukey1 protect bit error!\n");
-		return -ESEC;
-	}
 
+
+                if (cpu_wtotp(WT_OTP_UK1) < 0) {
+                        serial_debug("write ukey1 protect err\n");
+                        return -ESEC;
+                }
+
+                otp_w(EFUSE_PTCOFF_UKP1);
+
+                if(!EFUSTATE_UK1_PRT) {
+                        serial_debug("write ukey1 protect bit error!\n");
+                        return -ESEC;
+                }
+        }
 	return 0;
 }
 

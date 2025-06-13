@@ -6,6 +6,7 @@ static unsigned char unim_errstat_2[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
 	DEVICE_STRUCT(0x0C, 2048, 2, 4, 2, 1, unim_errstat_2, 0),
+	DEVICE_STRUCT(0xFC, 2048, 2, 4, 2, 1, unim_errstat_2, 0),
 };
 
 static struct nand_desc unim_nand = {
