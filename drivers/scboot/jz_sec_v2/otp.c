@@ -487,7 +487,6 @@ int cpu_burn_ukey(void *idata)
 
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
-	secall(args, SC_FUNC_INIT, 0, 1);
 
 	debug("xxxxxxxxxxx func : %s\n",__func__);
 
@@ -505,6 +504,7 @@ int cpu_burn_ukey(void *idata)
 #define UKEY1_F_OFFSET   0x03
 
         if(!EFUSTATE_UK_PRT) {
+		secall(args, SC_FUNC_INIT, 0, 1);
                 debug("UK0 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
                         ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
@@ -539,6 +539,7 @@ int cpu_burn_ukey(void *idata)
         }
 
         if(!EFUSTATE_UK1_PRT) {
+		secall(args, SC_FUNC_INIT, 0, 1);
                 memset(ukey, 0, MCU_TCSM_KEYLEN);
                 debug("UK1 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {

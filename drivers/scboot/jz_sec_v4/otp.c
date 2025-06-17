@@ -89,48 +89,46 @@ static int set_efuse_timing(void)
 
 	rd_adj = wr_adj = i;
 
-	for(i = 0; i <= 0xf; i++) {
+	for(i = 0; i <= 0x1f; i++) {
 		if(((rd_adj + i + 48) * ns) > 150)
 			break;
 	}
-	if(i > 0xf) {
+	if(i > 0x1f) {
 		serial_debug("get efuse cfg rd_strobe fail!\n");
 		return -1;
 	}
 	rd_strobe = i;
 
-	for(i = 0; i <= 0x3ff; i++) {
+	for(i = 0; i < 0x7ff; i++) {
 		val = (wr_adj + i + 3000) * ns;
 		if(val > 13000) {
 			val = (wr_adj - i + 3000) * ns;
 			negative_flag = 1;
 		}
 
-		if(val > 11500 && val < 12500) {
+                if (val >= 12000 && val <= 13000) {
 			break;
 		}
 	}
 
-	if(i > 0x3ff) {
+	if(i == 0x7ff) {
 		serial_debug("wr_strobe fail!\n");
 		return -1;
 	}
 
-	if(negative_flag)
-		i |= 1 << 10;
-
 	wr_strobe = i;
+
+	if(negative_flag)
+		wr_strobe |= (1 << 10);
 
 
 	serial_debug("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n",
 			rd_adj, rd_strobe, wr_adj, wr_strobe);
 
 	/*set configer register*/
-//	val = (rd_adj << EFUSE_REG_CFG_RD_ADJ) | (rd_strobe << EFUSE_REG_CFG_RD_STROBE);
-//	val |= (wr_adj << EFUSE_REG_CFG_WR_ADJ) | wr_strobe;
+	val = (rd_adj << EFUSE_REG_CFG_RD_ADJ) | (rd_strobe << EFUSE_REG_CFG_RD_STROBE);
+	val |= (wr_adj << EFUSE_REG_CFG_WR_ADJ) | wr_strobe;
 
-	val = (15 << EFUSE_REG_CFG_RD_ADJ) | (0 << EFUSE_REG_CFG_RD_STROBE);
-	val |= (15 << EFUSE_REG_CFG_WR_ADJ) | 1624;
 	REG32(EFUSE_REG_CFG) = val;
 
 	return 0;
@@ -472,7 +470,6 @@ int cpu_burn_ukey(void *idata)
 
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
-	secall(args, SC_FUNC_INIT, 0, 1);
 
 	debug("xxxxxxxxxxx func : %s\n",__func__);
 
@@ -490,6 +487,7 @@ int cpu_burn_ukey(void *idata)
 #define UKEY1_F_OFFSET   0x03
 
         if (!EFUSTATE_UK_PRT) {
+		secall(args, SC_FUNC_INIT, 0, 1);
                 debug("UK0 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
                         ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
@@ -524,6 +522,7 @@ int cpu_burn_ukey(void *idata)
 
 
         if (!EFUSTATE_UK1_PRT) {
+		secall(args, SC_FUNC_INIT, 0, 1);
                 memset(ukey, 0, MCU_TCSM_KEYLEN);
                 debug("UK1 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
