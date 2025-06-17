@@ -38,6 +38,8 @@
 #define CONFIG_SYS_CPU_FREQ		1200000000
 #define CONFIG_SYS_MEM_FREQ		500000000
 
+#define CONFIG_GLOBAL_PARAMS_OFFSET		0x14
+/* #define CONFIG_GINFO_FIX */
 
 /* Device Tree Configuration*/
 /*#define CONFIG_OF_LIBFDT 1*/

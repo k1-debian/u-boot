@@ -44,6 +44,9 @@
 #define CONFIG_SYS_AHB0_FREQ		360000000
 #define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
 
+#define CONFIG_GLOBAL_PARAMS_OFFSET		0x14
+/* #define CONFIG_GINFO_FIX */
+
 /* Device Tree Configuration*/
 /*#define CONFIG_OF_LIBFDT 1*/
 #ifdef CONFIG_OF_LIBFDT

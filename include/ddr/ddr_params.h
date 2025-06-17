@@ -23,6 +23,8 @@
 #ifndef __DDR_PARAMS_H__
 #define __DDR_PARAMS_H__
 
+#include <linux/types.h>
+
 enum ddr_type{
 	DDR3,
 	LPDDR,

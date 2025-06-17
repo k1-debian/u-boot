@@ -116,6 +116,11 @@ void board_init_f(ulong dummy)
 	/* Setup global info */
 #ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
+#ifdef CONFIG_GINFO_FIX
+	unsigned int global_params_addr = CONFIG_SPL_TEXT_BASE + CONFIG_GLOBAL_PARAMS_OFFSET;
+	gd->arch.gp = (struct global_shared_params *)global_params_addr;
+	ginfo_set(gd->arch.gi, gd->arch.gp);
+#endif
 #else
 	burner_param_info();
 #endif
@@ -169,6 +174,11 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
+#endif
+
+#ifdef CONFIG_GINFO_FIX
+	dump_gi(gd->arch.gi);
+	dump_gp(gd->arch.gp);
 #endif
 
 	reallocate_cache();
