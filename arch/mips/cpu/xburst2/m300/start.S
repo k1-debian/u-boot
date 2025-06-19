@@ -29,10 +29,32 @@
 
 #define RESERVED_FOR_SC(x) .space 1536, x
 
+.macro SETUP_GLOBAL_PARAMS_HEADER reg=0
+#if defined(CONFIG_GINFO_FIX)
+#if defined(CONFIG_GINFO_VERSION)
+	.word CONFIG_GINFO_VERSION
+#else
+	.word 0x00000000
+#endif
+	.word CONFIG_SYS_EXTAL
+	.word CONFIG_SYS_CPU_FREQ
+	.word CONFIG_SYS_MEM_FREQ
+	.word CONFIG_SYS_UART_INDEX
+	.word CONFIG_BAUDRATE
+	.space (512-44),0
+#else
+	.space (512-20),0
+#endif
+.endm
+
 .macro SETUP_SPL_MMC_HEADER reg=0
 #if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
 	.word 0x4d53504c
-	.space 508, 0
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	SETUP_GLOBAL_PARAMS_HEADER()
 	RESERVED_FOR_SC(0)
 #endif
 .endm
@@ -44,9 +66,10 @@
 	.word 0x55aa5502
 #define SSI_PPB (CONFIG_SPI_NAND_PPB / 32)
 #define SSI_BPP (CONFIG_SPI_NAND_BPP / 1024)
-        .word (0x00000000 | (SSI_PPB<<16) | (SSI_BPP<<24))
-        .word 0x00000000
-        .space (512-16),0
+    .word (0x00000000 | (SSI_PPB<<16) | (SSI_BPP<<24))
+    .word 0x00000000
+	.word 0x00000000
+	SETUP_GLOBAL_PARAMS_HEADER()
 	RESERVED_FOR_SC(0)
 #endif
 .endm
@@ -59,10 +82,10 @@
     .word 0x00000000
 #ifdef CONFIG_SPL_VERSION
 	.word (0x00000000 | CONFIG_SPL_VERSION)
-	.space (512-20),0
 #else
-	.space (512-16),0
+	.word 0x00000000
 #endif
+	SETUP_GLOBAL_PARAMS_HEADER()
 	RESERVED_FOR_SC(0)
 #endif
 .endm

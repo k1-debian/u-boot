@@ -29,6 +29,7 @@ SOBJS-y	=
 COBJS-y	= jz_serial.o
 COBJS-y	+= cpu.o timer.o
 COBJS-$(CONFIG_XBURST_TRAPS) += traps.o
+COBJS-$(CONFIG_GINFO_FIX) += global_info.o
 
 ifdef	CONFIG_SPL_BUILD
 ifdef	CONFIG_SPL_NO_CPU_SUPPORT_CODE

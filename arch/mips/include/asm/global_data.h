@@ -39,6 +39,7 @@ struct arch_global_data {
 #endif
 #if defined(CONFIG_CPU_XBURST) || defined(CONFIG_CPU_XBURST2)
 	struct global_info *gi;
+	struct global_shared_params *gp;
 #endif
 };
 

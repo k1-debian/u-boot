@@ -104,4 +104,17 @@ struct global_info {
 
 };
 
+struct global_shared_params {
+	uint32_t version;
+	uint32_t extal;
+	uint32_t cpufreq;
+	uint32_t ddrfreq;
+	uint32_t uart_idx;
+	uint32_t baud_rate;
+};
+
+void dump_gi(struct global_info *gi);
+void dump_gp(struct global_shared_params *gp);
+void ginfo_set(struct global_info *gi, struct global_shared_params *gp);
+
 #endif /* __GLOBAL_INFO_H__ */
