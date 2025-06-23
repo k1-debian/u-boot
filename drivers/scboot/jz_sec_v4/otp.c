@@ -579,8 +579,8 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_STAT) = 0;
 
-	/* set write data :security boot enable, security boot enable protected, disable JTAG*/
-	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB) | (1 << EFUSE_PTCOFF_DJG));
+	/* set security boot enable and disable JTAG */
+	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SCB) | (1 << EFUSE_PTCOFF_DJG));
 
 	/*efuse config*/
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
@@ -598,8 +598,43 @@ int cpu_burn_secboot_enable(void)
 
 	efuse_update_state();
 
-	if (!EFUSTATE_SCB_PRT || !EFUSTATE_SECBOOT_EN) {
-		serial_debug("write secure enable or protect bit failed!\n");
+
+        if (!EFUSTATE_SECBOOT_EN) {
+		serial_debug("secure enable bit write failed!\n");
+		return -ESEC;
+	}
+ 
+        if (!EFUSTATE_DIS_JTAG) {
+		serial_debug("disable jtag bit write failed!\n");
+		return -ESEC;
+	}
+
+        mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_STAT) = 0;
+
+	/* set security boot enable protected */
+	REG32(EFUSE_REG_DAT0) = (1 << EFUSE_PTCOFF_SEC);
+
+	/*efuse config*/
+	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
+
+	efuse_1v8_output(efuse_args->efuse_en_active);
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
+	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
+	efuse_1v8_output(!efuse_args->efuse_en_active);
+
+	REG32(EFUSE_REG_CTRL) = 0;
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
+	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
+
+	efuse_update_state();
+
+
+	if (!EFUSTATE_SCB_PRT) {
+		serial_debug("secure enable protect bit write failed!\n");
 		return -ESEC;
 	}
 

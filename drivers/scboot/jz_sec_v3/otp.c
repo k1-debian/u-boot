@@ -115,8 +115,12 @@ int cpu_burn_secboot_enable(void)
 
 	efuse_update_state();
 
-	if (!EFUSTATE_SCB_PRT || !EFUSTATE_SECBOOT_EN) {
-		serial_debug("%s %d: secure enable or protect bit write failed!\n",__func__,__LINE__);
+	if (!EFUSTATE_SECBOOT_EN) {
+		serial_debug("%s %d: secure enable bit write failed!\n",__func__,__LINE__);
+	}
+
+        if (!EFUSTATE_SCB_PRT) {
+		serial_debug("%s %d: secure enable protect bit write failed!\n",__func__,__LINE__);
 	}
 
 	return 0;

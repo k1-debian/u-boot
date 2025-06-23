@@ -612,8 +612,16 @@ int cpu_burn_secboot_enable(void)
 
 	efuse_update_state();
 
-	if (!EFUSTATE_SCB_PRT || !EFUSTATE_SECBOOT_EN) {
-		serial_debug("write secure enable or protect bit failed!\n");
+	if (!EFUSTATE_SCB_PRT) {
+		serial_debug("secure enable protect bit write failed!\n");
+		return -ESEC;
+        }
+	if (!EFUSTATE_SECBOOT_EN) {
+		serial_debug("secure enable bit write failed!\n");
+		return -ESEC;
+        }
+	if (!EFUSTATE_DIS_JTAG) {
+		serial_debug("disable jtag bit write failed!\n");
 		return -ESEC;
 	}
 
