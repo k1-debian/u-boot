@@ -348,7 +348,7 @@ int cpu_burn_ukey(void *data)
 
 static int set_efuse_timing()
 {
-	unsigned long rate;
+	unsigned int rate;
 	uint32_t val, ns;
 	int i, rd_strobe, wr_strobe;
 	uint32_t rd_adj, wr_adj;
@@ -356,7 +356,7 @@ static int set_efuse_timing()
 
 	rate = clk_get_rate(H2CLK);
 	ns = 1000000000 / rate;
-	serial_debug("rate = %lu, ns = %d\n", rate, ns);
+	serial_debug("rate = %d, ns = %d\n", rate, ns);
 
 
 	for(i = 0; i < 0x4; i++)

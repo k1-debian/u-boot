@@ -66,7 +66,7 @@ static void efuse_1v8_output(int value)
 
 static int set_efuse_timing(void)
 {
-	unsigned long rate;
+	unsigned int rate;
 	uint32_t val, ns;
 	uint32_t rd_adj, wr_adj;
 	int rd_strobe, wr_strobe;
@@ -75,7 +75,7 @@ static int set_efuse_timing(void)
 
 	rate = clk_get_rate(H2CLK);
 	ns = 1000000000 / rate;
-	serial_debug("rate = %lu, ns = %d\n", rate, ns);
+	serial_debug("rate = %d, ns = %d\n", rate, ns);
 
 	for(i = 0; i <= 0xf; i++) {
 		if((i + 2) * ns > 15)
@@ -580,7 +580,7 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_STAT) = 0;
 
 	/* set security boot enable and disable JTAG */
-	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SCB) | (1 << EFUSE_PTCOFF_DJG));
+	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_DJG));
 
 	/*efuse config*/
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
@@ -614,7 +614,7 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_STAT) = 0;
 
 	/* set security boot enable protected */
-	REG32(EFUSE_REG_DAT0) = (1 << EFUSE_PTCOFF_SEC);
+	REG32(EFUSE_REG_DAT0) = (1 << EFUSE_PTCOFF_SCB);
 
 	/*efuse config*/
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
