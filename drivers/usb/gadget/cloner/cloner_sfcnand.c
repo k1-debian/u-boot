@@ -219,6 +219,7 @@ out:
  * **************************************************************************************/
 void sfcnand_add_info_to_flash(char *buf)
 {
+        struct mtd_info *mtd;
 	uint32_t param_offset = CONFIG_SPIFLASH_PART_OFFSET;
 
 	if ((int)(spi_args->param_offset) > 0)
@@ -229,6 +230,11 @@ void sfcnand_add_info_to_flash(char *buf)
 
 	if(ddr_args != NULL && ddr_args->ddr_type > 0)
 		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
+
+        if(spi_args->reserve_space) { 
+                mtd = &nand_info[0];
+		*(volatile unsigned int *)(buf + 132) = mtd->size + 0x300000;
+        }
 
 	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
 		*(volatile unsigned int *)(buf + 512) = 0x1111;
