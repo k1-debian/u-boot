@@ -8,6 +8,7 @@
 #include <div64.h>
 #include <asm/arch/cpm.h>
 #include "spl_ota_kunpeng.h"
+#include "spl_read_reserved.h"
 
 #define ENV_DATA_SIZE 1024
 
@@ -94,7 +95,7 @@ char* spl_ota_load_image(void)
 		serial_debug("LOGO not found: "CONFIG_XIMAGE_LOGO_NAME"\n");
 		hang();
 	}
-	printf("SFC_LOAD_LOGO: bootimg_addr is: %x size: %x\n", bootimg_addr, bootimg_size);
+//	printf("SFC_LOAD_LOGO: bootimg_addr is: %x size: %x\n", bootimg_addr, bootimg_size);
 	sfc_nand_load(bootimg_addr, bootimg_size, (void *)CONFIG_XIMAGE_LOGO_DDR);
 
 #endif
@@ -164,8 +165,9 @@ char* spl_ota_load_image(void)
 	ota_ops->flash_load_kernel(bootimg_addr, CONFIG_PAT_KERNEL_NAME);
 #endif
 
-#if defined(USE_NV_CMDARGS) && defined(CONFIG_NV_ROTATE)
-#error "Both CONFIG_NV_ROTATE and USE_NV_CMDARGS are defined. This is not allowed."
+#if defined(USE_NV_CMDARGS) && \
+	(defined(CONFIG_NV_ROTATE) || defined(CONFIG_READ_SN) || defined(CONFIG_READ_MAC))
+#error "USE_NV_CMDARGS cannot be used with CONFIG_NV_ROTATE, CONFIG_READ_SN, or CONFIG_READ_MAC"
 #endif
 
 #ifdef CONFIG_NV_ROTATE
@@ -185,7 +187,25 @@ char* spl_ota_load_image(void)
             }
         }
     }
-#elif defined(USE_NV_CMDARGS)
+#endif
+
+#ifdef CONFIG_READ_SN
+    static char tmp_cmd_sn[512];
+    if (spl_read_reserved(ota_ops, "sn", 2 * 1024, tmp_cmd_sn, sizeof(tmp_cmd_sn), &cmdargs) == 0) {
+        cmdargs = tmp_cmd_sn;
+    }
+#endif
+
+#ifdef CONFIG_READ_MAC
+    static char tmp_cmd_mac[512];
+    if (spl_read_reserved(ota_ops, "mac", 3 * 1024, tmp_cmd_mac, sizeof(tmp_cmd_mac), &cmdargs) == 0) {
+        cmdargs = tmp_cmd_mac;
+    }
+#endif
+
+
+
+#ifdef CONFIG_USE_NV_CMDARGS
 #define ENV_FLAG 0xA5
     static env_t env;
     env_t *env_p = &nv.env;
