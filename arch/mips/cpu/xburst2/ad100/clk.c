@@ -195,7 +195,7 @@ static unsigned int get_cgu_rate(unsigned int clk_id)
 		cgu = &cgusetting[clk_id];
 		reg = cgu->addr;
 		regval = readl(reg);
-		ret = pll_rate / (((regval & 0xff) + 1) * 2);
+		ret = pll_rate / (((regval & 0xff) + 1) * 4);
 	}
 	else
 		ret = pll_rate / ((regval & 0xff) + 1);
