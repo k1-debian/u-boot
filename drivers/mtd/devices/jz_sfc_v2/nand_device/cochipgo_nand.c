@@ -37,11 +37,31 @@ static struct jz_sfcnand_base_param cochipgo_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[1] = {
+		/* C5F1GM7RExxG */
+		.pagesize = 2048,
+		.blocksize = 2048 * 64,
+		.oobsize = 64,
+		.flashsize = 2048 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x91, "C5F1GM7UExxG", &cochipgo_param[0]),
-	DEVICE_ID_STRUCT(0x81, "C5F1GM7RExxG", &cochipgo_param[0]),
+	DEVICE_ID_STRUCT(0x81, "C5F1GM7RExxG", &cochipgo_param[1]),
 };
 
 
