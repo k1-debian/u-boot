@@ -57,6 +57,11 @@ extern void sdram_init(void);
 extern void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr);
 extern void flush_cache_all(void);
 
+#ifdef CONFIG_SPL_USB_BOOT
+extern int spl_usb_boot;
+extern int usb_boot_loop(void);
+extern void enter_usb_boot_mode(void);
+#endif
 
 void board_init_f(ulong dummy)
 {
@@ -73,6 +78,15 @@ void board_init_f(ulong dummy)
 #endif
 #else
 	burner_param_info();
+
+#ifdef CONFIG_SPL_USB_BOOT
+	if (!!spl_usb_boot) {
+		timer_init();
+		usb_boot_loop();
+		enter_usb_boot_mode();
+                return;
+	}
+#endif
 #endif
 
 	gpio_init();
@@ -91,6 +105,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 	printf("ERROR EPC %x\n", read_c0_errorepc());
+	serial_debug("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 	if(*(volatile unsigned int *)0xbfc00084 == 0x244232c8) {
 		printf("Current Version: V2\n");
 	} else {

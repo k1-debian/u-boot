@@ -33,6 +33,7 @@
 #define VR_CHECK		0x18
 #define VR_GET_CRC		0x19
 #define VR_GET_FLASH_INFO	0x26
+#define VR_REBURN		0x27
 
 /*************** security boot ****************/
 #ifdef CONFIG_JZ_SCBOOT

@@ -56,6 +56,7 @@ endif
 endif
 COBJS-$(CONFIG_XBURST_TRAPS) += traps.o
 COBJS-$(CONFIG_SPL_OS_BOOT) += os_boot.o
+COBJS-$(CONFIG_SOFT_BURNER) += usb_boot.o
 
 ifdef	CONFIG_SPL_BUILD
 ifdef	CONFIG_SPL_NO_CPU_SUPPORT_CODE

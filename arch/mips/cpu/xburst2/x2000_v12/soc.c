@@ -61,6 +61,8 @@ extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned in
 
 #ifdef CONFIG_SPL_USB_BOOT
 extern int spl_usb_boot;
+extern int usb_boot_loop(void);
+extern void enter_usb_boot_mode(void);
 #endif
 
 void gpio_set_driver_strength_init(void)
@@ -98,6 +100,7 @@ void board_init_f(ulong dummy)
 	if (!!spl_usb_boot) {
 		timer_init();
 		usb_boot_loop();
+		enter_usb_boot_mode();
 		return;
 	}
 #endif

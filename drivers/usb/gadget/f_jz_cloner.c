@@ -34,6 +34,7 @@
 #include <cloner/cloner.h>
 #include "cloner/cloner_moudle.h"
 #include "cloner/cloner_log.h"
+#include <asm/usb_boot.h>
 
 #ifdef CONFIG_JZ_SCBOOT
 #if defined(CONFIG_X2000_V12) || defined(CONFIG_X2100) || defined(CONFIG_M300)
@@ -493,6 +494,11 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 		case VR_POWEROFF:
 			burner_set_reset_tag();
 			do_reset(NULL,0,0,NULL);
+			break;
+		case VR_REBURN:
+#ifdef CONFIG_SOFT_BURNER
+                        enter_usb_boot_mode();
+#endif
 			break;
 #ifdef CONFIG_JZ_SCBOOT
 		case VR_SEC_SEDEN:

@@ -27,22 +27,12 @@
 #include <asm/errno.h>
 #include <asm/io.h>
 #include <asm/arch/cpm.h>
+#include <asm/usb_boot.h>
 
 static int do_softburn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-
-#define SLPC_SW_MAGIC           0x425753 // SWB (software boot)
-#define SLPC_SW_USB_BOOT        (0x2 << 0)
-
-	unsigned int val = SLPC_SW_MAGIC << 8 | SLPC_SW_USB_BOOT;
-#ifdef CONFIG_SOFT_BURNER_V2
-	cpm_outl(val, CPM_SOFT_APPR);
-#else
-	cpm_outl(val, CPM_SLPC);
-#endif
-	do_reset(NULL, 0, 0, NULL);
-
-	return CMD_RET_SUCCESS;
+        enter_usb_boot_mode();
+        return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(softburn, CONFIG_SYS_MAXARGS, 1, do_softburn,

@@ -64,6 +64,8 @@ extern void dump_c0_regs(void);
 
 #ifdef CONFIG_SPL_USB_BOOT
 extern int spl_usb_boot;
+extern int usb_boot_loop(void);
+extern void enter_usb_boot_mode(void);
 #endif
 
 void change_lcd_ddrc_process_priority(void)
@@ -104,6 +106,7 @@ void board_init_f(ulong dummy)
 	if (!!spl_usb_boot) {
 		timer_init();
 		usb_boot_loop();
+		enter_usb_boot_mode();
 		return;
 	}
 #endif

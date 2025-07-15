@@ -34,7 +34,7 @@
 static enum soc_type {
 	SOC_X2000,
 	SOC_X2000E,
-	SOC_RESERVED,
+	SOC_M300,
 	SOC_X2100,
 	SOC_X2000H,
 	SOC_X2100L,
@@ -49,6 +49,7 @@ static struct soc_desc {
 static const struct soc_desc desc[] = {
 	{SOC_X2000,  "X2000" },
 	{SOC_X2000E, "X2000E"},
+	{SOC_M300,   "M300"},
 	{SOC_X2100,  "X2100" },
 	{SOC_X2000H, "X2000H"},
 	{SOC_X2100L, "X2100L"},

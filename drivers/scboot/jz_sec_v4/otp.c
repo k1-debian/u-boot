@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 
 #include <common.h>
 #include <asm/io.h>
@@ -99,7 +99,7 @@ static int set_efuse_timing(void)
 	}
 	rd_strobe = i;
 
-	for(i = 0; i < 0x7ff; i++) {
+	for(i = 0; i <= 0x3ff; i++) {
 		val = (wr_adj + i + 3000) * ns;
 		if(val > 13000) {
 			val = (wr_adj - i + 3000) * ns;
@@ -111,7 +111,7 @@ static int set_efuse_timing(void)
 		}
 	}
 
-	if(i == 0x7ff) {
+	if(i > 0x3ff) {
 		serial_debug("Error: wr_strobe failed!\n");
 		return -1;
 	}
@@ -182,12 +182,15 @@ static int otp_w(unsigned int offset)
 	REG32(EFUSE_REG_DAT0) = PRT_REDUNDANCY << offset;
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
+
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
+
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
+
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) = 0;
@@ -200,25 +203,25 @@ static int otp_w(unsigned int offset)
 
 
 
-static int cpu_wtotp(int opera)
+static int mcu_wtotp(int opera)
 {
 	unsigned int ret = 0;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
-	redundancy_rd();
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
 	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = 0;
+
+	efuse_1v8_output(efuse_args->efuse_en_active);
+
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
-	mdelay(40);
-	efuse_1v8_output(efuse_args->efuse_en_active);
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
+
 	efuse_1v8_output(!efuse_args->efuse_en_active);
-	mdelay(40);
 
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
@@ -232,7 +235,6 @@ static int cpu_wtotp(int opera)
 	}
 
 	efuse_update_state();
-	redundancy_rd();
 
 	return 0;
 }
@@ -312,7 +314,7 @@ int cpu_burn_rckey(void)
 		return -ESEC;
 	}
 
-	if (cpu_wtotp(WT_OTP_CK) < 0) {
+	if (mcu_wtotp(WT_OTP_CK) < 0) {
 		serial_debug("Error: chipkey write failed\n");
 		return -ESEC;
 	}
@@ -436,7 +438,7 @@ int cpu_burn_nku(void *idata,unsigned int length)
 	}
 
         serial_debug("NKU write to efuse\n");
-	if (cpu_wtotp(WT_OTP_NKU) < 0) {
+	if (mcu_wtotp(WT_OTP_NKU) < 0) {
 		serial_debug("Error: nku write failed\n");
 		return -ESEC;
 	}
@@ -522,7 +524,7 @@ int cpu_burn_ukey(void *idata)
                 }
 
                 serial_debug("write UK0 to efuse\n");
-                if (cpu_wtotp(WT_OTP_UK) < 0) {
+                if (mcu_wtotp(WT_OTP_UK) < 0) {
                         serial_debug("Error: UK0 mcu write failed!\n");
                         return -ESEC;
                 }
@@ -565,7 +567,7 @@ int cpu_burn_ukey(void *idata)
 
                 serial_debug("write UK1 to efuse\n");
 
-                if (cpu_wtotp(WT_OTP_UK1) < 0) {
+                if (mcu_wtotp(WT_OTP_UK1) < 0) {
                         serial_debug("Error: UK1 mcu write failed!\n");
                         return -ESEC;
                 }
@@ -577,15 +579,15 @@ int cpu_burn_ukey(void *idata)
                         serial_debug("Error: UK1 protection bit set failed!\n");
                         return -ESEC;
                 }
-        }
+	}
 	return 0;
 }
 
 int cpu_burn_secboot_enable(void)
 {
 	serial_debug("\nEnter: %s\n",__func__);
-	
-        efuse_update_state();
+
+	efuse_update_state();
 
 	if (!EFUSTATE_UK_PRT || !EFUSTATE_UK1_PRT) {
 		serial_debug("Error: userkey protection bit is not set!\n");
@@ -597,80 +599,34 @@ int cpu_burn_secboot_enable(void)
 		return -ESEC;
 	}
 
-        if (!EFUSTATE_SECBOOT_EN && EFUSTATE_SCB_PRT) {
+	if (!EFUSTATE_SECBOOT_EN && EFUSTATE_SCB_PRT) {
 		serial_debug("Error: security protection bit is set, but enable bit is not set!\n");
 		return -ESEC;
 	}
 
 
-        serial_debug("set security enable bit\n");
-	
-        mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_STAT) = 0;
-
-	/* set security boot enable and disable JTAG */
-	REG32(EFUSE_REG_DAT0) = ((1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_DJG));
-
-	/*efuse config*/
-	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-
-	efuse_1v8_output(efuse_args->efuse_en_active);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-
-	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
-
-	efuse_update_state();
-
-
-        if (!EFUSTATE_SECBOOT_EN) {
+	serial_debug("set security enable bit\n");
+	otp_w(EFUSE_PTCOFF_SEC);
+	if (!EFUSTATE_SECBOOT_EN) {
 		serial_debug("Error: security enable bit set failed!\n");
 		return -ESEC;
 	}
- 
-        if (!EFUSTATE_DIS_JTAG) {
+
+	serial_debug("set disable jtag bit\n");
+	otp_w(EFUSE_PTCOFF_DJG);
+	if (!EFUSTATE_DIS_JTAG) {
 		serial_debug("Error: disable jtag bit set failed!\n");
 		return -ESEC;
 	}
 
-        serial_debug("set security protection bit\n");
-        
-        mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_STAT) = 0;
-
-	/* set security boot enable protected */
-	REG32(EFUSE_REG_DAT0) = (1 << EFUSE_PTCOFF_SCB);
-
-	/*efuse config*/
-	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
-
-	efuse_1v8_output(efuse_args->efuse_en_active);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-
-	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
-
-	efuse_update_state();
-
-
+	serial_debug("set security protection bit\n");
+	otp_w(EFUSE_PTCOFF_SCB);
 	if (!EFUSTATE_SCB_PRT) {
 		serial_debug("Error: security protection bit set failed!\n");
 		return -ESEC;
 	}
 
-        serial_debug("\nsecurity enable successful!\n");
+	serial_debug("\nsecurity enable successful!\n");
 
 	return 0;
 }

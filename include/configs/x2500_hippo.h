@@ -291,7 +291,6 @@
 			#define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
 		#endif /* CONFIG_BOOT_VMLINUX */
 
-        /* #define CONFIG_SOFT_BURNER */
         /* #define CONFIG_AUDIO_CAL_DIV */
         #define CONFIG_AUDIO_APLL CONFIG_SYS_APLL_FREQ
         #define CONFIG_AUDIO_MPLL CONFIG_SYS_MPLL_FREQ
@@ -509,7 +508,7 @@
 #define CONFIG_CMD_EXT4
 #define CONFIG_CMD_FAT
 #define CONFIG_EFI_PARTITION
-#define CONFIG_SOFT_BURNER_V2
+#define CONFIG_SOFT_BURNER
 
 
 #define CONFIG_CMD_DDR_TEST	/* DDR Test Command */

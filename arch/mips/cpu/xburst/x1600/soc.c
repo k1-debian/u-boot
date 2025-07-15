@@ -57,6 +57,8 @@ extern int gpio_spi_to_uart_init(void);
 
 #ifdef CONFIG_SPL_USB_BOOT
 extern int spl_usb_boot;
+extern int usb_boot_loop(void);
+extern void enter_usb_boot_mode(void);
 #endif
 
 #ifdef CONFIG_SIMULATION
@@ -94,7 +96,9 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_SPL_USB_BOOT
 	if (!!spl_usb_boot) {
+		timer_init();
 		usb_boot_loop();
+		enter_usb_boot_mode();
 		return;
 	}
 #endif
