@@ -469,6 +469,91 @@ int cpu_get_enckey(unsigned int *odata)
 	return 0;
 }
 
+static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, unsigned int *key, int key_len, int data_len)
+{
+	unsigned int ret, i;
+	volatile struct sc_args *args;
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+
+	volatile unsigned int *mcu_key = (volatile unsigned int *)(MCU_TCSM_INDATA);
+	volatile unsigned int *mcu_input = (volatile unsigned int *)(MCU_TCSM_INDATA + 0x30);
+	volatile unsigned int *mcu_output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
+
+
+	for(i = 0; i < data_len; i++) {
+		mcu_input[i] = input[i];
+	}
+
+	if (key != NULL) {
+		for(i = 0; i < key_len; i++) {
+			mcu_key[i] = key[i];
+		}
+		args->arg[0] = AES_256BIT << 12;
+		args->arg[1] = MCU_TCSM_PADDR(mcu_key);
+		args->arg[2] = MCU_TCSM_PADDR(mcu_input);
+		args->arg[3] = MCU_TCSM_PADDR(mcu_output);
+		args->arg[4] = data_len / 4;
+		//	args->arg[5] = MCU_TCSM_PADDR(iv);
+		args->arg[6] = 3;
+
+		flush_cache_all();
+		ret = secall(args, SC_FUNC_AES, 0, 1);
+		flush_cache_all();
+	} else {
+		args->arg[0] = AES_BY_UKEY | (AES_256BIT << 12);
+		args->arg[2] = MCU_TCSM_PADDR(mcu_input);
+		args->arg[3] = MCU_TCSM_PADDR(mcu_output);
+		args->arg[4] = data_len;
+
+		ret = secall(args, SC_FUNC_AESBYKEY, 0, 1);
+	}
+
+	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+		serial_debug("SC_FUNC_AES failed, ret = %x\n",
+			     *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+		return -ESEC;
+	}
+
+	for(i = 0; i < data_len; i++) {
+		debug("output[%d]: %08x\n", i, mcu_output[i]);
+		output[i] = mcu_output[i];
+	}
+
+	serial_debug("mcu aes encrypt success!\n");
+	return 0;
+}
+
+static int cmp_data(unsigned long *src,unsigned long *dst,unsigned long len)
+{
+        unsigned long *start = src;
+        unsigned long *end_src = src + len;
+        while(start < end_src)
+        {
+                if(*start++ != *dst++) {
+                        serial_debug("cmp data error: src:%08x, dst:%08x\n", *(start-1), *(dst-1));
+                        return (start - src);
+                }
+        }
+        return 0;
+}
+
+static int check_ukey(unsigned int *ukey, int key_len)
+{
+	unsigned int ori_data[] = {0x34333231,0x38373635,0x31313039,0x0a313131};
+	unsigned int in_key_enc_data[] = {0,0,0,0,0,0,0,0};
+	unsigned int ex_key_enc_data[] = {0,0,0,0,0,0,0,0};
+	int ori_data_len = ARRAY_SIZE(ori_data);
+	int enc_data_len = ARRAY_SIZE(in_key_enc_data);
+
+	mcu_aes_encrypt(ori_data, ex_key_enc_data, ukey, key_len, ori_data_len);
+	mcu_aes_encrypt(ori_data, in_key_enc_data, NULL, 0, ori_data_len);
+
+	if (cmp_data(ex_key_enc_data, in_key_enc_data, enc_data_len)) {
+		return -1;
+	}
+	return 0;
+}
+
 int cpu_burn_ukey(void *idata)
 {
 	unsigned int ret;
@@ -536,6 +621,11 @@ int cpu_burn_ukey(void *idata)
                         serial_debug("Error: UK0 protection bit set failed!\n");
                         return -ESEC;
                 }
+
+		if (check_ukey(ukey, UKEY_LEN_WORD)) {
+                        serial_debug("Error: UK0 check failed!\n");
+                        return -ESEC;
+		}
         }
 
 
