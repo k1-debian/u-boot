@@ -124,7 +124,7 @@ int clmg_init(struct cloner *cloner, void *args)
 		return -ENOSYS;
 
 	if (!clmd->init) {
-		printf("moudle(%x) not support init function\n", clmd->medium);
+		LOG_ERROR("moudle(%x) not support init function\n", clmd->medium);
 		return 0;
 	}
 	return clmd->init(cloner, (void*)p->data, clmd->data);
@@ -209,7 +209,7 @@ int clmg_reset(struct cloner *cloner)
 		return -ENOSYS;
 
 	if (!clmd->reset) {
-		printf("moudle(%x) not support reset function\n", clmd->medium);
+		LOG_ERROR("moudle(%x) not support reset function\n", clmd->medium);
 		return 0;
 	}
 
@@ -284,7 +284,7 @@ void handle_args(struct usb_ep *ep,struct usb_request *req)
 				m = p;
 				break;
 			default:
-				printf("Unknown magic!!!\n");
+				LOG_ERROR("Unknown magic!!!\n");
 				break;
 		}
 		p = (struct ParameterInfo *)((char *)p + p->size + sizeof(uint32_t) * 2);
@@ -387,7 +387,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 				memcpy(dest_addr, src_addr, len);
 				if(debug_args->write_back_chk)
 				{
-					printf("src:%p----dest:%p-----len:%d\n",src_addr, dest_addr, len);
+					LOG_INFO("src:%p----dest:%p-----len:%d\n",src_addr, dest_addr, len);
 					int i=0;
 					for(; i < len; i++)
 					{
@@ -409,7 +409,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 					*tmp = *((int*)cloner->write_req->buf);
 					cloner->ack = 0;
 				} else {
-					printf("OPS(REGISTER,RAW): not supported address.");
+					LOG_ERROR("OPS(REGISTER,RAW): not supported address.");
 					cloner->ack = -ENODEV;
 				}
 			}
@@ -530,7 +530,7 @@ int f_cloner_setup_handle(struct usb_function *f,
 	struct usb_request *req = cloner->ep0req;
 
 	if ((ctlreq->bRequestType & USB_TYPE_MASK) != USB_TYPE_VENDOR) {
-		printf("Unkown RequestType 0x%x \n",ctlreq->bRequestType);
+		LOG_ERROR("Unkown RequestType 0x%x \n",ctlreq->bRequestType);
 		cloner->ack = -ENOSYS;
 		return -ENOSYS;
 	}
@@ -548,11 +548,11 @@ int f_cloner_setup_handle(struct usb_function *f,
 			strcpy(cloner->ep0req->buf,CONFIG_BURNER_CPU_INFO);
 			break;
 		case VR_GET_ACK:
-			if (cloner->ack) printf("cloner->ack = %d\n",cloner->ack);
+			if (cloner->ack) LOG_INFO("cloner->ack = %d\n",cloner->ack);
 			memcpy(cloner->ep0req->buf,&cloner->ack,sizeof(int));
 			break;
 		case VR_GET_CRC:
-			if (cloner->ack) printf("cloner->ack = %d, cloner->crc = %x\n",cloner->ack, cloner->crc);
+			if (cloner->ack) LOG_INFO("cloner->ack = %d, cloner->crc = %x\n",cloner->ack, cloner->crc);
 			memcpy(cloner->ep0req->buf,&cloner->ack,sizeof(int));
 			memcpy(cloner->ep0req->buf + sizeof(int),&cloner->crc,sizeof(int));
 			break;
@@ -569,7 +569,7 @@ int f_cloner_setup_handle(struct usb_function *f,
 		case VR_SET_DATA_LEN:
 			cloner->full_size = ctlreq->wIndex | ctlreq->wValue << 16;
 			cloner->full_size_remainder = cloner->full_size;
-			printf("cloner->full_size = %x\n", cloner->full_size);
+			LOG_INFO("cloner->full_size = %x\n", cloner->full_size);
 			break;
 #ifdef CONFIG_JZ_SCBOOT
 		case VR_SEC_GET_CK_LEN:     //4. get ckey length
