@@ -4,7 +4,6 @@
 #include <linux/mtd/mtd.h>
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
-#include "cloner_log.h"
 
 #define FMW_SIZE_MAX	512
 
@@ -30,7 +29,7 @@ static int32_t firmware_buf_compare(uint8_t *wbuf, uint8_t *rbuf, uint32_t len) 
 	int32_t i = 0;
 	for(i = 0; i < len; i++) {
 		if(wbuf[i] != rbuf[i]) {
-			printf("compare err:wbuf = 0x%02x, rbuf= 0x%02x\n",
+			LOG_ERROR("compare err: wbuf = 0x%02x, rbuf= 0x%02x\n",
 				wbuf[i], rbuf[i]);
 			return -EIO;
 		}
@@ -51,7 +50,7 @@ w_retry:
 	    if(retry_count--)
 		    goto w_retry;
 	    if(retry_count < 0) {
-		    printf("%s %s %d:write flash failed! ret = %d\n",
+		    LOG_ERROR("%s %s %d:write flash failed! ret = %d\n",
 		    __FILE__, __func__, __LINE__, ret);
 		    return -EIO;
 	    }
@@ -67,14 +66,14 @@ r_retry:
 	    if(retry_count--)
 		    goto r_retry;
 	    if(retry_count < 0) {
-		    printf("%s %s %d:read flash failed! ret = %d\n",
+		    LOG_ERROR("%s %s %d:read flash failed! ret = %d\n",
 		    __FILE__, __func__, __LINE__, ret);
 		    goto failed;
 	    }
 	}
 
 	if(firmware_buf_compare(wbuf, rbuf, len)) {
-		printf("%s %s %d: buf compare err!\n",
+		LOG_ERROR("%s %s %d: buf compare err!\n",
 			__FILE__, __func__, __LINE__);
 		ret = -EIO;
 		goto failed;
@@ -100,7 +99,7 @@ retry_count:
 		goto retry_count;
 
 	if(count < 0) {
-		printf("%s %s %d: flash read error off = 0x%x, len = %x, ret = %d\n",
+		LOG_ERROR("%s %s %d: flash read error off = 0x%x, len = %x, ret = %d\n",
 			__FILE__, __func__, __LINE__, off, len, ret);
 		return ret;
 	}
@@ -127,14 +126,14 @@ static int32_t spinand_firmware_write(struct mtd_info *mtd, uint32_t flash_offs,
 	for(i = 0; i < flash_size / mtd->erasesize; i++) {
 		ret = flash_write_blk(mtd, flash_offs, buf_size, buf);
 		if(ret) {
-			printf("%s %s %d:write data failed! errcount = %d\n",
+			LOG_ERROR("%s %s %d:write data failed! errcount = %d\n",
 				__FILE__, __func__, __LINE__, errcount++);
 		}
 		flash_offs += mtd->erasesize;
 	}
 
 	if(errcount == flash_size / mtd->erasesize) {
-		printf("all blk write failed!\n");
+		LOG_ERROR("all blk write failed!\n");
 		return -EIO;
 	}
 
@@ -152,7 +151,7 @@ int32_t spinand_license_program(struct cloner *cloner) {
 	int32_t ret = 0;
 
 	if (!spi_args->reserve_space) {
-		printf("reserved space is disabled!\n");
+		LOG_ERROR("reserved space is disabled!\n");
 		return -EACCES;
 	}
 
@@ -163,7 +162,7 @@ int32_t spinand_license_program(struct cloner *cloner) {
 	if (!ret) {
 		void *buf = calloc(sizeof(license) + license.license_len, sizeof(uint8_t));
 		if(!buf) {
-			printf("alloc mem failed!\n");
+			LOG_ERROR("alloc mem failed!\n");
 			return -ENOMEM;
 		}
 
@@ -173,9 +172,9 @@ int32_t spinand_license_program(struct cloner *cloner) {
 		ret = spinand_firmware_write(mtd, mtd->size + CONFIG_MAC_SIZE + CONFIG_SN_SIZE, CONFIG_LICENSE_SIZE,
 					buf, sizeof(license) + license.license_len);
 		if (!ret)
-			printf("#########burner license firmware successful!\n");
+			LOG_INFO("#########burner license firmware successful!\n");
 		else
-			printf("#########burner license firmware failed!\n");
+			LOG_ERROR("#########burner license firmware failed!\n");
 		free(buf);
 	}
 	return ret;
@@ -195,13 +194,13 @@ int32_t spinand_license_read(struct cloner *cloner) {
 		ret = flash_read_blk(mtd, read_off, sizeof(license), &license);
 		if(!ret && license.license_len != 0 && license.crc_val != 0)
 			break;
-		printf("%s %s %d: read license config failed!, retrycount = %d\n",
+		LOG_ERROR("%s %s %d: read license config failed!, retrycount = %d\n",
 			__FILE__, __func__, __LINE__, i);
 		read_off += mtd->erasesize;
 	}
 
 	if(i == CONFIG_LICENSE_SIZE / mtd->erasesize) {
-		printf("%s %s %d: read license config failed!\n",
+		LOG_ERROR("%s %s %d: read license config failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;
 	}
@@ -209,7 +208,7 @@ int32_t spinand_license_read(struct cloner *cloner) {
 	if(license.license_len == -1 ||
 	    license.crc_val == -1 ||
 	    license.license_len >= FMW_SIZE_MAX) {
-		printf("license data error!\n");
+		LOG_ERROR("license data error!\n");
 		return -EINVAL;
 	}
 
@@ -221,13 +220,13 @@ int32_t spinand_license_read(struct cloner *cloner) {
 			if(local_crc32(0xffffffff, buf, license.license_len) == license.crc_val)
 				break;
 		}
-		printf("%s %s %d: read license buf failed!, retrycount = %d\n",
+		LOG_ERROR("%s %s %d: read license buf failed!, retrycount = %d\n",
 			__FILE__, __func__, __LINE__, i);
 		read_off += mtd->erasesize;
 	}
 
 	if(i == CONFIG_LICENSE_SIZE / mtd->erasesize) {
-		printf("%s %s %d: read sn failed!\n",
+		LOG_ERROR("%s %s %d: read sn failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;
 	}
@@ -245,7 +244,7 @@ int32_t spinand_sn_program(struct cloner *cloner) {
 	int32_t ret = 0;
 
 	if (!spi_args->reserve_space) {
-		printf("reserved space is disabled!\n");
+		LOG_ERROR("reserved space is disabled!\n");
 		return -EACCES;
 	}
 
@@ -256,7 +255,7 @@ int32_t spinand_sn_program(struct cloner *cloner) {
 	if (!ret) {
 		void *buf = calloc(sizeof(sn) + sn.sn_len, sizeof(uint8_t));
 		if(!buf) {
-			printf("alloc mem failed!\n");
+			LOG_ERROR("alloc mem failed!\n");
 			return -ENOMEM;
 		}
 
@@ -266,9 +265,9 @@ int32_t spinand_sn_program(struct cloner *cloner) {
 		ret = spinand_firmware_write(mtd, mtd->size + CONFIG_MAC_SIZE, CONFIG_SN_SIZE,
 					buf, sizeof(sn) + sn.sn_len);
 		if (!ret)
-			printf("#########burner sn firmware successful!\n");
+			LOG_INFO("#########burner sn firmware successful!\n");
 		else
-			printf("#########burner sn firmware failed!\n");
+			LOG_ERROR("#########burner sn firmware failed!\n");
 		free(buf);
 	}
 	return ret;
@@ -288,13 +287,13 @@ int32_t spinand_sn_read(struct cloner *cloner) {
 		ret = flash_read_blk(mtd, read_off, sizeof(sn), &sn);
 		if(!ret && sn.sn_len != 0 && sn.crc_val != 0)
 			break;
-		printf("%s %s %d: read sn config failed!, retrycount = %d\n",
+		LOG_ERROR("%s %s %d: read sn config failed!, retrycount = %d\n",
 			__FILE__, __func__, __LINE__, i);
 		read_off += mtd->erasesize;
 	}
 
 	if(i == CONFIG_SN_SIZE / mtd->erasesize) {
-		printf("%s %s %d: read sn config failed!\n",
+		LOG_ERROR("%s %s %d: read sn config failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;
 	}
@@ -302,7 +301,7 @@ int32_t spinand_sn_read(struct cloner *cloner) {
 	if(sn.sn_len == -1 ||
 	    sn.crc_val == -1 ||
 	    sn.sn_len >= FMW_SIZE_MAX) {
-		printf("sn data error!\n");
+		LOG_ERROR("sn data error!\n");
 		return -EINVAL;
 	}
 
@@ -314,13 +313,13 @@ int32_t spinand_sn_read(struct cloner *cloner) {
 			if(local_crc32(0xffffffff, buf, sn.sn_len) == sn.crc_val)
 				break;
 		}
-		printf("%s %s %d: read sn buf failed!, retrycount = %d\n",
+		LOG_ERROR("%s %s %d: read sn buf failed!, retrycount = %d\n",
 			__FILE__, __func__, __LINE__, i);
 		read_off += mtd->erasesize;
 	}
 
 	if(i == CONFIG_SN_SIZE / mtd->erasesize) {
-		printf("%s %s %d: read sn failed!\n",
+		LOG_ERROR("%s %s %d: read sn failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;
 	}
@@ -337,7 +336,7 @@ int32_t spinand_mac_program(struct cloner *cloner) {
 	int32_t ret = 0;
 
 	if (!spi_args->reserve_space) {
-		printf("reserved space is disabled!\n");
+		LOG_ERROR("reserved space is disabled!\n");
 		return -EACCES;
 	}
 
@@ -348,7 +347,7 @@ int32_t spinand_mac_program(struct cloner *cloner) {
 	if (!ret) {
 		void *buf = calloc(sizeof(mac) + mac.mac_len, sizeof(uint8_t));
 		if(!buf) {
-			printf("alloc mem failed!\n");
+			LOG_ERROR("alloc mem failed!\n");
 			return -ENOMEM;
 		}
 
@@ -358,9 +357,9 @@ int32_t spinand_mac_program(struct cloner *cloner) {
 		ret = spinand_firmware_write(mtd, mtd->size, CONFIG_MAC_SIZE,
 					buf, sizeof(mac) + mac.mac_len);
 		if (!ret)
-			printf("#########burner mac firmware successful!\n");
+			LOG_INFO("#########burner mac firmware successful!\n");
 		else
-			printf("#########burner mac firmware failed!\n");
+			LOG_ERROR("#########burner mac firmware failed!\n");
 		free(buf);
 	}
 	return ret;
@@ -378,13 +377,13 @@ int32_t spinand_mac_read(struct cloner *cloner) {
 		ret = flash_read_blk(mtd, read_off, sizeof(mac), &mac);
 		if(!ret && mac.mac_len == 12 && mac.crc_val != 0)
 			break;
-		printf("%s %s %d: read mac config failed!, retrycount = %d\n",
+		LOG_ERROR("%s %s %d: read mac config failed!, retrycount = %d\n",
 			__FILE__, __func__, __LINE__, i);
 		read_off += mtd->erasesize;
 	}
 
 	if(i == CONFIG_MAC_SIZE / mtd->erasesize) {
-		printf("%s %s %d: read mac config failed!\n",
+		LOG_ERROR("%s %s %d: read mac config failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;
 	}
@@ -392,7 +391,7 @@ int32_t spinand_mac_read(struct cloner *cloner) {
 	if(mac.mac_len != 12 ||
 		mac.crc_val == -1 ||
 		mac.mac_len >= FMW_SIZE_MAX) {
-		printf("mac data error!\n");
+		LOG_ERROR("mac data error!\n");
 		return -EINVAL;
 	}
 
@@ -404,13 +403,13 @@ int32_t spinand_mac_read(struct cloner *cloner) {
 			if(local_crc32(0xffffffff, buf, mac.mac_len) == mac.crc_val)
 				break;
 		}
-		printf("%s %s %d: read mac buf failed!, retrycount = %d\n",
+		LOG_ERROR("%s %s %d: read mac buf failed!, retrycount = %d\n",
 			__FILE__, __func__, __LINE__, i);
 		read_off += mtd->erasesize;
 	}
 
 	if(i == CONFIG_SN_SIZE / mtd->erasesize) {
-		printf("%s %s %d: read mac failed!\n",
+		LOG_ERROR("%s %s %d: read mac failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;
 	}

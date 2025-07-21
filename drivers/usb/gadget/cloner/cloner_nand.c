@@ -10,7 +10,7 @@ int nand_program(struct cloner *cloner)
 	u32 length = cloner->cmd->write.length;
 	void *databuf = (void *)cloner->write_req->buf;
 
-	BURNNER_PRI("=========++++++++++++>   NAND PROGRAM:startaddr = %d P offset = %d P length = %d \n",startaddr,cloner->cmd->write.offset,length);
+	printf("=========++++++++++++>   NAND PROGRAM:startaddr = %d P offset = %d P length = %d \n",startaddr,cloner->cmd->write.offset,length);
 	do_nand_request(startaddr, databuf, length,cloner->cmd->write.offset);
 
 	return 0;
@@ -45,20 +45,20 @@ int nand_mtd_ubi_program(struct cloner *cloner)
 		if (need_change_part(part_name)) {
 			memset(command, 0, 128);
 			sprintf(command, "ubi part %s", part_name);
-			BURNNER_PRI("%s\n", command);
+			printf("%s\n", command);
 			ret = run_command(command, 0);
 			if (ret) {
-				BURNNER_PRI("error...\n");
+				printf("error...\n");
 				return ret;
 			}
-			BURNNER_PRI("ok....\n");
+			printf("ok....\n");
 			set_current_part(part_name);
 			cloner->last_offset = 0;
 			cloner->last_offset_avail = 0;
 		}
 	}
 
-	BURNNER_PRI("cloner->last_offset_avail = %d,  cloner->last_offset = %x cloner->cmd->write.offset = %x\n",
+	printf("cloner->last_offset_avail = %d,  cloner->last_offset = %x cloner->cmd->write.offset = %x\n",
 			cloner->last_offset_avail,
 			cloner->last_offset,
 			cloner->cmd->write.offset);
@@ -81,12 +81,12 @@ int nand_mtd_ubi_program(struct cloner *cloner)
 	}
 	cloner->full_size_remainder -= length;
 	if (cloner->full_size_remainder < 0) cloner->full_size_remainder = 0;
-	BURNNER_PRI("%s (full_size_remainder reserved = %d)\n", command, cloner->full_size_remainder);
+	printf("%s (full_size_remainder reserved = %d)\n", command, cloner->full_size_remainder);
 	ret = run_command(command, 0);
 	if (ret) {
-		BURNNER_PRI("...error\n");
+		printf("...error\n");
 	} else {
-		BURNNER_PRI("...ok\n");
+		printf("...ok\n");
 		cloner->last_offset_avail = 1;
 		cloner->last_offset = cloner->cmd->write.offset;
 	}
@@ -140,7 +140,7 @@ static int nand_mtd_raw_erase(u32 startaddr, u32 length)
 
 	memset(command, 0 , 128);
 	sprintf(command, "nand erase 0x%x 0x%x", erase_addr, erase_len);
-	BURNNER_PRI("%s\n", command);
+	printf("%s\n", command);
 	ret = run_command(command, 0);
 	if (ret)
 		return ret;
@@ -158,19 +158,19 @@ static int nand_mtd_raw_program_spl(struct cloner *cloner, void *databuf) {
 	memcpy(databuf, cloner->spl_title, cloner->spl_title_sz);
 	memset(command, 0 , 128);
 	sprintf(command, "writespl 0x%x 0x%x", (unsigned)databuf, 6);
-	BURNNER_PRI("%s\n", command);
+	printf("%s\n", command);
 	ret = run_command(command, 0);
 	if (ret) return -1;
 
 	parambuf = get_params_addr();
 	memset(command, 0 , 128);
 	sprintf(command, "writespl %p 0x%x 0x%x", parambuf, 6, 2);
-	BURNNER_PRI("%s\n", command);
+	printf("%s\n", command);
 	ret = run_command(command, 0);
 	if (ret) return -1;;
 
 	cloner->skip_spl_size = page_size * 128 * 8 - CONFIG_SPL_PAD_TO;
-	BURNNER_PRI("...ok\n");
+	printf("...ok\n");
 	return 0;
 }
 
@@ -211,12 +211,12 @@ int nand_mtd_raw_program(struct cloner *cloner)
 	if (length) {
 		memset(command, 0 , 128);
 		sprintf(command, "nand write.skip 0x%x 0x%x 0x%x", (unsigned)databuf, startaddr, length);
-		BURNNER_PRI("%s\n", command);
+		printf("%s\n", command);
 		ret = run_command(command, 0);
 		if (ret) goto out;
 	}
 	cloner->full_size = 0;
-	BURNNER_PRI("...ok\n");
+	printf("...ok\n");
 
 	if (debug_args->write_back_chk) {
 		if (!readbuf) {
@@ -238,7 +238,7 @@ int nand_mtd_raw_program(struct cloner *cloner)
 	}
 	return 0;
 out:
-	BURNNER_PRI("...error\n");
+	printf("...error\n");
 	return ret;
 }
 #endif

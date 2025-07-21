@@ -33,7 +33,6 @@
 #include <ingenic_soft_spi.h>
 #include <cloner/cloner.h>
 #include "cloner/cloner_moudle.h"
-#include "cloner/cloner_log.h"
 #include <asm/usb_boot.h>
 
 #ifdef CONFIG_JZ_SCBOOT
@@ -69,7 +68,7 @@ int buf_compare(void *s, void *d, int len, int offs)
 	{
 		if(src[i] != des[i])
 		{
-			printf("compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x len = %d\n",
+			LOG_ERROR("compare error: org_data[%d] = 0x%08x read_data[%d] = 0x%08x addr= 0x%08x len = %d\n",
 					i, src[i], i, des[i], offs + i * 4, len);
 			return -1;
 		}
@@ -275,7 +274,6 @@ void handle_args(struct usb_ep *ep,struct usb_request *req)
 				break;
 			case MAGIC_DEBUG:
 				debug_args = p->data;
-				L.enable = debug_args->log_enabled;
 				break;
 			case MAGIC_DDR:
 				ddr_args = p->data;
@@ -313,6 +311,15 @@ void handle_read(struct cloner *cloner)
 			cloner->ack = cpu_get_enckey(cloner->read_req->buf);
 			break;
 #endif
+		case OPS(MEMORY,RAW):
+			{
+				unsigned char *src = (unsigned char*)(cloner->cmd->read.offset);
+				unsigned char *dst = cloner->read_req->buf;
+				unsigned int len = cloner->cmd->read.length;
+				memcpy(dst, src, len);
+			}
+			cloner->ack = 0;
+			break;
 		default:
 			cloner->ack = clmg_read(cloner);
 			break;
@@ -347,7 +354,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 	}
 
 	if (req->actual != req->length) {
-		printf("write transfer length is err,actual=%08x,length=%08x\n",req->actual,req->length);
+		LOG_ERROR("write transfer length is err,actual=%08x,length=%08x\n",req->actual,req->length);
 		cloner->ack = -EIO;
 		return;
 	}
@@ -360,7 +367,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 	if (debug_args->transfer_data_chk) {
 		uint32_t tmp_crc = local_crc32(0xffffffff,req->buf,req->actual);
 		if (cloner->cmd->write.crc != tmp_crc) {
-			printf("crc is errr! src crc=%08x crc=%08x\n",cloner->cmd->write.crc,tmp_crc);
+			LOG_ERROR("crc is errr! src crc=%08x crc=%08x\n",cloner->cmd->write.crc,tmp_crc);
 			cloner->ack = -EINVAL;
 			return;
 		}
@@ -386,7 +393,7 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 					{
 						if(dest_addr[i] != src_addr[i])
 						{
-							printf("compare error: dest_addr:0x%p = 0x%02x,src_addr:0x%p = 0x%02x\n",
+							LOG_ERROR("compare error: dest_addr:0x%p = 0x%02x,src_addr:0x%p = 0x%02x\n",
 									dest_addr+i, dest_addr[i], src_addr+i, src_addr[i]);
 							break;
 						}
@@ -436,7 +443,7 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 	}
 
 	if (req->actual != req->length) {
-		printf("cmd transfer length is err req->actual = %d, req->length = %d\n",
+		LOG_ERROR("cmd transfer length is err req->actual = %d, req->length = %d\n",
 				req->actual,req->length);
 		cloner->ack = -EIO;
 		return;
@@ -692,6 +699,8 @@ int cloner_function_bind_config(struct usb_configuration *c)
 	cloner->usb_function.disable = f_cloner_disable;
 	cloner->usb_function.unbind = f_cloner_unbind;
 	cloner->inited = 0;
+
+	log_init();
 
 	if (cloner_moudle_init())
 		return -EINVAL;

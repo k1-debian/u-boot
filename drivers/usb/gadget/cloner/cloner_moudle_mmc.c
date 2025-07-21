@@ -1,6 +1,5 @@
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
-#include "cloner_log.h"
 #include <part.h>
 #include <mmc.h>
 
@@ -19,7 +18,7 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 	mmc_args = (struct mmc_param *)args;
 	if(!mmc_args)
 	{
-		printf("Not found mmc parameters\n");
+		LOG_ERROR("Not found mmc parameters\n");
 		return -EINVAL;
 	}
 
@@ -41,18 +40,18 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 
 	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
-		printf("no mmc device at slot %x\n", dev);
+		LOG_ERROR("no mmc device at slot %x\n", dev);
 		return -ENODEV;
 	}
 
 	ret = mmc_init(mmc);
 	if (ret) {
-		printf("ERROR: MMC Init error\n");
+		LOG_ERROR("MMC Init error\n");
 		return -EPERM;
 	}
 
 	if (mmc_getwp(mmc) == 1) {
-		printf("Error: card is write protected!\n");
+		LOG_ERROR("card is write protected!\n");
 		return -EPERM;
 	}
 
@@ -64,7 +63,7 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 					mmc_args->gpp_area[i].enh_attr,
 					mmc_args->gpp_area[i].ext_attr);
 			if (ret) {
-				printf("Error: mmc create gpp area error!\n");
+				LOG_ERROR("mmc create gpp area error!\n");
 				return -EPERM;
 			}
 		}
@@ -73,7 +72,7 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 	if (mmc_args->mmc_uda_enh_area) {
 		ret = set_enh_area(mmc, mmc_args->uda_enh_area.start_kib, mmc_args->uda_enh_area.length_kib);
 		if (ret) {
-			printf("Error: mmc set uda enhanced area error!\n");
+			LOG_ERROR("mmc set uda enhanced area error!\n");
 			return -EPERM;
 		}
 	}
@@ -83,16 +82,16 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 		blk = 0;
 		blk_cnt = mmc->capacity / MMC_BYTE_PER_BLOCK;
 
-		BURNNER_PRI("MMC erase: dev # %d, start block # %d, count %u ... \n",
+		LOG_INFO("MMC erase: dev # %d, start block # %d, count %u ... \n",
 				dev, blk, blk_cnt);
 
 		ret = mmc->block_dev.block_erase(dev, blk, blk_cnt);
 		if (!ret) {
-			BURNNER_PRI("Error: mmc erase error\n");
+			LOG_INFO("mmc erase error\n");
 			return -EIO;
 		}
 
-		BURNNER_PRI("mmc all erase ok, blocks %d\n", blk_cnt);
+		LOG_INFO("mmc all erase ok, blocks %d\n", blk_cnt);
 		return 0;
 	} else if (mmc_args->mmc_erase != MMC_ERASE_PART) {
 		return 0;
@@ -111,19 +110,19 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 			blk_cnt = blk_end - blk ;
 		}
 
-		BURNNER_PRI("MMC erase: dev # %d, start block # 0x%x, count 0x%x ... \n",
+		LOG_INFO("MMC erase: dev # %d, start block # 0x%x, count 0x%x ... \n",
 				dev, blk, blk_cnt);
 
 		ret = mmc->block_dev.block_erase(dev, blk, blk_cnt);
 		if (!ret) {
-			printf("Error: mmc erase error\n");
+			LOG_ERROR(" mmc erase error\n");
 			return -EIO;
 		}
 
-		BURNNER_PRI("mmc part erase, part %d ok\n", i);
+		LOG_INFO("mmc part erase, part %d ok\n", i);
 
 	}
-	BURNNER_PRI("mmc erase ok\n");
+	LOG_INFO("mmc erase ok\n");
 	return 0;
 }
 
@@ -139,18 +138,18 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 
 	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
-		printf("no mmc device at slot %x\n", dev);
+		LOG_ERROR("no mmc device at slot %x\n", dev);
 		return -ENODEV;
 	}
 
 	mmc_init(mmc);
 
 	if (mmc_getwp(mmc) == 1) {
-		printf("Error: card is write protected!\n");
+		LOG_ERROR("card is write protected!\n");
 		return -EPERM;
 	}
 
-	BURNNER_PRI("MMC write: dev # %d, block # %d, count %d ... ", dev, blk, cnt);
+	LOG_INFO("MMC write: dev # %d, block # %d, count %d ... ", dev, blk, cnt);
 
 	if(blk == 0){
 		mmc_add_info_to_flash(addr);
@@ -158,7 +157,7 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 	}
 
 	n = mmc->block_dev.block_write(dev, blk, cnt, addr);
-	BURNNER_PRI("%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
+	LOG_INFO("%d blocks write: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 
 	if (n != cnt)
 		return -EIO;
@@ -166,14 +165,14 @@ int clmd_mmc_write(struct cloner *cloner, int sub_type, void *ops_data)
 	if (debug_args->write_back_chk) {
 		memset(addr, 0, cloner->cmd->write.length);
 		n = mmc->block_dev.block_read(dev, blk, cnt, addr);
-		BURNNER_PRI("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
+		LOG_INFO("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 		if (n != cnt)
 			return -EIO;
 
 		read_crc = local_crc32(0xffffffff, addr, cloner->cmd->write.length);
-		BURNNER_PRI("%d blocks check: %s\n", n, (write_crc == read_crc) ? "OK" : "ERROR");
+		LOG_INFO("%d blocks check: %s\n", n, (write_crc == read_crc) ? "OK" : "ERROR");
 		if (write_crc != read_crc) {
-			printf("src_crc32 = %08x , dst_crc32 = %08x\n", write_crc, read_crc);
+			LOG_ERROR("src_crc32 = %08x , dst_crc32 = %08x\n", write_crc, read_crc);
 			return -EIO;
 		}
 	}
@@ -190,18 +189,18 @@ int clmd_mmc_read(struct cloner *cloner, int sub_type, void *ops_data)
 
 	struct mmc *mmc = find_mmc_device(dev);
 	if (!mmc) {
-		printf("no mmc device at slot %x\n", dev);
+		LOG_ERROR("no mmc device at slot %x\n", dev);
 		return -ENODEV;
 	}
 	mmc_init(mmc);
 
 	if (mmc_getwp(mmc) == 1) {
-		printf("Error: card is write protected!\n");
+		LOG_ERROR("card is write protected!\n");
 		return -EPERM;
 	}
 
 	n = mmc->block_dev.block_read(dev, blk, cnt, buf);
-	BURNNER_PRI("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
+	LOG_INFO("%d blocks read: %s\n",n, (n == cnt) ? "OK" : "ERROR");
 	if (n != cnt)
 		return -EIO;
 	return 0;

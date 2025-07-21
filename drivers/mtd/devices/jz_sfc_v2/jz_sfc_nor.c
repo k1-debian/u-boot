@@ -817,7 +817,7 @@ static int sfc_do_chip_erase(void)
 	xfer.dataen = DISABLE;
 
 	if(sfc_sync_cdt(flash->sfc, &xfer)) {
-		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		LOG_ERROR("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 	return 0;
@@ -830,7 +830,7 @@ int jz_sfc_chip_erase(void)
 	int ret;
 
 	do {
-		printf("die%d", die_id);
+		LOG_INFO("die%d", die_id);
 
 		if (flash->die_num > 1) {
 			sfc_active_die(die_id);
@@ -839,7 +839,7 @@ int jz_sfc_chip_erase(void)
 
 		ret = sfc_do_chip_erase();
 		if (ret < 0) {
-			printf("chip erase error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+			LOG_ERROR("chip erase error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 			return -EIO;
 		}
 
@@ -866,7 +866,7 @@ static int sfc_nor_partition_erase()
                 name = partition[i].name;
                 flag = partition[i].mask_flags;
                 if (flag == PART_RO)
-                        printf("\n%s partition is read-only and does not allow erase or write operation.\n", name);
+                        LOG_WARNING("\n%s partition is read-only and does not allow erase or write operation.\n", name);
                 else
                         ret = sfc_nor_erase(offset, size);
         }
@@ -882,78 +882,78 @@ static void dump_cloner_params()
 
 	spi_nor_info = &params.spi_nor_info;
 
-	printf("name=%s\n", spi_nor_info->name);
-	printf("id=0x%x\n", spi_nor_info->id);
+	LOG_DEBUG("name=%s\n", spi_nor_info->name);
+	LOG_DEBUG("id=0x%x\n", spi_nor_info->id);
 
-	printf("read_standard->cmd=0x%x\n",		spi_nor_info->read_standard.cmd);
-	printf("read_standard->dummy=0x%x\n",		spi_nor_info->read_standard.dummy_byte);
-	printf("read_standard->addr_nbyte=0x%x\n",	spi_nor_info->read_standard.addr_nbyte);
-	printf("read_standard->transfer_mode=0x%x\n",	spi_nor_info->read_standard.transfer_mode);
+	LOG_DEBUG("read_standard->cmd=0x%x\n",		spi_nor_info->read_standard.cmd);
+	LOG_DEBUG("read_standard->dummy=0x%x\n",		spi_nor_info->read_standard.dummy_byte);
+	LOG_DEBUG("read_standard->addr_nbyte=0x%x\n",	spi_nor_info->read_standard.addr_nbyte);
+	LOG_DEBUG("read_standard->transfer_mode=0x%x\n",	spi_nor_info->read_standard.transfer_mode);
 
-	printf("read_quad->cmd=0x%x\n",			spi_nor_info->read_quad.cmd);
-	printf("read_quad->dummy=0x%x\n",		spi_nor_info->read_quad.dummy_byte);
-	printf("read_quad->addr_nbyte=0x%x\n",		spi_nor_info->read_quad.addr_nbyte);
-	printf("read_quad->transfer_mode=0x%x\n",	spi_nor_info->read_quad.transfer_mode);
+	LOG_DEBUG("read_quad->cmd=0x%x\n",			spi_nor_info->read_quad.cmd);
+	LOG_DEBUG("read_quad->dummy=0x%x\n",		spi_nor_info->read_quad.dummy_byte);
+	LOG_DEBUG("read_quad->addr_nbyte=0x%x\n",		spi_nor_info->read_quad.addr_nbyte);
+	LOG_DEBUG("read_quad->transfer_mode=0x%x\n",	spi_nor_info->read_quad.transfer_mode);
 
-	printf("write_standard->cmd=0x%x\n",		spi_nor_info->write_standard.cmd);
-	printf("write_standard->dummy=0x%x\n",		spi_nor_info->write_standard.dummy_byte);
-	printf("write_standard->addr_nbyte=0x%x\n",	spi_nor_info->write_standard.addr_nbyte);
-	printf("write_standard->transfer_mode=0x%x\n",	spi_nor_info->write_standard.transfer_mode);
+	LOG_DEBUG("write_standard->cmd=0x%x\n",		spi_nor_info->write_standard.cmd);
+	LOG_DEBUG("write_standard->dummy=0x%x\n",		spi_nor_info->write_standard.dummy_byte);
+	LOG_DEBUG("write_standard->addr_nbyte=0x%x\n",	spi_nor_info->write_standard.addr_nbyte);
+	LOG_DEBUG("write_standard->transfer_mode=0x%x\n",	spi_nor_info->write_standard.transfer_mode);
 
-	printf("write_quad->cmd=0x%x\n",		spi_nor_info->write_quad.cmd);
-	printf("write_quad->dummy=0x%x\n",		spi_nor_info->write_quad.dummy_byte);
-	printf("write_quad->addr_nbyte=0x%x\n",		spi_nor_info->write_quad.addr_nbyte);
-	printf("write_quad->transfer_mode=0x%x\n",	spi_nor_info->write_quad.transfer_mode);
+	LOG_DEBUG("write_quad->cmd=0x%x\n",		spi_nor_info->write_quad.cmd);
+	LOG_DEBUG("write_quad->dummy=0x%x\n",		spi_nor_info->write_quad.dummy_byte);
+	LOG_DEBUG("write_quad->addr_nbyte=0x%x\n",		spi_nor_info->write_quad.addr_nbyte);
+	LOG_DEBUG("write_quad->transfer_mode=0x%x\n",	spi_nor_info->write_quad.transfer_mode);
 
-	printf("sector_erase->cmd=0x%x\n",		spi_nor_info->sector_erase.cmd);
-	printf("sector_erase->dummy=0x%x\n",		spi_nor_info->sector_erase.dummy_byte);
-	printf("sector_erase->addr_nbyte=0x%x\n",	spi_nor_info->sector_erase.addr_nbyte);
-	printf("sector_erase->transfer_mode=0x%x\n",	spi_nor_info->sector_erase.transfer_mode);
+	LOG_DEBUG("sector_erase->cmd=0x%x\n",		spi_nor_info->sector_erase.cmd);
+	LOG_DEBUG("sector_erase->dummy=0x%x\n",		spi_nor_info->sector_erase.dummy_byte);
+	LOG_DEBUG("sector_erase->addr_nbyte=0x%x\n",	spi_nor_info->sector_erase.addr_nbyte);
+	LOG_DEBUG("sector_erase->transfer_mode=0x%x\n",	spi_nor_info->sector_erase.transfer_mode);
 
-	printf("wr_en->cmd=0x%x\n",		spi_nor_info->wr_en.cmd);
-	printf("wr_en->dummy=0x%x\n",		spi_nor_info->wr_en.dummy_byte);
-	printf("wr_en->addr_nbyte=0x%x\n",	spi_nor_info->wr_en.addr_nbyte);
-	printf("wr_en->transfer_mode=0x%x\n",	spi_nor_info->wr_en.transfer_mode);
+	LOG_DEBUG("wr_en->cmd=0x%x\n",		spi_nor_info->wr_en.cmd);
+	LOG_DEBUG("wr_en->dummy=0x%x\n",		spi_nor_info->wr_en.dummy_byte);
+	LOG_DEBUG("wr_en->addr_nbyte=0x%x\n",	spi_nor_info->wr_en.addr_nbyte);
+	LOG_DEBUG("wr_en->transfer_mode=0x%x\n",	spi_nor_info->wr_en.transfer_mode);
 
-	printf("en4byte->cmd=0x%x\n",		spi_nor_info->en4byte.cmd);
-	printf("en4byte->dummy=0x%x\n",		spi_nor_info->en4byte.dummy_byte);
-	printf("en4byte->addr_nbyte=0x%x\n",	spi_nor_info->en4byte.addr_nbyte);
-	printf("en4byte->transfer_mode=0x%x\n",	spi_nor_info->en4byte.transfer_mode);
+	LOG_DEBUG("en4byte->cmd=0x%x\n",		spi_nor_info->en4byte.cmd);
+	LOG_DEBUG("en4byte->dummy=0x%x\n",		spi_nor_info->en4byte.dummy_byte);
+	LOG_DEBUG("en4byte->addr_nbyte=0x%x\n",	spi_nor_info->en4byte.addr_nbyte);
+	LOG_DEBUG("en4byte->transfer_mode=0x%x\n",	spi_nor_info->en4byte.transfer_mode);
 
-	printf("quad_set->cmd=0x%x\n",		spi_nor_info->quad_set.cmd);
-	printf("quad_set->bit_shift=0x%x\n",		spi_nor_info->quad_set.bit_shift);
-	printf("quad_set->mask=0x%x\n",		spi_nor_info->quad_set.mask);
-	printf("quad_set->val=0x%x\n",		spi_nor_info->quad_set.val);
-	printf("quad_set->len=0x%x\n",		spi_nor_info->quad_set.len);
-	printf("quad_set->dummy=0x%x\n",	spi_nor_info->quad_set.dummy);
+	LOG_DEBUG("quad_set->cmd=0x%x\n",		spi_nor_info->quad_set.cmd);
+	LOG_DEBUG("quad_set->bit_shift=0x%x\n",		spi_nor_info->quad_set.bit_shift);
+	LOG_DEBUG("quad_set->mask=0x%x\n",		spi_nor_info->quad_set.mask);
+	LOG_DEBUG("quad_set->val=0x%x\n",		spi_nor_info->quad_set.val);
+	LOG_DEBUG("quad_set->len=0x%x\n",		spi_nor_info->quad_set.len);
+	LOG_DEBUG("quad_set->dummy=0x%x\n",	spi_nor_info->quad_set.dummy);
 
-	printf("quad_get->cmd=0x%x\n",		spi_nor_info->quad_get.cmd);
-	printf("quad_get->bit_shift=0x%x\n",		spi_nor_info->quad_get.bit_shift);
-	printf("quad_get->mask=0x%x\n",		spi_nor_info->quad_get.mask);
-	printf("quad_get->val=0x%x\n",		spi_nor_info->quad_get.val);
-	printf("quad_get->len=0x%x\n",		spi_nor_info->quad_get.len);
-	printf("quad_get->dummy=0x%x\n",	spi_nor_info->quad_get.dummy);
+	LOG_DEBUG("quad_get->cmd=0x%x\n",		spi_nor_info->quad_get.cmd);
+	LOG_DEBUG("quad_get->bit_shift=0x%x\n",		spi_nor_info->quad_get.bit_shift);
+	LOG_DEBUG("quad_get->mask=0x%x\n",		spi_nor_info->quad_get.mask);
+	LOG_DEBUG("quad_get->val=0x%x\n",		spi_nor_info->quad_get.val);
+	LOG_DEBUG("quad_get->len=0x%x\n",		spi_nor_info->quad_get.len);
+	LOG_DEBUG("quad_get->dummy=0x%x\n",	spi_nor_info->quad_get.dummy);
 
-	printf("busy->cmd=0x%x\n",		spi_nor_info->busy.cmd);
-	printf("busy->bit_shift=0x%x\n",		spi_nor_info->busy.bit_shift);
-	printf("busy->mask=0x%x\n",		spi_nor_info->busy.mask);
-	printf("busy->val=0x%x\n",		spi_nor_info->busy.val);
-	printf("busy->len=0x%x\n",		spi_nor_info->busy.len);
-	printf("busy->dummy=0x%x\n",		spi_nor_info->busy.dummy);
+	LOG_DEBUG("busy->cmd=0x%x\n",		spi_nor_info->busy.cmd);
+	LOG_DEBUG("busy->bit_shift=0x%x\n",		spi_nor_info->busy.bit_shift);
+	LOG_DEBUG("busy->mask=0x%x\n",		spi_nor_info->busy.mask);
+	LOG_DEBUG("busy->val=0x%x\n",		spi_nor_info->busy.val);
+	LOG_DEBUG("busy->len=0x%x\n",		spi_nor_info->busy.len);
+	LOG_DEBUG("busy->dummy=0x%x\n",		spi_nor_info->busy.dummy);
 
-	printf("quad_ops_mode=%d\n",	spi_nor_info->quad_ops_mode);
-	printf("addr_ops_mode=%d\n",	spi_nor_info->addr_ops_mode);
+	LOG_DEBUG("quad_ops_mode=%d\n",	spi_nor_info->quad_ops_mode);
+	LOG_DEBUG("addr_ops_mode=%d\n",	spi_nor_info->addr_ops_mode);
 
-	printf("tCHSH=%d\n",	spi_nor_info->tCHSH);
-	printf("tSLCH=%d\n",	spi_nor_info->tSLCH);
-	printf("tSHSL_RD=%d\n", spi_nor_info->tSHSL_RD);
-	printf("tSHSL_WR=%d\n", spi_nor_info->tSHSL_WR);
+	LOG_DEBUG("tCHSH=%d\n",	spi_nor_info->tCHSH);
+	LOG_DEBUG("tSLCH=%d\n",	spi_nor_info->tSLCH);
+	LOG_DEBUG("tSHSL_RD=%d\n", spi_nor_info->tSHSL_RD);
+	LOG_DEBUG("tSHSL_WR=%d\n", spi_nor_info->tSHSL_WR);
 
-	printf("chip_size=%d\n",	spi_nor_info->chip_size);
-	printf("page_size=%d\n",	spi_nor_info->page_size);
-	printf("erase_size=%d\n",	spi_nor_info->erase_size);
+	LOG_DEBUG("chip_size=%d\n",	spi_nor_info->chip_size);
+	LOG_DEBUG("page_size=%d\n",	spi_nor_info->page_size);
+	LOG_DEBUG("erase_size=%d\n",	spi_nor_info->erase_size);
 
-	printf("chip_erase_cmd=0x%x\n",	spi_nor_info->chip_erase_cmd);
+	LOG_DEBUG("chip_erase_cmd=0x%x\n",	spi_nor_info->chip_erase_cmd);
 }
 static void dump_mini_cloner_params()
 {
@@ -961,57 +961,57 @@ static void dump_mini_cloner_params()
 
 	spi_nor_info = &mini_params;
 
-	printf("mini_name=%s\n", spi_nor_info->name);
-	printf("mini_name=%x\n", spi_nor_info->name);
-	printf("mini_id=0x%x\n", spi_nor_info->id);
+	LOG_DEBUG("mini_name=%s\n", spi_nor_info->name);
+	LOG_DEBUG("mini_name=%x\n", spi_nor_info->name);
+	LOG_DEBUG("mini_id=0x%x\n", spi_nor_info->id);
 
-	printf("mini_read_standard->cmd=0x%x\n",		spi_nor_info->read_standard.cmd);
-	printf("mini_read_standard->dummy=0x%x\n",		spi_nor_info->read_standard.dummy_byte);
-	printf("mini_read_standard->addr_nbyte=0x%x\n",	spi_nor_info->read_standard.addr_nbyte);
-	printf("mini_read_standard->transfer_mode=0x%x\n",	spi_nor_info->read_standard.transfer_mode);
+	LOG_DEBUG("mini_read_standard->cmd=0x%x\n",		spi_nor_info->read_standard.cmd);
+	LOG_DEBUG("mini_read_standard->dummy=0x%x\n",		spi_nor_info->read_standard.dummy_byte);
+	LOG_DEBUG("mini_read_standard->addr_nbyte=0x%x\n",	spi_nor_info->read_standard.addr_nbyte);
+	LOG_DEBUG("mini_read_standard->transfer_mode=0x%x\n",	spi_nor_info->read_standard.transfer_mode);
 
-	printf("mini_read_quad->cmd=0x%x\n",			spi_nor_info->read_quad.cmd);
-	printf("mini_read_quad->dummy=0x%x\n",		spi_nor_info->read_quad.dummy_byte);
-	printf("mini_read_quad->addr_nbyte=0x%x\n",		spi_nor_info->read_quad.addr_nbyte);
-	printf("mini_read_quad->transfer_mode=0x%x\n",	spi_nor_info->read_quad.transfer_mode);
+	LOG_DEBUG("mini_read_quad->cmd=0x%x\n",			spi_nor_info->read_quad.cmd);
+	LOG_DEBUG("mini_read_quad->dummy=0x%x\n",		spi_nor_info->read_quad.dummy_byte);
+	LOG_DEBUG("mini_read_quad->addr_nbyte=0x%x\n",		spi_nor_info->read_quad.addr_nbyte);
+	LOG_DEBUG("mini_read_quad->transfer_mode=0x%x\n",	spi_nor_info->read_quad.transfer_mode);
 
-	printf("mini_wr_en->cmd=0x%x\n",		spi_nor_info->wr_en.cmd);
-	printf("mini_wr_en->dummy=0x%x\n",		spi_nor_info->wr_en.dummy_byte);
-	printf("mini_wr_en->addr_nbyte=0x%x\n",	spi_nor_info->wr_en.addr_nbyte);
-	printf("mini_wr_en->transfer_mode=0x%x\n",	spi_nor_info->wr_en.transfer_mode);
+	LOG_DEBUG("mini_wr_en->cmd=0x%x\n",		spi_nor_info->wr_en.cmd);
+	LOG_DEBUG("mini_wr_en->dummy=0x%x\n",		spi_nor_info->wr_en.dummy_byte);
+	LOG_DEBUG("mini_wr_en->addr_nbyte=0x%x\n",	spi_nor_info->wr_en.addr_nbyte);
+	LOG_DEBUG("mini_wr_en->transfer_mode=0x%x\n",	spi_nor_info->wr_en.transfer_mode);
 
-	printf("mini_en4byte->cmd=0x%x\n",		spi_nor_info->en4byte.cmd);
-	printf("mini_en4byte->dummy=0x%x\n",		spi_nor_info->en4byte.dummy_byte);
-	printf("mini_en4byte->addr_nbyte=0x%x\n",	spi_nor_info->en4byte.addr_nbyte);
-	printf("mini_en4byte->transfer_mode=0x%x\n",	spi_nor_info->en4byte.transfer_mode);
+	LOG_DEBUG("mini_en4byte->cmd=0x%x\n",		spi_nor_info->en4byte.cmd);
+	LOG_DEBUG("mini_en4byte->dummy=0x%x\n",		spi_nor_info->en4byte.dummy_byte);
+	LOG_DEBUG("mini_en4byte->addr_nbyte=0x%x\n",	spi_nor_info->en4byte.addr_nbyte);
+	LOG_DEBUG("mini_en4byte->transfer_mode=0x%x\n",	spi_nor_info->en4byte.transfer_mode);
 
-	printf("mini_quad_set->cmd=0x%x\n",		spi_nor_info->quad_set.cmd);
-	printf("mini_quad_set->bit_shift=0x%x\n",		spi_nor_info->quad_set.bit_shift);
-	printf("mini_quad_set->mask=0x%x\n",		spi_nor_info->quad_set.mask);
-	printf("mini_quad_set->val=0x%x\n",		spi_nor_info->quad_set.val);
-	printf("mini_quad_set->len=0x%x\n",		spi_nor_info->quad_set.len);
-	printf("mini_quad_set->dummy=0x%x\n",	spi_nor_info->quad_set.dummy);
+	LOG_DEBUG("mini_quad_set->cmd=0x%x\n",		spi_nor_info->quad_set.cmd);
+	LOG_DEBUG("mini_quad_set->bit_shift=0x%x\n",		spi_nor_info->quad_set.bit_shift);
+	LOG_DEBUG("mini_quad_set->mask=0x%x\n",		spi_nor_info->quad_set.mask);
+	LOG_DEBUG("mini_quad_set->val=0x%x\n",		spi_nor_info->quad_set.val);
+	LOG_DEBUG("mini_quad_set->len=0x%x\n",		spi_nor_info->quad_set.len);
+	LOG_DEBUG("mini_quad_set->dummy=0x%x\n",	spi_nor_info->quad_set.dummy);
 
-	printf("mini_quad_get->cmd=0x%x\n",		spi_nor_info->quad_get.cmd);
-	printf("mini_quad_get->bit_shift=0x%x\n",		spi_nor_info->quad_get.bit_shift);
-	printf("mini_quad_get->mask=0x%x\n",		spi_nor_info->quad_get.mask);
-	printf("mini_quad_get->val=0x%x\n",		spi_nor_info->quad_get.val);
-	printf("mini_quad_get->len=0x%x\n",		spi_nor_info->quad_get.len);
-	printf("mini_quad_get->dummy=0x%x\n",	spi_nor_info->quad_get.dummy);
+	LOG_DEBUG("mini_quad_get->cmd=0x%x\n",		spi_nor_info->quad_get.cmd);
+	LOG_DEBUG("mini_quad_get->bit_shift=0x%x\n",		spi_nor_info->quad_get.bit_shift);
+	LOG_DEBUG("mini_quad_get->mask=0x%x\n",		spi_nor_info->quad_get.mask);
+	LOG_DEBUG("mini_quad_get->val=0x%x\n",		spi_nor_info->quad_get.val);
+	LOG_DEBUG("mini_quad_get->len=0x%x\n",		spi_nor_info->quad_get.len);
+	LOG_DEBUG("mini_quad_get->dummy=0x%x\n",	spi_nor_info->quad_get.dummy);
 
-	printf("mini_busy->cmd=0x%x\n",		spi_nor_info->busy.cmd);
-	printf("mini_busy->bit_shift=0x%x\n",		spi_nor_info->busy.bit_shift);
-	printf("mini_busy->mask=0x%x\n",		spi_nor_info->busy.mask);
-	printf("mini_busy->val=0x%x\n",		spi_nor_info->busy.val);
-	printf("mini_busy->len=0x%x\n",		spi_nor_info->busy.len);
-	printf("mini_busy->dummy=0x%x\n",		spi_nor_info->busy.dummy);
+	LOG_DEBUG("mini_busy->cmd=0x%x\n",		spi_nor_info->busy.cmd);
+	LOG_DEBUG("mini_busy->bit_shift=0x%x\n",		spi_nor_info->busy.bit_shift);
+	LOG_DEBUG("mini_busy->mask=0x%x\n",		spi_nor_info->busy.mask);
+	LOG_DEBUG("mini_busy->val=0x%x\n",		spi_nor_info->busy.val);
+	LOG_DEBUG("mini_busy->len=0x%x\n",		spi_nor_info->busy.len);
+	LOG_DEBUG("mini_busy->dummy=0x%x\n",		spi_nor_info->busy.dummy);
 
-	printf("mini_quad_ops_mode=%d\n",	spi_nor_info->quad_ops_mode);
-	printf("addr_ops_mode=%d\n",	spi_nor_info->addr_ops_mode);
+	LOG_DEBUG("mini_quad_ops_mode=%d\n",	spi_nor_info->quad_ops_mode);
+	LOG_DEBUG("addr_ops_mode=%d\n",	spi_nor_info->addr_ops_mode);
 
-	printf("mini_chip_size=%d\n",	spi_nor_info->chip_size);
-	printf("mini_page_size=%d\n",	spi_nor_info->page_size);
-	printf("mini_erase_size=%d\n",	spi_nor_info->erase_size);
+	LOG_DEBUG("mini_chip_size=%d\n",	spi_nor_info->chip_size);
+	LOG_DEBUG("mini_page_size=%d\n",	spi_nor_info->page_size);
+	LOG_DEBUG("mini_erase_size=%d\n",	spi_nor_info->erase_size);
 }
 #endif
 
@@ -1030,7 +1030,7 @@ int norflash_get_params_from_burner()
 		((unsigned char *)spi_args + sizeof(struct spi_param));
 
 	chip_id = sfc_nor_read_id();
-	printf("spi nor flash chip_id is : %x\n", chip_id);
+	LOG_INFO("spi nor flash chip_id is : %x\n", chip_id);
 
 	memcpy(&params, spiflash_info, sizeof(struct burner_params));
 	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
@@ -1038,8 +1038,8 @@ int norflash_get_params_from_burner()
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();
 	dump_mini_cloner_params();
-	printf("fs_erase_size=%d\n", params.fs_erase_size);
-	printf("uk_quad=%d\n", params.uk_quad);
+	LOG_DEBUG("fs_erase_size=%d\n", params.fs_erase_size);
+	LOG_DEBUG("uk_quad=%d\n", params.uk_quad);
 #endif
 
 	memcpy(flash->g_nor_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
@@ -1056,15 +1056,15 @@ int norflash_get_params_from_burner()
 	sfc_nor_do_special_func();
 
 #ifdef SFC_NOR_CLONER_DEBUG
-	printf("partition num=%d\n", flash->norflash_partitions->num_partition_info);
+	LOG_DEBUG("partition num=%d\n", flash->norflash_partitions->num_partition_info);
 	for (i = 0; i < flash->norflash_partitions->num_partition_info; i++) {
-		printf("p[%d].name=%s\n", i, flash->norflash_partitions->nor_partition[i].name);
-		printf("p[%d].size=%x\n", i, flash->norflash_partitions->nor_partition[i].size);
-		printf("p[%d].offset=%x\n", i, flash->norflash_partitions->nor_partition[i].offset);
+		LOG_DEBUG("p[%d].name=%s\n", i, flash->norflash_partitions->nor_partition[i].name);
+		LOG_DEBUG("p[%d].size=%x\n", i, flash->norflash_partitions->nor_partition[i].size);
+		LOG_DEBUG("p[%d].offset=%x\n", i, flash->norflash_partitions->nor_partition[i].offset);
 	}
 #endif
         if (spi_args->spi_erase != PART_ERASE)
-                printf("chip eraseing ... ");
+                LOG_INFO("chip eraseing ... ");
 
         switch(spi_args->spi_erase){
                 case CHIP_ERASE:
@@ -1077,7 +1077,7 @@ int norflash_get_params_from_burner()
         }
 
         if (spi_args->spi_erase != PART_ERASE)
-                printf("%s\n", ret == 0 ? "successful\n" : "failed\n");
+                LOG_INFO("%s\n", ret == 0 ? "successful\n" : "failed\n");
 
 	return 0;
 }

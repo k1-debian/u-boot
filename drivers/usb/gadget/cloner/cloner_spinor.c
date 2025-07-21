@@ -3,7 +3,6 @@
 #include <spi_flash.h>
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
-#include "cloner_log.h"
 
 
 static struct spi_flash *flash = NULL;
@@ -85,27 +84,27 @@ int spi_program(struct cloner *cloner)
 		}
 	}
 
-	BURNNER_PRI("the offset = %x\n",offset);
-	BURNNER_PRI("the length = %x\n",length);
+	debug_cond(debug_args->log_enabled,"the offset = %x\n",offset);
+	debug_cond(debug_args->log_enabled,"the length = %x\n",length);
 
 
 	if (length < blk_size || length%blk_size == 0){
 		len = length;
-		BURNNER_PRI("the length = %x,blk_size = %x\n",length,blk_size);
+		debug_cond(debug_args->log_enabled,"the length = %x,blk_size = %x\n",length,blk_size);
 	}
 	else{
-		BURNNER_PRI("the length = %x, is no enough %x\n",length,blk_size);
+		debug_cond(debug_args->log_enabled,"the length = %x, is no enough %x\n",length,blk_size);
 		len = (length/blk_size)*blk_size + blk_size;
 	}
 
 	if (!spi_args->spi_erase) {
 		ret = spi_flash_erase(flash, offset, len);
-		BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
+		debug_cond(debug_args->log_enabled,"SF: %zu bytes @ %#x Erased: %s\n", (size_t)len, (u32)offset,
 				ret ? "ERROR" : "OK");
 	}
 
 	ret = spi_flash_write(flash, offset, len, addr);
-	BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
+	debug_cond(debug_args->log_enabled,"SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");
 
 
@@ -113,7 +112,7 @@ int spi_program(struct cloner *cloner)
 		spi_flash_read(flash, offset,len, addr);
 
 		uint32_t tmp_crc = local_crc32(0xffffffff,addr,cloner->cmd->write.length);
-		BURNNER_PRI("SF: %d bytes @ %#x check: %s\n",len,offset,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
+		debug_cond(debug_args->log_enabled,"SF: %d bytes @ %#x check: %s\n",len,offset,(cloner->cmd->write.crc == tmp_crc) ? "OK" : "ERROR");
 		if (cloner->cmd->write.crc != tmp_crc) {
 			printf("src_crc32 = %08x , dst_crc32 = %08x\n",cloner->cmd->write.crc,tmp_crc);
 			return -EIO;

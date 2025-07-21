@@ -128,7 +128,7 @@ int spinand_program(struct cloner *cloner)
 					sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
 				else
 					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
-				BURNNER_PRI("%s\n", command);
+				debug_cond(debug_args->log_enabled,"%s\n", command);
 				ret = run_command(command, 0);
 				if (ret)
 					goto out;
@@ -140,10 +140,10 @@ int spinand_program(struct cloner *cloner)
 		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
 			ret = nand_write(nand, startaddr, &len, databuf);
-			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : %s\n",
+			debug_cond(debug_args->log_enabled,"nand write to offset 0x%lx, length = 0x%lx : %s\n",
 					startaddr, length, ret ? "ERROR" : "OK");
 		} else {
-			BURNNER_PRI("ERROR : out of partition !!!\n");
+			debug_cond(debug_args->log_enabled,"ERROR : out of partition !!!\n");
 		}
 
 		if (debug_args->write_back_chk) {
@@ -171,7 +171,7 @@ int spinand_program(struct cloner *cloner)
 					pt_index_bak = pt_index;
 					memset(command, 0 , 128);
 					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
-					BURNNER_PRI("%s\n", command);
+					debug_cond(debug_args->log_enabled,"%s\n", command);
 					ret = run_command(command, 0);
 					if (ret)
 						goto out;
@@ -180,19 +180,19 @@ int spinand_program(struct cloner *cloner)
 
 			memset(command, 0, 128);
 			sprintf(command, "ubi part %s", partition->name);
-			BURNNER_PRI("%s\n", command);
+			debug_cond(debug_args->log_enabled,"%s\n", command);
 			ret = run_command(command, 0);
 			if (ret) {
-				BURNNER_PRI("ubi part error...\n");
+				debug_cond(debug_args->log_enabled,"ubi part error...\n");
 				return ret;
 			}
 
 			memset(command, 0, X_COMMAND_LENGTH);
 			sprintf(command, "ubi create %s",partition->name);
-			BURNNER_PRI("%s\n", command);
+			debug_cond(debug_args->log_enabled,"%s\n", command);
 			ret = run_command(command, 0);
 			if (ret) {
-				BURNNER_PRI("ubi create error...\n");
+				debug_cond(debug_args->log_enabled,"ubi create error...\n");
 				return ret;
 			}
 		}
@@ -212,7 +212,7 @@ int spinand_program(struct cloner *cloner)
 
 		ret = run_command(command, 0);
 		if (ret) {
-			BURNNER_PRI("...error\n");
+			debug_cond(debug_args->log_enabled,"...error\n");
 			return ret;
 		}
 	}
@@ -220,7 +220,7 @@ int spinand_program(struct cloner *cloner)
 		cloner->full_size = 0;
 	return 0;
 out:
-	BURNNER_PRI("...error\n");
+	debug_cond(debug_args->log_enabled,"...error\n");
 	return ret;
 
 }

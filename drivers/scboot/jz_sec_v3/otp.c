@@ -20,7 +20,7 @@ static void set_efuse_vddq(int gpio, int level)
 {
 	mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 	gpio_direction_output(gpio, level);
-	serial_debug("gpio[%d] output %s\n",gpio,(level ? "high":"low"));
+	LOG_INFO("gpio[%d] output %s\n",gpio,(level ? "high":"low"));
 	mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 }
 
@@ -29,7 +29,7 @@ static int efuse_update_state(void)
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	serial_debug("efuse state = 0x%08x\n",REG32(EFUSE_REG_STAT));
+	LOG_INFO("efuse state = 0x%08x\n",REG32(EFUSE_REG_STAT));
 }
 
 static int cpu_wtotp(int opera)
@@ -50,7 +50,7 @@ static int cpu_wtotp(int opera)
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("Error: SC_FUNC_WTOTP ret = 0x%08x\n",
+		LOG_ERROR("SC_FUNC_WTOTP ret = 0x%08x\n",
 				*(volatile unsigned int *)(MCU_TCSM_RETVAL));
 		return -ESEC;
 	}
@@ -104,7 +104,7 @@ int cpu_get_enckey(unsigned int *odata)
 
 int cpu_burn_secboot_enable(void)
 {
-        serial_debug("Enter: %s\n",__func__);
+        LOG_INFO("Enter: %s\n",__func__);
 	
         REG32(EFUSE_REG_DAT1) = (1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB);
 
@@ -124,11 +124,11 @@ int cpu_burn_secboot_enable(void)
 	efuse_update_state();
 
 	if (!EFUSTATE_SECBOOT_EN) {
-		serial_debug("Error: secure enable bit write failed!\n");
+		LOG_ERROR("secure enable bit write failed!\n");
 	}
 
         if (!EFUSTATE_SCB_PRT) {
-		serial_debug("Error: secure enable protect bit write failed!\n");
+		LOG_ERROR("secure enable protect bit write failed!\n");
 	}
 
 	return 0;
@@ -143,10 +143,10 @@ int cpu_burn_rckey(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 
-        serial_debug("Enter: %s\n",__func__);
+        LOG_INFO("Enter: %s\n",__func__);
 	
         if(EFUSTATE_CK_PRT) {
-		serial_debug("Error: chipkey protect bit have been written\n");
+		LOG_ERROR("chipkey protect bit have been written\n");
 		return 0;
 	}
 
@@ -156,14 +156,14 @@ int cpu_burn_rckey(void)
 	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("Error: SC_FUNC_BURNCK ret = 0x%08x\n",
+		LOG_ERROR("SC_FUNC_BURNCK ret = 0x%08x\n",
 				*(volatile unsigned int *)(MCU_TCSM_RETVAL));
 		return -ESEC;
 	}
 
 
 	if (cpu_wtotp(WT_OTP_CK) < 0) {
-		serial_debug("Error: wtotp error!\n");
+		LOG_ERROR("wtotp error!\n");
 		return -ESEC;
 	}
 
@@ -188,21 +188,21 @@ static int cpu_load_nku(unsigned int *data, unsigned int length)
 	nku[0] = rsakey_bit_num;
 	nku[1] = rsakey_bit_num;
 
-	serial_debug("rsa kn %d bits\n",nku[0]);
+	LOG_DEBUG("rsa kn %d bits\n",nku[0]);
 	for (i = 0; i < rsakey_word_num; i++) {
 		nku[i + 2] = data[i + 2];
-		serial_debug("%08x ", nku[i + 2]);
+		LOG_DEBUG("%08x ", nku[i + 2]);
 		if((i + 1) % 4 == 0)
-			serial_debug("\n");
+			LOG_DEBUG("\n");
 	}
 
-	serial_debug("rsa ku %d bits\n",nku[1]);
+	LOG_DEBUG("rsa ku %d bits\n",nku[1]);
 	for (i = 0; i < rsakey_word_num; i++) {
 		nku[i + 2 + rsakey_word_num] = data[i + 2 + rsakey_word_num];
 
-		serial_debug("%08x ",nku[i + 2 + rsakey_word_num]);
+		LOG_DEBUG("%08x ",nku[i + 2 + rsakey_word_num]);
 		if((i + 1) % 4 == 0)
-			serial_debug("\n");
+			LOG_DEBUG("\n");
 	}
 
 	REG32(EFUSE_REG_CTRL) = 0;
@@ -210,7 +210,7 @@ static int cpu_load_nku(unsigned int *data, unsigned int length)
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("Error: SC_FUNC_BURNNKU ret = 0x%08x\n",
+		LOG_ERROR("SC_FUNC_BURNNKU ret = 0x%08x\n",
 				*(volatile unsigned int *)(MCU_TCSM_RETVAL));
 		return -ESEC;
 	}
@@ -234,21 +234,21 @@ static int check_nku(unsigned int *data, unsigned int length)
 	nku[0] = rsakey_bit_num;
 	nku[1] = rsakey_bit_num;
 
-	serial_debug("rsa kn %d bits\n",nku[0]);
+	LOG_DEBUG("rsa kn %d bits\n",nku[0]);
 	for (i = 0; i < rsakey_word_num; i++) {
 		nku[i + 2] = data[i + 2];
-		serial_debug("%08x ", nku[i + 2]);
+		LOG_DEBUG("%08x ", nku[i + 2]);
 		if((i + 1) % 4 == 0)
-			serial_debug("\n");
+			LOG_DEBUG("\n");
 	}
 
-	serial_debug("rsa ku %d bits\n",nku[1]);
+	LOG_DEBUG("rsa ku %d bits\n",nku[1]);
 	for (i = 0; i < rsakey_word_num; i++) {
 		nku[i + 2 + rsakey_word_num] = data[i + 2 + rsakey_word_num];
 
-		serial_debug("%08x ",nku[i + 2 + rsakey_word_num]);
+		LOG_DEBUG("%08x ",nku[i + 2 + rsakey_word_num]);
 		if((i + 1) % 4 == 0)
-			serial_debug("\n");
+			LOG_DEBUG("\n");
 	}
 
 	REG32(EFUSE_REG_CTRL) = 0;
@@ -256,7 +256,7 @@ static int check_nku(unsigned int *data, unsigned int length)
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("Error: SC_FUNC_CHECKNKU ret = 0x%08x\n",
+		LOG_ERROR("SC_FUNC_CHECKNKU ret = 0x%08x\n",
 				*(volatile unsigned int *)(MCU_TCSM_RETVAL));
 		return -ESEC;
 	}
@@ -267,36 +267,36 @@ static int check_nku(unsigned int *data, unsigned int length)
 
 int cpu_burn_nku(void *data,unsigned int length)
 {
-        serial_debug("Enter: %s\n",__func__);
+        LOG_INFO("Enter: %s\n",__func__);
 	
         if (EFUSTATE_NKU_PRT) {
-		serial_debug("nku protect bit is set!\n");
+		LOG_INFO("nku protect bit is set!\n");
 		return 0;
 	}
 
 	if (cpu_load_nku(data, length) < 0) {
-		serial_debug("Error: nku load failed\n");
+		LOG_ERROR("nku load failed\n");
 		return -ESEC;
 	}
 
 
 	if (cpu_wtotp(WT_OTP_NKU) < 0) {
-		serial_debug("Error: nku write failed\n");
+		LOG_ERROR("nku write failed\n");
 		return -ESEC;
 	}
 
 	if (otp_w(EFUSE_PTCOFF_NKU) < 0) {
-		serial_debug("Error: nku protect bit set failed\n");
+		LOG_ERROR("nku protect bit set failed\n");
 		return -ESEC;
 	}
 
 	if (!EFUSTATE_NKU_PRT) {
-		serial_debug("Error: nku protect bit is not set!\n");
+		LOG_ERROR("nku protect bit is not set!\n");
 		return -ESEC;
 	}
 
 	if (check_nku(data, length) < 0) {
-		serial_debug("Error: nku check failed\n");
+		LOG_ERROR("nku check failed\n");
 		return -ESEC;
 	}
 
@@ -317,20 +317,20 @@ int cpu_burn_ukey(void *data)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 		
-        serial_debug("Enter: %s\n",__func__);
+        LOG_INFO("Enter: %s\n",__func__);
 
 	if(EFUSTATE_UK_PRT) {
-		serial_debug("ukey protect bit is set!\n");
+		LOG_INFO("ukey protect bit is set!\n");
 		return 0;
 	}
 
 #define UKEY_LEN_WORD    8
-	serial_debug("uk %d bits\n",UKEY_LEN_WORD * 32);
+	LOG_DEBUG("uk %d bits\n",UKEY_LEN_WORD * 32);
 	for (i = 0; i < UKEY_LEN_WORD; i++) {
 		ukey[i] = userkey[i];
-		serial_debug("%08x ",ukey[i]);
+		LOG_DEBUG("%08x ",ukey[i]);
 		if((i + 1) % 4 == 0)
-			serial_debug("\n");
+			LOG_DEBUG("\n");
 	}
 
 	args->arg[0] = 0x0;
@@ -339,21 +339,21 @@ int cpu_burn_ukey(void *data)
 	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		serial_debug("Error: SC_FUNC_BURNUK ret = 0x%08x\n",
+		LOG_ERROR("SC_FUNC_BURNUK ret = 0x%08x\n",
                              *(volatile unsigned int *)(MCU_TCSM_RETVAL));
                 return -ESEC;
 	}
 
 
 	if (cpu_wtotp(WT_OTP_UK) < 0) {
-		serial_debug("Error: ukey write failed!\n");
+		LOG_ERROR("ukey write failed!\n");
 		return -ESEC;
 	}
 
 	otp_w(EFUSE_PTCOFF_UKP);
 
 	if (!EFUSTATE_UK_PRT) {
-		serial_debug("Error: ukey protect bit is not set!\n");
+		LOG_ERROR("ukey protect bit is not set!\n");
 		return -ESEC;
 	}
 	return 0;
@@ -370,14 +370,14 @@ static int set_efuse_timing()
 
 	rate = clk_get_rate(H2CLK);
 	ns = 1000000000 / rate;
-	serial_debug("rate = %d, ns = %d\n", rate, ns);
+	LOG_INFO("rate = %d, ns = %d\n", rate, ns);
 
 
 	for(i = 0; i < 0x4; i++)
 		if((( i + 1) * ns ) > 7)
 			break;
 	if(i == 0x4) {
-		serial_debug("Error: rd_adj fail!\n");
+		LOG_ERROR("rd_adj fail!\n");
 		return -1;
 	}
 	rd_adj = wr_adj = i;
@@ -386,7 +386,7 @@ static int set_efuse_timing()
 		if(((rd_adj + i + 5) * ns ) > 35)
 			break;
 	if(i == 0x8) {
-		serial_debug("Error:rd_strobe fail!\n");
+		LOG_ERROR("rd_strobe fail!\n");
 		return -1;
 	}
 	rd_strobe = i;
@@ -401,7 +401,7 @@ static int set_efuse_timing()
 			break;
 	}
 	if(i >= 0x7ff) {
-		serial_debug("Error: wd_strobe fail!\n");
+		LOG_ERROR("wd_strobe fail!\n");
 		return -1;
 	}
 
@@ -410,7 +410,7 @@ static int set_efuse_timing()
 
 	wr_strobe = i;
 
-	serial_debug("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n",
+	LOG_INFO("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n",
 			rd_adj, rd_strobe, wr_adj, wr_strobe);
 
 	/*set configer register*/
@@ -427,11 +427,11 @@ int otp_init(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 
-        serial_debug("Enter: %s\n",__func__);
+        LOG_INFO("Enter: %s\n",__func__);
 	
         efuse_en_gpio = efuse_args->efuse_en_gpio;
 	if (efuse_en_gpio == 0xffffffff || efuse_en_gpio == -1) {
-		serial_debug("Error: efuse en gpio is not set!\n");
+		LOG_ERROR("efuse en gpio is not set!\n");
 		return -ESEC;
 	} else if (efuse_args->efuse_en_active != 0xffffffff &&
 			efuse_args->efuse_en_active != -1) {

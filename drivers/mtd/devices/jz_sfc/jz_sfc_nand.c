@@ -510,7 +510,7 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 			if(!readback_buf) {
 				readback_buf = (char *)malloc(wlen);
 				if(!readback_buf) {
-					printf("burn read back buffer malloc failed!\n");
+					LOG_ERROR("burn read back buffer malloc failed!\n");
 					ret = -ENOMEM;
 					break;
 				}
@@ -518,20 +518,20 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 			memset(readback_buf, 0, wlen);
 			ret = jz_sfc_nand_read(flash, pageaddr, columnaddr, readback_buf, wlen);
 			if(ret < 0) {
-				printf("%s %s %d: jz_sfc_nand_read error, ret = %d, \
+				LOG_ERROR("%s %s %d: jz_sfc_nand_read error, ret = %d, \
 						pageaddr = %u, columnaddr = %u, rlen = %u\n",
 						__FILE__, __func__, __LINE__,
 						ret, pageaddr, columnaddr, wlen);
 				if(ret == -EIO)
 					break;
 			} else if (ret > 0) {
-				printf("%s %s %d: jz_sfc_nand_read, ecc value = %d\n",
+				LOG_ERROR("%s %s %d: jz_sfc_nand_read, ecc value = %d\n",
 						__FILE__, __func__, __LINE__, ret);
 			}
 
 			ret = buf_compare(buf, readback_buf, wlen, (uint32_t)to);
 			if(ret != 0) {
-				printf("%s %s %d: burn read back compare error!\n",
+				LOG_ERROR("%s %s %d: burn read back compare error!\n",
 						__FILE__, __func__, __LINE__);
 				break;
 			}
@@ -1063,7 +1063,7 @@ static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint32_t partcount, 
 			break;
 		} else if (jz_mtd_spinand_partition[part].size != 0) {
 			if(jz_mtd_spinand_partition[part].size % blk_sz != 0)
-				printf("ERROR:the partition [%s] don't algin as block size [0x%08x] ,it will be error !\n",jz_mtd_spinand_partition[part].name, blk_sz);
+				LOG_ERROR("the partition [%s] don't algin as block size [0x%08x] ,it will be error !\n",jz_mtd_spinand_partition[part].name, blk_sz);
 
 			sprintf(mtdparts_env, "%s%dK@%d(%s),", mtdparts_env,
 					jz_mtd_spinand_partition[part].size / 0x400,

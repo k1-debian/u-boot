@@ -39,7 +39,7 @@ static void sfcnor_add_info_to_flash(unsigned char *buf)
 			memcpy(buf + param_offset + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
 			break;
 		default:
-			printf("spl uboot version error !\n");
+			LOG_ERROR("spl uboot version error !\n");
 			break;
 	}
 
@@ -59,7 +59,7 @@ int sfcnor_read(struct cloner *cloner)
 
 	ret = sfc_nor_read(addr, len, buf);
 	if(ret < 0)
-		printf("%s error\n",__func__);
+		LOG_ERROR("%s error\n",__func__);
 
 	return ret;
 }
@@ -83,21 +83,21 @@ int sfc_nor_program(struct cloner *cloner)
 	static pt_index_bak = -1;
 
 
-	BURNNER_PRI("the offset = %x\n",offset);
+	LOG_INFO("the offset = %x\n",offset);
 
 	if (length < blk_size || length%blk_size == 0){
 		len = length;
-		BURNNER_PRI("the length = %x\n",length);
+		LOG_INFO("the length = %x\n",length);
 	}
 	else{
 		len = (length/blk_size)*blk_size + blk_size;
-		BURNNER_PRI("the length = %x, is no enough %x\n",len,blk_size);
+		LOG_INFO("the length = %x, is no enough %x\n",len,blk_size);
 	}
 
 	partition = get_sfc_nor_partition(offset,len, &pt_index);
 
 	if(pt_index < 0 || partition == NULL){
-		printf("out of partition\n");
+		LOG_ERROR("out of partition\n");
 		return -EIO;
 	}
 
@@ -109,12 +109,12 @@ int sfc_nor_program(struct cloner *cloner)
 
 			if (partition->manager_mode == MTD_D_MODE) {
 				ret = sfc_nor_erase(offset, length);
-				BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n",
+				LOG_INFO("SF: %zu bytes @ %#x Erased: %s\n",
 						(size_t)length, (u32)offset,
 						ret ? "ERROR" : "OK");
 			} else {
 				ret = sfc_nor_erase(partition->offset, partition->size);
-				BURNNER_PRI("SF: %zu bytes @ %#x Erased: %s\n",
+				LOG_INFO("SF: %zu bytes @ %#x Erased: %s\n",
 						(size_t)partition->size, (u32)partition->offset,
 						ret ? "ERROR" : "OK");
 			}
@@ -125,25 +125,25 @@ int sfc_nor_program(struct cloner *cloner)
 		sfcnor_add_info_to_flash(addr);
 	}
 	ret = sfc_nor_write(offset, len, addr);
-	BURNNER_PRI("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
+	LOG_INFO("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");
 
 	if(debug_args->write_back_chk){
 		if(!readbuf){
 			readbuf = malloc(len);
 			if (!readbuf) {
-				printf("malloc read buffer spaces error!\n");
+				LOG_ERROR("malloc read buffer spaces error!\n");
 				return -1;
 			}
 		}
 		memset(readbuf,0,len);
 		ret = sfc_nor_read(offset,len,readbuf);
 		if(ret){
-			BURNNER_PRI("SF: write back check read  ops error,please check flash info !\n");
+			LOG_INFO("SF: write back check read  ops error,please check flash info !\n");
 			return -1;
 		}
 		ret = buf_compare(cloner->write_req->buf,readbuf,len,offset);
-		BURNNER_PRI("SF: %zu bytes @ %#x check: %s\n", (size_t)len, (u32)offset, ret ? "ERROR" : "OK");
+		LOG_INFO("SF: %zu bytes @ %#x check: %s\n", (size_t)len, (u32)offset, ret ? "ERROR" : "OK");
 	}
 	return ret;
 }

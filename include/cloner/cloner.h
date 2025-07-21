@@ -9,6 +9,30 @@
 #include <spi.h>
 #include <ingenic_nand_mgr/nand_param.h>
 
+typedef enum {
+	LOG_LEVEL_DEBUG = 0,
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_WARNING,
+	LOG_LEVEL_ERROR
+} LogLevel;
+
+#define MIN_LOG_LEVEL           LOG_LEVEL_INFO
+
+#define LOG_BASE_ADDR           ((volatile unsigned int*)CONFIG_SPL_GINFO_BASE)
+#define LOG_BUFF_SIZE           CONFIG_SPL_GINFO_SIZE
+#define LOG_INDEX_ADDR          (LOG_BASE_ADDR + LOG_BUFF_SIZE/sizeof(uint32_t))
+
+void log_init(void);
+void log_write(LogLevel level, const char* format, ...);
+uint32_t log_length(void);
+const char* log_buffer(void);
+
+#define LOG_DEBUG(...)          log_write(LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define LOG_INFO(...)           log_write(LOG_LEVEL_INFO, __VA_ARGS__)
+#define LOG_WARNING(...)        log_write(LOG_LEVEL_WARNING, __VA_ARGS__)
+#define LOG_ERROR(...)          log_write(LOG_LEVEL_ERROR, __VA_ARGS__)
+
+
 /*
  *	cloner argument
  */

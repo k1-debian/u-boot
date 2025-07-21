@@ -1,6 +1,5 @@
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
-#include "cloner_log.h"
 
 static char *readbuf = NULL;
 extern struct ParameterInfo	*global_args;
@@ -28,7 +27,7 @@ int clmd_sfc_info(struct cloner *cloner)
 	if(global_args->magic == MAGIC_POLICY){
 		policy_args = global_args->data;
 	} else {
-		printf("ERR: cloner send policy data error!\n");
+		LOG_ERROR("cloner send policy data error!\n");
 		memset(global_args->data, 0, sizeof(*policy_args));
 	}
 #ifdef CONFIG_MTD_SFCNOR
@@ -37,7 +36,7 @@ int clmd_sfc_info(struct cloner *cloner)
 	}
 #endif
 	if(id_code < 0) {
-		printf("ERR : (get flash_info) try id err, %d\n", id_code);
+		LOG_ERROR("get flash id failed, %d\n", id_code);
 		id_code = 0;
 	}
 
@@ -50,14 +49,14 @@ int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 	spi_args = (struct spi_param *)args;
 	if(!spi_args)
 	{
-		printf("Not found sfc parameters (%s)\n",__func__);
+		LOG_ERROR("Not found sfc parameters (%s)\n",__func__);
 		return -EINVAL;
 	}
 	int ret = 0;
 
 	if(!policy_args)
 	{
-		printf("Not fount policy parameters (%s)\n",__func__);
+		LOG_ERROR("Not fount policy parameters (%s)\n",__func__);
 		return -EINVAL;
 	}
 
@@ -132,7 +131,7 @@ int clmd_sfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 			break;
 #endif
 		default:
-			printf("Not found sfc sub_type!\n");
+			LOG_ERROR("Not found sfc sub_type!\n");
 			return -EINVAL;
 	}
 	return ret;
@@ -178,7 +177,7 @@ static int32_t clmd_sfc_read(struct cloner *cloner, int sub_type, void *ops_data
 			break;
 #endif
 		default:
-			printf("Not found sfc sub_type!\n");
+			LOG_ERROR("Not found sfc sub_type!\n");
 			return -EINVAL;
 	}
 
@@ -191,7 +190,7 @@ static int32_t clmd_sfc_reset(struct cloner *cloner) {
 
 	if(!policy_args)
 	{
-		printf("Not fount policy parameters (%s)\n",__func__);
+		LOG_ERROR("Not fount policy parameters (%s)\n",__func__);
 		return -EINVAL;
 	}
 

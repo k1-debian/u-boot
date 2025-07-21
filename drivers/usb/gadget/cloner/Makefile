@@ -27,6 +27,7 @@ ifdef CONFIG_BURNER
 
 LIB	:= $(obj)libcloner_moudle_mg.o
 
+COBJS-y += cloner_log.o
 COBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += extend_policy_manager.o
 SUBOBJS-$(CONFIG_JZ_VERDOR_BURN_EXTPOL) += expy/libexpy.o
 

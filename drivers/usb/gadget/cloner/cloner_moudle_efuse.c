@@ -1,6 +1,5 @@
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
-#include "cloner_log.h"
 #include <efuse.h>
 
 static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_data)
@@ -12,7 +11,7 @@ static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_da
 
 	ret = efuse_read_id(addr, length, id);
 	if (ret < 0)
-		printf("efuse read error\n");
+		LOG_ERROR("efuse read error\n");
 
 	return ret;
 }
@@ -27,7 +26,7 @@ static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_d
 	if(!enabled) {
 		ret = efuse_init(efuse_args->efuse_en_gpio, efuse_args->efuse_en_active);
 		if(ret < 0) {
-			printf("efuse init error\n");
+			LOG_ERROR("efuse init error\n");
 			return ret;
 		}
 		enabled = 1;
@@ -39,7 +38,7 @@ static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_d
 
 	ret = efuse_write(addr, length, partition);
 	if (ret)
-		printf("efuse write error\n");
+		LOG_ERROR("efuse write error\n");
 
 	return ret;
 }

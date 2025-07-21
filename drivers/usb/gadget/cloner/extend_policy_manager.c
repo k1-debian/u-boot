@@ -1,6 +1,5 @@
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
-#include "cloner_log.h"
 
 #include <linux/list.h>
 #include <malloc.h>

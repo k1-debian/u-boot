@@ -31,13 +31,13 @@ void get_burner_nandinfo()
 
 #ifdef DEBUG
 	struct jz_sfcnand_partition *partition = bp.partition;
-	printf("**** magic num = %x\n",bp.magic_num);
-	printf("**** partition_num = %x\n",bp.partition_num);
+	LOG_DEBUG("**** magic num = %x\n",bp.magic_num);
+	LOG_DEBUG("**** partition_num = %x\n",bp.partition_num);
 
 	for(i = 0; i < bp.partition_num; i++){
-		printf("name = %s\n",partition[i].name);
-		printf("size = %x\n",partition[i].size);
-		printf("offset= %x\n",partition[i].offset);
+		LOG_DEBUG("name = %s\n",partition[i].name);
+		LOG_DEBUG("size = %x\n",partition[i].size);
+		LOG_DEBUG("offset= %x\n",partition[i].offset);
 	}
 #endif
 }
@@ -54,7 +54,7 @@ static int sfc_nand_skip_bad(unsigned int addr)
 
 	offset = addr + bad_len;
 	while (nand_block_isbad(nand, offset)) {
-		printf("Skip bad block 0x%lx\n", offset);
+		LOG_WARNING("Skip bad block 0x%lx\n", offset);
 		bad_len += block_size;
 		offset += block_size;
 	}
@@ -71,12 +71,12 @@ int spinand_read(struct cloner *cloner)
 	nand = &nand_info[0];
 
 	if (nand_block_isbad(nand, addr)) {
-		printf("Skip bad block 0x%lx\n", addr);
+		LOG_WARNING("Skip bad block 0x%lx\n", addr);
 		return 0xFF;
 	}
 	ret = nand_read(nand, addr, &len, buf);
 	if(ret < 0)
-		printf("%s error\n",__func__);
+		LOG_ERROR("%s error\n",__func__);
 
 	return ret;
 }
@@ -101,7 +101,7 @@ int sfc_nand_program(struct cloner *cloner)
 
 	partition = get_sfc_nand_partition(startaddr,length,&pt_index);
 	if (pt_index < 0) {
-		printf("startaddr 0x%x can't find the pt_index or you partition size 0x%x is not align with %x\n",
+		LOG_ERROR("startaddr 0x%x can't find the pt_index or you partition size 0x%x is not align with %x\n",
                                 startaddr, length, block_size);
 		return -EIO;
         }
@@ -125,7 +125,7 @@ int sfc_nand_program(struct cloner *cloner)
 					sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
 				else
 					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
-				BURNNER_PRI("%s\n", command);
+				LOG_INFO("%s\n", command);
 				ret = run_command(command, 0);
 				if (ret)
 					goto out;
@@ -137,15 +137,16 @@ int sfc_nand_program(struct cloner *cloner)
 		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
 			ret = nand_write(nand, startaddr, &length, databuf);
-			BURNNER_PRI("nand write to offset 0x%lx, length = 0x%lx : ", startaddr, length);
+			LOG_INFO("nand write to offset 0x%lx, length = 0x%lx : ", startaddr, length);
 			if (ret || (length == 0)) {
-				BURNNER_PRI("ERROR\n");
+				LOG_ERROR("ERROR\n");
+				LOG_ERROR("nand write error!\n");
 				return -EIO;
 			} else {
-				BURNNER_PRI("OK\n");
+				LOG_INFO("OK\n");
 			}
 		} else {
-			BURNNER_PRI("ERROR : out of partition !!!\n");
+			LOG_ERROR("out of partition!\n");
 		}
 
 	} else if (partition->manager_mode == UBI_MANAGER) {
@@ -155,7 +156,7 @@ int sfc_nand_program(struct cloner *cloner)
 					pt_index_bak = pt_index;
 					memset(command, 0 , 128);
 					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
-					BURNNER_PRI("%s\n", command);
+					LOG_INFO("%s\n", command);
 					ret = run_command(command, 0);
 					if (ret)
 						goto out;
@@ -164,19 +165,19 @@ int sfc_nand_program(struct cloner *cloner)
 
 			memset(command, 0, 128);
 			sprintf(command, "ubi part %s", partition->name);
-			BURNNER_PRI("%s\n", command);
+			LOG_INFO("%s\n", command);
 			ret = run_command(command, 0);
 			if (ret) {
-				BURNNER_PRI("ubi part error...\n");
+				LOG_ERROR("ubi part error...\n");
 				return ret;
 			}
 
 			memset(command, 0, X_COMMAND_LENGTH);
 			sprintf(command, "ubi create %s",partition->name);
-			BURNNER_PRI("%s\n", command);
+			LOG_INFO("%s\n", command);
 			ret = run_command(command, 0);
 			if (ret) {
-				BURNNER_PRI("ubi create error...\n");
+				LOG_ERROR("ubi create error...\n");
 				return ret;
 			}
 		}
@@ -196,7 +197,7 @@ int sfc_nand_program(struct cloner *cloner)
 
 		ret = run_command(command, 0);
 		if (ret) {
-			BURNNER_PRI("...error\n");
+			LOG_ERROR("...error\n");
 			return ret;
 		}
 	}
@@ -207,7 +208,7 @@ int sfc_nand_program(struct cloner *cloner)
 
 	return 0;
 out:
-	BURNNER_PRI("...error\n");
+	LOG_ERROR("...error\n");
 	return ret;
 
 }

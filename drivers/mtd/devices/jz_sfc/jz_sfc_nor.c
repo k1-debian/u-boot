@@ -769,7 +769,7 @@ int sfc_do_chip_erase()
 	sfc_list_add_tail(&transfer[1], transfer);
 
 	if(sfc_sync(flash->sfc, transfer)) {
-		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		LOG_ERROR("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
@@ -991,7 +991,7 @@ int norflash_get_params_from_burner()
 	spiflash_info = (struct spiflash_info *)((unsigned char *)spi_args + sizeof(struct spi_param));
 
 	chip_id = sfc_nor_read_id(SPINOR_OP_RDID, id_addr, id_addr_len, id_len, dummy);
-	printf("spi nor flash chip_id is : %x\n", chip_id);
+	LOG_INFO("spi nor flash chip_id is : %x\n", chip_id);
 
 	memcpy(&params, spiflash_info, sizeof(struct burner_params));
 	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
@@ -999,8 +999,8 @@ int norflash_get_params_from_burner()
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();
 	dump_mini_cloner_params();
-	printf("fs_erase_size=%d\n", params.nor_pri_data.fs_erase_size);
-	printf("uk_quad=%d\n", params.nor_pri_data.uk_quad);
+	LOG_DEBUG("fs_erase_size=%d\n", params.nor_pri_data.fs_erase_size);
+	LOG_DEBUG("uk_quad=%d\n", params.nor_pri_data.uk_quad);
 #endif
 
 	memcpy(nor_info->nor_flash_info, &params.spi_nor_info, sizeof(struct spi_nor_info));
@@ -1016,14 +1016,14 @@ int norflash_get_params_from_burner()
 	sfc_nor_do_special_func();
 
 #ifdef SFC_NOR_CLONER_DEBUG
-	printf("partition num=%d\n", nor_info->norflash_partitions->num_partition_info);
+	LOG_DEBUG("partition num=%d\n", nor_info->norflash_partitions->num_partition_info);
 	for (i = 0; i < nor_info->norflash_partitions->num_partition_info; i++) {
-		printf("p[%d].name=%s\n", i, nor_info->norflash_partitions->nor_partition[i].name);
-		printf("p[%d].size=%x\n", i, nor_info->norflash_partitions->nor_partition[i].size);
-		printf("p[%d].offset=%x\n", i, nor_info->norflash_partitions->nor_partition[i].offset);
+		LOG_DEBUG("p[%d].name=%s\n", i, nor_info->norflash_partitions->nor_partition[i].name);
+		LOG_DEBUG("p[%d].size=%x\n", i, nor_info->norflash_partitions->nor_partition[i].size);
+		LOG_DEBUG("p[%d].offset=%x\n", i, nor_info->norflash_partitions->nor_partition[i].offset);
 	}
 #endif
-        printf("chip eraseing ... ");
+        LOG_INFO("chip eraseing ... ");
         switch(spi_args->spi_erase){
                 case CHIP_ERASE:
                         ret = sfc_nor_partition_erase();
@@ -1034,7 +1034,7 @@ int norflash_get_params_from_burner()
                         break;
         }
 
-        printf("%s\n", ret == 0 ? "successful\n" : "failed\n");
+        LOG_INFO("%s\n", ret == 0 ? "successful\n" : "failed\n");
 
 	return 0;
 }
