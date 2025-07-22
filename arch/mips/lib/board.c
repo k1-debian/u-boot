@@ -247,7 +247,10 @@ void board_init_f(ulong bootflag)
 	 * Save local variables to board info struct
 	 */
 	bd->bi_memstart	= CONFIG_SYS_SDRAM_BASE;	/* start of DRAM */
-	bd->bi_memsize	= gd->ram_size;		/* size of DRAM in bytes */
+	if(gd->ram_size < 0x10000000)	/* */
+		bd->bi_memsize = gd->ram_size;		/* size of DRAM in bytes */
+	else
+		bd->bi_memsize = 0x10000000;
 	bd->bi_baudrate	= gd->baudrate;		/* Console Baudrate */
 
 	memcpy(id, (void *)gd, sizeof(gd_t));

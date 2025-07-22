@@ -742,9 +742,6 @@ phys_size_t initdram(int board_type)
 	get_ddr_params();
 	ram_size = (unsigned int)(global_reg_value->DDR_CHIP_0_SIZE) + (unsigned int)(global_reg_value->DDR_CHIP_1_SIZE);
 
-	if (ram_size > EMC_LOW_SDRAM_SPACE_SIZE)
-		ram_size = EMC_LOW_SDRAM_SPACE_SIZE;
-
 	debug("ram_size=%x\n", ram_size);
 
 	return ram_size;
