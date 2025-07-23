@@ -299,9 +299,6 @@ void clk_init(void)
 #ifdef CONFIG_JZ_MMC_MSC1
 		| CPM_CLKGR_MSC1
 #endif
-#ifdef CONFIG_JZ_LCD_V14
-		| CPM_CLKGR1_LCD
-#endif
 #ifdef CONFIG_JZ_SFC
 		| CPM_CLKGR_SFC
 #endif
@@ -317,6 +314,9 @@ void clk_init(void)
 #ifdef CONFIG_GMAC0
 		| CPM_CLKGR_GMAC0
 #endif
+#ifdef CONFIG_JZ_MIPI_DSI
+		|CPM_CLKGR_MIPI_DSI
+#endif
 		| CPM_CLKGR_EFUSE
 		;
 	reg_clkgr &=  ~gate;
@@ -331,6 +331,9 @@ void clk_init(void)
 #endif
 #ifdef CONFIG_JZ_PWM_V2
 		| CPM_CLKGR1_PWM
+#endif
+#ifdef CONFIG_JZ_LCD_V14
+		| CPM_CLKGR1_LCD
 #endif
 		;
 	reg_clkgr &=  ~gate;
