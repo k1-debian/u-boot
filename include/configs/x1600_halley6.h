@@ -207,7 +207,8 @@
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SPIFLASH_PART_OFFSET		0x5800
-#define CONFIG_SPI_NAND_BPP                     (2048 +64)      /*Bytes Per Page*/
+/*#define CONFIG_SPI_NAND_BPP                    (4096 + 128)*/      /*Bytes Per Page*/
+#define CONFIG_SPI_NAND_BPP                     (2048 + 64)      /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
 #define CONFIG_CMD_SFCNAND
 #define CONFIG_CMD_NAND

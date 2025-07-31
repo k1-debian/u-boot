@@ -33,24 +33,28 @@ static void boost_vddq(int gpio)
 {
 	int val;
 	printf("boost vddq\n");
-	gpio_direction_output(gpio, efuse_en_active);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
-	} while (val != efuse_en_active);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	if (gpio != -1) {
+		gpio_direction_output(gpio, efuse_en_active);
+		do {
+			val = gpio_get_value(gpio);
+			printf("gpio %d level %d\n",gpio,val);
+		} while (val != efuse_en_active);
+		mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	}
 }
 
 static void reduce_vddq(int gpio)
 {
 	int val;
 	printf("reduce vddq\n");
-	gpio_direction_output(gpio, !efuse_en_active);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
-	} while (val == efuse_en_active);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
+	if (gpio != -1) {
+		gpio_direction_output(gpio, !efuse_en_active);
+		do {
+			val = gpio_get_value(gpio);
+			printf("gpio %d level %d\n",gpio,val);
+		} while (val == efuse_en_active);
+		mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
+	}
 }
 
 
