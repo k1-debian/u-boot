@@ -72,7 +72,7 @@
 #endif
 
 #if(-1 == CONFIG_DDR_CL)
-#error CONFIG_X2600E_DDR3_MEM_FREQ don't support, check data_rate range
+#error "CONFIG_X2600E_DDR3_MEM_FREQ don\'t support, check data_rate range"
 #endif
 
 #if !defined(CONFIG_X2600E_DDR3_KGD_CONFIG) && \
@@ -307,5 +307,7 @@ static inline void X2600E_DDR3_init(void *data)
 	.init	= X2600E_DDR3_init,				\
 }
 
+#undef CONFIG_DDR_CL
+#undef CONFIG_DDR_DATA_RATE
 
 #endif

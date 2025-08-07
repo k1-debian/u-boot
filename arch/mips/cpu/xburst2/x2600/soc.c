@@ -121,7 +121,13 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
-
+       /*The power-on condition controlled by one POWER PIN
+         can be set through this configuration */
+#if defined(CONFIG_POWER_PIN_HIGH)
+	gpio_direction_output(CONFIG_POWER_PIN_HIGH, 1);
+#elif defined(CONFIG_POWER_PIN_LOW)
+	gpio_direction_output(CONFIG_POWER_PIN_LOW, 0);
+#endif
 	ingenic_setup_voltage_config();
 
 	serial_debug("ERROR EPC %x\n", read_c0_errorepc());

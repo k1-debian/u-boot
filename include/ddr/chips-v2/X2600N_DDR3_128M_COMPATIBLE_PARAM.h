@@ -73,7 +73,7 @@
 #endif
 
 #if(-1 == CONFIG_DDR_CL)
-#error CONFIG_X2600N_DDR3_MEM_FREQ don't support, check data_rate range
+#error "CONFIG_X2600N_DDR3_MEM_FREQ don't support, check data_rate range"
 #endif
 
 #if !defined(CONFIG_X2600N_DDR3_KGD_CONFIG) && \
@@ -299,7 +299,7 @@ static inline void X2600N_DDR3_init(void *data)
 	c->DDR_tXPDLL 		= DDR_SELECT_MAX__tCK_ps(10, 24 * 1000);
 
 #ifdef CONFIG_X2600N_DDR3_KGD_CONFIG
-        struct ddr3_mr_config *mr_cfg      = &c->kgd_config.mr_config;
+	struct ddr3_mr_config *mr_cfg      = (struct ddr3_mr_config *)&c->kgd_config.mr_config;
         c->kgd_config.use_kgd_config       = CONFIG_X2600N_DDR3_KGD_CONFIG     ;
         mr_cfg->kgd_mr0_dll_rst            = CONFIG_X2600N_DDR3_KGD_MR0_DLL_RST;
         mr_cfg->kgd_mr0_pd                 = CONFIG_X2600N_DDR3_KGD_MR0_PD     ;
@@ -350,5 +350,7 @@ static inline void X2600N_DDR3_init(void *data)
 	.init	= X2600N_DDR3_init,				\
 }
 
-
+#undef CONFIG_DDR_CL
+#undef CONFIG_DDR_DATA_RATE
+#undef CONFIG_DDR_CWL
 #endif
