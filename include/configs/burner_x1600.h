@@ -32,6 +32,8 @@
 #define CONFIG_SOC_NAME		x1600
 #define CONFIG_XBURST_TRAPS
 
+#include "x1600_ddr.h"
+
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/

@@ -30,6 +30,7 @@
 #define CONFIG_X2000_FPGA	/* x2000 SoC */
 /* #define CONFIG_FPGA		/1* x2000 FPGA *1/ */
 #define CONFIG_X2000	/* x2000 SoC */
+#include "x2000_ddr.h"
 
 
 #if defined(CONFIG_FPGA)

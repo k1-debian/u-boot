@@ -29,10 +29,11 @@
 #define CONFIG_CPU_XBURST2
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X2100
+#include "x2100_ddr.h"
 
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_SYS_EPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL

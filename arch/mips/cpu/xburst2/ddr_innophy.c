@@ -26,9 +26,7 @@
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
-#ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
-#endif
 
 #include <asm/io.h>
 #include <asm/arch/clk.h>
@@ -541,8 +539,6 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 
 }
 
-#ifndef CONFIG_BURNER
-
 __weak unsigned int check_socid(void)
 {
         return -1;
@@ -578,7 +574,7 @@ int get_ddr_params_socid(void)
 	return 0;
 }
 
-void get_ddr_params_normal(void)
+int get_ddr_params_normal(void)
 {
 	int found = 0;
 	int size = 0;
@@ -592,6 +588,7 @@ void get_ddr_params_normal(void)
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
 		printf("invalid burned ddr id\n");
+		return -1;
 	}
 
 	burned_ddr_id &= 0xffff;
@@ -606,10 +603,14 @@ void get_ddr_params_normal(void)
 
 	if(found == 0) {
 		printf("No match to %x\n",burned_ddr_id);
+		return -1;
 	}
 
+	return 0;
+
 }
-#else
+
+#ifdef CONFIG_BURNER
 void get_ddr_params_burner(void)
 {
 	/* keep ddr_reg_value inc ddr_innophy.h
@@ -621,18 +622,38 @@ void get_ddr_params_burner(void)
 }
 #endif
 
-void get_ddr_params(void)
+int get_ddr_params(void)
 {
-#ifndef CONFIG_BURNER
-	if(ARRAY_SIZE(supported_ddr_reg_values) == 1)
+	int ret = 0;
+
+	/* Try1. 如果只有一个DDR 参数，直接使用. 只支持一款，兼容性差。*/
+	if(ARRAY_SIZE(supported_ddr_reg_values) == 1) {
 		global_reg_value = &supported_ddr_reg_values[0];
-	else if (get_ddr_params_socid() < 0)
-		get_ddr_params_normal();
+		return 0;
+	}
+
+	/* Try2. 从Efuse获取SOCID 进行匹配. 前提: 芯片必须烧录SOCID. 【推荐】*/
+	ret = get_ddr_params_socid();
+	if(ret == 0) {
+		return 0;
+	}
+
+#ifndef CONFIG_BURNER
+	/* Try3. 从Flash获取ddr type，前提: 需配合烧录工具。【依赖烧录工具，不推荐。】*/
+	ret = get_ddr_params_normal();
+	if(ret == 0) {
+		return 0;
+	}
 #else
-	get_ddr_params_burner();
+	/*Try4. 对于烧录工具，如果上述都无法识别，就从烧录工具获取参数。【不推荐，为了兼容】*/
+	if(ret < 0) {
+		get_ddr_params_burner();
+		return 0;
+	}
 #endif
 	//dump_generated_reg(global_reg_value);
 
+	return -1;
 }
 
 unsigned int get_ddr_size(void)
