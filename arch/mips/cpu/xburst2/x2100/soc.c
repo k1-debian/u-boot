@@ -22,7 +22,7 @@
  * MA 02111-1307 USA
  */
 
-#define DEBUG
+//#define DEBUG
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -59,7 +59,7 @@ extern void ddr_test_refresh(unsigned int start_addr, unsigned int end_addr);
 extern void flush_cache_all(void);
 
 #ifdef CONFIG_SPL_USB_BOOT
-extern int spl_usb_boot;
+extern int soc_detected;
 extern int usb_boot_loop(void);
 extern void enter_usb_boot_mode(void);
 #endif
@@ -82,9 +82,9 @@ void board_init_f(ulong dummy)
 	burner_param_info();
 
 #ifdef CONFIG_SPL_USB_BOOT
-	if (!!spl_usb_boot) {
-		timer_init();
-		usb_boot_loop();
+	timer_init();
+	usb_boot_loop();
+	if (soc_detected) {
 		enter_usb_boot_mode();
 		return;
 	}
@@ -168,12 +168,6 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
-static int secure_load_uboot(struct spl_image_info *spl_image)
-{
-	int ret = secure_scboot ((void *)spl_image->load_addr,
-				 (void *)spl_image->entry_point);
-	return ret;
-}
 #endif
 
 void jump_to_image_no_args(struct spl_image_info *spl_image)
@@ -182,12 +176,13 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	flush_cache_all();
-	int ret = secure_load_uboot(spl_image);
-	if (ret) {
-	  printf("Error spl secure load uboot.\n");
-	  hang();
-	}
 	spl_image->entry_point += 2048;
+	int ret = secure_scboot ((void *)spl_image->load_addr,
+				 (void *)spl_image->entry_point);
+	if (ret) {
+		serial_debug("SCBOOT: load secure uboot error!\n");
+		hang();
+	}
 #endif
 
 	debug("image entry point: 0x%x\n", spl_image->entry_point);

@@ -24,7 +24,7 @@ __weak void jump_to_entry_point(unsigned long entry_point)
                         :"r"(entry_point));
 }
 
-__weak void read_socid(unsigned int *buf)
+__weak int check_socid(unsigned int *buf, char *chip_name)
 {
 	/* Nothing to do! */
 }
@@ -527,7 +527,7 @@ static int handle_setup_packet(USB_STATUS *status,int *config)
 	u32 usb_stall = 0;
 	int desc_size = 0;
 	status[0].length = 0;
-	unsigned int buffer[2] = {0,0};
+	char buffer[32] = {0};
 
 	if ((word1 & 0x60) == 0x40 && (*config >= DWC_CONFIG)) {
 		u32 addr_start = 0, addr_end = 0;
@@ -538,7 +538,8 @@ static int handle_setup_packet(USB_STATUS *status,int *config)
 			DEBUG("EP0_GET_CPU_INFO \n");
 			dwc_disable_in_ep(1);
 #if defined(CONFIG_CHECK_SOCID) && defined(CONFIG_SPL_USB_BOOT)
-			read_socid(buffer);
+			check_socid(NULL, buffer);
+//			printf("soc %s\n",buffer);
 			status[0].addr_in = (u8* )buffer;
 			status[0].length = sizeof(buffer);
 #else

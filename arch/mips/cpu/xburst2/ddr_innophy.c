@@ -26,8 +26,9 @@
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
+#ifdef CONFIG_DDR_PARAMS_CREATOR
 #include <generated/ddr_reg_values.h>
-
+#endif
 #include <asm/io.h>
 #include <asm/arch/clk.h>
 
@@ -189,19 +190,19 @@ static enum ddr_type get_ddr_type(void)
 	switch(global_reg_value->h.type){
 
 		case DDR3:
-			serial_debug("DDR: %s type is : DDR3\n", global_reg_value->h.name);
+			serial_debug("DDR3: %s\n", global_reg_value->h.name);
 			break;
 		case LPDDR:
-			serial_debug("DDR: %s type is : LPDDR\n", global_reg_value->h.name);
+			serial_debug("LPDDR: %s\n", global_reg_value->h.name);
 			break;
 		case LPDDR2:
-			serial_debug("DDR: %s type is : LPDDR2\n", global_reg_value->h.name);
+			serial_debug("LPDDR2: %s\n", global_reg_value->h.name);
 			break;
 		case LPDDR3:
-			serial_debug("DDR: %s type is : LPDDR3\n", global_reg_value->h.name);
+			serial_debug("LPDDR3: %s\n", global_reg_value->h.name);
 			break;
 		case DDR2:
-			serial_debug("DDR: %s type is : DDR2\n", global_reg_value->h.name);
+			serial_debug("DDR2: %s\n", global_reg_value->h.name);
 			break;
 		default:
 			type = UNKOWN;
@@ -539,7 +540,8 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 
 }
 
-__weak unsigned int check_socid(void)
+#ifdef CONFIG_DDR_PARAMS_CREATOR
+__weak int check_socid(unsigned int *ddr_id, char *chip_name)
 {
         return -1;
 }
@@ -547,16 +549,18 @@ __weak unsigned int check_socid(void)
 
 int get_ddr_params_socid(void)
 {
-	int i;
+	int ret, i;
 	int found = 0;
 	uint32_t ddrid = 0;
 	uint32_t mask = ~(7 << 3);
+	char chip_name[32] = {'\0'};
 
-	ddrid = check_socid();
-	if ((int)ddrid < 0) {
+	ret = check_socid(&ddrid, &chip_name);
+	if (ret < 0) {
 		printf("Check socid return invalid ddr id.\n");
 		return -1;
 	}
+	printf("SOC: %s\n", chip_name);
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];
@@ -609,6 +613,7 @@ int get_ddr_params_normal(void)
 	return 0;
 
 }
+#endif
 
 #ifdef CONFIG_BURNER
 void get_ddr_params_burner(void)
@@ -626,6 +631,7 @@ int get_ddr_params(void)
 {
 	int ret = 0;
 
+#ifdef CONFIG_DDR_PARAMS_CREATOR
 	/* Try1. 如果只有一个DDR 参数，直接使用. 只支持一款，兼容性差。*/
 	if(ARRAY_SIZE(supported_ddr_reg_values) == 1) {
 		global_reg_value = &supported_ddr_reg_values[0];
@@ -637,7 +643,7 @@ int get_ddr_params(void)
 	if(ret == 0) {
 		return 0;
 	}
-
+#endif
 #ifndef CONFIG_BURNER
 	/* Try3. 从Flash获取ddr type，前提: 需配合烧录工具。【依赖烧录工具，不推荐。】*/
 	ret = get_ddr_params_normal();

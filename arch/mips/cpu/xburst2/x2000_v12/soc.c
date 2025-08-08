@@ -60,7 +60,7 @@ extern void flush_cache_all(void);
 extern void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins);
 
 #ifdef CONFIG_SPL_USB_BOOT
-extern int spl_usb_boot;
+extern int soc_detected;
 extern int usb_boot_loop(void);
 extern void enter_usb_boot_mode(void);
 #endif
@@ -97,9 +97,9 @@ void board_init_f(ulong dummy)
 	burner_param_info();
 
 #ifdef CONFIG_SPL_USB_BOOT
-	if (!!spl_usb_boot) {
-		timer_init();
-		usb_boot_loop();
+	timer_init();
+	usb_boot_loop();
+	if (soc_detected) {
 		enter_usb_boot_mode();
 		return;
 	}

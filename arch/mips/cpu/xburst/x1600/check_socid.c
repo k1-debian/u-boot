@@ -66,7 +66,7 @@ void read_socid(unsigned int *data)
 	*data = val & 0xFFFF;
 }
 
-unsigned int check_socid()
+int check_socid(unsigned int *ddr_id, char *chip_name)
 {
 	unsigned int vendor = 0;
 	unsigned int type = 0;
@@ -77,20 +77,23 @@ unsigned int check_socid()
 
 	read_socid(&socid);
 	if (socid == 0) {
-		printf("invalid soc id %x%x\n", socid);
 		return -1;
 	}
+
 	vendor = socid >> 11 & 0x7;
 	type   = socid >> 14 & 0x1;
 	capacity = socid >> 8 & 0x7;
 	ddrid = DDR_CHIP_ID(vendor, type, capacity);
+	if (ddr_id)
+		*ddr_id = socid;
 
 	for (i = 0; i < ARRAY_SIZE(desc); i++) {
 		if (desc[i].soc == socid) {
-			printf("SOC: %s\n", desc[i].chip);
-			break;
+			if (chip_name)
+				strcpy(chip_name, desc[i].chip);
+			return 0;
 		}
 	}
 
-	return ddrid;
+	return -1;
 }

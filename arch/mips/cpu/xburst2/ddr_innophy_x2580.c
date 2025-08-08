@@ -317,41 +317,6 @@ void dump_generated_reg(struct ddr_reg_value *reg)
 
 #ifndef CONFIG_BURNER
 
-__weak unsigned int check_socid(void)
-{
-        return -1;
-}
-
-
-int get_ddr_params_socid(void)
-{
-	int i;
-	int found = 0;
-	uint32_t ddrid = 0;
-	uint32_t mask = ~(7 << 3);
-
-	ddrid = check_socid();
-	if ((int)ddrid < 0) {
-		debug("Check socid return invalid ddr id %x\n",ddrid);
-		return -1;
-	}
-
-	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
-		global_reg_value = &supported_ddr_reg_values[i];
-		if((ddrid & mask) == (global_reg_value->h.id & mask)) {
-			found = 1;
-			break;
-		}
-	}
-
-	if(found == 0) {
-		debug("Check socid not match to %x\n",ddrid);
-		return -1;
-	}
-
-	return 0;
-}
-
 void get_ddr_params_normal(void)
 {
 	int found = 0;
@@ -394,7 +359,7 @@ void get_ddr_params(void)
 #ifndef CONFIG_BURNER
 	if(ARRAY_SIZE(supported_ddr_reg_values) == 1)
 		global_reg_value = &supported_ddr_reg_values[0];
-	else if (get_ddr_params_socid() < 0)
+	else
 		get_ddr_params_normal();
 #else
 	get_ddr_params_burner();

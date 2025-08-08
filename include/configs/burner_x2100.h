@@ -84,7 +84,9 @@
 #define CONFIG_USB_PRODUCT_ID               0xeaef
 #define CONFIG_USB_VENDOR_ID                0xa108
 #define CONFIG_BURNER_CPU_INFO              "X2100"
-
+/* Platform auto-detection */
+#define CONFIG_SPL_USB_BOOT
+#define CONFIG_CHECK_SOCID
 
 /**
  * Drivers configuration.

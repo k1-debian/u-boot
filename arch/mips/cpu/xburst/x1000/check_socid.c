@@ -41,6 +41,23 @@ static enum socid {
 	X1501 = 0xff05,
 };
 
+static struct soc_desc {
+	const enum socid id;
+	const char *chip;
+};
+
+static const struct soc_desc desc[] = {
+	{X1000,       "X1000" },
+	{X1000E,      "X1000E"},
+	{X1500,       "X1500"},
+	{X1500L_NEW,  "X1500L_NEW" },
+	{X1000_NEW,   "X1000_NEW"},
+	{X1000E_NEW,  "X1000E_NEW"},
+	{X1500_NEW,   "X1500_NEW"},
+	{X1501,       "X1501"},
+};
+
+
 static void read_efuse_segment(unsigned int addr, unsigned int length, unsigned int *buf)
 {
 	unsigned int val;
@@ -66,8 +83,6 @@ void read_socid(unsigned int *id)
 {
 	read_efuse_segment(EFUSE_SOCID_ADDR, 1, id);
 }
-
-#ifndef CONFIG_SPL_USB_BOOT
 
 static inline int check_chipid(unsigned int *data)
 {
@@ -113,36 +128,36 @@ static void ddr_change_64M()
 
 }
 
-int check_socid()
+int check_socid(unsigned int *ddr_id, char *chip_name)
 {
+	int i = 0;
 	unsigned int socid;
 
 	read_socid(&socid);
-	switch(socid) {
-	case X1000_NEW:
-	case X1500_NEW:
-	case X1500L_NEW:
-	case X1501:
-		gd->arch.gi->ddr_change_param.ddr_autosr = 1;
-		break;
-	case X1000E:
-	case X1000E_NEW:
-		ddr_change_64M();
-		gd->arch.gi->ddr_change_param.ddr_autosr = 1;
-		break;
-	case X1500:
-		if(!read_and_check_chipid()) {
-			gd->arch.gi->ddr_change_param.ddr_autosr = 1;
+	if (ddr_id)
+		*ddr_id = socid;
+
+	for (i = 0; i < ARRAY_SIZE(desc); i++) {
+		if (desc[i].id == socid) {
+
+			if (chip_name)
+				strcpy(chip_name, desc[i].chip);
+#ifndef CONFIG_BURNER
+			if (X1000_NEW == socid || X1500_NEW == socid ||
+			    X1500L_NEW == socid || X1501 == socid ||
+			    (X1500 == socid && !read_and_check_chipid())) {
+				gd->arch.gi->ddr_change_param.ddr_autosr = 1;
+			} else if (X1000E == socid || X1000E_NEW == socid) {
+				ddr_change_64M();
+				gd->arch.gi->ddr_change_param.ddr_autosr = 1;
+			} else if (X1000 == socid) {
+				gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
+			}
+#endif
 			return 0;
 		}
-	case X1000:
-	case 0:
-		gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
-		break;
-	default:
-		return -1;
 	}
 
-	return socid;
+	return -1;
 }
-#endif
+

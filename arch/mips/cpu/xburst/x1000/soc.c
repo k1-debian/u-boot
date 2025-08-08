@@ -67,11 +67,11 @@ extern void gpio_init(void);
 extern void pll_init(void);
 extern void sdram_init(void);
 #ifdef CONFIG_CHECK_SOCID
-extern int check_socid();
+extern int check_socid(unsigned int *ddr_id, char *chip_name);
 #endif
 
 #ifdef CONFIG_SPL_USB_BOOT
-extern int spl_usb_boot;
+extern int soc_detected;
 extern int usb_boot_loop(void);
 extern void enter_usb_boot_mode(void);
 #endif
@@ -104,7 +104,7 @@ void board_init_f(ulong dummy)
 	gd->arch.gi = &ginfo;
 
 #ifdef CONFIG_CHECK_SOCID
-	if(check_socid() < 0)
+	if(check_socid(NULL, NULL) < 0)
 		return;
 #endif
 
@@ -112,9 +112,9 @@ void board_init_f(ulong dummy)
 	burner_param_info();
 
 #ifdef CONFIG_SPL_USB_BOOT
-	if (!!spl_usb_boot) {
-		timer_init();
-		usb_boot_loop();
+	timer_init();
+	usb_boot_loop();
+	if (soc_detected) {
 		enter_usb_boot_mode();
 		return;
 	}
@@ -194,12 +194,6 @@ extern void flush_cache_all(void);
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 extern int secure_scboot (void *, void *);
-static int secure_load_uboot(struct spl_image_info *spl_image)
-{
-	int ret = secure_scboot ((void *)spl_image->load_addr,
-				 (void *)spl_image->entry_point);
-	return ret;
-}
 #endif
 
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
@@ -208,10 +202,10 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT
 	flush_cache_all();
-	int ret = secure_load_uboot(spl_image);
-
+	int ret = secure_scboot ((void *)spl_image->load_addr,
+				 (void *)spl_image->entry_point);
 	if (ret)
-	  printf("Error spl secure load uboot.\n");
+		printf("Error spl secure load uboot.\n");
 #endif
 
 	image_entry_noargs_t image_entry =

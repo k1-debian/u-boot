@@ -102,12 +102,12 @@ void disable_efuse_pd(void)
 	REG32(EFUSE_CTRL) |= EFUSE_CTRL_PD;
 }
 
-unsigned int check_socid()
+int check_socid(unsigned int *ddr_id, char *chip_name)
 {
 	unsigned int vendor = 0;
 	unsigned int type = 0;
 	unsigned int capacity = 0;
-	unsigned int ddrid  = 0;
+	unsigned int ddrid = 0;
 	unsigned int socid = 0;
 	unsigned int data[BITS_TO_WORD(SOCINFO_BITS)] = {0};
 	unsigned int start_pos = SOCINFO_BYTE_ADDR - WORD_ALIGNED(SOCINFO_BYTE_ADDR);
@@ -119,7 +119,6 @@ unsigned int check_socid()
 	ret = checkbit(data, data, BYTE_TO_BITS(start_pos), BYTE_TO_BITS(start_pos) + SOCINFO_BITS / 2, SOCINFO_BITS / 2);
 	socid = data[1] >> (32 - SOCINFO_BITS / 2);
 	if(ret != 0 || socid == 0) {
-		printf("invalid soc id %x%x\n", data[1], data[0]);
 		return -1;
 	}
 
@@ -128,13 +127,16 @@ unsigned int check_socid()
 	type   = socid >> 17 & 0x1;
 	capacity = socid >> 11 & 0x7;
 	ddrid = DDR_CHIP_ID(vendor, type, capacity);
+	if (ddr_id)
+		*ddr_id = ddrid;
 
 	for (i = 0; i < ARRAY_SIZE(desc); i++) {
 		if (desc[i].soc == soc) {
-			printf("SOC: %s\n", desc[i].chip);
-			break;
+			if (chip_name)
+				strcpy(chip_name, desc[i].chip);
+			return 0;
 		}
 	}
 
-	return ddrid;
+	return -1;
 }

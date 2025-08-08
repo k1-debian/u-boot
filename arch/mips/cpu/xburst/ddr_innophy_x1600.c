@@ -987,23 +987,25 @@ static void ddrp_software_calibration(void)
 #endif
 
 
-__weak unsigned int check_socid(void)
+__weak int check_socid(unsigned int *ddr_id, char *chip_name)
 {
         return -1;
 }
 
 int get_ddr_params_socid(void)
 {
-	int i;
+	int i, ret;
 	int found = 0;
 	uint32_t ddrid = 0;
 	uint32_t mask = ~(7 << 3);
+	char chip_name[32] = {'\0'};
 
-	ddrid = check_socid();
-	if ((int)ddrid < 0) {
+	ret = check_socid(&ddrid, &chip_name);
+	if (ret < 0) {
 		printf("Check socid return invalid ddr id\n");
 		return -1;
 	}
+	printf("SOC: %s\n", chip_name);
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];
