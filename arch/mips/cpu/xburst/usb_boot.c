@@ -25,7 +25,6 @@ static void cpu_restart(void)
 	writel(0,WDT_BASE + WDT_TCER);
 
 	writel(TCER_TCEN,WDT_BASE + WDT_TCER);
-	mdelay(1000);
 }
 
 void enter_usb_boot_mode(void)

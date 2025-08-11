@@ -62,8 +62,8 @@
 /*
  * Uart
  */
-#define CONFIG_SYS_UART2_PC
-#define CONFIG_SYS_UART_INDEX           2
+#define CONFIG_SYS_UART1_PA
+#define CONFIG_SYS_UART_INDEX           1
 
 /*
  * Burner
@@ -74,6 +74,9 @@
 #define CONFIG_USB_PRODUCT_ID               0x1000
 #define CONFIG_USB_VENDOR_ID                0xa108
 #define CONFIG_BURNER_CPU_INFO              "X1000"
+/* Platform auto-detection */
+#define CONFIG_SPL_USB_BOOT
+#define CONFIG_CHECK_SOCID
 
 
 /*
