@@ -6,7 +6,7 @@
 #include <asm/arch/wdt.h>
 #include <asm/arch/cpm.h>
 
-void __attribute__((weak)) _machine_restart(void)
+static void cpu_restart(void)
 {
 	int time = RTC_FREQ / WDT_DIV * RESET_DELAY_MS / 1000;
 
@@ -24,7 +24,6 @@ void __attribute__((weak)) _machine_restart(void)
 			, WDT_BASE + WDT_TCSR);
 	writel(0,WDT_BASE + WDT_TCER);
 
-	serial_debug("reset in %dms", RESET_DELAY_MS);
 	writel(TCER_TCEN,WDT_BASE + WDT_TCER);
 	mdelay(1000);
 }
@@ -42,7 +41,7 @@ void enter_usb_boot_mode(void)
 
 	cpm_outl(val, CPM_SLPC);
 
-	_machine_restart();
+	cpu_restart();
 #else
         printf("Not support soft burn!\n");
 #endif
