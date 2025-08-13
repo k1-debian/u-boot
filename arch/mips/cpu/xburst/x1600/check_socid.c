@@ -85,7 +85,7 @@ int check_socid(unsigned int *ddr_id, char *chip_name)
 	capacity = socid >> 8 & 0x7;
 	ddrid = DDR_CHIP_ID(vendor, type, capacity);
 	if (ddr_id)
-		*ddr_id = socid;
+		*ddr_id = ddrid;
 
 	for (i = 0; i < ARRAY_SIZE(desc); i++) {
 		if (desc[i].soc == socid) {
