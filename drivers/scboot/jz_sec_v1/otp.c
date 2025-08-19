@@ -254,6 +254,11 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 	return 0;
 }
 
+int cpu_burn_custid(void *idata, unsigned int length)
+{
+	return 0;
+}
+
 int cpu_burn_nku(void *idata,unsigned int length)
 {
 	LOG_INFO("\nEnter: %s\n",__func__);

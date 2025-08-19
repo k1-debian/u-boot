@@ -304,6 +304,7 @@ void *realloc_buf(struct cloner *cloner, size_t realloc_size)
 
 void handle_read(struct cloner *cloner)
 {
+	unsigned int length = cloner->cmd->read.length;
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->read.ops) {
 #ifdef CONFIG_JZ_SCBOOT
@@ -315,8 +316,7 @@ void handle_read(struct cloner *cloner)
 			{
 				unsigned char *src = (unsigned char*)(cloner->cmd->read.offset);
 				unsigned char *dst = cloner->read_req->buf;
-				unsigned int len = cloner->cmd->read.length;
-				memcpy(dst, src, len);
+				memcpy(dst, src, length);
 			}
 			cloner->ack = 0;
 			break;
@@ -326,11 +326,11 @@ void handle_read(struct cloner *cloner)
 	}
 
 	if (debug_args->transfer_data_chk)
-		cloner->crc = local_crc32(0xffffffff, cloner->read_req->buf, cloner->cmd->read.length);
+		cloner->crc = local_crc32(0xffffffff, cloner->read_req->buf, length);
 	//printf("handle read cloner->crc %x\n", cloner->crc);
 
 	/*always transfer data*/
-	cloner->read_req->length = cloner->cmd->read.length;
+	cloner->read_req->length = length;
 	//usb_ep_queue(cloner->ep_in, cloner->read_req, 0);
 #undef OPS
 }
@@ -372,6 +372,9 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 			return;
 		}
 	}
+
+	void* addr = (void*)cloner->write_req->buf;
+	uint32_t length = (uint32_t)cloner->cmd->write.length;
 
 #define OPS(x,y) ((x<<16)|(y&0xffff))
 	switch(cloner->cmd->write.ops) {
@@ -415,17 +418,20 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 			}
 			break;
 #ifdef CONFIG_JZ_SCBOOT
+		case OPS_BURN_CUSTID:
+			cloner->ack = cpu_burn_custid(addr, length);
+			break;
 		case OPS_BURN_NKU:     //3.uboot recv nku and burn
-			cloner->ack = cpu_burn_nku(cloner->write_req->buf,cloner->cmd->write.length);
+			cloner->ack = cpu_burn_nku(addr, length);
 			break;
 		case OPS_BURN_ENUK:     //5.recv encrtpy ukey and burn
-			cloner->ack = cpu_burn_ukey(cloner->write_req->buf);
+			cloner->ack = cpu_burn_ukey(addr);
 			break;
 #endif
 		default:
 			cloner->ack = clmg_write(cloner);
 	}
-	memset(cloner->write_req->buf,0,cloner->write_req->length);
+	memset(addr,0,length);
 #undef OPS
 }
 

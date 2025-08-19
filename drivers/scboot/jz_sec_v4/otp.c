@@ -6,7 +6,9 @@
 #include <asm/gpio.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
+#include <asm/arch/efuse.h>
 #include <cloner/cloner.h>
+#include <efuse.h>
 
 #include "secall.h"
 #include "pdma.h"
@@ -41,6 +43,22 @@ int get_rsakeylen(void)
 {
 	return rsakeylen;
 }
+
+static int cmp_data(unsigned long *src,unsigned long *dst,unsigned long len)
+{
+        unsigned long *start = src;
+        unsigned long *end_src = src + len;
+        while(start < end_src)
+        {
+//		LOG_INFO("cmp data  src:%08x, dst:%08x\n", *start, *dst);
+                if(*start++ != *dst++) {
+                        LOG_ERROR("cmp data error: src:%08x, dst:%08x\n", *(start-1), *(dst-1));
+                        return (start - src);
+                }
+        }
+        return 0;
+}
+
 
 static void efuse_1v8_output(int value)
 {
@@ -185,7 +203,7 @@ static int otp_w(unsigned int offset)
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
+	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
@@ -421,6 +439,65 @@ static int check_nku(unsigned int *idata, unsigned int length)
 	return 0;
 }
 
+int cpu_burn_custid(void *idata,unsigned int length)
+{
+	unsigned int rdata[CUSTID0_WORD_NUM * 2] = {0};
+	unsigned int len = length / 2;
+	int ret;
+
+	LOG_INFO("\nEnter: %s\n",__func__);
+
+	if (EFUSTATE_CUSTID0_PRT) {
+		LOG_INFO("EFUSTATE: custid0 protection bit is set!\n");
+		return 0;
+	}
+
+	if (len != CUSTID0_BIT_NUM / 8) {
+		LOG_ERROR("data length error! CUSTID0 length = %d\n",CUSTID0_BIT_NUM / 8);
+		return -ESEC;
+	}
+
+	ret = efuse_init(efuse_args->efuse_en_gpio, efuse_args->efuse_en_active);
+	if (ret) {
+		LOG_ERROR("efuse init error\n");
+		return -ESEC;
+	}
+
+	LOG_INFO("write custid0\n");
+	ret = efuse_write(idata, length, CUSTID0);
+	if (ret) {
+		LOG_ERROR("efuse write error\n");
+		return -ESEC;
+	}
+
+	LOG_INFO("read custid0\n");
+	ret = efuse_read_id((void*)rdata, length, CUSTID0);
+	if (ret != length) {
+		LOG_ERROR("efuse read error\n");
+		return -ESEC;
+	}
+
+	LOG_INFO("check custid0 read back data\n");
+	ret = strncmp(idata, rdata, length - 1);
+	if (ret) {
+		LOG_ERROR("compare data error\n");
+		return -ESEC;
+	}
+	LOG_INFO("set custid0 protection bit\n");
+	if (otp_w(EFUSE_PTCOFF_UID) < 0) {
+		LOG_ERROR("custid0 protection bit set failed\n");
+		return -ESEC;
+	}
+
+	LOG_INFO("check custid0 protection bit\n");
+	if (!EFUSTATE_CUSTID0_PRT) {
+		LOG_ERROR("custid0 protection bit is not set!\n");
+		return -ESEC;
+	}
+
+	efuse_update_state();
+	return 0;
+}
 
 int cpu_burn_nku(void *idata,unsigned int length)
 {
@@ -523,20 +600,6 @@ static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, unsigned i
 	}
 
 	return 0;
-}
-
-static int cmp_data(unsigned long *src,unsigned long *dst,unsigned long len)
-{
-        unsigned long *start = src;
-        unsigned long *end_src = src + len;
-        while(start < end_src)
-        {
-                if(*start++ != *dst++) {
-                        LOG_INFO("cmp data error: src:%08x, dst:%08x\n", *(start-1), *(dst-1));
-                        return (start - src);
-                }
-        }
-        return 0;
 }
 
 static int check_ukey(unsigned int *ukey, int key_len)

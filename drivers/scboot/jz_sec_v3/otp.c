@@ -264,6 +264,10 @@ static int check_nku(unsigned int *data, unsigned int length)
 	return 0;
 }
 
+int cpu_burn_custid(void *data,unsigned int length)
+{
+	return 0;
+}
 
 int cpu_burn_nku(void *data,unsigned int length)
 {

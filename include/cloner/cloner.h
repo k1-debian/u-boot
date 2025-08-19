@@ -67,8 +67,10 @@ const char* log_buffer(void);
 #define VR_SEC_BURN_SECBOOT_EN	        0x24
 #define VR_SEC_SEDEN                    0x25
 
-#define OPS_BURN_NKU	1
-#define OPS_BURN_ENUK	2
+#define OPS_BURN_NKU       1
+#define OPS_BURN_ENUK      2
+#define OPS_BURN_CUSTID    3
+
 #define OPS_GET_ENCK	1
 
 #define RSA_KEY_LEN     128		/* byte */

@@ -80,6 +80,8 @@
 #define EFUSTATE_SECBOOT_EN (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_SECBOOT_EN_SFT)
 #define EFUSTATE_SECBOOT_PRT (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_SECBOOT_PRT_SFT)
 
+
+int cpu_burn_custid(void *idata,unsigned int length);
 int cpu_burn_rckey(void);
 int cpu_burn_nku(void *idata,unsigned int length);
 int get_rsakeylen(void);

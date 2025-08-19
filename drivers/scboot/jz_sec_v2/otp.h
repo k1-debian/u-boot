@@ -74,6 +74,7 @@
 #define EFUSTATE_DIS_JTAG (EFUSE_REG32(EFUSE_REG_STAT) & EFUSTATE_DIS_JTAG_SFT)
 
 
+int cpu_burn_custid(void *idata,unsigned int length);
 int cpu_burn_rckey(void);
 int cpu_burn_nku(void *idata,unsigned int length);
 int get_rsakeylen(void);

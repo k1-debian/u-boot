@@ -441,6 +441,10 @@ static int check_nku(unsigned int *idata, unsigned int length)
 	return 0;
 }
 
+int cpu_burn_custid(void *idata, unsigned int length)
+{
+	return 0;
+}
 
 int cpu_burn_nku(void *idata,unsigned int length)
 {
