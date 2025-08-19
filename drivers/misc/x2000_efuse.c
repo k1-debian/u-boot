@@ -33,28 +33,32 @@ static void boost_vddq(int gpio)
 {
 	int val;
 	printf("boost vddq\n");
-	gpio_direction_output(gpio, efuse_en_active);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
-	} while (val != efuse_en_active);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	if (gpio != -1) {
+		gpio_direction_output(gpio, efuse_en_active);
+		do {
+			val = gpio_get_value(gpio);
+			printf("gpio %d level %d\n",gpio,val);
+		} while (val != efuse_en_active);
+		mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	}
 }
 
 static void reduce_vddq(int gpio)
 {
 	int val;
 	printf("reduce vddq\n");
-	gpio_direction_output(gpio, !efuse_en_active);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
-	} while (val == efuse_en_active);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
+	if (gpio != -1) {
+		gpio_direction_output(gpio, !efuse_en_active);
+		do {
+			val = gpio_get_value(gpio);
+			printf("gpio %d level %d\n",gpio,val);
+		} while (val == efuse_en_active);
+		mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
+	}
 }
 
 
-static void otp_r_efuse(uint32_t addr, uint32_t wlen)
+static void otp_r(uint32_t addr, uint32_t wlen)
 {
 	unsigned int val;
 	int n;
@@ -235,7 +239,7 @@ static int rir_check(struct seg_info *info, uint32_t woffs, uint32_t val)
 	unsigned int rval, errbits;
 
 	rir_r();
-	otp_r_efuse(info->word_address + woffs, 1);
+	otp_r(info->word_address + woffs, 1);
 
 	rval = efuse_readl(EFUSE_DATA(0));
 	if(woffs == 0)
@@ -258,11 +262,11 @@ static int rir_repair(struct seg_info *info, uint32_t *buf)
 		errbits = rir_check(info, n, buf[n]);
 		printf("addr=%x, errbits=0x%08x\n", info->word_address + n, errbits);
 
-		while((ebit = ffs(errbits)) > 0) {
+		while((ebit = (ffs(errbits)-1)) > 0) {
 			rir_data = 0x1 << EFUSE_RIR_RF;
-			rir_data |= (buf[n] & ebit) << EFUSE_RIR_DATA;
-			rir_data |= (info->word_address + n + ((ebit + info->begin_align * 8) << 6)) << EFUSE_RIR_ADDR;
-			//rir_data &= 0 << EFUSE_RIR_DISABLE;
+			rir_data |= (buf[n] & (0x1 << ebit)) << EFUSE_RIR_DATA;
+			rir_data |= (info->word_address + n + (ebit << 6)) << EFUSE_RIR_ADDR;
+//			rir_data &= 0 << EFUSE_RIR_DISABLE;
 
 			ret = rir_op(rir_data, 0);
 			if(ret) {
@@ -281,7 +285,7 @@ static int rir_repair(struct seg_info *info, uint32_t *buf)
 					}
 				}
 			} while(repair_fail);
-			errbits &= 0 << ebit;
+			errbits &= ~(0x1 << ebit);
 		}
 	}
 
@@ -301,17 +305,14 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 {
 	uint32_t val;
 	uint32_t rbuf[8] = {0};
-	uint32_t hamming_tmp_buf[8] = {0};
-	uint32_t double_tmp_buf[8] = {0};
-	uint32_t double_tmp1_buf[8] = {0};
-	uint32_t hamming_buf[8] = {0};
+	uint32_t dbuf[5] = {0};
+	uint32_t tmp[8] = {0};
 	uint32_t byte_num = 0;
 	uint32_t half_bit_num = 0;
 	uint32_t half_byte_num = 0;
-	uint32_t half_byte_tmp_num = 0;
 	uint32_t half_bit_align = 0;
-	uint32_t hamming_byte_num = 0;
 	uint32_t hamming_bit_num = 0;
+	uint32_t hamming_byte_num = 0;
 	int n, ret;
 
 	printf("segment name: %s\nsegment addr: 0x%02x\nbegin align: %d\nend align: %d\n"
@@ -320,14 +321,14 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 			info->word_num, info->bit_num, info->verify_mode);
 
 	rir_r();
-	otp_r_efuse(info->word_address, info->word_num);
+	otp_r(info->word_address, info->word_num);
 
 	for(n = 0; n < info->word_num; n++) {
 		val = efuse_readl(EFUSE_DATA(n));
 		printf("%08x\n", val);
 		if(n == 0)
 			rbuf[n] = val & (0xffffffff << info->begin_align * 8);
-		if(n == info->word_num - 1)
+		else if(n == info->word_num - 1)
 			rbuf[n] = val & (0xffffffff >> info->end_align * 8);
 		else
 			rbuf[n] = val;
@@ -339,42 +340,37 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 	switch(info->verify_mode) {
 		case HAMMING:
 			hamming_bit_num = info->bit_num + cal_k(info->bit_num);
-			hamming_byte_num = hamming_bit_num / 8;
-			hamming_byte_num += hamming_bit_num % 8 ? 1 : 0;
-			memcpy((char *)hamming_tmp_buf,((char *)rbuf + info->begin_align),hamming_byte_num);
-			decode(hamming_tmp_buf,hamming_bit_num, hamming_buf);
-			memcpy((char *)buf, (char *)hamming_buf, byte_num);
+			hamming_byte_num = hamming_bit_num / 8 + hamming_bit_num % 8 ? 1 : 0;
+//			dump(rbuf, 0, hamming_bit_num);
+			memcpy((char*)tmp, (char *)rbuf + info->begin_align, byte_num + hamming_byte_num);
+			decode(tmp, hamming_bit_num, buf);
 			break;
 		case DOUBLE:
 			half_bit_num = info->bit_num / 2;
 			half_byte_num = half_bit_num / 8;
 			half_bit_align = half_bit_num % 8;
-			half_byte_tmp_num = half_bit_num / 8;
-			half_byte_tmp_num += half_bit_num % 8 ? 1: 0;
-
-			memcpy((char *)double_tmp_buf,((char *)rbuf + info->begin_align),half_byte_tmp_num);
-			memcpy((char *)double_tmp1_buf,((char *)rbuf + info->begin_align + half_byte_num),half_byte_tmp_num);
-			ret = checkbit(double_tmp_buf,double_tmp1_buf,0, half_bit_align, half_bit_num);
+//			dump((unsigned int *)((char *)rbuf + info->begin_align), 0, half_bit_num);
+//			dump((unsigned int *)((char *)rbuf + info->begin_align + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
+			memcpy((char*)tmp, (char *)rbuf + info->begin_align + half_byte_num, half_byte_num);
+			ret = checkbit(rbuf, tmp, info->begin_align * 8, half_bit_align, half_bit_num);
 			if(ret){
 				printf("double verify failed!\n");
 				return -1;
 			}
-			memcpy((char *)buf, ((char *)rbuf + info->begin_align), byte_num);
-			break;
 		case NONE:
 		default:
 			memcpy((char *)buf, ((char *)rbuf + info->begin_align), byte_num);
 			break;
 	}
-	/*
-	   printf("efuse read data after decode :\n");
-	   for(n = 0; n < info->word_num; n++) {
-	   printf("%08x\n", buf[n]);
 
-	   }
-	   */
+	printf("efuse read data after decode :\n");
+	for(n = 0; n < info->word_num; n++) {
+		printf("%08x\n", buf[n]);
+	}
+
 	/* clear read done status */
 	efuse_writel(0, EFUSE_STATE);
+	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 
 	return 0;
 }
@@ -424,8 +420,7 @@ static void otp_w(uint32_t addr, uint32_t wlen)
 static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 {
 	unsigned int val[8] = {0};
-	unsigned int pbuf[8] = {0};
-	unsigned int sbuf[8] = {0};
+	unsigned int tmp[8] = {0};
 	uint32_t regval = 0;
 	uint32_t byte_num = 0;
 	uint32_t half_bit_num = 0;
@@ -452,31 +447,32 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 
 	byte_num = info->bit_num / 8;
 	byte_num += info->bit_num % 8 ? 1 : 0;
+
 	switch(info->verify_mode) {
 		case HAMMING:
 			hamming_bit_num = info->bit_num + cal_k(info->bit_num);
-			encode(buf, info->bit_num, pbuf);
-			hamming_byte_num = hamming_bit_num / 8;
-			hamming_byte_num += hamming_bit_num % 8 ? 1 : 0;
-			memcpy(((char *)val+info->begin_align),(char *)pbuf,hamming_byte_num);
+			hamming_byte_num = hamming_bit_num / 8 + hamming_bit_num % 8 ? 1 : 0;
+//			dumphex(buf, info->word_num);
+			encode(buf, info->bit_num, tmp);
+			memcpy((char*)val + info->begin_align, (char*)tmp, byte_num + hamming_byte_num);
+//			dump(tmp, 0, hamming_bit_num + info->begin_align * 8);
+//			dumphex(tmp, info->word_num);
 			break;
 		case DOUBLE:
 			half_bit_num = info->bit_num / 2;
 			half_byte_num = half_bit_num / 8;
 			half_bit_align = half_bit_num % 8;
-			dump(buf, 0, half_bit_num);
-			memcpy((char *)sbuf, ((char *)buf + half_byte_num), half_byte_num);
-			dump(sbuf, 0, half_bit_num);
-			ret = checkbit(buf, sbuf, 0, half_bit_align, half_bit_num);
+//			dump(buf, 0, half_bit_num);
+//			dump((unsigned int *)((char*)buf + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
+			memcpy((char*)tmp, (char*)buf + half_byte_num, byte_num);
+			ret = checkbit(buf, tmp, 0, half_bit_align, half_bit_num);
 			if(ret){
 				printf("double verify failed!\n");
 				return -1;
 			}
-			memcpy(((char *)val + info->begin_align), (char *)buf, byte_num);
-			break;
 		case NONE:
 		default:
-			memcpy(((char *)val + info->begin_align), (char *)buf, byte_num);
+			memcpy((char*)val + info->begin_align, (char *)buf, byte_num);
 			break;
 	}
 	printf("efuse write data:\n");
@@ -509,46 +505,49 @@ static int adjust_efuse()
 	ns = 1000000000 / h2clk;
 	printf("rate = %d, ns = %d\n", h2clk, ns);
 
-	for(i = 0; i < 0x4; i++)
-		if((( i + 1) * ns ) > 4)
+	for(i = 0; i <= 0xf; i++) {
+		if((i + 1) * ns > 4)
 			break;
-	if(i == 0x4) {
-		printf("get efuse cfg rd_adj fail!\n");
+	}
+	if(i > 0xf) {
+		printf("rd_adj and wr_adj fail!\n");
 		return -1;
 	}
 	rd_adj = wr_adj = i;
 
-	for(i = 0; i < 0x8; i++)
-		if(((rd_adj + i + 30) * ns ) > 100)
+	for(i = 0; i <= 0x1f; i++) {
+		if(((rd_adj + i + 30) * ns) > 100)
 			break;
-	if(i == 0x8) {
+	}
+	if(i > 0x1f) {
 		printf("get efuse cfg rd_strobe fail!\n");
 		return -1;
 	}
 	rd_strobe = i;
 
-	for(i = 0; i < 0x3ff; i++) {
+	for(i = 0; i <= 0x3ff; i++) {
 		val = (wr_adj + i + 3000) * ns;
-		if(val >= 13 * 1000) {
+		if(val > 13000) {
 			val = (wr_adj - i + 3000) * ns;
 			flag = 1;
 		}
-		if(val > 11 * 1000 && val < 13 * 1000)
+
+		if(val >= 11500 && val <= 12500)
 			break;
 	}
-	if(i >= 0x3ff) {
-		printf("get efuse cfg wd_strobe fail!\n");
+
+	if(i == 0x7ff) {
+		printf("wr_strobe fail!\n");
 		return -1;
 	}
 
-	if(flag)
-		i |= 1 << 10;
-
 	wr_strobe = i;
 
-	printf("rd_adj = %d | rd_strobe = %d | "
-			"wr_adj = %d | wr_strobe = %d\n", rd_adj, rd_strobe,
-			wr_adj, wr_strobe);
+	if(flag)
+		wr_strobe |= (1 << 10);
+
+	printf("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n", 
+		rd_adj, rd_strobe, wr_adj, wr_strobe);
 
 	/*set configer register*/
 	val = rd_adj << EFUSE_CFG_RD_ADJ | rd_strobe << EFUSE_CFG_RD_STROBE;
@@ -601,20 +600,36 @@ int efuse_read_id(void *buf, int length, int seg_id)
 	int i = 0;
 	int ret = -EPERM;
 	char *last = NULL;
+	char *ptr = buf;
 	uint32_t val[8] = {0};
 	info = seg_info_array[seg_id];
 	last = (char *)val + info.bit_num / 8 - 1;
+	*ptr = 0;
+
 	ret = jz_efuse_read(&info,val);
 	if(ret < 0) {
 		printf("efuse_read_id: read id error\n");
 		return ret;
 	}
 
-	for(i = 0; i < info.bit_num / 8; i++)
-		snprintf((char *)buf + (i * 2), 3, "%02x", *((uint8_t *)last - i));
-	strcat(buf, "\n");
-	printf("read efuse data: %s\n",buf);
-	return info.bit_num / 4;
+	if (seg_id == CHIPID) {
+		for(i = (info.bit_num / 8 / 4 -1); i >=0 ; i--) {
+			sprintf(ptr,"%08x", val[i]);
+                        ptr = buf + strlen(buf);
+		}
+		ret = strlen(buf);
+		printf("chipid :%s\n",buf);
+	} else {
+		for(i = 0; i < info.bit_num / 8; i++) {
+			uint8_t byte = *((uint8_t *)last - i);
+			sprintf(ptr, "%02x", byte);
+			ptr += strlen(ptr);
+		}
+		ret = strlen(buf);
+		printf("read efuse data: %s\n",buf);
+	}
+
+	return ret;
 }
 int efuse_write(void *buf, int length, off_t seg_id)
 {

@@ -31,24 +31,28 @@ static void boost_vddq(int gpio)
 {
 	int val;
 	printf("boost vddq\n");
-	gpio_direction_output(gpio, efuse_en_active);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
-	} while (val != efuse_en_active);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	if (gpio != -1) {
+		gpio_direction_output(gpio, efuse_en_active);
+		do {
+			val = gpio_get_value(gpio);
+			printf("gpio %d level %d\n",gpio,val);
+		} while (val != efuse_en_active);
+		mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	}
 }
 
 static void reduce_vddq(int gpio)
 {
 	int val;
 	printf("reduce vddq\n");
-	gpio_direction_output(gpio, !efuse_en_active);
-	do {
-		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
-	} while (val == efuse_en_active);
-	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
+	if (gpio != -1) {
+		gpio_direction_output(gpio, !efuse_en_active);
+		do {
+			val = gpio_get_value(gpio);
+			printf("gpio %d level %d\n",gpio,val);
+		} while (val == efuse_en_active);
+		mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
+	}
 }
 
 
@@ -181,46 +185,47 @@ static int set_efuse_timing()
 	ns = 1000000000 / rate;
 	printf("rate = %lu, ns = %d\n", rate, ns);
 
-
-	for(i = 0; i < 0x4; i++)
-		if((( i + 1) * ns ) > 7)
+	for(i = 0; i <= 0xf; i++) {
+		if((i + 1) * ns > 7)
 			break;
-	if(i == 0x4) {
-		printf("get efuse cfg rd_adj fail!\n");
+	}
+	if(i > 0xf) {
+		printf("rd_adj and wr_adj fail!\n");
 		return -1;
 	}
 	rd_adj = wr_adj = i;
 
-	for(i = 0; i < 0x8; i++)
-		if(((rd_adj + i + 5) * ns ) > 35)
+	for(i = 0; i <= 0x1f; i++) {
+		if(((rd_adj + i + 5) * ns) > 35)
 			break;
-	if(i == 0x8) {
+	}
+	if(i > 0x1f) {
 		printf("get efuse cfg rd_strobe fail!\n");
 		return -1;
 	}
 	rd_strobe = i;
 
-	for(i = 0; i < 0x7ff; i++) {
+	for(i = 0; i <= 0x7ff; i++) {
 		val = (wr_adj + i + 1666) * ns;
-		if(val > 11 * 1000) {
+		if(val > 11000) {
 			val = (wr_adj - i + 1666) * ns;
 			flag = 1;
 		}
-		if(val > 9 * 1000 && val < 11 * 1000)
+		if(val > 9000 && val < 11000)
 			break;
 	}
-	if(i >= 0x7ff) {
-		printf("get efuse cfg wd_strobe fail!\n");
+	if(i > 0x7ff) {
+		printf("wr_strobe fail!\n");
 		return -1;
 	}
 
-	if(flag)
-		i |= 1 << 11;
-
 	wr_strobe = i;
 
-	printf("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n",
-			rd_adj, rd_strobe, wr_adj, wr_strobe);
+	if(flag)
+		wr_strobe |= (1 << 10);
+
+	printf("rd_adj = %d | rd_strobe = %d | wr_adj = %d | wr_strobe = %d\n", 
+		rd_adj, rd_strobe, wr_adj, wr_strobe);
 
 	/*set configer register*/
 	val = rd_adj << EFUSE_CFG_RD_ADJ | rd_strobe << EFUSE_CFG_RD_STROBE;

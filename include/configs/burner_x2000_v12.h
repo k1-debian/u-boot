@@ -29,8 +29,9 @@
 #define CONFIG_CPU_XBURST2
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X2000_V12
-#include "x2000_ddr.h"
 
+#include "x2000_ddr.h"
+#undef CONFIG_DDR_AUTO_SELF_REFRESH
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/

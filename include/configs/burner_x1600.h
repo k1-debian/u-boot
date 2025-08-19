@@ -33,7 +33,7 @@
 #define CONFIG_XBURST_TRAPS
 
 #include "x1600_ddr.h"
-
+#undef CONFIG_DDR_AUTO_SELF_REFRESH
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/

@@ -339,12 +339,13 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 	uint32_t val;
 	uint32_t rbuf[8] = {0};
 	uint32_t dbuf[5] = {0};
-	uint32_t hamming_buf[8] = {0};
+	uint32_t tmp[8] = {0};
 	uint32_t byte_num = 0;
 	uint32_t half_bit_num = 0;
 	uint32_t half_byte_num = 0;
 	uint32_t half_bit_align = 0;
 	uint32_t hamming_bit_num = 0;
+	uint32_t hamming_byte_num = 0;
 	int n, ret;
 
 	printf("segment name: %s\nsegment addr: 0x%02x\nbegin align: %d\nend align: %d\n"
@@ -372,16 +373,15 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 	switch(info->verify_mode) {
 		case HAMMING:
 			hamming_bit_num = info->bit_num + cal_k(info->bit_num);
+			hamming_byte_num = hamming_bit_num / 8 + hamming_bit_num % 8 ? 1 : 0;
 //			dump(rbuf, 0, hamming_bit_num);
 			if (info->seg_id == CHIPID) {
 				assemble_hamming(rbuf, dbuf);
-				decode((unsigned int *)((char *)dbuf + info->begin_align),
-					hamming_bit_num, hamming_buf);
+				decode(dbuf, hamming_bit_num, buf);
 			} else {
-				decode((unsigned int *)((char *)rbuf + info->begin_align),
-					hamming_bit_num, hamming_buf);
+				memcpy((char*)tmp, (char *)rbuf + info->begin_align, byte_num + hamming_byte_num);
+				decode(tmp, hamming_bit_num, buf);
 			}
-			memcpy((char *)buf, (char *)hamming_buf, byte_num);
 			break;
 		case DOUBLE:
 			half_bit_num = info->bit_num / 2;
@@ -389,25 +389,22 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 			half_bit_align = half_bit_num % 8;
 //			dump((unsigned int *)((char *)rbuf + info->begin_align), 0, half_bit_num);
 //			dump((unsigned int *)((char *)rbuf + info->begin_align + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
-			ret = checkbit((unsigned int *)((char *)rbuf + info->begin_align),
-					(unsigned int *)((char *)rbuf + info->begin_align + half_byte_num),
-					0, half_bit_align, half_bit_num);
+			memcpy((char*)tmp, (char *)rbuf + info->begin_align + half_byte_num, half_byte_num);
+			ret = checkbit(rbuf, tmp, info->begin_align * 8, half_bit_align, half_bit_num);
 			if(ret){
 				printf("double verify failed!\n");
 				return -1;
 			}
-			memcpy((char *)buf, ((char *)rbuf + info->begin_align), byte_num);
-			break;
 		case NONE:
 		default:
 			memcpy((char *)buf, ((char *)rbuf + info->begin_align), byte_num);
 			break;
 	}
 
-	   printf("efuse read data after decode :\n");
-	   for(n = 0; n < info->word_num; n++) {
-	   	printf("%08x\n", buf[n]);
-	   }
+	printf("efuse read data after decode :\n");
+	for(n = 0; n < info->word_num; n++) {
+		printf("%08x\n", buf[n]);
+	}
 
 	/* clear read done status */
 	efuse_writel(0, EFUSE_STATE);
@@ -461,14 +458,14 @@ static void otp_w(uint32_t addr, uint32_t wlen)
 static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 {
 	unsigned int val[8] = {0};
-	unsigned char *pbuf = (unsigned char *)val;
-	unsigned char *sbuf = (unsigned char *)buf;
+	unsigned int tmp[8] = {0};
 	uint32_t regval = 0;
 	uint32_t byte_num = 0;
 	uint32_t half_bit_num = 0;
 	uint32_t half_byte_num = 0;
 	uint32_t half_bit_align = 0;
 	uint32_t hamming_bit_num = 0;
+	uint32_t hamming_byte_num = 0;
 	int ret = 0;
 	int n = 0;
 
@@ -492,27 +489,28 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 	switch(info->verify_mode) {
 		case HAMMING:
 			hamming_bit_num = info->bit_num + cal_k(info->bit_num);
+			hamming_byte_num = hamming_bit_num / 8 + hamming_bit_num % 8 ? 1 : 0;
 //			dumphex(buf, info->word_num);
-			encode(buf, info->bit_num, (unsigned int *)(pbuf + info->begin_align));
-//			dump((unsigned int *)pbuf, 0, hamming_bit_num + info->begin_align * 8);
-//			dumphex((unsigned int *)(pbuf + info->begin_align), info->word_num);
+			encode(buf, info->bit_num, tmp);
+			memcpy((char*)val + info->begin_align, (char*)tmp, byte_num + hamming_byte_num);
+//			dump(tmp, 0, hamming_bit_num + info->begin_align * 8);
+//			dumphex(tmp, info->word_num);
 			break;
 		case DOUBLE:
 			half_bit_num = info->bit_num / 2;
 			half_byte_num = half_bit_num / 8;
 			half_bit_align = half_bit_num % 8;
-			dump(buf, 0, half_bit_num);
-			dump((unsigned int *)(sbuf + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
-			ret = checkbit(buf,(unsigned int *)(sbuf + half_byte_num), 0, half_bit_align, half_bit_num);
+//			dump(buf, 0, half_bit_num);
+//			dump((unsigned int *)((char*)buf + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
+			memcpy((char*)tmp, (char*)buf + half_byte_num, byte_num);
+			ret = checkbit(buf, tmp, 0, half_bit_align, half_bit_num);
 			if(ret){
 				printf("double verify failed!\n");
 				return -1;
 			}
-			memcpy(pbuf + info->begin_align, (char *)buf, byte_num);
-			break;
 		case NONE:
 		default:
-			memcpy(pbuf + info->begin_align, (char *)buf, byte_num);
+			memcpy((char*)val + info->begin_align, (char *)buf, byte_num);
 			break;
 	}
 	printf("efuse write data:\n");
@@ -565,14 +563,14 @@ static int adjust_efuse()
 	}
 	rd_strobe = i;
 
-	for(i = 0; i < 0x7ff; i++) {
+	for(i = 0; i <= 0x3ff; i++) {
 		val = (wr_adj + i + 3000) * ns;
 		if(val > 13000) {
 			val = (wr_adj - i + 3000) * ns;
 			flag = 1;
 		}
 
-		if(val > 11000 && val < 13000)
+		if(val >= 11500 && val <= 12500)
 			break;
 	}
 
@@ -629,7 +627,7 @@ int efuse_read(void *buf, int length, off_t offset)
 	}
 
         for(i = 0; i < info.bit_num / 8; i++)
-		snprintf((unsigned int*)buf + (i * 2), 3, "%02x", *((uint8_t *)last - i));
+		snprintf((char *)buf + (i * 2), 3, "%02x", *((uint8_t *)last - i));
 	strcat(buf, "\n");
 	printf("read efuse data: %s\n",buf);
 	return 0;
@@ -640,10 +638,12 @@ int efuse_read_id(void *buf, int length, int seg_id)
 	int i = 0;
 	int ret = -EPERM;
 	char *last = NULL;
-	char *ptr;
+	char *ptr = buf;
 	uint32_t val[8] = {0};
 	info = seg_info_array[seg_id];
 	last = (char *)val + info.bit_num / 8 - 1;
+	*ptr = 0;
+
 	ret = jz_efuse_read(&info,val);
 	if(ret < 0) {
 		printf("efuse_read_id: read id error\n");
@@ -651,8 +651,6 @@ int efuse_read_id(void *buf, int length, int seg_id)
 	}
 
 	if (seg_id == CHIPID) {
-		ptr = buf;
-		*ptr=0;
 		for(i = (info.bit_num / 8 / 4 -1); i >=0 ; i--) {
 			sprintf(ptr,"%08x", val[i]);
                         ptr = buf + strlen(buf);
@@ -660,12 +658,16 @@ int efuse_read_id(void *buf, int length, int seg_id)
 		ret = strlen(buf);
 		printf("chipid :%s\n",buf);
 	} else {
-		for(i = 0; i < info.bit_num / 8; i++)
-			snprintf((char *)buf + (i * 2), 3, "%02x", *((uint8_t *)last - i));
-		strcat(buf, "\n");
+		for(i = 0; i < info.bit_num / 8; i++) {
+			uint8_t byte = *((uint8_t *)last - i);
+			sprintf(ptr, "%02x", byte);
+			ptr += strlen(ptr);
+		}
+		ret = strlen(buf);
 		printf("read efuse data: %s\n",buf);
 	}
-	return info.bit_num / 4;
+
+	return ret;
 }
 int efuse_write(void *buf, int length, off_t seg_id)
 {

@@ -31,7 +31,7 @@
 #define CONFIG_X2600
 
 #include "x2600_ddr.h"
-
+#undef CONFIG_DDR_AUTO_SELF_REFRESH
 
 #define CONFIG_SYS_APLL_FREQ		800000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
