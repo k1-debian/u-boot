@@ -62,8 +62,17 @@ loop0:
 #endif
 	/* Initialize $gp */
 	bal	1f
-	 nop
-	.word	_gp
+    nop
+    .word	_gp
+
+#ifdef CONFIG_SLAVE_CORE
+    .word 0
+    .word 0
+    .word 0
+    .word 0
+    .word 0
+    .word 0
+#endif
 1:
 	lw	gp, 0(ra)
 #ifdef _DEBUG
@@ -79,6 +88,30 @@ loop1:
 	nop
 	nop
 #endif
+
+#ifdef CONFIG_SLAVE_CORE 
+    /* Disable IFU Small Buffer, system low power opt. */
+    mfc0 v0, $16, 7
+    ori  v0, v0, 7 << 3
+    mtc0 v0, $16, 7
+	/* kseg0 cache attribute */
+
+    mfc0 v0, $16, 0
+    la   v1, ~7
+    and  v0, v0, v1
+    ori  v0, v0, 3
+    mtc0 v0, $16, 0
+
+   /* cause to DC disable. and status regitster reset */
+    la   v0, 1 << 27
+    mtc0 v0, $13, 0
+
+    mtc0 zero, $9, 0
+
+    la   v0, 0x10000000
+    mtc0 v0, $12,  0
+#endif
+
 	/* Set up temporary stack */
 	li	sp, CONFIG_SYS_SDRAM_BASE + CONFIG_SYS_INIT_SP_OFFSET
 #ifdef _DEBUG

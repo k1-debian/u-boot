@@ -1212,7 +1212,7 @@ static int dwc2_init_common(struct udevice *dev, struct dwc2_priv *priv)
 			DWC2_HPRT0_PRTCONNDET | DWC2_HPRT0_PRTENCHNG |
 			DWC2_HPRT0_PRTOVRCURRCHNG,
 			DWC2_HPRT0_PRTRST);
-	mdelay(50);
+	//mdelay(50);
 	clrbits_le32(&regs->hprt0, DWC2_HPRT0_PRTENA | DWC2_HPRT0_PRTCONNDET |
 		     DWC2_HPRT0_PRTENCHNG | DWC2_HPRT0_PRTOVRCURRCHNG |
 		     DWC2_HPRT0_PRTRST);
@@ -1230,8 +1230,10 @@ static int dwc2_init_common(struct udevice *dev, struct dwc2_priv *priv)
 	 * is started (the bus is scanned) and  fixes the USB detection
 	 * problems with some problematic USB keys.
 	 */
+#ifndef CONFIG_USB_LOAD
 	if (readl(&regs->gintsts) & DWC2_GINTSTS_CURMODE_HOST)
 		mdelay(1000);
+#endif
 
 	return 0;
 }

@@ -25,6 +25,7 @@
 #include <command.h>
 #include <malloc.h>
 #include <serial.h>
+//#include <stdio.h>
 #include <stdio_dev.h>
 #include <version.h>
 #include <net.h>
@@ -36,6 +37,11 @@
 
 #ifdef CONFIG_BITBANGMII
 #include <miiphy.h>
+#endif
+#ifndef CONFIG_BOARD_INFO_SILENT
+#define info(...) printf(__VA_ARGS__)
+#else
+#define info(...)
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -83,7 +89,7 @@ static int init_func_ram(void)
 static int display_banner(void)
 {
 
-	printf("\n\n%s\n\n", version_string);
+	info("\n\n%s\n\n", version_string);
 	return 0;
 }
 
@@ -180,14 +186,14 @@ void board_init_f(ulong bootflag)
 	/* round down to next 4 kB limit.
 	 */
 	addr &= ~(4096 - 1);
-	printf("Top of RAM usable for U-Boot at: %08lx\n", addr);
+	info("Top of RAM usable for U-Boot at: %08lx\n", addr);
 #ifdef CONFIG_LCD
 #ifdef CONFIG_FB_ADDR
 	gd->fb_base = CONFIG_FB_ADDR;
 #else
 	/* reserve memory for LCD display (always full pages) */
 	addr = lcd_setmem(addr);
-	printf("Reserving %ldk for LCDC at: %08lx\n", len >> 10, addr);
+	info("Reserving %ldk for LCDC at: %08lx\n", len >> 10, addr);
 	gd->fb_base = addr;
 #endif /* CONFIG_FB_ADDR */
 #endif /* CONFIG_LCD */
@@ -199,7 +205,7 @@ void board_init_f(ulong bootflag)
 	addr -= len;
 	addr &= ~(16 * 1024 - 1);
 
-	printf("Reserving %ldk for U-Boot at: %08lx\n", len >> 10, addr);
+	info("Reserving %ldk for U-Boot at: %08lx\n", len >> 10, addr);
 
 	/* Reserve memory for boot params.
 	 */
@@ -207,7 +213,7 @@ void board_init_f(ulong bootflag)
 	 /* Reserve memory for malloc() arena.
 	 */
 	addr_sp = addr_param - TOTAL_MALLOC_LEN;
-	printf("Reserving %dk for malloc() at: %08lx\n",
+	info("Reserving %dk for malloc() at: %08lx\n",
 			TOTAL_MALLOC_LEN >> 10, addr_sp);
 
 	/*
@@ -217,16 +223,16 @@ void board_init_f(ulong bootflag)
 	addr_sp -= sizeof(bd_t);
 	bd = (bd_t *)addr_sp;
 	gd->bd = bd;
-	printf("Reserving %zu Bytes for Board Info at: %08lx\n",
+	info("Reserving %zu Bytes for Board Info at: %08lx\n",
 			sizeof(bd_t), addr_sp);
 
 	bd->bi_boot_params = addr_param;
-	printf("Reserving %dk for boot params() at: %08lx\n",
+	info("Reserving %dk for boot params() at: %08lx\n",
 			CONFIG_SYS_BOOTPARAMS_LEN >> 10, addr_param);
 
 	addr_sp -= sizeof(gd_t);
 	id = (gd_t *)addr_sp;
-	printf("Reserving %zu Bytes for Global Data at: %08lx\n",
+	info("Reserving %zu Bytes for Global Data at: %08lx\n",
 			sizeof(gd_t), addr_sp);
 
 	/*
@@ -241,7 +247,7 @@ void board_init_f(ulong bootflag)
 	*s-- = 0;
 	*s-- = 0;
 	addr_sp = (ulong)s;
-	printf("Stack Pointer at: %08lx\n", addr_sp);
+	info("Stack Pointer at: %08lx\n", addr_sp);
 
 	/*
 	 * Save local variables to board info struct
@@ -276,7 +282,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	gd = id;
 	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */
 
-	printf("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
+	info("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
 
 #ifdef CONFIG_XBURST_TRAPS
 	traps_init();

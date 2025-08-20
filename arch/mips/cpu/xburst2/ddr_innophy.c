@@ -764,11 +764,13 @@ phys_size_t initdram(int board_type)
 #endif /* EMC_LOW_SDRAM_SPACE_SIZE */
 
 	unsigned int ram_size;
-
+#ifndef CONFIG_SLAVE_CORE
 	/*init ddr params in uboot env. */
 	get_ddr_params();
 	ram_size = (unsigned int)(global_reg_value->DDR_CHIP_0_SIZE) + (unsigned int)(global_reg_value->DDR_CHIP_1_SIZE);
-
+#else
+    ram_size = CONFIG_SYS_SDRAM_SIZE;
+#endif
 	debug("ram_size=%x\n", ram_size);
 
 	return ram_size;

@@ -62,6 +62,13 @@
 #define CPM_USBRDT      (0x40)
 #define CPM_USBVBFIL    (0x44)
 #define CPM_USBPCR1     (0x48)
+
+#define CPM_USB1PCR      (0x4c)
+#define CPM_USB1RDT      (0x50)
+#define CPM_USB1VBFIL    (0x58)
+#define CPM_USB1PCR1     (0xE8)
+
+
 #define CPM_CPPCR       (0x0c)
 #define CPM_CPAPCR      (0x10)
 #define CPM_CPAPACR     (0x84)

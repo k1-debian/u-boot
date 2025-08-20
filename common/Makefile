@@ -218,6 +218,7 @@ COBJS-$(CONFIG_USB_UVC) += uvc/uvc_video.o
 COBJS-$(CONFIG_USB_LOAD) += usb_load.o
 endif
 COBJS-$(CONFIG_CMD_USB_MASS_STORAGE) += cmd_usb_mass_storage.o
+COBJS-$(CONFIG_CMD_PRICE) += cmd_usb_price.o
 COBJS-$(CONFIG_CMD_USB_LOAD) += cmd_usb_load.o
 COBJS-$(CONFIG_CMD_XIMG) += cmd_ximg.o
 COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o

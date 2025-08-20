@@ -41,10 +41,12 @@ int main()
 	unsigned int t_in, c_in, val = 0;
 	unsigned long cycle;
 	unsigned int tmp = 0x7;
-#ifdef CONFIG_MTD_SFCNAND
+#if defined(CONFIG_SFC_NAND_RATE)
 	unsigned int rate =  (unsigned long long)CONFIG_SFC_NAND_RATE / 1000000;
-#else
+#elif defined(CONFIG_SFC_NOR_RATE)
 	unsigned int rate =  (unsigned long long)CONFIG_SFC_NOR_RATE / 1000000;
+#else
+        #error "Please defined NAND RATE or NOR RATE“	
 #endif
 	cycle = 1000 / rate;
 

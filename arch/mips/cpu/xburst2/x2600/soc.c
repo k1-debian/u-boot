@@ -81,7 +81,10 @@ void gpio_set_driver_strength_init(void)
 	gpio_set_driver_strength(GPIO_PORT_D, GPIO_DS_LEVEL_1, 0x3f <<6);
 #endif
 }
+#ifndef CONFIG_SPL
+void board_init_f(ulong dummy) {}
 
+#else
 void board_init_f(ulong dummy)
 {
 	*(volatile unsigned int *)0xb363002c |= 1 << 16; // wdt disable.
@@ -186,7 +189,7 @@ void board_init_f(ulong dummy)
 	debug("run start1 firmware finished\n");
 #endif
 }
-
+#endif
 extern void flush_cache_all(void);
 
 #ifdef CONFIG_JZ_SECURE_SUPPORT

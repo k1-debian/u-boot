@@ -94,7 +94,7 @@ int usb_init(void)
 	/* init low_level USB */
 	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
 		/* init low_level USB */
-		printf("USB%d:   ", i);
+		printf("USB%d:   \n", i);
 		if (usb_lowlevel_init(i, &ctrl)) {
 			puts("lowlevel init failed\n");
 			continue;
@@ -104,7 +104,7 @@ int usb_init(void)
 		 * i.e. search HUBs and configure them
 		 */
 		start_index = dev_index;
-		printf("scanning bus %d for devices... ", i);
+		printf("scanning bus %d for devices... \n", i);
 		dev = usb_alloc_new_device(ctrl);
 		/*
 		 * device 0 is always present

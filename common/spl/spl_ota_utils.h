@@ -10,10 +10,4 @@ struct ota_ops {
 	void (*flash_load_kernel)(long offset, char *name);
 };
 
-typedef struct {
-    uint32_t len;
-    uint32_t crc;
-} reserved_info;
-
-
 #endif /* __SPL_OTA_UTILS_H__ */

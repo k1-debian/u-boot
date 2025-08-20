@@ -262,6 +262,31 @@ int usb_load_run_stage2_firmware(unsigned char *data, unsigned int offset, int l
 	return usb_load_run_program(ld, offset, false);
 }
 
+int usb_load_run_send_data(unsigned char *data, unsigned int offset, int len)
+{
+	int ret;
+	struct load_device *ld = &usb_load[0];
+
+	debug(" addr: %x offset: %x len: %d\n",data, offset, len);
+	ret = usb_load_set_data_address(ld, offset);
+	if(ret)
+		return ret;
+
+	ret = usb_load_set_data_length(ld, len);
+	if(ret)
+		return ret;
+
+	ret = usb_load_send_data(ld, data, len);
+	if(ret != 0) {
+        printf("(%c)%s:%d send data error!(%d)\n",
+               ld->ifnum,__FUNCTION__,__LINE__,ret);
+        return ret;
+    }
+
+	return ret;
+}
+
+
 static int usb_load_probe(struct usb_device *dev, unsigned int ifnum,
 		      struct load_device *ld)
 {
