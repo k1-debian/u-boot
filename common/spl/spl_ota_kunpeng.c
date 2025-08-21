@@ -272,13 +272,13 @@ char* spl_ota_load_image(void)
 
 #ifdef CONFIG_NV_ROTATE
     {
-        unsigned int highBits,degree,dec_degree;
+        unsigned int hightBits,degree,dec_degree;
         hightBits = nv.rot_angle & 0xFFFF0000;
         if (hightBits == 0xEEEE0000) {
             degree = nv.rot_angle & 0x0000FFFF;
             dec_degree = (int)degree;
             if (dec_degree == 0 || dec_degree == 90 || dec_degree == 180 || dec_degree == 270) {
-                len = snprintf(old_args, ARGS_BUFFER_MAX_SIZE, "%s rot_angle=%d", cmdargs, dec_degree);
+                int len = snprintf(old_args, ARGS_BUFFER_MAX_SIZE, "%s rot_angle=%d", cmdargs, dec_degree);
                 if (len >= ARGS_BUFFER_MAX_SIZE) {
                     printf("nv rot_angle failed!\n", len);
                 } else {
