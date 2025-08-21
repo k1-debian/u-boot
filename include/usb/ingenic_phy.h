@@ -22,7 +22,7 @@ static inline void set_usb_iddig(enum otg_mode_t mode) {
 	}
 	cpm_outl(usbrdt, CPM_USBRDT);
 }
-
+#ifdef CPM_USB1RDT
 static inline void set_usb1_iddig(enum otg_mode_t mode) {
 	unsigned int usbrdt = cpm_inl(CPM_USB1RDT);
 	switch (mode) {
@@ -38,3 +38,4 @@ static inline void set_usb1_iddig(enum otg_mode_t mode) {
 	}
 	cpm_outl(usbrdt, CPM_USB1RDT);
 }
+#endif
