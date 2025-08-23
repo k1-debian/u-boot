@@ -6,6 +6,7 @@
 #include <linux/err.h>
 #include <malloc.h>
 #include <div64.h>
+#include <linux/string.h>
 #include <asm/arch/cpm.h>
 #include "spl_ota_kunpeng.h"
 #include "spl_read_reserved.h"
@@ -127,11 +128,11 @@ extern int sfc_nand_load(unsigned int src_addr, unsigned int count,
                          unsigned int dst_addr);
 extern void flush_cache_all(void);
 
-static void spl_ota_load_slavecore (struct jz_sfcnand_partition_param *partitions)
+static void spl_ota_load_slavecore (struct jz_sfcnand_partition_param *partitions,char* name)
 {
     unsigned int addr;
     unsigned int len = 0;
-    addr = ota_ops->flash_get_part_offset_by_name(partitions, "slavecore");
+    addr = ota_ops->flash_get_part_offset_by_name(partitions, name);
     if(addr && addr != -1) {
         unsigned int reset;
         int cpu = 1;
@@ -145,6 +146,8 @@ static void spl_ota_load_slavecore (struct jz_sfcnand_partition_param *partition
         set_ccu_csrr(reset);
         reset &= ~(1 << cpu);
         set_ccu_csrr(reset);
+    } else {
+        printf("WARNING: %s not finded!\n",name);
     }
 }
 #endif
@@ -154,54 +157,36 @@ char* spl_ota_load_image(void)
 	char *cmdargs = NULL;
 	unsigned int addr = 0;
 	unsigned int bootimg_addr = 0;
-	unsigned int  bootimg_size = 0;
 	struct jz_sfcnand_partition_param *partitions;
 	struct nv_flags nv = {0};
-	char *kname;
+	char *kname = NULL;
+    char *kname_addr  = NULL;
+    char *core1_name = NULL;
+    unsigned int logo_addr = 0;
+    unsigned int logo_size = 0;
 	struct reserved_info *sn_info = (struct reserved_info *)sn_buffer;
 	struct reserved_info *mac_info = (struct reserved_info *)mac_buffer;
 	ota_init();
 	partitions = ota_ops->flash_get_partitions();
+
 	addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_NV_NAME);
-    if(addr != -1)
+    if(addr != (unsigned int)-1) {
         nv_read(addr, (unsigned int)&nv, sizeof(struct nv_flags));
+    }
+
 	printf("NV FLAGS:\n nv.boot \t%x\n nv.step \t%x\n nv.start \t%x\n nv.end \t%x\n nv.needfullpkg \t%x\n nv.rot_angle \t%x\n nv.partition \t%x\n",
 			nv.boot, nv.step, nv.start, nv.finish, nv.needfullpkg, nv.rot_angle, nv.partition);
 /* load logo数据 */
 #ifdef CONFIG_SFC_LOAD_LOGO
-	bootimg_addr = get_part_offset_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
-	bootimg_size = get_part_size_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
-	if (bootimg_addr == -1){
+	logo_addr = get_part_offset_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
+	logo_size = get_part_size_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
+	if (logo_size == -1){
 		serial_debug("LOGO not found: "CONFIG_XIMAGE_LOGO_NAME"\n");
 		hang();
 	}
-//	printf("SFC_LOAD_LOGO: bootimg_addr is: %x size: %x\n", bootimg_addr, bootimg_size);
-	sfc_nand_load(bootimg_addr, bootimg_size, (void *)CONFIG_XIMAGE_LOGO_DDR);
-
+	sfc_nand_load(logo_addr, logo_size, (void *)CONFIG_XIMAGE_LOGO_DDR);
 #endif
     spl_ota_load_deviceinfo();
-
-#ifdef CONFIG_SLAVE_CORE_LOAD
-    struct slave_share_mem *share = (struct slave_share_mem *)CONFIG_SLAVE_SHARE_START;
-    memset(share,0,sizeof(struct slave_share_mem));
-    share->debug = 0;
-    share->rot = nv.rot_angle;
-    if(share->sn_len) {
-        share->sn_len = sn_info->len;
-        memcpy(share->sn,sn_info->data,sn_info->len);
-    }
-    if(share->mac_len) {
-        share->mac_len = mac_info->len;
-        memcpy(share->sn,mac_info->data,mac_info->len);
-    }
-    if(bootimg_size > 0) {
-        share->logo = (void*)bootimg_addr;
-    }
-    spl_ota_load_slavecore (partitions);
-    //    printf("slave core load finish\n");
-    //    while(1);
-#endif
-
 
 #ifdef CONFIG_OTA_ABUPDATE
     /* AB partition upgrade */
@@ -215,7 +200,6 @@ char* spl_ota_load_image(void)
 #ifdef CONFIG_OTA_ABUPDATE_ROLLBACK
 	unsigned int rsr_data;
 	unsigned int slpc_data;
-
 	/*CPM_SLPC software restart without loss*/
 	slpc_data = cpm_readl(CPM_SLPC);
 	printf("slpc:%x\n",slpc_data);
@@ -238,34 +222,58 @@ char* spl_ota_load_image(void)
 
 	if (nv.partition == PARTITIONB) {
 		kname = CONFIG_PATB_KERNEL_NAME;
+        core1_name = "slavecoreB";
 		cmdargs = CONFIG_SPL_BOOT_PARTITION_B;
 		printf("The startup area for this time is partitionB !!! \n");
 	} else {
 		kname = CONFIG_PATA_KERNEL_NAME;
 		cmdargs = CONFIG_SPL_BOOT_PARTITION_A;
+        core1_name = "slavecoreA";
 		printf("The startup area for this time is partitionA !!! \n");
 	}
-
-	bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, kname);
-    ota_ops->flash_load_kernel(bootimg_addr, kname);
-
+    kname_addr = kname;
 #else
 	/* recovery Upgrade method */
     if(get_signature(RECOVERY_SIGNATURE) || (nv.start == 0x5a5a5a5a)) {
 		if(nv.boot) {
-			bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_RECOVERY_NAME);
+            kname_addr = CONFIG_PAT_RECOVERY_NAME;
 			cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
 		} else {
-			bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_KERNEL_NAME);
+			kname_addr = CONFIG_PAT_KERNEL_NAME;
 			cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 		}
 	} else {
-		bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, CONFIG_PAT_KERNEL_NAME);
+        kname_addr = CONFIG_PAT_KERNEL_NAME;
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 	}
-
-    ota_ops->flash_load_kernel(bootimg_addr, CONFIG_PAT_KERNEL_NAME);
+    core1_name = "slavecore"
+    kname = CONFIG_PAT_KERNEL_NAME;
 #endif
+
+#ifdef CONFIG_SLAVE_CORE_LOAD
+    struct slave_share_mem *share = (struct slave_share_mem *)CONFIG_SLAVE_SHARE_START;
+    memset(share,0,sizeof(struct slave_share_mem));
+    share->debug = 0;
+    share->rot = nv.rot_angle;
+    if(sn_info->len > 0 && sn_info->len < SN_MAX_SIZE) {
+        share->sn_len = sn_info->len;
+        memcpy(share->sn,sn_info->data,sn_info->len);
+    }
+    if(mac_info->len > 0 && mac_info->len < MAC_MAX_SIZE) {
+        share->mac_len = mac_info->len;
+        memcpy(share->sn,mac_info->data,mac_info->len);
+    }
+    if(logo_size > 0 && logo_size != (unsigned int)-1) {
+        share->logo = (void*)logo_addr;
+    }
+    spl_ota_load_slavecore (partitions,core1_name);
+#endif
+
+	bootimg_addr = ota_ops->flash_get_part_offset_by_name(partitions, kname_addr);
+    if(bootimg_addr && bootimg_addr != -1)
+        ota_ops->flash_load_kernel(bootimg_addr, kname);
+    else
+        printf("ERROR: kernel address error!\n");
 
 #if defined(USE_NV_CMDARGS) && \
 	(defined(CONFIG_NV_ROTATE) || defined(CONFIG_READ_SN) || defined(CONFIG_READ_MAC))
@@ -299,12 +307,12 @@ char* spl_ota_load_image(void)
 
     if(sn_info->len > 0) {
         strcat(cmdargs, " sn=");
-        strcat(cmdargs, sn_info->data);
+        strcat(cmdargs, (char*)sn_info->data);
     }
 
     if(mac_info->len > 0) {
         strcat(cmdargs, " mac=");
-        strcat(cmdargs, mac_info->data);
+        strcat(cmdargs, (char*)mac_info->data);
     }
 
 #ifdef CONFIG_USE_NV_CMDARGS

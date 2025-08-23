@@ -40,14 +40,14 @@ char *get_exception(int num)
 	return "UNKNOW";
 }
 
-void dump_task()
+void dump_task(void)
 {
 	int i;
 	unsigned int *p;
-	struct task_info_regs *regs = *((unsigned int *)0x80000004);
-	p = (int *)(*((volatile unsigned int *)(0x80000004)) + PT_LEN);
+	struct task_info_regs *regs = (struct task_info_regs *)*((unsigned int *)0x80000004);
+	p = (unsigned int *)(*((volatile unsigned int *)(0x80000004)) + PT_LEN);
 
-	serial_debug("epc:%x\n",read_c0_epc());
+	serial_debug("epc:%lx\n",read_c0_epc());
 	serial_debug("status:%x\n",regs->status);
 	serial_debug("cause:%x\n",read_c0_cause());
 
@@ -60,29 +60,29 @@ void dump_task()
 	serial_debug("a3[%08x] a2[%08x] a1[%08x] a0[%08x]\n", regs->a3,regs->a2,regs->a1,regs->a0);
 	serial_debug("v0[%08x] v1[%08x] lo[%08x] hi[%08x]\n", regs->v0,regs->v1,regs->lo,regs->hi);
 
-	serial_debug("\nsp:%08x \n",p);
+	serial_debug("\nsp:%08x \n",(unsigned int)p);
 	serial_debug("================dump stack==============\n");
 	for(i=0; i < 32; i++) {
-		if(i%4 == 0) serial_debug("\naddr 0x%08x:  ",&p[i]);
+		if(i%4 == 0) serial_debug("\naddr 0x%08x:  ",(unsigned int)&p[i]);
 		serial_debug("%08x ",p[i]);
 	}
 	serial_debug("\n\n=====================================================\n\n");
 
-	p = read_c0_epc();
+	p = (unsigned int *)read_c0_epc();
 #define DUMP_CODE_SIZE	128
-	unsigned int *up = (unsigned int) p | 0xa0000000;
-	if(p < 0x80000000 || p >= 0x90000000) {
+	unsigned int *up = (unsigned int *)((unsigned int) p | 0xa0000000);
+	if((unsigned int)p < 0x80000000 || (unsigned int)p >= 0x90000000) {
 		serial_debug("invalid epc value!\n");
 	} else {
 		serial_debug("================dump code(cache)===============\n");
 		for(i = 0; i < DUMP_CODE_SIZE; i++) {
-			if(i%4 == 0) serial_debug("\naddr 0x%08x:  ",&p[i]);
+			if(i%4 == 0) serial_debug("\naddr 0x%08x:  ",(unsigned int)&p[i]);
 			serial_debug("%08x ",p[i]);
 		}
 
 		serial_debug("\n================dump code(uncache)===============\n");
 		for(i = 0; i < DUMP_CODE_SIZE; i++) {
-			if(i%4 == 0) serial_debug("\naddr 0x%08x:  ",&up[i]);
+			if(i%4 == 0) serial_debug("\naddr 0x%08x:  ",(unsigned int)&up[i]);
 			serial_debug("%08x ", up[i]);
 		}
 		serial_debug("\n");
@@ -98,14 +98,13 @@ void __attribute__ ((noreturn)) print_exp(void)
 		__asm__ __volatile__("wait\n\t");
 }
 
-
+extern void flush_cache_all(void);
 int traps_init(void)
 {
-	*((volatile unsigned int *)(0x80000000)) = print_exp;
+	*((volatile unsigned int *)(0x80000000)) = (unsigned int)print_exp;
 	set_handler(0x180, &handle_exception, 180);
 	flush_cache_all();
 	write_c0_cause(0x0 | 0x1<<23);
 	write_c0_status(0x1000ff01);
 	return 0;
 }
-

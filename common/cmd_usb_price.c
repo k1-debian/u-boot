@@ -2,6 +2,23 @@
 #include <command.h>
 #include "usb_load.h"
 
+/*******************************************************************************
+*   SLAVECORE Layout
+*  ┌─────────────────────────────────────────────────┐
+*  │ SLAVE CORE                                      │
+*  ├─────────────┬─────────────┬─────────────────────┤
+*  │ Core1       │ Slave-spl   │ Slave-kernel        │
+*  │ (uboot)     │ (spl)       │ (kernel)            │
+*  │ 256KB       │ 16KB        │ kernel-size         │
+*  └─────────────┴─────────────┴─────────────────────┘
+*  说明：
+*    - SLAVE CORE：使用 CORE1 USB Load 把slave-spl slave-kernel 烧录到slave cpu上
+*    - Core1：运行在 CORE1 上，使用UBOOT的 USB Load程序(cmd_usb_price) 烧录代码到slave cpu 上
+*    - Slave-spl： 运行在slave cpu上，完成DDR初始化和Slave Kernel的USB通讯
+*    - Slave-kernel：运行在slave cpu上，并mount nfs 初始化根文件系统，然后Switch root
+*
+*******************************************************************************/
+
 #define RESET_PIN GPIO_PB(28)
 struct binhead
 {
