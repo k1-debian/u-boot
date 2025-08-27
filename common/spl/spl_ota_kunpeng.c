@@ -264,7 +264,8 @@ char* spl_ota_load_image(void)
         memcpy(share->sn,mac_info->data,mac_info->len);
     }
     if(logo_size > 0 && logo_size != (unsigned int)-1) {
-        share->logo = (void*)logo_addr;
+        share->logo_len = logo_size;
+        share->logo = CONFIG_XIMAGE_LOGO_DDR;
     }
     spl_ota_load_slavecore (partitions,core1_name);
 #endif
