@@ -164,6 +164,7 @@ char* spl_ota_load_image(void)
     char *core1_name = NULL;
     unsigned int logo_addr = 0;
     unsigned int logo_size = 0;
+    unsigned int ximage_logo_ddr = 0;
 	struct reserved_info *sn_info = (struct reserved_info *)sn_buffer;
 	struct reserved_info *mac_info = (struct reserved_info *)mac_buffer;
 	ota_init();
@@ -180,11 +181,12 @@ char* spl_ota_load_image(void)
 #ifdef CONFIG_SFC_LOAD_LOGO
 	logo_addr = get_part_offset_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
 	logo_size = get_part_size_by_name(partitions, CONFIG_XIMAGE_LOGO_NAME);
+    ximage_logo_ddr = CONFIG_XIMAGE_LOGO_DDR;
 	if (logo_size == -1){
 		serial_debug("LOGO not found: "CONFIG_XIMAGE_LOGO_NAME"\n");
 		hang();
 	}
-	sfc_nand_load(logo_addr, logo_size, (void *)CONFIG_XIMAGE_LOGO_DDR);
+	sfc_nand_load(logo_addr, logo_size, (void *)ximage_logo_ddr);
 #endif
     spl_ota_load_deviceinfo();
 
@@ -265,7 +267,7 @@ char* spl_ota_load_image(void)
     }
     if(logo_size > 0 && logo_size != (unsigned int)-1) {
         share->logo_len = logo_size;
-        share->logo = CONFIG_XIMAGE_LOGO_DDR;
+        share->logo = ximage_logo_ddr;
     }
     spl_ota_load_slavecore (partitions,core1_name);
 #endif
