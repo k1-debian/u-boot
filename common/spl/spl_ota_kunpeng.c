@@ -50,7 +50,7 @@ static void nv_read(unsigned int src, unsigned int dst, unsigned int len)
 {
 	ota_ops->flash_read(src, len, dst);
 }
-#if 0
+#ifndef CONFIG_OTA_ABUPDATE
 static int get_signature(const int signature)
 {
 	unsigned int flag = cpm_get_scrpad();
@@ -248,7 +248,7 @@ char* spl_ota_load_image(void)
         kname_addr = CONFIG_PAT_KERNEL_NAME;
 		cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 	}
-    core1_name = "slavecore"
+    core1_name = "slavecore";
     kname = CONFIG_PAT_KERNEL_NAME;
 #endif
 
@@ -256,7 +256,7 @@ char* spl_ota_load_image(void)
     struct slave_share_mem *share = (struct slave_share_mem *)CONFIG_SLAVE_SHARE_START;
     memset(share,0,sizeof(struct slave_share_mem));
     share->debug = 0;
-    share->rot = nv.rot_angle;
+    share->rot = nv.slave_rot_angle;
     if(sn_info->len > 0 && sn_info->len < SN_MAX_SIZE) {
         share->sn_len = sn_info->len;
         memcpy(share->sn,sn_info->data,sn_info->len);
