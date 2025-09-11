@@ -18,18 +18,23 @@ static int efuse_en_active = 0;
 
 static void set_efuse_vddq(int gpio, int level)
 {
-	mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
-	gpio_direction_output(gpio, level);
-	LOG_INFO("gpio[%d] output %s\n",gpio,(level ? "high":"low"));
-	mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	if (gpio != -1) {
+		mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+		gpio_direction_output(gpio, level);
+		LOG_INFO("gpio[%d] output %s\n",gpio,(level ? "high":"low"));
+		mdelay(2);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
+	}
 }
 
 static int efuse_update_state(void)
 {
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
 	LOG_INFO("efuse state = 0x%08x\n",REG32(EFUSE_REG_STAT));
+	REG32(EFUSE_REG_CTRL) = 0;
+	mdelay(10); /* Introduce delay between consecutive operations */
 }
 
 static int cpu_wtotp(int opera)
@@ -37,17 +42,19 @@ static int cpu_wtotp(int opera)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_CTRL) = 0;
 
 	set_efuse_vddq(efuse_en_gpio, efuse_en_active);
-	
+
         REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
 	args->arg[0] = opera;
 	secall(args, SC_FUNC_WTOTP, 0, 1);
-	
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
+
         set_efuse_vddq(efuse_en_gpio, !efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
+	efuse_update_state();
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_ERROR("SC_FUNC_WTOTP ret = 0x%08x\n",
@@ -55,38 +62,28 @@ static int cpu_wtotp(int opera)
 		return -ESEC;
 	}
 
-	efuse_update_state();
-
 	return 0;
 }
-
-static int otp_r(void)
-{
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR);
-	REG32(EFUSE_REG_CTRL) |= (1 << EFUSE_REGOFF_CRTL_LENG);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	return 0;
-}
-
 
 static int otp_w(unsigned int offset)
 {
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_DAT1) = (1 << offset);
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR);
 	REG32(EFUSE_REG_CTRL) |= (1 << EFUSE_REGOFF_CRTL_LENG);
 
 	set_efuse_vddq(efuse_en_gpio, efuse_en_active);
-	
+
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	
+
 	set_efuse_vddq(efuse_en_gpio, !efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
 
-	otp_r();
+	efuse_update_state();
+
 	return 0;
 }
 
@@ -105,7 +102,7 @@ int cpu_get_enckey(unsigned int *odata)
 int cpu_burn_secboot_enable(void)
 {
         LOG_INFO("Enter: %s\n",__func__);
-	
+
         REG32(EFUSE_REG_DAT1) = (1 << EFUSE_PTCOFF_SEC) | (1 << EFUSE_PTCOFF_SCB);
 
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
@@ -116,7 +113,7 @@ int cpu_burn_secboot_enable(void)
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
         REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	
+
         set_efuse_vddq(efuse_en_gpio, !efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
@@ -144,7 +141,7 @@ int cpu_burn_rckey(void)
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 
         LOG_INFO("Enter: %s\n",__func__);
-	
+
         if(EFUSTATE_CK_PRT) {
 		LOG_ERROR("chipkey protect bit have been written\n");
 		return 0;
@@ -154,6 +151,10 @@ int cpu_burn_rckey(void)
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
 
 	ret = secall(args, SC_FUNC_BURNCK, 0, 1);
+
+	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN);
+
+	efuse_update_state();
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_ERROR("SC_FUNC_BURNCK ret = 0x%08x\n",
@@ -205,9 +206,10 @@ static int cpu_load_nku(unsigned int *data, unsigned int length)
 			LOG_DEBUG("\n");
 	}
 
-	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
+
+	efuse_update_state();
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_ERROR("SC_FUNC_BURNNKU ret = 0x%08x\n",
@@ -251,9 +253,10 @@ static int check_nku(unsigned int *data, unsigned int length)
 			LOG_DEBUG("\n");
 	}
 
-	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
+
+	efuse_update_state();
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_ERROR("SC_FUNC_CHECKNKU ret = 0x%08x\n",
@@ -272,7 +275,7 @@ int cpu_burn_custid(void *data,unsigned int length)
 int cpu_burn_nku(void *data,unsigned int length)
 {
         LOG_INFO("Enter: %s\n",__func__);
-	
+
         if (EFUSTATE_NKU_PRT) {
 		LOG_INFO("nku protect bit is set!\n");
 		return 0;
@@ -320,7 +323,7 @@ int cpu_burn_ukey(void *data)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
-		
+
         LOG_INFO("Enter: %s\n",__func__);
 
 	if(EFUSTATE_UK_PRT) {
@@ -342,12 +345,13 @@ int cpu_burn_ukey(void *data)
 
 	ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
+	efuse_update_state();
+
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_ERROR("SC_FUNC_BURNUK ret = 0x%08x\n",
                              *(volatile unsigned int *)(MCU_TCSM_RETVAL));
                 return -ESEC;
 	}
-
 
 	if (cpu_wtotp(WT_OTP_UK) < 0) {
 		LOG_ERROR("ukey write failed!\n");
@@ -432,7 +436,7 @@ int otp_init(void)
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 
         LOG_INFO("Enter: %s\n",__func__);
-	
+
         efuse_en_gpio = efuse_args->efuse_en_gpio;
 	if (efuse_en_gpio == 0xffffffff || efuse_en_gpio == -1) {
 		LOG_ERROR("efuse en gpio is not set!\n");
@@ -444,7 +448,7 @@ int otp_init(void)
 	set_efuse_vddq(efuse_en_gpio, !efuse_en_active);
 	set_efuse_timing();
 	efuse_update_state();
-	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
+	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = 0;
 
 	return 0;
 }

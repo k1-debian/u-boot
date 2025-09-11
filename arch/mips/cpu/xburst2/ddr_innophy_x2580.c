@@ -727,11 +727,10 @@ void sdram_init(int pll_sel)
 	/* DDR Controller init*/
 	ddrc_prev_init();
 
-#ifdef CONFIG_DDR_HARDWARE_TRAINING
-	ddrp_hardware_calibration();
-#endif/*CONFIG_DDR_HARDWARE_TRAINING*/
 #ifdef CONFIG_DDRP_SOFTWARE_TRAINING
 	ddrp_software_calibration();
+#else
+	ddrp_hardware_calibration();
 #endif/*CONFIG_DDRP_SOFTWARE_TRAINING*/
 
 	dump_ddrp_register();

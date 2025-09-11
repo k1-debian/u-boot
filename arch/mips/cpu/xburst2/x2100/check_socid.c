@@ -67,11 +67,12 @@ void read_socid(unsigned int *data)
 	REG32(EFUSE_CTRL)|= EFUSE_CTRL_RDEN;
 
 	while(!(REG32(EFUSE_STAT) & EFUSE_STAT_RDDONE));
-	REG32(EFUSE_CTRL) = EFUSE_CTRL_PD;
 
 	for(i = 0; i < word_num; i++) {
 		data[i] = REG32(EFUSE_DATA(i));
 	}
+
+//	REG32(EFUSE_CTRL) = EFUSE_CTRL_PD;
 }
 
 static int checkbit(unsigned int *s,unsigned int *d,int ss,int ds,int bsz)

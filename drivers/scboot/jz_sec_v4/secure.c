@@ -51,7 +51,7 @@ int init_seboot(void)
 	serial_debug("%s %d: 0x%x\n",__func__,__LINE__,REG32(PDMA_BASE + DMCS_OFF));
 	load_pdma_firmware();
 	boot_up_mcu();
-	udelay(50 * 1000);
+	mdelay(500);
 	ret = otp_init();
 	return ret;
 }

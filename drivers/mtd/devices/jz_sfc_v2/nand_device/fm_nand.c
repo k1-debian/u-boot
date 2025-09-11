@@ -140,7 +140,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 			break;
 		case 0xD4:
 		case 0xD6:
-			switch((ecc_status >> 4) & 0xf) {
+			switch((ecc_status >> 4) & 0x7) {
 				case 0x0:
 					return 0;
 				case 0x1:

@@ -44,10 +44,10 @@ int get_rsakeylen(void)
 	return rsakeylen;
 }
 
-static int cmp_data(unsigned long *src,unsigned long *dst,unsigned long len)
+static int cmp_data(unsigned int *src, unsigned int *dst,unsigned int len)
 {
-        unsigned long *start = src;
-        unsigned long *end_src = src + len;
+        unsigned int *start = src;
+        unsigned int *end_src = src + len;
         while(start < end_src)
         {
 //		LOG_INFO("cmp data  src:%08x, dst:%08x\n", *start, *dst);
@@ -154,37 +154,34 @@ static int set_efuse_timing(void)
 
 static int efuse_update_state(void)
 {
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	LOG_INFO("EFUSTATE: data0 = %x\n", REG32(EFUSE_REG_DAT0));
-	LOG_INFO("EFUSTATE: state = %x\n", REG32(EFUSE_REG_STAT));
-	REG32(EFUSE_REG_STAT) = 0;
+	LOG_INFO("PROT = %x\n", REG32(EFUSE_REG_DAT0));
+	LOG_INFO("STAT = %x\n", REG32(EFUSE_REG_STAT));
+
+//	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
+	mdelay(10); /* Introduce delay between consecutive operations */
+	REG32(EFUSE_REG_CTRL) = 0;
+
+	return 0;
 }
 
 static int redundancy_rd(void)
 {
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_DAT0) = 0;
-	LOG_INFO("EFUSE_REG_DAT0 = 0x%08x\n", REG32(EFUSE_REG_DAT0));
 	REG32(EFUSE_REG_CTRL) = (0x1f << EFUSE_REGOFF_CRTL_ADDR) | (1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RWL;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	LOG_INFO("EFUSE_REG_DAT0 = 0x%08x\n", REG32(EFUSE_REG_DAT0));
-	LOG_INFO("EFUSE_REG_DAT1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
-	REG32(EFUSE_REG_CTRL) = 0;
-}
+	LOG_INFO("RIR0 = 0x%08x\n", REG32(EFUSE_REG_DAT0));
+	LOG_INFO("RIR1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
 
-static int otp_r()
-{
-	efuse_1v8_output(!efuse_args->efuse_en_active);
+//	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_STAT) = 0;
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	LOG_INFO("EFUSE_REG_DAT0 = %x\n",REG32(EFUSE_REG_DAT0));
-	REG32(EFUSE_REG_STAT) = 0;
 
 	return 0;
 }
@@ -196,25 +193,34 @@ static int otp_w(unsigned int offset)
 		return -1;
 	}
 	unsigned int ret;
+
 #define PRT_REDUNDANCY  0x00010001
-	REG32(EFUSE_REG_DAT0) = PRT_REDUNDANCY << offset;
 	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
+	REG32(EFUSE_REG_DAT0) = PRT_REDUNDANCY << offset;
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
+	mdelay(10);
+
+	REG32(EFUSE_REG_CTRL) |= (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
+
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
 
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_WTEN;
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PGEN;
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PS; /*power on*/
+
+//	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
+	mdelay(10);
+
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
-
-	otp_r();
+	redundancy_rd();
+	efuse_update_state();
 
 	return 0;
 }
@@ -226,14 +232,16 @@ static int mcu_wtotp(int opera)
 	unsigned int ret = 0;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
+	volatile unsigned int *retval = (volatile unsigned int *)MCU_TCSM_RETVAL;
 
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = 0;
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
+	mdelay(10);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
 	args->arg[0] = opera;
@@ -241,19 +249,19 @@ static int mcu_wtotp(int opera)
 
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
-	REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
-	mdelay(2);		/* mdelay 2ms after clear CTRL_PGEN, waiting for AVDEFUSE down. */
+	mdelay(10);
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PGEN;
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PS;
+//	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
+//	REG32(EFUSE_REG_CTRL) = 0;
 
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		LOG_INFO("SC_FUNC_WTOTP failed, ret = 0x%08x\n",
-                             *(volatile unsigned int *)(MCU_TCSM_RETVAL));
-		return -1;
-
-	}
-
-	efuse_update_state();
 	redundancy_rd();
+	efuse_update_state();
+
+	if (*retval != SC_ERR_SUCC) {
+		LOG_INFO("SC_FUNC_WTOTP failed, ret = 0x%08x\n", *retval);
+		return -ESEC;
+	}
 
 	return 0;
 }
@@ -266,7 +274,7 @@ int otp_init(void)
 	secall(args, SC_FUNC_INIT_SCRAM, 0, 1);
 	secall(args, SC_FUNC_INIT, 0, 1);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 	efuse_en_gpio = efuse_args->efuse_en_gpio;
 	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
 		LOG_INFO("EFUSE_EN_N gpio(%d) output high!\n", efuse_en_gpio);
@@ -292,28 +300,136 @@ int otp_init(void)
 	if (ret < 0)
 		return ret;
 
-	efuse_update_state();
 	redundancy_rd();
-	
-	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
+	efuse_update_state();
+	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = 0;
 	return 0;
 }
+#if 0
+static int test_sha256(void)
+{
+	unsigned int ret;
+	volatile struct sc_args *args;
+	args = (volatile struct sc_args *)GET_SC_ARGS();
+	volatile unsigned int *input = (volatile unsigned int *)MCU_TCSM_INDATA;
+	volatile unsigned int *output = (volatile unsigned int *)MCU_TCSM_NKUSIG;
 
+	int iLoop = 0;
+	int hash_endround = 1;
+	int hash_newround = 1;
+
+	unsigned int src[] = {
+		0xed19e044, 0xe39195c2, 0xf9865834, 0xf71f5e4c,
+		0x254e42e3, 0xe2152a64, 0xcedf12f5, 0x90368c26,
+		0x8e45a322, 0x32dcb23f, 0xdc93ba6c, 0x1f413023,
+		0xc572c8d9, 0xbf32d4da, 0x8abfc305, 0x34073d4c,
+		0x68cc7971, 0xd2528711, 0x502aba47, 0xb746dcc2,
+		0xfd6ca9ef, 0x502781ac, 0x7865995a, 0xa28061e3,
+		0x83a86f69, 0xe97ad4c7, 0x215acc4a, 0x9b1f84c3,
+		0x0aacd5e5, 0xebe243bb, 0x07373439, 0xc51bb560,
+		0x1ee0b212, 0x7c6adceb, 0x443915e6, 0x954b43a8,
+		0xc81d2341, 0x9e7139bf, 0xa0883018, 0xb9fe557f,
+		0x6b7e04e5, 0x670e85fe, 0x824215c7, 0x41beb5bb,
+		0xaddd9ea1, 0x0a8dbfe2, 0x17a25cfe, 0xdc0384c7,
+		0xee3ab9aa, 0x629408b6, 0xb0f4f830, 0xaf8cd49b,
+		0x083329dc, 0xe9b861ba, 0x1bd6336f, 0x66e0006f,
+		0x673c2d51, 0x046a242a, 0x817724a6, 0x204c3daa,
+		0x705bef57, 0x7c494b98, 0x7a1cfc4c, 0x71c0dcc3,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00010001,
+#if 0
+		0x34333231,
+		0x38373635,
+		0x31313039,
+		0x0a313131
+#endif
+	};
+	unsigned int srclen = ARRAY_SIZE(src);
+
+	unsigned int expect[] = {
+		0xf5591380,
+		0xcad31ffb,
+		0xeb94779f,
+		0x7c8dd17b,
+		0xab00b044,
+		0xa93edb36,
+		0x8a77e53c,
+		0xae8aaedd,
+#if 0
+		0x29a31111,
+		0x0bcdaadb,
+		0x78be4168,
+		0xa3b4ad9e,
+		0x8d0c8370,
+		0x8011be5c,
+		0xc8c567a5,
+		0x852038dd
+#endif
+	};
+	unsigned int explen = ARRAY_SIZE(expect);
+
+	for(iLoop = 0; iLoop < 32; iLoop++)
+		output[iLoop] = 0;
+
+	printf("input:\n");
+	for (iLoop = 0; iLoop < srclen; iLoop++){
+		input[iLoop] = src[iLoop];
+		printf("0x%08x\n", input[iLoop]);
+	}
+	printf("\n");
+
+	args->arg[0] = srclen | hash_endround << 16 | hash_newround << 18 | HASH_SET(HASH_SELECT_SHA256);
+	args->arg[1] = MCU_TCSM_PADDR(input);
+	args->arg[2] = MCU_TCSM_PADDR(output);
+
+	ret = secall(args, SC_FUNC_HASH, 0, 1);
+
+	printf("output:\n");
+	for(iLoop = 0; iLoop < 8;  iLoop++)
+		printf("0x%08x\n", output[iLoop]);
+	printf("\n");
+
+	ret = cmp_data(output, expect, explen);
+
+	if(ret) {
+		printf("****************hash test failed******************\n");
+		return -1;
+	}
+
+	printf("****************hash test success******************\n");
+
+	return 0;
+}
+#endif
 
 int cpu_burn_rckey(void)
 {
 	unsigned int ret;
 	volatile struct sc_args *args;
-	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
-	memset(rir_ret, 0, 16);
+	args = (volatile struct sc_args *)GET_SC_ARGS();
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
+
+#if 1
 	if(EFUSTATE_CK_PRT) {
 		LOG_INFO("EFUSTATE: chipkey protection bit is set!\n");
 		return 0;
 	}
 
-	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT, 0, 1);
 
 	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
@@ -341,7 +457,10 @@ int cpu_burn_rckey(void)
 	}
 
 	otp_w(EFUSE_PTCOFF_CKP);
-
+#else
+	while(1)
+	test_sha256();
+#endif
 	return 0;
 }
 
@@ -353,19 +472,22 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
+	volatile unsigned int *nkusig = (volatile unsigned int *)MCU_TCSM_NKUSIG;
+	volatile unsigned int *retval = (volatile unsigned int *)MCU_TCSM_RETVAL;
+	unsigned int *pbuf = idata + 2;
+
 	secall(args, SC_FUNC_INIT, 0, 1);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
-	set_rsakey(idata + 2, length - 8);
-
+	rsakeylen = (length - 8) / 2;
 	nku[0] = rsakeylen * 8;
 	nku[1] = rsakeylen * 8;
 	rsa_key_word = rsakeylen / 4;
 
 	LOG_DEBUG("N %d BITS\n",nku[0]);
 	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
-		nku[iLoop + 2] = rsakey[iLoop];
+		nku[iLoop + 2] = pbuf[iLoop];
 
 		LOG_DEBUG("%08x ", nku[iLoop + 2]);
 		if((iLoop + 1) % 4 == 0)
@@ -374,7 +496,7 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 
 	LOG_DEBUG("KU %d BITS\n",nku[1]);
 	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
-		nku[iLoop + 2 + rsa_key_word] = rsakey[iLoop + rsa_key_word];
+		nku[iLoop + 2 + rsa_key_word] = pbuf[iLoop + rsa_key_word];
 
 		LOG_DEBUG("%08x ", nku[iLoop + 2 + rsa_key_word]);
 		if((iLoop + 1) % 4 == 0)
@@ -384,9 +506,8 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
 
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		LOG_INFO("SC_FUNC_BURNNKU failed, ret = %x\n",
-                             *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+	if (*retval != SC_ERR_SUCC) {
+		LOG_INFO("SC_FUNC_BURNNKU failed, ret = %x\n", *retval);
 		return -ESEC;
 	}
 
@@ -401,17 +522,22 @@ static int check_nku(unsigned int *idata, unsigned int length)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
-	LOG_INFO("\nEnter: %s\n",__func__);
+	volatile unsigned int *nkusig = (volatile unsigned int *)MCU_TCSM_NKUSIG;
+	volatile unsigned int *retval = (volatile unsigned int *)MCU_TCSM_RETVAL;
+	unsigned int *pbuf = idata + 2;
 
-	set_rsakey(idata + 2, length - 8);
+	LOG_INFO("Enter: %s\n",__func__);
 
+	secall(args, SC_FUNC_INIT, 0, 1);
+
+	rsakeylen = (length - 8) / 2;
 	nku[0] = rsakeylen * 8;
 	nku[1] = rsakeylen * 8;
 	rsa_key_word = rsakeylen / 4;
 
 	LOG_DEBUG("N %d BITS\n",nku[0]);
 	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
-		nku[iLoop + 2] = rsakey[iLoop];
+		nku[iLoop + 2] = pbuf[iLoop];
 
 		LOG_DEBUG("%08x ", nku[iLoop + 2]);
 		if((iLoop + 1) % 4 == 0)
@@ -420,7 +546,7 @@ static int check_nku(unsigned int *idata, unsigned int length)
 
 	LOG_DEBUG("KU %d BITS\n",nku[1]);
 	for (iLoop = 0; iLoop < rsa_key_word; iLoop++) {
-		nku[iLoop + 2 + rsa_key_word] = rsakey[iLoop + rsa_key_word];
+		nku[iLoop + 2 + rsa_key_word] = pbuf[iLoop + rsa_key_word];
 
 		LOG_DEBUG("%08x ", nku[iLoop + 2 + rsa_key_word]);
 		if((iLoop + 1) % 4 == 0)
@@ -430,9 +556,8 @@ static int check_nku(unsigned int *idata, unsigned int length)
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
 
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		LOG_INFO("SC_FUNC_CHECKNKU failed! ret = 0x%08x\n",
-                             *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+	if (*retval != SC_ERR_SUCC) {
+		LOG_INFO("SC_FUNC_CHECKNKU failed, ret = %x\n", *retval);
 		return -ESEC;
 	}
 	LOG_INFO("SC_FUNC_CHECKNKU Success\n");
@@ -445,7 +570,7 @@ int cpu_burn_custid(void *idata,unsigned int length)
 	unsigned int len = length / 2;
 	int ret;
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
 	if (EFUSTATE_CUSTID0_PRT) {
 		LOG_INFO("EFUSTATE: custid0 protection bit is set!\n");
@@ -497,17 +622,15 @@ int cpu_burn_custid(void *idata,unsigned int length)
 		return -ESEC;
 	}
 
-	efuse_update_state();
 	return 0;
 }
 
 int cpu_burn_nku(void *idata,unsigned int length)
 {
 	unsigned int ret = 0;
-	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
-	memset(rir_ret, 0, 16);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
+
 	if (EFUSTATE_NKU_PRT) {
 		LOG_INFO("EFUSTATE: nku protection bit is set!\n");
 		return 0;
@@ -551,7 +674,8 @@ int cpu_get_enckey(unsigned int *odata)
 	return 0;
 }
 
-static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, unsigned int *key, int key_len, int data_len)
+static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, int data_len,
+		unsigned int *key, int key_len, int key_flag)
 {
 	unsigned int ret, i;
 	volatile struct sc_args *args;
@@ -560,13 +684,25 @@ static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, unsigned i
 	volatile unsigned int *mcu_key = (volatile unsigned int *)(MCU_TCSM_INDATA);
 	volatile unsigned int *mcu_input = (volatile unsigned int *)(MCU_TCSM_INDATA + 0x30);
 	volatile unsigned int *mcu_output = (volatile unsigned int *)(MCU_TCSM_OUTDATA);
+	volatile unsigned int *retval = (volatile unsigned int *)(MCU_TCSM_RETVAL);
 
 
 	for(i = 0; i < data_len; i++) {
 		mcu_input[i] = input[i];
 	}
+	for(i = 0; i < 8; i++) {
+		mcu_output[i] = 0;
+	}
 
-	if (key != NULL) {
+	if (key_flag) {
+		args->arg[0] = key_flag | (AES_256BIT << 12);
+		args->arg[2] = MCU_TCSM_PADDR(mcu_input);
+		args->arg[3] = MCU_TCSM_PADDR(mcu_output);
+		args->arg[4] = data_len;
+
+		ret = secall(args, SC_FUNC_AESBYKEY, 0, 1);
+	} else {
+
 		for(i = 0; i < key_len; i++) {
 			mcu_key[i] = key[i];
 		}
@@ -575,28 +711,18 @@ static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, unsigned i
 		args->arg[2] = MCU_TCSM_PADDR(mcu_input);
 		args->arg[3] = MCU_TCSM_PADDR(mcu_output);
 		args->arg[4] = data_len / 4;
-		//	args->arg[5] = MCU_TCSM_PADDR(iv);
+//		args->arg[5] = MCU_TCSM_PADDR(iv);
 		args->arg[6] = 3;
 
-		flush_cache_all();
 		ret = secall(args, SC_FUNC_AES, 0, 1);
-		flush_cache_all();
-	} else {
-		args->arg[0] = AES_BY_UKEY | (AES_256BIT << 12);
-		args->arg[2] = MCU_TCSM_PADDR(mcu_input);
-		args->arg[3] = MCU_TCSM_PADDR(mcu_output);
-		args->arg[4] = data_len;
-
-		ret = secall(args, SC_FUNC_AESBYKEY, 0, 1);
 	}
 
-	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-		LOG_INFO("SC_FUNC_AES failed, ret = %x\n",
-			     *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+	if (*retval != SC_ERR_SUCC) {
+		LOG_INFO("SC_FUNC_AES failed, ret = %x\n", *retval);
 		return -ESEC;
 	}
 
-	for(i = 0; i < data_len; i++) {
+	for(i = 0; i < 8; i++) {
 		LOG_DEBUG("output[%d]: %08x\n", i, mcu_output[i]);
 		output[i] = mcu_output[i];
 	}
@@ -604,7 +730,7 @@ static int mcu_aes_encrypt(unsigned int *input, unsigned int *output, unsigned i
 	return 0;
 }
 
-static int check_ukey(unsigned int *ukey, int key_len)
+static int check_ukey(unsigned int *ukey, int key_len, int key_flag)
 {
 	unsigned int ori_data[] = {0x34333231,0x38373635,0x31313039,0x0a313131};
 	unsigned int in_key_enc_data[] = {0,0,0,0,0,0,0,0};
@@ -612,8 +738,8 @@ static int check_ukey(unsigned int *ukey, int key_len)
 	int ori_data_len = ARRAY_SIZE(ori_data);
 	int enc_data_len = ARRAY_SIZE(in_key_enc_data);
 
-	mcu_aes_encrypt(ori_data, ex_key_enc_data, ukey, key_len, ori_data_len);
-	mcu_aes_encrypt(ori_data, in_key_enc_data, NULL, 0, ori_data_len);
+	mcu_aes_encrypt(ori_data, ex_key_enc_data, ori_data_len, ukey, key_len, 0);
+	mcu_aes_encrypt(ori_data, in_key_enc_data, ori_data_len, NULL, 0, key_flag);
 
 	if (cmp_data(ex_key_enc_data, in_key_enc_data, enc_data_len)) {
 		return -1;
@@ -627,24 +753,18 @@ int cpu_burn_ukey(void *idata)
 	unsigned int iLoop;
 	unsigned int encukey[4] = {0};
 	volatile unsigned int *ukey = (volatile unsigned int *)MCU_TCSM_PUTUKEY;
-	unsigned int *rsaukey = (unsigned int *)idata;
-	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
-	memset(rir_ret, 0, 16);
-
-
+	volatile unsigned int *retval = (volatile unsigned int *)MCU_TCSM_RETVAL;
+	unsigned int *pbuf = (unsigned int *)idata;
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
 	if(EFUSTATE_UK_PRT && EFUSTATE_UK1_PRT) {
 		LOG_INFO("EFUSTATE: userkey0/1 protection bits is set!\n");
 		return 0;
 	}
 
-//	do_rsa(rsaukey, rsakeylen, encukey, rsakey, rsakeylen);
-//	for(iLoop = 0; iLoop < 4; iLoop++)
-//		LOG_INFO("encukey[%d]: %x\n", iLoop, encukey[iLoop]);
 
 #define UKEY_LEN_WORD    8
 #define UKEY_F_OFFSET    0x02
@@ -652,26 +772,25 @@ int cpu_burn_ukey(void *idata)
 
         if (!EFUSTATE_UK_PRT) {
 		secall(args, SC_FUNC_INIT, 0, 1);
-                
+
                 LOG_INFO("UK0 loaded into mcu sram\n");
                 LOG_DEBUG("UK0 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
-                        ukey[iLoop] = rsaukey[iLoop] /*encukey[iLoop]*/;
+                        ukey[iLoop] = pbuf[iLoop];
 
                         LOG_DEBUG("%08x ",ukey[iLoop]);
                         if((iLoop + 1) % 4 == 0)
                                 LOG_DEBUG("\n");
                 }
 
-                
+
                 args->arg[0] = (0x01 << UKEY_F_OFFSET);
                 args->arg[1] = MCU_TCSM_PADDR(ukey);
 
                 ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
-                if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-                        LOG_INFO("SC_FUNC_BURNUK failed, ret = %x\n",
-                                     *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+                if (*retval != SC_ERR_SUCC) {
+                        LOG_INFO("SC_FUNC_BURNUK failed, ret = %x\n", *retval);
                         return -ESEC;
                 }
 
@@ -681,14 +800,14 @@ int cpu_burn_ukey(void *idata)
                         return -ESEC;
                 }
 
-                LOG_INFO("set UK1 protection bit\n");
+                LOG_INFO("set UK0 protection bit\n");
                 otp_w(EFUSE_PTCOFF_UKP);
                 if(!EFUSTATE_UK_PRT) {
                         LOG_ERROR("UK0 protection bit set failed!\n");
                         return -ESEC;
                 }
 
-		if (check_ukey(ukey, UKEY_LEN_WORD)) {
+		if (check_ukey(ukey, UKEY_LEN_WORD, AES_BY_UKEY)) {
                         LOG_ERROR("UK0 check failed!\n");
                         return -ESEC;
 		}
@@ -699,11 +818,11 @@ int cpu_burn_ukey(void *idata)
         if (!EFUSTATE_UK1_PRT) {
 		secall(args, SC_FUNC_INIT, 0, 1);
                 memset(ukey, 0, MCU_TCSM_KEYLEN);
-                
+
                 LOG_INFO("UK1 loaded into mcu sram\n");
                 LOG_DEBUG("UK1 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
-                        ukey[iLoop] = rsaukey[iLoop + UKEY_LEN_WORD] /*encukey[iLoop]*/;
+                        ukey[iLoop] = pbuf[iLoop + UKEY_LEN_WORD];
 
                         LOG_DEBUG("%08x ",ukey[iLoop]);
                         if((iLoop + 1) % 4 == 0)
@@ -715,9 +834,8 @@ int cpu_burn_ukey(void *idata)
 
                 ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
-                if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
-                        LOG_INFO("SC_FUNC_BURNUK failed, ret = %x\n",
-                                     *(volatile unsigned int *)(MCU_TCSM_RETVAL));
+                if (*retval != SC_ERR_SUCC) {
+                        LOG_INFO("SC_FUNC_BURNUK failed, ret = %x\n", *retval);
                         return -ESEC;
                 }
 
@@ -734,13 +852,19 @@ int cpu_burn_ukey(void *idata)
                         LOG_ERROR("UK1 protection bit set failed!\n");
                         return -ESEC;
                 }
+
+		if (check_ukey(ukey, UKEY_LEN_WORD, AES_BY_UKEY1)) {
+                        LOG_ERROR("UK1 check failed!\n");
+                        return -ESEC;
+		}
+		LOG_INFO("UK1 check success!\n");
 	}
 	return 0;
 }
 
 int cpu_burn_secboot_enable(void)
 {
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
 	efuse_update_state();
 

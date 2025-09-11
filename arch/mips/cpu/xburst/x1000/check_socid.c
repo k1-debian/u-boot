@@ -142,7 +142,7 @@ int check_socid(unsigned int *ddr_id, char *chip_name)
 
 			if (chip_name)
 				strcpy(chip_name, desc[i].chip);
-#ifndef CONFIG_BURNER
+
 			if (X1000_NEW == socid || X1500_NEW == socid ||
 			    X1500L_NEW == socid || X1501 == socid ||
 			    (X1500 == socid && !read_and_check_chipid())) {
@@ -153,7 +153,7 @@ int check_socid(unsigned int *ddr_id, char *chip_name)
 			} else if (X1000 == socid) {
 				gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
 			}
-#endif
+
 			return 0;
 		}
 	}

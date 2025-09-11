@@ -63,17 +63,15 @@ static void otp_r(uint32_t addr, uint32_t wlen)
 	unsigned int val;
 	int n;
 
+	mdelay(10); /* Introduce delay between consecutive operations */
 	efuse_writel(0, EFUSE_CTRL);
-
-	for(n = 0; n < 8; n++)
-		efuse_writel(0, EFUSE_DATA(n));
-
-	/* set read address and data length */
-	val =  addr << EFUSE_CTRL_ADDR | (wlen - 1) << EFUSE_CTRL_LEN;
-	efuse_writel(val, EFUSE_CTRL);
 
 	val = efuse_readl(EFUSE_CTRL);
 	val &= ~EFUSE_CTRL_PD;
+	efuse_writel(val, EFUSE_CTRL);
+
+	/* set read address and data length */
+	val =  addr << EFUSE_CTRL_ADDR | (wlen - 1) << EFUSE_CTRL_LEN;
 	efuse_writel(val, EFUSE_CTRL);
 
 	/* enable read */
@@ -85,33 +83,34 @@ static void otp_r(uint32_t addr, uint32_t wlen)
 	/* wait read done status */
 	while(!(efuse_readl(EFUSE_STATE) & EFUSE_STA_RD_DONE));
 
-	efuse_writel(0, EFUSE_CTRL);
-	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 }
 
 static void rir_w(uint32_t addr, uint32_t value)
 {
 	unsigned int val;
 
+	mdelay(10); /* Introduce delay between consecutive operations */
 	efuse_writel(value, EFUSE_DATA(0));
 	efuse_writel(0, EFUSE_CTRL);
 
 	val =  addr << EFUSE_CTRL_ADDR | 0 << EFUSE_CTRL_LEN;
 	efuse_writel(val, EFUSE_CTRL);
 
-	val = efuse_readl(EFUSE_CTRL);
-	val &= ~EFUSE_CTRL_PD;
-	efuse_writel(val, EFUSE_CTRL);
+	boost_vddq(efuse_gpio);
 
 	val = efuse_readl(EFUSE_CTRL);
-	val |= EFUSE_CTRL_PS | EFUSE_CTRL_RWL;
+	val |= EFUSE_CTRL_PS;
+	efuse_writel(val, EFUSE_CTRL);
+
+	mdelay(10); // wait power on
+
+	val = efuse_readl(EFUSE_CTRL);
+	val |= EFUSE_CTRL_RWL;
 	efuse_writel(val, EFUSE_CTRL);
 
 	val = efuse_readl(EFUSE_CTRL);
 	val |= EFUSE_CTRL_PGEN;
 	efuse_writel(val, EFUSE_CTRL);
-
-	boost_vddq(efuse_gpio);
 
 	val = efuse_readl(EFUSE_CTRL);
 	val |= EFUSE_CTRL_WREN;
@@ -120,23 +119,31 @@ static void rir_w(uint32_t addr, uint32_t value)
 	/* wait write done status */
 	while(!(efuse_readl(EFUSE_STATE) & EFUSE_STA_WR_DONE));
 
-	reduce_vddq(efuse_gpio);
+	val = efuse_readl(EFUSE_CTRL);
+	val &= ~EFUSE_CTRL_PGEN;
+	efuse_writel(val, EFUSE_CTRL);
+
+	val = efuse_readl(EFUSE_CTRL);
+	val &= ~EFUSE_CTRL_PS;
+	efuse_writel(val, EFUSE_CTRL);
+
+//	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 
 	efuse_writel(0, EFUSE_CTRL);
-	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
+	mdelay(10); /* Introduce delay between consecutive operations */
+
+	reduce_vddq(efuse_gpio);
 }
 
 static void rir_r(void)
 {
 	unsigned int val;
 
+	mdelay(10); /* Introduce delay between consecutive operations */
 	efuse_writel(0, EFUSE_CTRL);
 	efuse_writel(0, EFUSE_DATA(0));
 	efuse_writel(0, EFUSE_DATA(1));
 
-	/* set rir read address and data length */
-	val =  0x1f << EFUSE_CTRL_ADDR | 0x1 << EFUSE_CTRL_LEN;
-	efuse_writel(val, EFUSE_CTRL);
 
 	val = efuse_readl(EFUSE_CTRL);
 	val &= ~EFUSE_CTRL_PD;
@@ -150,6 +157,10 @@ static void rir_r(void)
 	val |= EFUSE_CTRL_RWL;
 	efuse_writel(val, EFUSE_CTRL);
 
+	/* set rir read address and data length */
+	val =  0x1f << EFUSE_CTRL_ADDR | 0x1 << EFUSE_CTRL_LEN;
+	efuse_writel(val, EFUSE_CTRL);
+
 	val = efuse_readl(EFUSE_CTRL);
 	val |= EFUSE_CTRL_RDEN;
 	efuse_writel(val, EFUSE_CTRL);
@@ -157,11 +168,13 @@ static void rir_r(void)
 	/* wait read done status */
 	while(!(efuse_readl(EFUSE_STATE) & EFUSE_STA_RD_DONE));
 
-	efuse_writel(0, EFUSE_CTRL);
-	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
-
 	printf("RIR0=0x%08x\n", efuse_readl(EFUSE_DATA(0)));
 	printf("RIR1=0x%08x\n", efuse_readl(EFUSE_DATA(1)));
+
+//	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
+
+	efuse_writel(0, EFUSE_CTRL);
+	mdelay(10); /* Introduce delay between consecutive operations */
 }
 
 static int rir_op(uint32_t value, uint32_t flag)
@@ -406,10 +419,6 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 		printf("%08x\n", buf[n]);
 	}
 
-	/* clear read done status */
-	efuse_writel(0, EFUSE_STATE);
-	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
-
 	return 0;
 }
 
@@ -418,27 +427,30 @@ static void otp_w(uint32_t addr, uint32_t wlen)
 {
 	unsigned int val;
 
+	mdelay(10); /* Introduce delay between consecutive operations */
 	efuse_writel(0, EFUSE_CTRL);
-
-	/* set write Programming address and data length */
-	val =  addr << EFUSE_CTRL_ADDR | (wlen - 1) << EFUSE_CTRL_LEN;
-	efuse_writel(val, EFUSE_CTRL);
 
 	val = efuse_readl(EFUSE_CTRL);
 	val &= ~EFUSE_CTRL_PD;
 	efuse_writel(val, EFUSE_CTRL);
 
+	/* Connect VDDQ pin from 1.8V */
+	boost_vddq(efuse_gpio);
+
 	val = efuse_readl(EFUSE_CTRL);
 	val |= EFUSE_CTRL_PS;
 	efuse_writel(val, EFUSE_CTRL);
+
+	mdelay(10);
 
 	/* Programming EFUSE enable */
 	val = efuse_readl(EFUSE_CTRL);
 	val |= EFUSE_CTRL_PGEN;
 	efuse_writel(val, EFUSE_CTRL);
 
-	/* Connect VDDQ pin from 1.8V */
-	boost_vddq(efuse_gpio);
+	/* set write Programming address and data length */
+	val =  addr << EFUSE_CTRL_ADDR | (wlen - 1) << EFUSE_CTRL_LEN;
+	efuse_writel(val, EFUSE_CTRL);
 
 	/* enable write */
 	val = efuse_readl(EFUSE_CTRL);
@@ -448,11 +460,21 @@ static void otp_w(uint32_t addr, uint32_t wlen)
 	/* wait write done status */
 	while(!(efuse_readl(EFUSE_STATE) & EFUSE_STA_WR_DONE));
 
-	/* Disconnect VDDQ pin from 1.8V. */
-	reduce_vddq(efuse_gpio);
+	val = efuse_readl(EFUSE_CTRL);
+	val &= ~EFUSE_CTRL_PGEN;
+	efuse_writel(val, EFUSE_CTRL);
+
+	val = efuse_readl(EFUSE_CTRL);
+	val &= ~EFUSE_CTRL_PS;
+	efuse_writel(val, EFUSE_CTRL);
+
+//	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
 
 	efuse_writel(0, EFUSE_CTRL);
-	efuse_writel(EFUSE_CTRL_PD, EFUSE_CTRL);
+	mdelay(10); /* Introduce delay between consecutive operations */
+
+	/* Disconnect VDDQ pin from 1.8V. */
+	reduce_vddq(efuse_gpio);
 }
 
 static int jz_efuse_write(struct seg_info *info, uint32_t *buf)

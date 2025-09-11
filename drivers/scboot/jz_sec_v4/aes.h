@@ -8,6 +8,7 @@
 #define AES_BY_RKEY (0x1 << 4)
 #define AES_BY_CKEY (0x1 << 5)
 #define AES_BY_UKEY (0x1 << 6)
+#define AES_BY_UKEY1 (0x1 << 7)
 
 #define AES_LEN		(3<<12) //0:128bit, 1:192bit, 2:256bit
 #define AES_128BIT	0

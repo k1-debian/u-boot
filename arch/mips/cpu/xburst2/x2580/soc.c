@@ -188,8 +188,8 @@ static int ddr_mem_test4(void)
 	volatile u32 tmp = 0;
 	u32 tmp_data = 0;
 
-#ifdef CONFIG_DDR_TYPE_DDR2
-	for (tmp = 0xa0000000; tmp < 0xa4000000; tmp+=0x104) {
+#if defined(CONFIG_DDR_TYPE_DDR2) || defined(CONFIG_X2580)
+	for (tmp = 0xa0100000; tmp < 0xa4000000; tmp+=0x104) {
 		u32 td = 0x5a5a5a5a;
 		*(u32*)tmp = td;
 		tmp_data = *(u32*)tmp;

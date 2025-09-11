@@ -722,7 +722,6 @@ int create_one_ddr_params(struct ddr_chip_info *chip, struct ddr_reg_value *reg)
 		return -1;
 	}
 
-	__ps_per_tck = (1000000000 / (CONFIG_SYS_MEM_FREQ / 1000));
 	memset(&ddrc, 0, sizeof(struct ddrc_reg));
 	memset(&ddrp, 0, sizeof(struct ddrp_reg));
 	memset(&ddr_params, 0, sizeof(struct ddr_params));

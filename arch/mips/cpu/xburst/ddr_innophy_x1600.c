@@ -986,7 +986,7 @@ static void ddrp_software_calibration(void)
 }
 #endif
 
-
+#ifdef CONFIG_DDR_PARAMS_CREATOR
 __weak int check_socid(unsigned int *ddr_id, char *chip_name)
 {
         return -1;
@@ -1052,6 +1052,7 @@ int get_ddr_params_normal(void)
 	}
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_BURNER
 void get_ddr_params_burner(void)
@@ -1069,6 +1070,7 @@ int get_ddr_params(void)
 {
 	int ret = 0;
 
+#ifdef CONFIG_DDR_PARAMS_CREATOR
 	/* Try1. 如果只有一个DDR 参数，直接使用. 只支持一款，兼容性差。*/
 	if(ARRAY_SIZE(supported_ddr_reg_values) == 1) {
 		global_reg_value = &supported_ddr_reg_values[0];
@@ -1080,7 +1082,7 @@ int get_ddr_params(void)
 	if(ret == 0) {
 		return 0;
 	}
-
+#endif
 #ifndef CONFIG_BURNER
 	/* Try3. 从Flash获取ddr type，前提: 需配合烧录工具。【依赖烧录工具，不推荐。】*/
 	ret = get_ddr_params_normal();
@@ -1089,10 +1091,7 @@ int get_ddr_params(void)
 	}
 #else
 	/*Try4. 对于烧录工具，如果上述都无法识别，就从烧录工具获取参数。【不推荐，为了兼容】*/
-	if(ret < 0) {
-		get_ddr_params_burner();
-		return 0;
-	}
+	get_ddr_params_burner();
 #endif
 	//dump_generated_reg(global_reg_value);
 

@@ -3,6 +3,7 @@
 int ato_nand_register_func(void);
 int cochipgo_nand_register_func(void);
 int dosilicon_nand_register_func(void);
+int esmt_nand_register_func(void);
 int etron_nand_register_func(void);
 int fm_nand_register_func(void);
 int foresee_nand_register_func(void);
@@ -34,6 +35,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)dosilicon_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)esmt_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)etron_nand_register_func,

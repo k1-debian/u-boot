@@ -175,6 +175,7 @@ static int efuse_update_state(void)
 
 static int redundancy_rd(void)
 {
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_DAT1) = 0;
 	LOG_INFO("EFUSE_REG_DAT1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
 	REG32(EFUSE_REG_CTRL) = (0x1f << EFUSE_REGOFF_CRTL_ADDR) | (1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RWL;
@@ -183,19 +184,7 @@ static int redundancy_rd(void)
 	LOG_INFO("EFUSE_REG_DAT1 = 0x%08x\n", REG32(EFUSE_REG_DAT1));
 	LOG_INFO("EFUSE_REG_DAT2 = 0x%08x\n", REG32(EFUSE_REG_DAT2));
 	REG32(EFUSE_REG_CTRL) = 0;
-}
-
-static int otp_r()
-{
-	efuse_1v8_output(!efuse_args->efuse_en_active);
-	
-        REG32(EFUSE_REG_CTRL) = 0;
-	REG32(EFUSE_REG_STAT) = 0;
-	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
-	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
-	LOG_INFO("EFUSE_REG_DAT1 = %x\n",REG32(EFUSE_REG_DAT1));
-        REG32(EFUSE_REG_STAT) = 0;
+	mdelay(10); /* Introduce delay between consecutive operations */
 
 	return 0;
 }
@@ -207,23 +196,26 @@ static int otp_w(unsigned int offset)
 		return -1;
 	}
 	unsigned int ret;
+
+	mdelay(10); /* Introduce delay between consecutive operations */
 #define PRT_REDUNDANCY  0x00010001
 	REG32(EFUSE_REG_DAT1) = PRT_REDUNDANCY << offset;
 	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
-	
+
         efuse_1v8_output(efuse_args->efuse_en_active);
-	
+
         REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
-	
+
         efuse_1v8_output(!efuse_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) &= ~(EFUSE_REG_CTRL_PGEN | EFUSE_REG_CTRL_PS);
 
-	otp_r();
+	redundancy_rd();
+	efuse_update_state();
 
 	return 0;
 }
@@ -236,12 +228,11 @@ static int cpu_wtotp(int opera)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
-	redundancy_rd();
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
+	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_CTRL) = 0;
-	
+
         efuse_1v8_output(efuse_args->efuse_en_active);
-	
+
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS;
         REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN;
 
@@ -260,8 +251,8 @@ static int cpu_wtotp(int opera)
 
 	}
 
-	efuse_update_state();
 	redundancy_rd();
+	efuse_update_state();
 
 	return 0;
 }
@@ -273,7 +264,7 @@ int otp_init(void)
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	secall(args, SC_FUNC_INIT, 0, 1);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 	efuse_en_gpio = efuse_args->efuse_en_gpio;
 	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
 		LOG_INFO("EFUSE_EN_N gpio(%d) output high!\n", efuse_en_gpio);
@@ -297,7 +288,7 @@ int otp_init(void)
 
 	efuse_config();
 	efuse_update_state();
-	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = SC_ERR_SUCC;
+	*(volatile unsigned int *)(MCU_TCSM_RETVAL) = 0;
 	return 0;
 }
 
@@ -309,7 +300,7 @@ int cpu_burn_rckey(void)
 	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
 	memset(rir_ret, 0, 16);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 	if(EFUSTATE_CK_PRT) {
 		LOG_INFO("EFUSTATE: chipkey protection bit is set!\n");
 		return 0;
@@ -354,7 +345,7 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
 	secall(args, SC_FUNC_INIT, 0, 1);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
 	set_rsakey(idata + 2, length - 8);
 
@@ -380,9 +371,10 @@ int cpu_load_nku(unsigned int *idata, unsigned int length)
 			debug("\n");
 	}
 
-	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
+
+	efuse_update_state();
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_INFO("SC_FUNC_BURNNKU failed, ret = %x\n",
@@ -401,7 +393,7 @@ static int check_nku(unsigned int *idata, unsigned int length)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *nku = (volatile unsigned int *)MCU_TCSM_NKU;
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
 	set_rsakey(idata + 2, length - 8);
 
@@ -427,10 +419,10 @@ static int check_nku(unsigned int *idata, unsigned int length)
 			debug("\n");
 	}
 
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
+
+	efuse_update_state();
 
 	if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
 		LOG_INFO("SC_FUNC_CHECKNKU failed! ret = 0x%08x\n",
@@ -452,7 +444,7 @@ int cpu_burn_nku(void *idata,unsigned int length)
 	volatile int *rir_ret = (volatile unsigned int *)MCU_TCSM_RETRIR;
 	memset(rir_ret, 0, 16);
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 	if (EFUSTATE_NKU_PRT) {
 		LOG_INFO("EFUSTATE: nku protection bit is set!\n");
 		return 0;
@@ -509,7 +501,7 @@ int cpu_burn_ukey(void *idata)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 
-	LOG_INFO("\nEnter: %s\n",__func__);
+	LOG_INFO("Enter: %s\n",__func__);
 
 	if(EFUSTATE_UK_PRT && EFUSTATE_UK1_PRT) {
 		LOG_INFO("EFUSTATE: userkey0/1 protection bits is set!\n");
@@ -526,7 +518,7 @@ int cpu_burn_ukey(void *idata)
 
         if (!EFUSTATE_UK_PRT) {
 		secall(args, SC_FUNC_INIT, 0, 1);
-                
+
                 LOG_INFO("UK0 loaded into mcu sram\n");
                 debug("UK0 %d WORD\n", UKEY_LEN_WORD);
                 for (iLoop = 0; iLoop < UKEY_LEN_WORD; iLoop++) {
@@ -542,7 +534,9 @@ int cpu_burn_ukey(void *idata)
 
                 ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
-                if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
+		efuse_update_state();
+
+		if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
                         LOG_INFO("SC_FUNC_BURNUK failed, ret = %x\n",
                                      *(volatile unsigned int *)(MCU_TCSM_RETVAL));
                         return -ESEC;
@@ -583,6 +577,8 @@ int cpu_burn_ukey(void *idata)
 
                 ret = secall(args, SC_FUNC_BURNUK, 0, 1);
 
+		efuse_update_state();
+
                 if (*(volatile unsigned int *)(MCU_TCSM_RETVAL) != SC_ERR_SUCC) {
                         LOG_INFO("SC_FUNC_BURNUK failed, ret = %x\n",
                                      *(volatile unsigned int *)(MCU_TCSM_RETVAL));
@@ -610,9 +606,9 @@ int cpu_burn_ukey(void *idata)
 
 int cpu_burn_secboot_enable(void)
 {
-	LOG_INFO("\nEnter: %s\n",__func__);
-	
-        efuse_update_state();
+	LOG_INFO("Enter: %s\n",__func__);
+
+	efuse_update_state();
 
 	if (!EFUSTATE_UK_PRT || !EFUSTATE_UK1_PRT) {
 		LOG_ERROR("userkey protection bit is not set!\n");
@@ -631,8 +627,7 @@ int cpu_burn_secboot_enable(void)
 
         LOG_INFO("set security enable bit\n");
 
-	mdelay(1);		/* wait for EFUSE IO power for mdelay(1). */
-	
+
         REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_STAT) = 0;
 
@@ -641,7 +636,7 @@ int cpu_burn_secboot_enable(void)
 
 	/*efuse config*/
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
-	
+
         efuse_1v8_output(efuse_args->efuse_en_active);
 
         REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS;

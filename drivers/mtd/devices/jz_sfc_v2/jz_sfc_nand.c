@@ -305,7 +305,7 @@ static int jz_sfcnand_erase(struct mtd_info *mtd, struct erase_info *instr)
 	{
 		ret = is_readonly_partition((uint32_t)instr->addr, (uint32_t)instr->len);
 		if (ret)
-			return -EROFS;
+			return 0;
 	}
 
 	if((ret = jz_sfc_nand_erase(mtd, instr))) {

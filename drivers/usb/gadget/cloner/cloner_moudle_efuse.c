@@ -2,12 +2,23 @@
 #include "cloner_moudle.h"
 #include <efuse.h>
 
+static int enabled = 0;
+
 static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_data)
 {
 	int ret = 0;
 	u32 id = cloner->cmd->read.offset;
 	void *addr = (void *)cloner->read_req->buf;
 	u32 length = cloner->read_req->length;
+
+	if(!enabled) {
+		ret = efuse_init(efuse_args->efuse_en_gpio, efuse_args->efuse_en_active);
+		if(ret < 0) {
+			LOG_ERROR("efuse init error\n");
+			return ret;
+		}
+		enabled = 1;
+	}
 
 	ret = efuse_read_id(addr, length, id);
 	if (ret < 0)
@@ -18,7 +29,6 @@ static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_da
 
 static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
-	static int enabled = 0;
 	u32 partition, length;
 	void *addr;
 	int ret = 0;

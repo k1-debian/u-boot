@@ -652,10 +652,7 @@ int get_ddr_params(void)
 	}
 #else
 	/*Try4. 对于烧录工具，如果上述都无法识别，就从烧录工具获取参数。【不推荐，为了兼容】*/
-	if(ret < 0) {
-		get_ddr_params_burner();
-		return 0;
-	}
+	get_ddr_params_burner();
 #endif
 	//dump_generated_reg(global_reg_value);
 
