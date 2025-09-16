@@ -144,6 +144,9 @@ static void rir_r(void)
 	efuse_writel(0, EFUSE_DATA(0));
 	efuse_writel(0, EFUSE_DATA(1));
 
+	/* set rir read address and data length */
+	val =  0x1f << EFUSE_CTRL_ADDR | 0x1 << EFUSE_CTRL_LEN;
+	efuse_writel(val, EFUSE_CTRL);
 
 	val = efuse_readl(EFUSE_CTRL);
 	val &= ~EFUSE_CTRL_PD;
@@ -155,10 +158,6 @@ static void rir_r(void)
 
 	val = efuse_readl(EFUSE_CTRL);
 	val |= EFUSE_CTRL_RWL;
-	efuse_writel(val, EFUSE_CTRL);
-
-	/* set rir read address and data length */
-	val =  0x1f << EFUSE_CTRL_ADDR | 0x1 << EFUSE_CTRL_LEN;
 	efuse_writel(val, EFUSE_CTRL);
 
 	val = efuse_readl(EFUSE_CTRL);
@@ -430,6 +429,10 @@ static void otp_w(uint32_t addr, uint32_t wlen)
 	mdelay(10); /* Introduce delay between consecutive operations */
 	efuse_writel(0, EFUSE_CTRL);
 
+	/* set write Programming address and data length */
+	val =  addr << EFUSE_CTRL_ADDR | (wlen - 1) << EFUSE_CTRL_LEN;
+	efuse_writel(val, EFUSE_CTRL);
+
 	val = efuse_readl(EFUSE_CTRL);
 	val &= ~EFUSE_CTRL_PD;
 	efuse_writel(val, EFUSE_CTRL);
@@ -448,9 +451,6 @@ static void otp_w(uint32_t addr, uint32_t wlen)
 	val |= EFUSE_CTRL_PGEN;
 	efuse_writel(val, EFUSE_CTRL);
 
-	/* set write Programming address and data length */
-	val =  addr << EFUSE_CTRL_ADDR | (wlen - 1) << EFUSE_CTRL_LEN;
-	efuse_writel(val, EFUSE_CTRL);
 
 	/* enable write */
 	val = efuse_readl(EFUSE_CTRL);

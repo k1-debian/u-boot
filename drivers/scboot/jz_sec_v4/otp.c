@@ -195,15 +195,13 @@ static int otp_w(unsigned int offset)
 	unsigned int ret;
 
 #define PRT_REDUNDANCY  0x00010001
-	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_DAT0) = PRT_REDUNDANCY << offset;
+	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
 	mdelay(10);
-
-	REG32(EFUSE_REG_CTRL) |= (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
 
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
@@ -235,7 +233,6 @@ static int mcu_wtotp(int opera)
 	volatile unsigned int *retval = (volatile unsigned int *)MCU_TCSM_RETVAL;
 
 	mdelay(10); /* Introduce delay between consecutive operations */
-	REG32(EFUSE_REG_STAT) = 0;
 	REG32(EFUSE_REG_CTRL) = 0;
 
 	efuse_1v8_output(efuse_args->efuse_en_active);

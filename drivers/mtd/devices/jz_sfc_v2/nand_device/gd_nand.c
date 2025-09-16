@@ -405,6 +405,26 @@ static struct jz_sfcnand_base_param gd_param[] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[19] = {
+		/*GD5F1GM7UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP_Q5,
+		.tBE = 10,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
@@ -427,6 +447,7 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x41, "GD5F1GQ5RE-1.8V", &gd_param[16]),
 	DEVICE_ID_STRUCT(0x31, "GD5F1GQ5UE",      &gd_param[17]),
 	DEVICE_ID_STRUCT(0x21, "GD5F1GQ5RE-1.8V", &gd_param[18]),
+	DEVICE_ID_STRUCT(0x81, "GD5F1GM7RE-1.8V", &gd_param[19]),
 };
 
 
@@ -452,6 +473,7 @@ static cdt_params_t *gd_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 		case 0x41:
 		case 0x31:
 		case 0x21:
+		case 0x81:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -497,6 +519,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0x91:
 		case 0x95:
 		case 0xD9:
+		case 0x81:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
