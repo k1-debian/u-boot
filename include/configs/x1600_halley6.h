@@ -60,7 +60,15 @@
 #define CONFIG_BAUDRATE			115200
 
 #define CONFIG_GLOBAL_PARAMS_OFFSET		0x14
-/* #define CONFIG_GINFO_FIX */
+/* #define CONFIG_USE_GLOBAL_SHARED_PARAMS */
+
+/* #define CONFIG_SPL_AUTO_DETECT_BOOT */
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+#define CONFIG_SPL_OS_BOOT
+#ifdef CONFIG_SPL_SFC_NAND
+#define CONFIG_OTA_VERSION30
+#endif
+#endif
 
 #ifdef CONFIG_USB_GADGET
 #define CONFIG_USB_GADGET_DUALSPEED
@@ -141,10 +149,6 @@
 	"ubifsload 0x80f00000 vmlinux.ub; bootm 0x80f00000"
 #endif
 
-#define CONFIG_SPL_MAX_SIZE		26624	/* 18KB */
-#define CONFIG_SPL_PAD_TO		26624  /* equal to spl max size in x1600 */
-#define CONFIG_UBOOT_OFFSET             26624 /* equal to spl max size in x1600 */
-
 /* security */
 /*#define CONFIG_JZ_SCBOOT_TEST*/
 
@@ -177,6 +181,23 @@
 #endif
 #endif /*end of ota*/
 
+#define CONFIG_SPL_PAD_TO		0x6800	/* equal to spl max size 24k */
+
+#ifndef CONFIG_SPL_AUTO_DETECT_BOOT
+#define CONFIG_SPL_MAX_SIZE		CONFIG_SPL_PAD_TO
+#define CONFIG_UBOOT_OFFSET		CONFIG_SPL_PAD_TO
+#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
+#endif
+#else
+#define CONFIG_SPL_MAX_SIZE		CONFIG_SPL_PAD_TO
+#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+#define CONFIG_SPIFLASH_PART_OFFSET		CONFIG_SPL_PAD_TO
+#define CONFIG_SPIFLASH_PART_SIZE		0xc00
+#endif
+#define CONFIG_UBOOT_OFFSET		(CONFIG_SPL_PAD_TO + CONFIG_SPIFLASH_PART_SIZE)
+#endif
+
 /* sfc nor config */
 #ifdef CONFIG_SPL_SFC_NOR
 #define CONFIG_JZ_SFC
@@ -186,17 +207,16 @@
 #define CONFIG_SFC_NOR_INIT_RATE		100000000
 #define CONFIG_SFC_NOR_RATE			100000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_SFC_QUAD
-#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
-#define CONFIG_SPI_NORFLASH_PART_OFFSET		0x5874
+#define CONFIG_SPI_NORFLASH_PART_OFFSET		(CONFIG_SPIFLASH_PART_OFFSET + 0x74)
 #define CONFIG_NOR_MAJOR_VERSION_NUMBER		1
 #define CONFIG_NOR_MINOR_VERSION_NUMBER		0
 #define CONFIG_NOR_REVERSION_NUMBER		0
 #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
-/*
-#define CONFIG_NOR_BUILTIN_PARAMS
-#define CONFIG_NOR_COMMON_PARAMS
+/* #define CONFIG_NOR_BUILTIN_PARAMS */
+/* #define CONFIG_NOR_COMMON_PARAMS */
+#ifdef CONFIG_NOR_COMMON_PARAMS
 #define CONFIG_NOR_COMMON_PARAMS_COUNT          3
-*/
+#endif
 #endif
 
 /* sfc nand config */
@@ -206,7 +226,6 @@
 #define CONFIG_SFC_NAND_RATE			100000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 /*#define CONFIG_SPI_NAND_BPP                    (4096 + 128)*/      /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_BPP                     (2048 + 64)      /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
@@ -215,7 +234,7 @@
 #define CONFIG_SYS_MAX_NAND_DEVICE		1
 #define CONFIG_SYS_NAND_BASE			0xb3441000
 #define CONFIG_SYS_MAXARGS			16
-/*#define CONFIG_NAND_BUILTIN_PARAMS*/
+/* #define CONFIG_NAND_BUILTIN_PARAMS */
 
 /* sfc nand env config */
 #define CONFIG_MTD_DEVICE
@@ -256,7 +275,6 @@
 			#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=4 root=ubi0:system ubi.mtd=5 rootfstype=ubifs ro flashtype=nand"
 			#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off ubi.mtd=4 ubi.mtd=5 root=/dev/ram0 rw rdinit=/linuxrc flashtype=nand"
 		#else
-			#define CONFIG_GPT_TAB_BUILT_IN
 			#undef CONFIG_SPL_BOOTARGS
 			#if defined(CONFIG_JZ_MMC_MSC0)
 				#define CONFIG_SPL_BOOTARGS    BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
@@ -290,8 +308,10 @@
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
      #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+#ifndef CONFIG_SPL_AUTO_DETECT_BOOT
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
+#endif
      #ifdef CONFIG_BOOT_RTOS
              #define CONFIG_LOAD_ADDR	0x80004000
      #else
@@ -302,6 +322,8 @@
 
 #define CONFIG_SYS_NAND_SELF_INIT
 /* end of sfc */
+
+#define PARTITION_NUM 10
 
 /* MMC */
 #define CONFIG_GENERIC_MMC		1

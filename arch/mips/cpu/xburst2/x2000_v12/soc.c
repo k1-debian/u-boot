@@ -88,7 +88,7 @@ void board_init_f(ulong dummy)
 	/* Setup global info */
 #ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
-#ifdef CONFIG_GINFO_FIX
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
 	unsigned int global_params_addr = CONFIG_SPL_TEXT_BASE + CONFIG_GLOBAL_PARAMS_OFFSET;
 	gd->arch.gp = (struct global_shared_params *)global_params_addr;
 	ginfo_set(gd->arch.gi, gd->arch.gp);

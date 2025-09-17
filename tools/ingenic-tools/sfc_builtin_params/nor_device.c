@@ -257,12 +257,12 @@ struct norflash_partitions builtin_norflash_partitions = {
 
 		[1].name = "kernel",
 		[1].offset = 0x40000,
-		[1].size =   0x300000,
+		[1].size =   0x600000,
 		[1].mask_flags = PART_RW,
 
 		[2].name = "rootfs",
-		[2].offset = 0x360000,
-		[2].size = 0xca0000,
+		[2].offset = 0x640000,
+		[2].size = 0x9c0000,
 		[2].mask_flags = PART_RW,
 	},
 };

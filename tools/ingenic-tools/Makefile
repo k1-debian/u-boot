@@ -271,12 +271,30 @@ ifeq ($(if $(CONFIG_SPL_PAD_TO_BLOCK),y,n),y)
 	spl_source_list +=  spl_pad_to_block.c
 endif
 
+BOARD_NOR_PARAMS := $(TOPDIR)/board/$(BOARDDIR)/nor_partitions.c
+DEFAULT_NOR_PARAMS := sfc_builtin_params/nor_device.c
+
+ifneq ($(wildcard $(BOARD_NOR_PARAMS)),)
+USED_NOR_PARAMS := $(BOARD_NOR_PARAMS)
+else
+USED_NOR_PARAMS := $(DEFAULT_NOR_PARAMS)
+endif
+
 ifeq ($(if $(CONFIG_NOR_BUILTIN_PARAMS),y,n),y)
-	spl_source_list += sfc_nor_builtin_params.c sfc_builtin_params/nor_device.c
+	spl_source_list += sfc_nor_builtin_params.c $(USED_NOR_PARAMS)
+endif
+
+BOARD_NAND_PARAMS := $(TOPDIR)/board/$(BOARDDIR)/nand_partitions.c
+DEFAULT_NAND_PARAMS := sfc_builtin_params/nand_device.c
+
+ifneq ($(wildcard $(BOARD_NAND_PARAMS)),)
+USED_NAND_PARAMS := $(BOARD_NAND_PARAMS)
+else
+USED_NAND_PARAMS := $(DEFAULT_NAND_PARAMS)
 endif
 
 ifeq ($(if $(CONFIG_NAND_BUILTIN_PARAMS),y,n),y)
-	spl_source_list += sfc_nand_builtin_params.c sfc_builtin_params/nand_device.c
+	spl_source_list += sfc_nand_builtin_params.c $(USED_NAND_PARAMS)
 endif
 
 spl_tools_source:
@@ -288,11 +306,11 @@ $(obj)sfc_timing_params: sfc_timing_params.c
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
-$(obj)sfc_nor_builtin_params: sfc_nor_builtin_params.c sfc_builtin_params/nor_device.c
+$(obj)sfc_nor_builtin_params: sfc_nor_builtin_params.c $(USED_NOR_PARAMS)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 
-$(obj)sfc_nand_builtin_params: sfc_nand_builtin_params.c sfc_builtin_params/nand_device.c
+$(obj)sfc_nand_builtin_params: sfc_nand_builtin_params.c $(USED_NAND_PARAMS)
 	$(HOSTCC) $(HOSTCFLAGS_NOPED) $(HOSTLDFLAGS) -o $@ $^
 	$(HOSTSTRIP) $@
 

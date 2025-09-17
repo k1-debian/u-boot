@@ -1,5 +1,6 @@
 #include <asm/global_info.h>
 
+#ifdef CONFIG_JZ_GLOBAL_DEBUG
 void dump_gi(struct global_info *gi)
 {
 	printf("global_info: 0x%x\n", gi);
@@ -18,7 +19,9 @@ void dump_gp(struct global_shared_params *gp)
 	printf("ddrfreq: %x\n", gp->ddrfreq);
 	printf("uart_idx: %x\n", gp->uart_idx);
 	printf("baud_rate: %x\n", gp->baud_rate);
+	printf("sfc_params_addr: %x\n", gp->sfc_params_addr);
 }
+#endif
 
 void ginfo_set(struct global_info *gi, struct global_shared_params *gp)
 {

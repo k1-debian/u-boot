@@ -29,7 +29,7 @@ SOBJS-y	=
 COBJS-y	= jz_serial.o
 COBJS-y	+= cpu.o timer.o
 COBJS-$(CONFIG_XBURST_TRAPS) += traps.o
-COBJS-$(CONFIG_GINFO_FIX) += global_info.o
+COBJS-$(CONFIG_USE_GLOBAL_SHARED_PARAMS) += global_info.o
 COBJS-$(CONFIG_SOFT_BURNER) += usb_boot.o
 
 ifdef	CONFIG_SPL_BUILD

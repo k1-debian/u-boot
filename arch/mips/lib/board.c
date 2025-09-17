@@ -298,7 +298,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 
 	bd = gd->bd;
 
-#ifdef CONFIG_GINFO_FIX
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
 	unsigned int global_params_addr = CONFIG_SPL_TEXT_BASE + CONFIG_GLOBAL_PARAMS_OFFSET;
 	gd->arch.gp = (struct global_shared_params *)global_params_addr;
 #endif

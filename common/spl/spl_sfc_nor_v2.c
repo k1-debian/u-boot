@@ -15,6 +15,11 @@
 #include "spl_rtos.h"
 #include "spl_rtos_argument.h"
 
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+DECLARE_GLOBAL_DATA_PTR;
+#endif
+static unsigned int sfc_params_addr;
+
 static struct spl_rtos_argument spl_rtos_args;
 static struct rtos_boot_os_args os_boot_args;
 
@@ -688,7 +693,7 @@ static void secure_check_hash_rootfs(const char *name, void *buffer)
 	unsigned int ram_size = get_ddr_size() << 20;
 	int ret;
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 	if (!strncmp(name, CONFIG_SPL_OS_NAME2, strlen(CONFIG_SPL_OS_NAME2)))
@@ -854,6 +859,13 @@ void sfc_init(void)
 	flash->sfc->cdt_addr = (volatile void *)(SFC_BASE + SFC_CDT);
 	create_cdt_table(flash, DEFAULT_CDT);
 
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+	sfc_params_addr = gd->arch.gp->sfc_params_addr;
+#else
+	sfc_params_addr = CONFIG_SPIFLASH_PART_OFFSET;
+#endif
+
+
 	/* reset nor flash */
 	reset_nor();
 
@@ -868,8 +880,8 @@ void sfc_init(void)
 	unsigned int nor_id = sfc_nor_read_id();
 	/* get nor flash params */
 	erase_cmd_offset = offsetof(struct burner_params, spi_nor_info.sector_erase);
-	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct burner_params), (unsigned char *)&flash->g_nor_info, sizeof(struct mini_spi_nor_info));
-	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET + erase_cmd_offset, (unsigned char *)&sector_erase, sizeof(struct spi_nor_cmd_info));
+	sfc_nor_read_params(sfc_params_addr + sizeof(struct burner_params), (unsigned char *)&flash->g_nor_info, sizeof(struct mini_spi_nor_info));
+	sfc_nor_read_params(sfc_params_addr + erase_cmd_offset, (unsigned char *)&sector_erase, sizeof(struct spi_nor_cmd_info));
 #ifdef CONFIG_SPL_EXTRA_NOR_INFO_ENABLE
 	if (nor_id != flash->g_nor_info.id) {
 		struct spi_nor_info_tag tag;
@@ -895,7 +907,7 @@ void sfc_init(void)
 
 #ifdef CONFIG_NOR_COMMON_PARAMS
 	if (nor_id != flash->g_nor_info.id) {
-                unsigned int nor_common_params_offset = CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct builtin_params);
+                unsigned int nor_common_params_offset = sfc_params_addr + sizeof(struct builtin_params);
                 unsigned int nor_common_params_length = sizeof(struct mini_spi_nor_info) * CONFIG_NOR_COMMON_PARAMS_COUNT;
 
                 unsigned int nor_info_list_offset = nor_common_params_offset + nor_common_params_length;
@@ -908,15 +920,17 @@ void sfc_init(void)
                 int i = 0, j = 0;
 
                 for (i = 0; i < CONFIG_NOR_COMMON_PARAMS_COUNT; i++) {
+                	memset(nor_info_list, 0, nor_info_list_length);
                         sfc_nor_read_params(nor_info_list_offset, (unsigned char *)nor_info_list, nor_info_list_length);
 
                         nor_id_list_offset = nor_info_list_offset + nor_info_list_length;
-                        nor_id_list_length = sizeof(struct nor_id) * nor_info_list[i].id_count;
+                        nor_id_list_length = sizeof(struct nor_id) * nor_info_list->id_count;
+                        memset(nor_info_list + nor_info_list_length, 0, nor_id_list_length);
                         sfc_nor_read_params(nor_id_list_offset, (unsigned char *)nor_info_list + nor_info_list_length, nor_id_list_length);
-                        for (j = 0; j < nor_info_list[i].id_count; j++) {
-                                id_list = ((struct nor_id *)&(nor_info_list[i].id_list)) + j;
+                        for (j = 0; j < nor_info_list->id_count; j++) {
+                                id_list = ((struct nor_id *)&(nor_info_list->id_list)) + j;
                                 if (id_list->id == nor_id) {
-                                        found_cmd_type = nor_info_list[i].cmd_type;
+                                        found_cmd_type = nor_info_list->cmd_type;
                                         break;
                                 }
                         }
@@ -1180,7 +1194,7 @@ static void spl_sfc_nor_rtos_boot(void)
 	unsigned int rtos_addr = CONFIG_RTOS_OFFSET;
 	struct norflash_partitions partition;
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
@@ -1282,7 +1296,7 @@ static char *spl_sfc_nor_boot_rtos_load_os(void)
 	char *dtbname = CONFIG_DTB_NAME;
 #endif /* CONFIG_SPL_OF_LIBFDT */
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partitions);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partitions);
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
 	int is_kernel2 = 0;
@@ -1362,7 +1376,7 @@ void spl_sfc_nor_os_load(void)
 	struct norflash_partitions partition;
 	unsigned int bootimg_addr = 0;
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
 
 #ifdef CONFIG_SPL_OF_LIBFDT
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_DTB_NAME);
@@ -1507,7 +1521,7 @@ void spl_ota_load_image(void)
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 	//memset(header, 0, sizeof(struct image_header));
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char*)&partition);
 
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1){
@@ -1554,7 +1568,7 @@ void spl_vmlinux_load(void)
 	unsigned int bootimg_size = 0;
 	struct norflash_partitions partition;
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 
 	bootimg_addr = get_part_offset_by_name(partition, CONFIG_SPL_OS_NAME);
 	if (bootimg_addr == -1) {
@@ -1582,7 +1596,7 @@ static char *spl_sfc_nor_os_ota_load(void)
 	int is_kernel2=0;
 	const char *kernel_name=CONFIG_SPL_OS_NAME;
 
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 	img_addr = get_part_offset_by_name(partition, CONFIG_SPL_OTA_NAME);
 	if (img_addr != -1) {
 		char buf[128];
@@ -1631,7 +1645,7 @@ static void spl_sfc_nor_rtos_ota_boot(void)
 	unsigned int ota_offset;
 	unsigned int offset;
 	struct norflash_partitions partition;
-	sfc_read_data(CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 
 	ota_offset = get_part_offset_by_name(partition, CONFIG_SPL_OTA_NAME);
 	if (ota_offset != -1) {
@@ -1662,6 +1676,35 @@ char* spl_sfc_nor_load_image(void)
 	sfc_init();
 	spl_rtos_args.os_boot_args = NULL;
 	spl_rtos_args.card_params = NULL;
+
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+	struct norflash_partitions partitions;
+	struct image_header *kernel_header;
+	int kernel_offset;
+
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2,
+						sizeof(struct norflash_partitions), (unsigned char*)&partitions);
+	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+	kernel_offset = get_part_offset_by_name(partitions, "kernel");
+	sfc_read_data(kernel_offset, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
+
+	if(kernel_header->ih_os == IH_OS_ALIOS){
+		spl_parse_image_header(kernel_header);
+		sfc_read_data(kernel_offset, spl_image.size, spl_image.load_addr);
+	} else if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
+		struct image_header *header;
+		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
+		header->ih_name[IH_NMLEN - 1] = 0;
+		sfc_read_data(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN,(unsigned char *)CONFIG_SYS_TEXT_BASE);
+		spl_parse_image_header(header);
+	} else if(kernel_header->ih_comp == IH_COMP_NONE && kernel_header->ih_os == IH_OS_LINUX){	/* CONFIG_SPL_OS_BOOT */
+		spl_sfc_nor_os_load();
+	}
+
+	return NULL;
+#else /* CONFIG_SPL_AUTO_DETECT_BOOT */
+
 #ifdef CONFIG_BOOT_RTOS_OTA
 	spl_sfc_nor_rtos_ota_boot();
 #endif
@@ -1696,5 +1739,6 @@ char* spl_sfc_nor_load_image(void)
 	}
 	return NULL;
 #endif
+#endif	/* CONFIG_SPL_AUTO_DETECT_BOOT */
 }
 

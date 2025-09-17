@@ -131,6 +131,7 @@ static const table_entry_t uimage_os[] = {
 	{	IH_OS_SOLARIS,	"solaris",	"Solaris",		},
 	{	IH_OS_SVR4,	"svr4",		"SVR4",			},
 #endif
+	{	IH_OS_ALIOS,	"alios",	"Alios",		},
 	{	-1,		"",		"",			},
 };
 

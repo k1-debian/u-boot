@@ -111,6 +111,7 @@ struct global_shared_params {
 	uint32_t ddrfreq;
 	uint32_t uart_idx;
 	uint32_t baud_rate;
+	uint32_t sfc_params_addr;
 };
 
 void dump_gi(struct global_info *gi);

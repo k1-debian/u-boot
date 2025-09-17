@@ -41,7 +41,15 @@
 #define CONFIG_SYS_AHB2_FREQ		300000000	/*APB = AHB2/2*/
 
 #define CONFIG_GLOBAL_PARAMS_OFFSET		0x14
-/* #define CONFIG_GINFO_FIX */
+/* #define CONFIG_USE_GLOBAL_SHARED_PARAMS */
+
+/* #define CONFIG_SPL_AUTO_DETECT_BOOT */
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+#define CONFIG_SPL_OS_BOOT
+#ifdef CONFIG_SPL_SFC_NAND
+#define CONFIG_OTA_VERSION30
+#endif
+#endif
 
 /* Device Tree Configuration*/
 /*#define CONFIG_OF_LIBFDT 1*/
@@ -191,8 +199,14 @@
 #ifdef CONFIG_SPL_OS_BOOT
     #ifdef  CONFIG_SPL_SFC_NOR
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
-    #else
+    #elif defined (CONFIG_SPL_SFC_NAND)
 	     #define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON "ip=off init=/linuxrc ubi.mtd=2 root=ubi0:rootfs ubi.mtd=3 rootfstype=ubifs rw"
+    #else
+	#if defined(CONFIG_JZ_MMC_MSC0)
+		#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+	#elif defined(CONFIG_JZ_MMC_MSC2)
+		#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
+	#endif
     #endif
     #ifdef CONFIG_OTA_VERSION30
 		#define CONFIG_PAT_KERNEL_NAME	  "kernel"
@@ -225,12 +239,19 @@
              #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock2 rw"
      #endif /* CONFIG_BOOT_VMLINUX */
 
+     #if defined(CONFIG_JZ_MMC_MSC0) ||defined(CONFIG_JZ_MMC_MSC2)
+     #define CONFIG_SPL_OS_NAME        "boot" /* sd offset of xImage being loaded */
+     #else
      #define CONFIG_SPL_OS_NAME        "kernel" /* spi offset of xImage being loaded */
+     #endif
+
      #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
      #define CONFIG_SYS_SPL_OTA_ARGS_ADDR    CONFIG_SPL_OTA_BOOTARGS
      #define CONFIG_BOOTX_BOOTARGS       BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=cramfs root=/dev/mtdblock6 rw"
+#ifndef CONFIG_SPL_AUTO_DETECT_BOOT
      #undef  CONFIG_BOOTCOMMAND
      #define CONFIG_BOOTCOMMAND    "bootx sfc 0x80f00000"
+#endif
      #ifdef CONFIG_BOOT_RTOS
              #define CONFIG_LOAD_ADDR	0x80004000
      #else
@@ -317,6 +338,23 @@
 #define CONFIG_KUNPENG_OTA_VERSION20
 #endif
 
+#define CONFIG_SPL_PAD_TO		0x6000	/* equal to spl max size 24k */
+
+#ifndef CONFIG_SPL_AUTO_DETECT_BOOT
+#define CONFIG_SPL_MAX_SIZE		0x5000
+#define CONFIG_UBOOT_OFFSET		CONFIG_SPL_PAD_TO
+#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
+#endif
+#else
+#define CONFIG_SPL_MAX_SIZE		CONFIG_SPL_PAD_TO
+#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+#define CONFIG_SPIFLASH_PART_OFFSET		CONFIG_SPL_PAD_TO		/* 0x6000 */
+#define CONFIG_SPIFLASH_PART_SIZE	0xc00
+#endif
+#define CONFIG_UBOOT_OFFSET		(CONFIG_SPL_PAD_TO + CONFIG_SPIFLASH_PART_SIZE)
+#endif
+
 /* sfc nor config */
 #ifdef CONFIG_SPL_SFC_NOR
 #define CONFIG_JZ_SFC
@@ -325,13 +363,16 @@
 #define CONFIG_SPI_SPL_CHECK
 #define CONFIG_SFC_NOR_RATE	400000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_SFC_QUAD
-#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
-#define CONFIG_SPI_NORFLASH_PART_OFFSET		0x5874
+#define CONFIG_SPI_NORFLASH_PART_OFFSET		(CONFIG_SPIFLASH_PART_OFFSET + 0x74)
 #define CONFIG_NOR_MAJOR_VERSION_NUMBER		1
 #define CONFIG_NOR_MINOR_VERSION_NUMBER		0
 #define CONFIG_NOR_REVERSION_NUMBER		0
 #define CONFIG_NOR_VERSION     (CONFIG_NOR_MAJOR_VERSION_NUMBER | (CONFIG_NOR_MINOR_VERSION_NUMBER << 8) | (CONFIG_NOR_REVERSION_NUMBER <<16))
-/*#define CONFIG_NOR_BUILTIN_PARAMS*/
+/* #define CONFIG_NOR_BUILTIN_PARAMS */
+/* #define CONFIG_NOR_COMMON_PARAMS */
+#ifdef CONFIG_NOR_COMMON_PARAMS
+#define CONFIG_NOR_COMMON_PARAMS_COUNT          3
+#endif
 #endif
 
 /* sfc nand config */
@@ -339,7 +380,6 @@
 #define CONFIG_SFC_NAND_RATE    400000000	/* value <= 400000000(sfc 100Mhz)*/
 #define CONFIG_SFC_QUAD
 #define CONFIG_SPI_SPL_CHECK
-#define CONFIG_SPIFLASH_PART_OFFSET		0x5800
 #define CONFIG_SPI_NAND_BPP                     (2048 +64)      /*Bytes Per Page*/
 #define CONFIG_SPI_NAND_PPB                     (64)            /*Page Per Block*/
 #define CONFIG_JZ_SFC
@@ -508,8 +548,6 @@
 #define CONFIG_SYS_SC_TEXT_BASE     0x80100004
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
 
-#define CONFIG_UBOOT_OFFSET             0x6000
-
 #ifdef CONFIG_JZ_SCBOOT
 #define CONFIG_JZ_SECURE_SUPPORT
 /*#define CONFIG_JZ_CKEYAES*/
@@ -553,7 +591,6 @@
 #else
 #define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/$(SOC)/u-boot-spl.lds"
 #endif
-#define CONFIG_SPL_PAD_TO		24576 /* equal to spl max size */
 
 #define CONFIG_SPL_BOARD_INIT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
@@ -567,7 +604,6 @@
 #else
 #define CONFIG_SPL_TEXT_BASE		0xb2401000
 #endif	/*CONFIG_SPL_NOR_SUPPORT*/
-#define CONFIG_SPL_MAX_SIZE		(18 * 1024)
 
 
 
@@ -590,6 +626,7 @@
   #ifdef CONFIG_SPL_MMC_SUPPORT
 	#define CONFIG_JZ_MMC_SPLMSC		//Configuration SPL stage msc controller use jz_sdhci driver
   #endif
+#define CONFIG_GPT_TAB_BUILT_IN
 #endif /* CONFIG_SPL_MMC_SUPPORT || CONFIG_SPL_JZMMC_SUPPORT */
 
 /**

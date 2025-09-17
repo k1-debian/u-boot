@@ -38,6 +38,10 @@ static const char *const mtdids_default = MTDIDS_DEFAULT;
 static const char *const mtdids_default = "nand0:nand";
 #endif
 
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+DECLARE_GLOBAL_DATA_PTR;
+#endif
+static unsigned int sfc_params_addr;
 static LIST_HEAD(nand_list);
 static struct sfc_flash *flash;
 
@@ -530,9 +534,14 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 static void get_partition_from_spinand(struct sfc_flash *flash)
 {
 	size_t retlen;
-	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET, sizeof(struct jz_sfcnand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+	sfc_params_addr = gd->arch.gp->sfc_params_addr;
+#else
+	sfc_params_addr = CONFIG_SPIFLASH_PART_OFFSET;
+#endif
+	jz_sfcnand_read(flash->mtd, sfc_params_addr, sizeof(struct jz_sfcnand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
 	jz_sfc_nand_burner_param.partition = malloc(sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num);
-	jz_sfcnand_read(flash->mtd, CONFIG_SPIFLASH_PART_OFFSET + sizeof(struct jz_sfcnand_burner_param) - 4,
+	jz_sfcnand_read(flash->mtd, sfc_params_addr + sizeof(struct jz_sfcnand_burner_param) - 4,
 			sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen,
 			(u_char *)jz_sfc_nand_burner_param.partition);
 #ifdef DEBUG

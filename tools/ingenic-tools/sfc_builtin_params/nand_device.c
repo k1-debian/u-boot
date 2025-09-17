@@ -1,4 +1,4 @@
-#include "nand_device.h"
+#include <asm/arch/spinand.h>
 
 /*
  * params: nand flash partitions
@@ -8,10 +8,7 @@ nand_partition_builtin_params_t nand_builtin_params = {
 	.magic_num = SPINAND_MAGIC_NUM,
 
 	/* max 10 partitions*/
-	.partition_num = 3,
-#if 0
 	.partition_num = 4,
-#endif
 
 	.partition = {
 
@@ -29,23 +26,15 @@ nand_partition_builtin_params_t nand_builtin_params = {
 
 		[2].name = "rootfs",
 		[2].offset = 0x900000,
-		[2].size = 0xf700000,
-		[2].mask_flags = NANDFLASH_PART_RW,
-		[2].manager_mode = UBI_MANAGER,
-
-#if 0
-		[2].name = "rootfs",
-		[2].offset = 0x900000,
-		[2].size = 0x2800000,
+		[2].size = 0x6000000,
 		[2].mask_flags = NANDFLASH_PART_RW,
 		[2].manager_mode = UBI_MANAGER,
 
 		[3].name = "userdata",
-		[3].offset = 0x3100000,
-		[3].size = 0xcf00000,
+		[3].offset = 0x6900000,
+		[3].size = 0x100000,
 		[3].mask_flags = NANDFLASH_PART_RW,
 		[3].manager_mode = UBI_MANAGER,
-#endif
 	},
 };
 

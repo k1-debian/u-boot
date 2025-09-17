@@ -37,7 +37,7 @@ endif
 COBJS-$(CONFIG_GPIO_SPI_TO_UART) = gpio_spi_to_uart.o
 COBJS-$(CONFIG_GPIO_SPI_TO_UART2) = gpio_spi_to_uart2.o
 COBJS-$(has_jz_serial)	= jz_serial.o
-COBJS-$(CONFIG_GINFO_FIX) += global_info.o
+COBJS-$(CONFIG_USE_GLOBAL_SHARED_PARAMS) += global_info.o
 
 ifdef CONFIG_SPL_BUILD
 COBJS-y	+= spl_cpu.o

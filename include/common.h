@@ -135,7 +135,7 @@ typedef volatile unsigned char	vu_char;
 #define debug(fmt, args...)			\
 	debug_cond(_DEBUG, fmt, ##args)
 
-#ifndef CONFIG_SPL_SERIAL_SUPPORT
+#if !defined(CONFIG_SPL_SERIAL_SUPPORT) || defined(CONFIG_SPL_AUTO_DETECT_BOOT)
 #define serial_debug(fmt, args...)
 #else
 #define serial_debug(fmt, args...)		\

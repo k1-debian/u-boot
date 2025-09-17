@@ -2020,6 +2020,32 @@ char *spl_mmc_load_image(void)
 
 	jzmmc_init();
 
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+	struct image_header *kernel_header;
+	int kernel_sector, ret;
+	ret = spl_get_built_in_gpt_partition("boot", &kernel_sector, NULL);
+	if (ret) {
+		printf("mmc:failed get part boot/kernel\n");
+		return ret;
+	}
+
+	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE -
+					 sizeof(struct image_header));
+
+	/* read image header to find the image size & load address */
+	ret = mmc_block_read(kernel_sector, 1, kernel_header);
+	if (ret < 0) {
+		printf("spl: mmc blk read err - %lu\n", ret);
+		return ret;
+	}
+
+	if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
+		mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR, NULL);
+	} else if(kernel_header->ih_comp == IH_COMP_NONE && kernel_header->ih_os == IH_OS_LINUX){	/* CONFIG_SPL_OS_BOOT */
+		mmc_load_img_from_partition(CONFIG_SPL_OS_NAME);
+	}
+	return NULL;
+#else /* CONFIG_SPL_AUTO_DETECT_BOOT */
 
 #ifdef CONFIG_BOOT_RTOS_OTA
 	mmc_load_rtos_ota_boot();
@@ -2055,4 +2081,5 @@ char *spl_mmc_load_image(void)
 	mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR, NULL);
 #endif
 	return NULL;
+#endif	/* CONFIG_SPL_AUTO_DETECT_BOOT */
 }

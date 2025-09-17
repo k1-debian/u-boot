@@ -4,6 +4,11 @@
 #include <asm/arch/spinand_cmd.h>
 #include <linux/types.h>
 #include <linker_lists.h>
+#include <mtd/mtd-abi.h>
+#include <config.h>
+
+#define NANDFLASH_PART_RW 0
+#define NANDFLASH_PART_RO (MTD_WRITEABLE)
 
 #define SPINAND_MAGIC_NUM	0x646e616e   //ascii "nand"
 
@@ -20,6 +25,12 @@ struct jz_sfcnand_burner_param {
 	int32_t partition_num;
 	struct jz_sfcnand_partition *partition;
 };
+
+typedef struct nand_partition_builtin_params {
+	uint32_t magic_num;
+	int32_t partition_num;
+	struct jz_sfcnand_partition partition[PARTITION_NUM];
+}nand_partition_builtin_params_t;
 
 struct jz_sfcnand_partition_param {
 	uint8_t num_partition;

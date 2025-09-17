@@ -17,11 +17,16 @@
 
 #define SPINAND_PARAM_SIZE			1024
 
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+DECLARE_GLOBAL_DATA_PTR;
+#endif
+static unsigned int sfc_params_addr;
 static struct spl_rtos_argument spl_rtos_args;
 static struct rtos_boot_os_args os_boot_args;
 
 static struct spl_nand_param *curr_device;
 
+extern struct spl_image_info spl_image;
 #ifdef CONFIG_X2580
 /* nand 未经测试 */
 static int x2580_sfc_change_io_function(int is_quad)
@@ -553,7 +558,7 @@ struct jz_sfcnand_partition_param *get_partitions(void)
 	static struct jz_sfcnand_partition_param partitions;
 
 	/*read param*/
-	sfc_nand_load(CONFIG_SPIFLASH_PART_OFFSET, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
+	sfc_nand_load(sfc_params_addr, SPINAND_PARAM_SIZE, CONFIG_SYS_TEXT_BASE);
 	burn_param = (void *)(CONFIG_SYS_TEXT_BASE);
 	partitions.num_partition = burn_param->partition_num;
 	partitions.partition = (struct jz_sfcnand_partition *)&burn_param->partition;
@@ -773,6 +778,12 @@ void sfc_init(void)
 		return;
 
 	sfc_is_inited = 1;
+
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+	sfc_params_addr = gd->arch.gp->sfc_params_addr;
+#else
+	sfc_params_addr = CONFIG_SPIFLASH_PART_OFFSET;
+#endif
 
 	sfc_controler_init();
 	spinand_init();
@@ -1343,10 +1354,139 @@ static struct ota_ops ota_ops = {
 };
 #endif
 
+void *fix_bootargs(const char *bootargs, struct jz_sfcnand_partition_param *partitions)
+{
+	if (!bootargs) {
+		debug("bootargs is NULL\n");
+		return NULL;
+	}
+
+	//printf("bootargs: %s\n", bootargs);
+	int fs_num = -1, ud_num = -1, i = 0;
+	static char buffer[256]; // 增加缓冲区大小以容纳可能的更长字符串
+
+	// 查找分区编号
+	for(i = 0; i < partitions->num_partition; i++) {
+		if (!strcmp(partitions->partition[i].name, "rootfs"))
+			fs_num = i;
+		if (!strcmp(partitions->partition[i].name, "userdata"))
+			ud_num = i;
+	}
+
+	if (fs_num < 0 || ud_num < 0 || strlen(bootargs) >= sizeof(buffer))
+		return (void*)bootargs;
+
+	// 检查并替换"system"为"rootfs"
+	const char *system_ptr = strstr(bootargs, "system");
+	if (system_ptr) {
+		// 复制system之前的部分
+		int len = system_ptr - bootargs;
+		strncpy(buffer, bootargs, len);
+		buffer[len] = '\0';
+
+		// 添加"rootfs"
+		strcat(buffer, "rootfs");
+
+		// 复制system之后的部分
+		strcat(buffer, system_ptr + 6); // 6是"system"的长度
+
+		// 使用修改后的字符串继续处理
+		bootargs = buffer;
+	}
+
+	// 查找第一个 ubi.mtd= 位置
+	const char *p1 = strstr(bootargs, "ubi.mtd=");
+	if (!p1)
+		return (void*)bootargs;
+
+	// 查找第一个数字的结束位置
+	const char *num_end1 = p1 + 8;
+	while (*num_end1 >= '0' && *num_end1 <= '9')
+		num_end1++;
+
+	// 查找第二个 ubi.mtd= 位置
+	const char *p2 = strstr(num_end1, "ubi.mtd=");
+	if (!p2)
+		return (void*)bootargs;
+
+	// 查找第二个数字的结束位置
+	const char *num_end2 = p2 + 8;
+	while (*num_end2 >= '0' && *num_end2 <= '9')
+		num_end2++;
+
+	// 如果已经使用了缓冲区，我们需要使用另一个缓冲区
+	static char final_buffer[256];
+	char *output_buffer = (system_ptr) ? final_buffer : buffer;
+
+	// 构建新字符串
+	char *ptr = output_buffer;
+
+	// 复制第一部分（到第一个ubi.mtd=之后）
+	int len1 = p1 + 8 - bootargs;
+	strncpy(ptr, bootargs, len1);
+	ptr += len1;
+
+	// 添加第一个新值
+	ptr += sprintf(ptr, "%d", fs_num);
+
+	// 复制中间部分
+	int len2 = p2 + 8 - num_end1;
+	strncpy(ptr, num_end1, len2);
+	ptr += len2;
+
+	// 添加第二个新值
+	ptr += sprintf(ptr, "%d", ud_num);
+
+	// 复制剩余部分
+	strcpy(ptr, num_end2);
+
+	return output_buffer;
+}
+
 char* spl_sfc_nand_load_image(void)
 {
 	spl_rtos_args.os_boot_args = NULL;
 	spl_rtos_args.card_params = NULL;
+
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+	struct jz_sfcnand_partition_param *partitions;
+	struct image_header *kernel_header;
+	int kernel_offset, nv_offset;
+
+	sfc_init();
+	partitions = get_partitions();
+
+	nv_offset = get_part_offset_by_name(partitions, "nv");
+	if(nv_offset > 0){	/* ota mode */
+		printf("boot to ota\n");
+		register_ota_ops(&ota_ops);
+		return spl_ota_load_image();
+	}
+
+	/* normal mode */
+	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+	kernel_offset = get_part_offset_by_name(partitions, "kernel");
+	sfc_nand_load(kernel_offset, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
+
+	if(kernel_header->ih_os == IH_OS_ALIOS){
+		spl_parse_image_header(kernel_header);
+		sfc_nand_load(kernel_offset, spl_image.size, spl_image.load_addr);
+		return NULL;
+	} else if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
+		struct image_header *header;
+		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
+		sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (unsigned int)CONFIG_SYS_TEXT_BASE);
+		spl_parse_image_header(header);
+		return NULL;
+	} else if(kernel_header->ih_comp == IH_COMP_NONE && kernel_header->ih_os == IH_OS_LINUX){	/* CONFIG_SPL_OS_BOOT */
+		spl_sfc_nand_os_load();
+		char *bootargs;
+		bootargs = fix_bootargs(CONFIG_SYS_SPL_ARGS_ADDR, partitions);
+		return bootargs;
+	}
+	return NULL;
+#else	/* CONFIG_SPL_AUTO_DETECT_BOOT */
 
 #ifdef CONFIG_BOOT_RTOS_OTA
 	spl_sfc_nand_rtos_ota_boot();
@@ -1396,4 +1536,5 @@ char* spl_sfc_nand_load_image(void)
 	}
 	return NULL;
 #endif
+#endif	/* CONFIG_SPL_AUTO_DETECT_BOOT */
 }

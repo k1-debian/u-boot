@@ -31,7 +31,7 @@
 
 
 .macro SETUP_GLOBAL_PARAMS_HEADER reg=0
-#if defined(CONFIG_GINFO_FIX)
+#if defined(CONFIG_USE_GLOBAL_SHARED_PARAMS)
 #if defined(CONFIG_GINFO_VERSION)
 	.word CONFIG_GINFO_VERSION
 #else
@@ -42,7 +42,12 @@
 	.word CONFIG_SYS_MEM_FREQ
 	.word CONFIG_SYS_UART_INDEX
 	.word CONFIG_BAUDRATE
-	.space (512-44),0
+#if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+	.word CONFIG_SPIFLASH_PART_OFFSET
+#else
+	.word 0x00000000
+#endif
+	.space (512-48),0
 #else
 	.space (512-20),0
 #endif

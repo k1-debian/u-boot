@@ -202,6 +202,32 @@ int main(int argc, char *argv[])
 
         free(p_common_params);
 #endif
+
+		off_t current_pos = lseek(fd, 0, SEEK_CUR);
+		if (current_pos < CONFIG_UBOOT_OFFSET) {
+			size_t fill_size = CONFIG_UBOOT_OFFSET - current_pos;
+			uint8_t *fill_buf = malloc(fill_size);
+			if (!fill_buf) {
+				printf("malloc for fill_buf failed\n");
+				close(fd);
+				return -1;
+			}
+			memset(fill_buf, 0xFF, fill_size);
+
+			if (write(fd, fill_buf, fill_size) != fill_size) {
+				printf("write padding Error\n");
+				free(fill_buf);
+				close(fd);
+				return -1;
+			}
+			free(fill_buf);
+			printf("Padding %zu bytes with 0xFF (from 0x%lx to 0x6800)\n",
+					fill_size, current_pos);
+		} else {
+			printf("No padding needed (current size: 0x%lx >= CONFIG_UBOOT_OFFSET)\n", current_pos);
+			return -1;
+
+		}
 	close(fd);
 
         return 0;

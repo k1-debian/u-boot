@@ -10,6 +10,10 @@
 #include <cloner/cloner.h>
 #endif
 
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+DECLARE_GLOBAL_DATA_PTR;
+#endif
+static unsigned int sfc_params_addr;
 
 struct sfc_flash *flash = NULL;
 struct burner_params params;
@@ -18,11 +22,8 @@ struct mini_spi_nor_info mini_params;
 
 static int is_readonly_partition(uint32_t offset, uint32_t size);
 
-
 //#define SFC_NOR_CLONER_DEBUG
 //#define SFC_REG_DEBUG
-
-
 
 static struct spi_nor_cmd_info set_status_info[3] = {
 	[0] = {
@@ -721,9 +722,15 @@ int sfc_nor_flash_init(void)
 	sfc_nor_reset();
 
 #ifndef CONFIG_BURNER
+#ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
+	sfc_params_addr = gd->arch.gp->sfc_params_addr;
+#else
+	sfc_params_addr = CONFIG_SPIFLASH_PART_OFFSET;
+#endif
+
 	set_flash_timing(flash->sfc, DEF_TCHSH, DEF_TSLCH, DEF_TSHSL_R, DEF_TSHSL_W);
 	/* Note: make sure the flash parameter are on die0. */
-	sfc_nor_read_params(CONFIG_SPIFLASH_PART_OFFSET, (unsigned char *)&params, sizeof(struct burner_params));
+	sfc_nor_read_params(sfc_params_addr, (unsigned char *)&params, sizeof(struct burner_params));
 	printf("params.magic : 0x%x   params.version : 0x%x\n", params.magic, params.version);
 	if((params.magic != NOR_MAGIC) || (params.version != NOR_VERSION)) {
 		printf("sfc nor read params error\n");

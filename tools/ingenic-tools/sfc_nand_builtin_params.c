@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <config.h>
-#include "sfc_builtin_params/nand_device.h"
+#include <asm/arch/spinand.h>
 
 /* global params */
 extern nand_partition_builtin_params_t nand_builtin_params;
@@ -80,6 +80,28 @@ int main(int argc, char *argv[])
 	if (write(fd, (void *)&nand_builtin_params, params_length) != params_length) {
 		printf("write %s Error\n", spl_path);
 		return -1;
+	}
+
+	if (params_length < CONFIG_SPIFLASH_PART_SIZE) {
+		int padding_size = CONFIG_SPIFLASH_PART_SIZE - params_length;
+		char *pad_buffer = malloc(padding_size);
+		if (!pad_buffer) {
+			printf("Failed to allocate padding buffer\n");
+			close(fd);
+			return -1;
+		}
+
+		memset(pad_buffer, 0xFF, padding_size);
+
+		if (write(fd, pad_buffer, padding_size) != padding_size) {
+			printf("Write padding data to %s failed\n", spl_path);
+			free(pad_buffer);
+			close(fd);
+			return -1;
+		}
+
+		free(pad_buffer);
+		printf("Added %d bytes of 0xFF padding\n", padding_size);
 	}
 
 	close(fd);
