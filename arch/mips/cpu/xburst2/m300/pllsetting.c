@@ -46,15 +46,15 @@ static void pll_sets(void)
 {
 	if(APLL_EN_VALUE) {
 		pll_set(CPM_CPAPCR);
-		printf("CPA_CPAPCR:%x\n",cpm_inl(CPM_CPAPCR));
+		serial_debug("CPA_CPAPCR:%x\n",cpm_inl(CPM_CPAPCR));
 	}
 	if(MPLL_EN_VALUE){
 		pll_set(CPM_CPMPCR);
-		printf("CPM_CPMPCR:%x\n",cpm_inl(CPM_CPMPCR));
+		serial_debug("CPM_CPMPCR:%x\n",cpm_inl(CPM_CPMPCR));
 	}
 	if(EPLL_EN_VALUE){
 		pll_set(CPM_CPEPCR);
-		printf("CPM_CPEPCR:%x\n",cpm_inl(CPM_CPEPCR));
+		serial_debug("CPM_CPEPCR:%x\n",cpm_inl(CPM_CPEPCR));
 	}
 }
 static void cpccr_default(void)
@@ -84,7 +84,7 @@ static void cpccr_sets(void)
 		(PDIV_REG_VALUE <<  16);
 	cpm_outl(val,CPM_CPCCR);
 	while((cpm_inl(CPM_CPCSR) & 0xf0000000) != 0xf0000000);
-	printf("CPM_CPCCR:%x\n",cpm_inl(CPM_CPCCR));
+	serial_debug("CPM_CPCCR:%x\n",cpm_inl(CPM_CPCCR));
 }
 int pll_init(void)
 {

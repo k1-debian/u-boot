@@ -295,20 +295,20 @@ void ddrp_software_calibration(void)
 		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
 	}
 
-	printf("ddr calib test finish\n");
+	serial_debug("ddr calib test finish\n");
 #endif
-	printf("soft A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
-	printf("soft A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
-	printf("soft B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
-	printf("soft B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
-	printf("soft A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
-	printf("soft A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
-	printf("soft B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
-	printf("soft B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
-	printf("soft A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
-	printf("soft A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
-	printf("soft B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
-	printf("soft B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
+	serial_debug("soft A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
+	serial_debug("soft A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
+	serial_debug("soft B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
+	serial_debug("soft B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
+	serial_debug("soft A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
+	serial_debug("soft A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
+	serial_debug("soft B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
+	serial_debug("soft B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
+	serial_debug("soft A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
+	serial_debug("soft A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
+	serial_debug("soft B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
+	serial_debug("soft B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
 
 #if 0
 	{
@@ -389,18 +389,18 @@ void ddrp_auto_calibration(void)
 	printf("ddr calib test finish\n");
 #endif
 
-	printf("hard A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
-	printf("hard A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
-	printf("hard B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
-	printf("hard B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
-	printf("hard A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
-	printf("hard A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
-	printf("hard B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
-	printf("hard B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
-	printf("hard A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
-	printf("hard A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
-	printf("hard B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
-	printf("hard B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
+	serial_debug("hard A_calib 0x74 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x74 << 2)));
+	serial_debug("hard A_calib 0x75 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x75 << 2)));
+	serial_debug("hard B_calib 0xa4 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa4 << 2)));
+	serial_debug("hard B_calib 0xa5 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0xa5 << 2)));
+	serial_debug("hard A_bypass 0x56 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x56 << 2)));
+	serial_debug("hard A_bypass 0x66 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x66 << 2)));
+	serial_debug("hard B_bypass 0x86 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x86 << 2)));
+	serial_debug("hard B_bypass 0x96 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x96 << 2)));
+	serial_debug("hard A_rdll 0x58 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x58 << 2)));
+	serial_debug("hard A_rdll 0x68 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x68 << 2)));
+	serial_debug("hard B_rdll 0x88 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x88 << 2)));
+	serial_debug("hard B_rdll 0x98 : 0x%x\n", *(volatile unsigned int *)(0xb3011000 + (0x98 << 2)));
 
 
 

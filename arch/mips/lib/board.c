@@ -301,7 +301,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #ifdef CONFIG_GINFO_FIX
 	unsigned int global_params_addr = CONFIG_SPL_TEXT_BASE + CONFIG_GLOBAL_PARAMS_OFFSET;
 	gd->arch.gp = (struct global_shared_params *)global_params_addr;
-	dump_gp(gd->arch.gp);
 #endif
 
 	/* The Malloc area is immediately below the monitor copy in DRAM */

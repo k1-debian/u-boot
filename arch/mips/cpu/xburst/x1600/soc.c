@@ -150,11 +150,6 @@ void board_init_f(ulong dummy)
 	sdram_init();
 	debug("SDRAM init ok\n");
 
-#ifdef CONFIG_GINFO_FIX
-	dump_gi(gd->arch.gi);
-	dump_gp(gd->arch.gp);
-#endif
-
 #ifdef CONFIG_SIMULATION
 	{
 		hello_word();

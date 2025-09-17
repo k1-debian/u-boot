@@ -24,6 +24,8 @@ static struct ddr_latency_table wl_lpddr3[]= {
 	{1466000000,6},
 	{1600000000,6},
 };
+
+#if 0
 static struct ddr_out_impedance out_impedance[]={
 	{80000,5},
 	{60000,7},
@@ -31,6 +33,7 @@ static struct ddr_out_impedance out_impedance[]={
 	{40000,11},
 	{34000,13},
 };
+#endif
 
 static int find_ddr_lattency(struct ddr_latency_table *table,int size,unsigned int freq)
 {

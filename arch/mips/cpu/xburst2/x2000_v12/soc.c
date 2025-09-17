@@ -116,7 +116,7 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
-	serial_debug("ERROR EPC %x\n", read_c0_errorepc());
+	printf("ERROR EPC %x\n", read_c0_errorepc());
 	serial_debug("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 	if(*(volatile unsigned int *)0xbfc00084 == 0x244232c8) {
 		serial_debug("Current Version: V2\n");
@@ -152,10 +152,6 @@ void board_init_f(ulong dummy)
 	ddr_basic_tests();
 #endif
 
-#ifdef CONFIG_GINFO_FIX
-	dump_gi(gd->arch.gi);
-	dump_gp(gd->arch.gp);
-#endif
 
 #ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT
        serial_debug("run start1 firmware finished, return to bootrom!\n");

@@ -143,11 +143,6 @@ void board_init_f(ulong dummy)
 	ddr_basic_tests();
 #endif
 
-#ifdef CONFIG_GINFO_FIX
-	dump_gi(gd->arch.gi);
-	dump_gp(gd->arch.gp);
-#endif
-
 
 #ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT
        printf("run start1 firmware finished, return to bootrom!\n");

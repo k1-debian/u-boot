@@ -129,11 +129,6 @@ static void ddrp_set_ck_drv(struct phy_drvodt_config *drvodt)
 }
 static void ddrp_zq_calibration(int bypass, struct phy_drvodt_config *drvodt)
 {
-	unsigned tmp;
-	unsigned int pu_drv = 0;
-	unsigned int pd_drv = 0;
-	unsigned int pu_odt = 0;
-	unsigned int pd_odt = 0;
 #if 0
 	serial_debug("DDRP_INNOPHY_PU_DRV_CMD:  %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_CMD));
 	serial_debug("DDRP_INNOPHY_PU_DRV_DQ7_0: %x\n", ddr_readl(DDRP_INNOPHY_PU_DRV_DQ7_0));
@@ -263,7 +258,6 @@ static void ddrp_rx_dqs_auto_calibration(void)
 #ifdef CONFIG_DDR_DRVODT_DEBUG
 	timeout = 0x30;
 #endif
-	unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA;
 
 	reg_val &= ~(DDRP_TRAINING_CTRL_DSCSE_BP);
 	reg_val |= DDRP_TRAINING_CTRL_DSACE_START;
@@ -528,7 +522,6 @@ void ddrp_software_calibration(void)
 
 	unsigned int reg_val = ddr_readl(DDRP_INNOPHY_TRAINING_CTRL);
 	unsigned int timeout = 0xffffff;
-	unsigned int wait_cal_done = DDRP_CALIB_DONE_HDQCFA | DDRP_CALIB_DONE_LDQCFA;
 
 	reg_val |= (DDRP_TRAINING_CTRL_DSCSE_BP);
 	reg_val &= ~DDRP_TRAINING_CTRL_DSACE_START;

@@ -212,7 +212,6 @@ static int ddr_refi_div(int reftck, unsigned *div)
 static void ddrc_base_params_creator_common(struct ddrc_reg *ddrc, struct ddr_params *p)
 {
 	int tmp;
-	int div;
 #if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) || defined(CONFIG_AD100))
 	unsigned int rfc;
 #endif
@@ -502,6 +501,7 @@ static void ddrp_config_creator(struct ddrp_reg *ddrp, struct ddr_params *p)
 
 }
 
+#if 0
 static unsigned int frandom(int max)
 {
 	unsigned int rn;
@@ -509,6 +509,7 @@ static unsigned int frandom(int max)
 	max = rn % max;
 	return max;
 }
+#endif
 
 #define swap_bytes(buf,b1,b2) do{				\
 		unsigned char swap;						\
@@ -527,7 +528,7 @@ static void fill_mem_remap(struct ddr_reg_value *reg, struct ddr_params *p)
 	int bit_width;
 	unsigned int remap_array[REMAP_ARR_SIZE];
 	unsigned char *s;
-	int i,width;
+	int i;
 	s = (unsigned char *)remap_array;
 	for(i = 0;i < sizeof(remap_array);i++)
 		s[i] = i;

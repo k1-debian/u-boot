@@ -34,7 +34,7 @@ static void pll_set(unsigned int reg)
 		cpm_outl(val,CPM_CPEPCR);
 		break;
 	default:
-		serial_debug("pll reg[0x%x] not recognise!\n",reg, val);
+		serial_debug("pll reg[0x%x] not recognise!\n",reg);
 	}
 	timeout = 0x10000;
 	while((!(cpm_inl(reg) & (1 << 3))) && --timeout);

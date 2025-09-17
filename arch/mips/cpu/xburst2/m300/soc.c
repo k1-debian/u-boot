@@ -107,9 +107,9 @@ void board_init_f(ulong dummy)
 	printf("ERROR EPC %x\n", read_c0_errorepc());
 	serial_debug("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 	if(*(volatile unsigned int *)0xbfc00084 == 0x244232c8) {
-		printf("Current Version: V2\n");
+		serial_debug("Current Version: V2\n");
 	} else {
-		printf("Current Version: V1\n");
+		serial_debug("Current Version: V1\n");
 	}
 #endif
 #ifndef CONFIG_X2000_FPGA
@@ -139,11 +139,6 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
-#endif
-
-#ifdef CONFIG_GINFO_FIX
-	dump_gi(gd->arch.gi);
-	dump_gp(gd->arch.gp);
 #endif
 
 #ifdef CONFIG_RUN_FIRMWARE_VIA_USB_BOOT

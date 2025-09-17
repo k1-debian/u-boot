@@ -218,7 +218,7 @@ void gpio_set_func(enum gpio_port n, enum gpio_function func, unsigned int pins)
 
 int gpio_request(unsigned gpio, const char *label)
 {
-	printf("%s lable = %s gpio = %d\n",__func__,label,gpio);
+	serial_debug("%s lable = %s gpio = %d\n",__func__,label,gpio);
 	return gpio;
 }
 
@@ -511,7 +511,7 @@ void ingenic_set_vddcim_voltage(u32 voltage)
 	|| defined(CONFIG_X2100) || defined(CONFIG_M300)
 	u32 value, reg_orig, reg_new;
 	if (voltage != GPIO_VOLTAGE_1V8 && voltage != GPIO_VOLTAGE_3V3) {
-		printf("Invalid CIM voltage setting (%d)\n", voltage);
+		serial_debug("Invalid CIM voltage setting (%d)\n", voltage);
 		voltage = GPIO_VOLTAGE_3V3;
 	}
 
@@ -536,7 +536,7 @@ void ingenic_set_vddcim_voltage(u32 voltage)
 	reg_new = cpm_inl(CPM_EXCLK_DS);
 #endif
 
-	printf("Set CIM voltage: %s (reg: 0x%x -> 0x%x)\n",
+	serial_debug("Set CIM voltage: %s (reg: 0x%x -> 0x%x)\n",
 			(voltage == GPIO_VOLTAGE_1V8) ? "1.8V" : "3.3V",
 			reg_orig, reg_new);
 #endif
@@ -562,7 +562,7 @@ void ingenic_set_vddsd_voltage(u32 voltage)
 	cpm_outl(value, CPM_EXCLK_DS);
 	reg_new = cpm_inl(CPM_EXCLK_DS);
 
-	printf("Set SD voltage: %s (reg: 0x%x -> 0x%x)\n",
+	serial_debug("Set SD voltage: %s (reg: 0x%x -> 0x%x)\n",
 			(voltage == GPIO_VOLTAGE_1V8) ? "1.8V" : "3.3V",
 			reg_orig, reg_new);
 #endif

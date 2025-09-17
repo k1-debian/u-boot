@@ -22,7 +22,7 @@
  * MA 02111-1307 USA
  */
 
-#define DEBUG
+/*#define DEBUG*/
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -174,11 +174,6 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
-#endif
-
-#ifdef CONFIG_GINFO_FIX
-	dump_gi(gd->arch.gi);
-	dump_gp(gd->arch.gp);
 #endif
 
 	reallocate_cache();

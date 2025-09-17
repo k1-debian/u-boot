@@ -373,6 +373,7 @@ void ddrc_dfi_init(enum ddr_type type)
 		ddr_writel(DDRC_LMR_MR(11), DDRC_LMR); //set MR11
 		mdelay(1);
 
+#undef DDRC_LMR_MR
 		break;
 
 	case DDR3:
@@ -581,13 +582,12 @@ int get_ddr_params_socid(void)
 int get_ddr_params_normal(void)
 {
 	int found = 0;
-	int size = 0;
 	int i;
 	unsigned int burned_ddr_id = *(volatile unsigned int *)(CONFIG_SPL_TEXT_BASE + 128);
 	uint32_t mask = ~(7 << 3);
 
 #if defined(CONFIG_X2600) || defined(CONFIG_AD100)
-	printf("DDR parameter auto-detection function, the USBCloner version must be greater then v2.5.49.\n");
+	serial_debug("DDR parameter auto-detection function, the USBCloner version must be greater then v2.5.49.\n");
 #endif
 
 	if((burned_ddr_id & 0xffff) != (burned_ddr_id >> 16)) {
