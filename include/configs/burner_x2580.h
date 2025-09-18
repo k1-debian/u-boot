@@ -86,8 +86,45 @@
 /**
  * DDR
 */
-#define CONFIG_DDR_DW32			0	/* 1-32bit-width, 0-16bit-width */
+
+#define CONFIG_DDR_TYPE_DDR3
+#define CONFIG_DDR_DW32                        0       /* 1-32bit-width, 0-16bit-width */
+
+#define CONFIG_DDR3_W631GU6NG_T
+
 #define CONFIG_DDR_INNOPHY
+/*#define CONFIG_DDR_DLL_OFF*/
+#define CONFIG_DDR_CHIP_ODT
+#define CONFIG_DDR_PARAMS_CREATOR
+#define CONFIG_DDR_HOST_CC
+#define CONFIG_DDR_CS0			1	/* 1-connected, 0-disconnected */
+#define CONFIG_DDR_CS1			0	/* 1-connected, 0-disconnected */
+
+#define CONFIG_DDR_HARDWARE_TRAINING
+
+/* KGD driver strength is combined with MR1 A5 and A1 */
+/* #define CONFIG_OPEN_KGD_DRIVER_STRENGTH */
+#ifdef CONFIG_OPEN_KGD_DRIVER_STRENGTH
+#define CONFIG_DDR_DRIVER_OUT_STRENGTH
+#define CONFIG_DDR_DRIVER_OUT_STRENGTH_1 1
+#define CONFIG_DDR_DRIVER_OUT_STRENGTH_0 0
+#endif
+
+/* KGD ODT is combined with RTT_Nom and RTT_WR */
+/* #define CONFIG_OPEN_KGD_ODT */
+#ifdef CONFIG_OPEN_KGD_ODT
+#define CONFIG_DDR_CHIP_ODT_VAL
+#define CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_9 0 /* RTT_Nom_9 is MR1 A9 bit */
+#define CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_6 0 /* RTT_Nom_6 is MR1 A6 bit */
+#define CONFIG_DDR_CHIP_ODT_VAL_RTT_NOM_2 1 /* RTT_Nom_2 is MR1 A2 bit */
+#define CONFIG_DDR_CHIP_ODT_VAL_RTT_WR 0 /* RTT_WR is odt for KGD write of MR2*/
+#endif
+
+#define CONFIG_DDR_PHY_IMPEDANCE 40
+#define CONFIG_DDR_PHY_ODT_IMPEDANCE 120
+#define CONFIG_DDR_AUTO_SELF_REFRESH_CNT 257
+
+
 
 /**
  * Boot command definitions.
