@@ -26,7 +26,9 @@
 #include <config.h>
 #include <common.h>
 #include <ddr/ddr_common.h>
+#ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
+#endif
 
 #include <asm/io.h>
 #include <asm/arch/clk.h>
@@ -354,11 +356,14 @@ void get_ddr_params_burner(void)
 
 void get_ddr_params(void)
 {
+#ifndef CONFIG_BURNER
 	if(ARRAY_SIZE(supported_ddr_reg_values) == 1)
 		global_reg_value = &supported_ddr_reg_values[0];
 	else
 		get_ddr_params_normal();
-
+#else
+	get_ddr_params_burner();
+#endif
 	//dump_generated_reg(global_reg_value);
 
 }
