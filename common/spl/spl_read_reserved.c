@@ -84,7 +84,8 @@ uint32_t crc32_no_table(unsigned int crc,const unsigned char *data, size_t lengt
     }
 
     // 最终结果取反
-    return crc ^ 0xFFFFFFFF;
+    //return crc ^ 0xFFFFFFFF;
+    return crc;
 }
 /* static unsigned int local_crc32(unsigned int crc,unsigned char *buffer, unsigned int size) { */
 /*     unsigned int i; */
@@ -100,16 +101,16 @@ int spinand_read_reserve(struct ota_ops* ota_ops, unsigned int addr, char *buf, 
     ret = ota_ops->flash_read(addr, len, buf);
     if(ret == 0) {
         info = (struct reserved_info *)buf;
-        if(info->len > len + 1) {
+        if(info->len > len + 1 || info->len <= 0) {
             printf("read len too small! \n");
             return -1;
         }
-
         if(crc32_no_table(0xffffffff, info->data, info->len) == info->crc) {
             info->data[info->len] = '\0';
             ret = 0;
         } else {
             printf("crc failed! \n");
+            ret = -1;
         }
     }
     return ret;
