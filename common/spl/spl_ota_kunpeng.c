@@ -83,8 +83,8 @@ static char *mac_buffer  = (char *)0x80001000 + 256 + 64;
 static void spl_ota_load_deviceinfo(void)
 {
     int nandsize = 0;
-    sn_buffer[0] = 0;
-    mac_buffer[0] = 0;
+    memset(sn_buffer, 0, SN_MAX_SIZE);
+    memset(mac_buffer, 0, MAC_MAX_SIZE);
 
 #ifdef CONFIG_READ_SN
     if(nandsize == 0) {
@@ -93,7 +93,7 @@ static void spl_ota_load_deviceinfo(void)
     }
 
     if(NAND_SN_OFF(nandsize) > 0) {
-        if(spinand_read_reserve(ota_ops,NAND_SN_OFF(nandsize),sn_buffer,sizeof(sn_buffer)) != 0) {
+        if(spinand_read_reserve(ota_ops,NAND_SN_OFF(nandsize),sn_buffer,SN_MAX_SIZE) != 0) {
             sn_buffer[0] = 0;
         }
     }
@@ -105,7 +105,7 @@ static void spl_ota_load_deviceinfo(void)
     }
 
     if(NAND_MAC_OFF(nandsize) > 0) {
-        if(spinand_read_reserve(ota_ops,NAND_MAC_OFF(nandsize),mac_buffer,sizeof(mac_buffer)) != 0) {
+        if(spinand_read_reserve(ota_ops,NAND_MAC_OFF(nandsize),mac_buffer,MAC_MAX_SIZE) != 0) {
             mac_buffer[0] = 0;
         }
     }
@@ -282,6 +282,7 @@ char* spl_ota_load_image(void)
 	(defined(CONFIG_NV_ROTATE) || defined(CONFIG_READ_SN) || defined(CONFIG_READ_MAC))
 #error "USE_NV_CMDARGS cannot be used with CONFIG_NV_ROTATE, CONFIG_READ_SN, or CONFIG_READ_MAC"
 #endif
+
     {
         int len = strlen(cmdargs);
         memcpy(args_buffer,cmdargs,len);
