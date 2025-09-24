@@ -83,6 +83,10 @@
         defined(CONFIG_LPDDR3_KGD_MR3_DS)
         #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR3_DS            CONFIG_LPDDR3_KGD_MR3_DS
 #endif
+#if !defined(CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_PD) && \
+        defined(CONFIG_LPDDR3_KGD_MR11_PD)
+        #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_PD           CONFIG_LPDDR3_KGD_MR11_PD
+#endif
 #if !defined(CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_ODT) && \
         defined(CONFIG_LPDDR3_KGD_MR11_ODT)
         #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_ODT          CONFIG_LPDDR3_KGD_MR11_ODT
@@ -201,6 +205,9 @@
 #if defined(CONFIG_DDR_DRIVER_STRENGTH)
 #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_CONFIG                    0x1
 #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR3_DS                    CONFIG_DDR_DRIVER_STRENGTH
+#if !defined(CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_PD)
+        #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_PD           0x0
+#endif
 #if !defined(CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_ODT)
         #define CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_ODT          0x0
 #endif
@@ -259,6 +266,7 @@ static inline void LPDDR3_W63AH6NKB_BI_init(void *data)
         struct lpddr3_mr_config *mr_cfg    = &c->kgd_config.mr_config;
         c->kgd_config.use_kgd_config       = CONFIG_LPDDR3_W63AH6NKB_BI_KGD_CONFIG  ;
         mr_cfg->kgd_mr3_ds                 = CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR3_DS  ;
+	mr_cfg->kgd_mr11_pd                = CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_PD ;
 	mr_cfg->kgd_mr11_odt               = CONFIG_LPDDR3_W63AH6NKB_BI_KGD_MR11_ODT;
 #endif
 #ifdef CONFIG_LPDDR3_W63AH6NKB_BI_PHY_DRVODT_CONFIG

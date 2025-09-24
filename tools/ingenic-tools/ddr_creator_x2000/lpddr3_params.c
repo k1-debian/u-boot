@@ -197,8 +197,10 @@ static void fill_mr_params_lpddr3(struct ddr_params *p, struct kgd_config *kgd_c
 	   11b: RZQ/1
 	*/
         if (kgd_cfg->use_kgd_config) {
+                p->mr11.lpddr3.PD = mr_cfg->kgd_mr11_pd & 1;
                 p->mr11.lpddr3.ODT = mr_cfg->kgd_mr11_odt & 3;
         } else {
+                p->mr11.lpddr3.PD = 0x0;
                 p->mr11.lpddr3.ODT = 0x2;
         }
 

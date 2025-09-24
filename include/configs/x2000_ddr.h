@@ -33,6 +33,7 @@
 	#define CONFIG_DDR_CHIP_ODT
         #define CONFIG_LPDDR3_KGD_CONFIG             0x1
         #define CONFIG_LPDDR3_KGD_MR3_DS             0x2
+        #define CONFIG_LPDDR3_KGD_MR11_PD            0x0
         #define CONFIG_LPDDR3_KGD_MR11_ODT           0x0
 #endif
 

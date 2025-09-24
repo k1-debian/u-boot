@@ -34,6 +34,7 @@ struct lpddr2_mr_config {
 
 struct lpddr3_mr_config {
         unsigned char kgd_mr3_ds;
+        unsigned char kgd_mr11_pd;
         unsigned char kgd_mr11_odt;
 };
 
