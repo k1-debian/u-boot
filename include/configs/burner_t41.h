@@ -138,7 +138,7 @@
  *MTD
  */
 #ifdef CONFIG_MTD_SFCNAND
-#define CONFIG_SFC_NAND_RATE               200000000
+#define CONFIG_SFC_NAND_RATE               50000000
 
 #define CONFIG_CMD_NAND
 #define CONFIG_SYS_NAND_SELF_INIT

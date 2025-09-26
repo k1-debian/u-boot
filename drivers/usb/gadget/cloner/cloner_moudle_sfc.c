@@ -31,6 +31,12 @@ int clmd_sfc_info(struct cloner *cloner)
 		memset(global_args->data, 0, sizeof(*policy_args));
 	}
 #ifdef CONFIG_MTD_SFCNOR
+	int ret = sfc_nor_flash_init();
+	if (ret < 0) {
+		LOG_ERROR("sfc nor init failed\n");
+		return ret;
+	}
+
 	if(policy_args->use_sfc_nor){
 		id_code = get_norflash_id();
 	}

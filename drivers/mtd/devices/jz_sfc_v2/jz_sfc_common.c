@@ -380,13 +380,17 @@ int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup,
 	uint32_t tmp;
 	unsigned long cycle;
 	unsigned long half_cycle;
-	unsigned long long ns;
+	unsigned long long ns, rate;
 
+#ifdef CONFIG_X2580
+	rate = sfc->src_clk / 2;
+#else
 	/* NOTE: 4 frequency division. */
-	sfc->src_clk /= 4;
+	rate = sfc->src_clk / 4;
+#endif
 
 	ns = 1000000000ULL;
-	do_div(ns, sfc->src_clk);
+	do_div(ns, rate);
 	cycle = ns;
 	half_cycle = cycle / 2;
 

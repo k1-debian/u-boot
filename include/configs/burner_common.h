@@ -22,6 +22,7 @@
 /**
  * Drivers configuration.
  */
+#define PARTITION_NUM                       10
 #define CONFIG_NOR_MAJOR_VERSION_NUMBER     1
 #define CONFIG_NOR_MINOR_VERSION_NUMBER     0
 #define CONFIG_NOR_REVERSION_NUMBER         0
