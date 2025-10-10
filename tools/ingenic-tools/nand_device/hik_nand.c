@@ -6,7 +6,8 @@ static unsigned char hik_errstat_2[] = {0x2, 0x3};
 
 static struct device_struct device[] = {
 	DEVICE_STRUCT(0xD1D1, 2048, 2, 4, 2, 1, hik_errstat_2, 0),
-	DEVICE_STRUCT(0xD2D1, 2048, 2, 4, 2, 1, hik_errstat_2, 0),
+	DEVICE_STRUCT(0xD2D2, 2048, 2, 4, 2, 1, hik_errstat_2, 0),
+	DEVICE_STRUCT(0xD4D4, 2048, 2, 4, 2, 1, hik_errstat_2, 0),
 };
 
 static struct nand_desc hik_nand = {

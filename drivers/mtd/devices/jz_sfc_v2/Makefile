@@ -47,6 +47,7 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/dosilicon_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/fm_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/yhy_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/issi_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/issi_mid9d_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/xcsp_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/tc_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/zb_nand.o

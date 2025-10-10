@@ -15,6 +15,20 @@
 #define DEF_TSHSL_R     50
 #define DEF_TSHSL_W     50
 
+
+#if defined(CONFIG_SFC_NAND_INIT_RATE)
+  #define SFC_RATE	CONFIG_SFC_NAND_INIT_RATE
+#elif defined(CONFIG_SFC_NAND_RATE)
+  #define SFC_RATE	CONFIG_SFC_NAND_RATE
+#elif defined(CONFIG_SFC_NOR_INIT_RATE)
+  #define SFC_RATE	CONFIG_SFC_NOR_INIT_RATE
+#elif defined(CONFIG_SFC_NOR_RATE)
+  #define SFC_RATE	CONFIG_SFC_NOR_RATE
+#else
+  #error "Please defined NAND RATE or NOR RATE“
+#endif
+
+
 static void file_head_print(void)
 {
 	printf("/*\n");
@@ -39,16 +53,9 @@ int main()
 	unsigned int c_hold;
 	unsigned int c_setup;
 	unsigned int t_in, c_in, val = 0;
-	unsigned long cycle;
 	unsigned int tmp = 0x7;
-#if defined(CONFIG_SFC_NAND_RATE)
-	unsigned int rate =  (unsigned long long)CONFIG_SFC_NAND_RATE / 1000000;
-#elif defined(CONFIG_SFC_NOR_RATE)
-	unsigned int rate =  (unsigned long long)CONFIG_SFC_NOR_RATE / 1000000;
-#else
-        #error "Please defined NAND RATE or NOR RATE“	
-#endif
-	cycle = 1000 / rate;
+	unsigned int rate = SFC_RATE / 1000000;
+	unsigned int cycle = 1000 / rate;
 
 
 	c_hold = DEF_TCHSH / cycle;
@@ -73,12 +80,19 @@ int main()
 	tmp &= ~DEV_CONF_TSH_MSK;
 	tmp |= val << DEV_CONF_TSH_OFFSET;
 
+#ifdef CONFIG_SFC_V20
+	if(rate >= 200){
+		val = 4;
+		tmp &= ~DEV_CONF_SMP_DELAY_MSK;
+		tmp |= val << DEV_CONF_SMP_DELAY_OFFSET;
+	}
+#else
 	if(rate >= 100){
 		val = 1;
 		tmp &= ~DEV_CONF_SMP_DELAY_MSK;
 		tmp |= val << DEV_CONF_SMP_DELAY_OFFSET;
 	}
-
+#endif
 	file_head_print();
 	printf("#define DEF_TIM_VAL 0x%08x\n", tmp);
 	file_end_print();

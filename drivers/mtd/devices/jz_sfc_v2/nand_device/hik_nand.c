@@ -56,11 +56,32 @@ static struct jz_sfcnand_base_param hik_param[] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[2] = {
+		/*HSESYHDSW4G*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 4096,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xD1D1, "HSESYHDSW1G", &hik_param[0]),
 	DEVICE_ID_STRUCT(0xD2D2, "HSESYHDSW2G", &hik_param[1]),
+	DEVICE_ID_STRUCT(0xD4D4, "HSESYHDSW4G", &hik_param[2]),
 };
 
 static cdt_params_t *hik_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
@@ -69,6 +90,7 @@ static cdt_params_t *hik_get_cdt_params(struct sfc_flash *flash, uint16_t device
 	switch(device_id) {
 		case 0xD1D1:
 		case 0xD2D2:
+		case 0xD4D4:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -82,6 +104,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	switch(device_id) {
 		case 0xD1D1:
 		case 0xD2D2:
+		case 0xD4D4:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
