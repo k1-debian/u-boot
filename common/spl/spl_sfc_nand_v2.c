@@ -1527,9 +1527,28 @@ char* spl_sfc_nand_load_image(void)
 	return NULL;
 #else
 	{
+
 		struct image_header *header;
 		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 		sfc_init();
+
+#ifdef CONFIG_UBOOT_LOAD_LOGO_FILE
+        unsigned int logo_addr = 0;
+        unsigned int logo_size = 0;
+        unsigned int image_logo_ddr = 0;
+
+        struct jz_sfcnand_partition_param *partitions;
+        partitions = get_partitions();
+        logo_addr = get_part_offset_by_name(partitions, CONFIG_UBOOT_LOGO_NAME);
+        logo_size = get_part_size_by_name(partitions, CONFIG_UBOOT_LOGO_NAME);
+        image_logo_ddr = CONFIG_UBOOT_LOGO_DDR;
+
+        if (logo_size == -1){
+            serial_debug("LOGO not found: "CONFIG_UBOOT_LOGO_NAME"\n");
+            hang();
+        }
+        sfc_nand_load(logo_addr, logo_size, (void *)image_logo_ddr);
+#endif
 
 		sfc_nand_load(CONFIG_UBOOT_OFFSET, CONFIG_SYS_MONITOR_LEN, (unsigned int)CONFIG_SYS_TEXT_BASE);
 		spl_parse_image_header(header);

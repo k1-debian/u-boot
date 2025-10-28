@@ -250,6 +250,7 @@ COBJS-$(CONFIG_CMD_EFUSE) += cmd_efuse.o
 COBJS-$(CONFIG_CMD_BATTERYDET) += cmd_batterydet.o
 endif
 
+COBJS-$(CONFIG_CMD_DISPLAY_ST7789P3) += cmd_display_st7789p3.o
 ifdef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_ENV_IS_IN_FLASH) += env_flash.o
 COBJS-$(CONFIG_SPL_YMODEM_SUPPORT) += xyzModem.o

@@ -318,6 +318,9 @@ void clk_init(void)
 		|CPM_CLKGR_MIPI_DSI
 #endif
 		| CPM_CLKGR_EFUSE
+#ifdef CONFIG_NEMC
+        | CPM_CLKGR_NEMC
+#endif
 		;
 	reg_clkgr &=  ~gate;
 	cpm_outl(reg_clkgr,CPM_CLKGR0);
