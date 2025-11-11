@@ -274,8 +274,7 @@ int otp_init(void)
 	LOG_INFO("Enter: %s\n",__func__);
 	efuse_en_gpio = efuse_args->efuse_en_gpio;
 	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
-		LOG_INFO("EFUSE_EN_N gpio(%d) output high!\n", efuse_en_gpio);
-		gpio_direction_output(efuse_en_gpio, efuse_args->efuse_en_active);
+		efuse_1v8_output(!efuse_args->efuse_en_active);
 	}
 #ifdef CONFIG_PMU_RICOH6x
 	else {
