@@ -336,7 +336,7 @@ static void ddrp_zqcalibration(void)
 
 	//CMD choose calib value
 	val = ddr_readl(DDR_PHY_OFFSET + (0xb4 << 2));
-	val |= (0x1 << 0);
+	val |= (0x1 << 7);
 	ddr_writel(val, DDR_PHY_OFFSET + (0xb4 << 2));
 }
 
@@ -370,7 +370,8 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 
 
 	if(1) {
-		// bypass sdll.
+		/* if all DLLs are bypassed the phy enter low power mode state. */
+		/* support speed up to 533Mbps. */
 		val = ddr_readl(DDR_PHY_OFFSET + (0x15 << 2));
 		val &= ~0xff;
 		val |= 0x18;
@@ -385,7 +386,7 @@ void ddrp_cfg(struct ddr_reg_value *global_reg_value)
 
 	/* ????   reserve   read only   ???? */
 	val = ddr_readl(DDRC_CTRL);
-	val &= ~ (1 << 20);
+	val &= ~(1 << 20);
 	ddr_writel(val, DDRC_CTRL);
 
 
@@ -445,6 +446,33 @@ void ddrp_auto_calibration(void)
 	debug("left  c : %d, o : %d,  d : %d\n", (al >> 4) & 7, (al >> 3) & 1, al & 7);
 	debug("right c : %d, o : %d,  d : %d\n", (ah >> 4) & 7, (ah >> 3) & 1, ah & 7);
 
+#if 0
+	unsigned int reg_0x74, reg_0x75, reg_0xa4, reg_0xa5;
+	unsigned int val_0x74, val_0x75, val_0xa4, val_0xa5;
+	unsigned int val_0x01, val_0x0a;
+
+	reg_0x74 = ddr_readl(DDR_PHY_OFFSET + (0x74 << 2));
+	reg_0x75 = ddr_readl(DDR_PHY_OFFSET + (0x75 << 2));
+	reg_0xa4 = ddr_readl(DDR_PHY_OFFSET + (0xa4 << 2));
+	reg_0xa5 = ddr_readl(DDR_PHY_OFFSET + (0xa5 << 2));
+
+	val_0x74 = (reg_0x74 >> 4) & 0x7;
+	val_0x75 = (reg_0x75 >> 4) & 0x7;
+	val_0xa4 = (reg_0xa4 >> 4) & 0x7;
+	val_0xa5 = (reg_0xa5 >> 4) & 0x7;
+
+	if (val_0x74 <= 0x1 || val_0x75 <= 0x1 || val_0xa4 <= 0x1 || val_0xa5 <= 0x1) {
+		val_0x01 = ddr_readl(DDR_PHY_OFFSET + (0x01 << 2));
+		val_0x01 |= (1 << 6);
+		ddr_writel(val_0x01, DDR_PHY_OFFSET + (0x01 << 2));
+
+		val_0x0a = ddr_readl(DDR_PHY_OFFSET + (0x0a << 2));
+		val_0x0a &= ~(0x7 << 1);
+		val_0x0a |= (0x2 << 1);
+		ddr_writel(val_0x0a, DDR_PHY_OFFSET + (0x0a << 2));
+	}
+
+#else
 	{
 		unsigned int cycsel, tmp;
 		unsigned int read_data0, read_data1;
@@ -470,6 +498,7 @@ void ddrp_auto_calibration(void)
 		tmp |= 1 << 6;
 		*(volatile unsigned int *)(0xb3011000 + (0x1 << 2)) = tmp;
 	}
+#endif
 #ifndef CONFIG_DDR_DRVODT_DEBUG
 	serial_debug("ddr calib finish\n");
 #endif
