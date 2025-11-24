@@ -84,6 +84,18 @@
 #define MCU_TCSM_INDATA				(MCU_TCSM_OUTDATA + 512)
 #define MCU_TCSM_DBG				(MCU_TCSM_INDATA + 512)
 
+
+#define SC_RETVAL *(volatile unsigned int *)(MCU_TCSM_RETVAL)
+
+#define HASH_SELECT_SHA256      0x3
+#define HASH_SELECT_SHA384      0x4
+
+#define HASH_NEWROUND           (0x1 << 16)
+#define HASH_ENDROUND           (0x1 << 18)
+#define HASH_DMAMODE            (0x1 << 17)
+#define HASH_SET(type)          (type << 19)
+
+
 struct pdma_message {
 	unsigned int signature;
 	unsigned int msg_id;

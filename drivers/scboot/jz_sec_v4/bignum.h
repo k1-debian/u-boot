@@ -1,12 +1,13 @@
 #ifndef __BIGNUM_H__
 #define __BIGNUM_H__
 
+#include "rsa1.h"
 #include <asm/types.h>
 typedef unsigned long long dbn_t;
 typedef u32 bn_t;
 
 #define BN_DIGIT_BITS               32      // For u32
-#define BN_MAX_DIGITS               65      // RSA_MAX_MODULUS_LEN + 1
+#define BN_MAX_DIGITS               (RSA_MAX_MODULUS_LEN + 1)
 
 #define BN_MAX_DIGIT                0xFFFFFFFF
 
