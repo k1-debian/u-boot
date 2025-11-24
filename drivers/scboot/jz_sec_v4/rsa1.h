@@ -1,8 +1,14 @@
 #ifndef __RSA_H__
 #define __RSA_H__
 
+#include <common.h>
+
 // RSA key lengths
+#ifdef CONFIG_RSA3072
+#define RSA_MAX_MODULUS_BITS                3072
+#else
 #define RSA_MAX_MODULUS_BITS                2048
+#endif
 #define RSA_MAX_MODULUS_LEN                 ((RSA_MAX_MODULUS_BITS + 7) / 8)
 #define RSA_MAX_PRIME_BITS                  ((RSA_MAX_MODULUS_BITS + 1) / 2)
 #define RSA_MAX_PRIME_LEN                   ((RSA_MAX_PRIME_BITS + 7) / 8)
