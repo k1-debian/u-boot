@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 	if (params_length < CONFIG_SPIFLASH_PART_SIZE) {
 		int padding_size = CONFIG_SPIFLASH_PART_SIZE - params_length;
 		char *pad_buffer = malloc(padding_size);
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
 		free(pad_buffer);
 		printf("Added %d bytes of 0xFF padding\n", padding_size);
 	}
+#endif
 
 	close(fd);
 

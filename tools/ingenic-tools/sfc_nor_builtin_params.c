@@ -203,6 +203,7 @@ int main(int argc, char *argv[])
         free(p_common_params);
 #endif
 
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 		off_t current_pos = lseek(fd, 0, SEEK_CUR);
 		if (current_pos < CONFIG_UBOOT_OFFSET) {
 			size_t fill_size = CONFIG_UBOOT_OFFSET - current_pos;
@@ -221,16 +222,17 @@ int main(int argc, char *argv[])
 				return -1;
 			}
 			free(fill_buf);
-			printf("Padding %zu bytes with 0xFF (from 0x%lx to 0x6800)\n",
-					fill_size, current_pos);
+			printf("Padding %zu bytes with 0xFF (from 0x%lx to 0x%lx)\n",
+					fill_size, current_pos, CONFIG_UBOOT_OFFSET);
 		} else {
-			printf("No padding needed (current size: 0x%lx >= CONFIG_UBOOT_OFFSET)\n", current_pos);
+			printf("No padding needed (current size: 0x%lx >= CONFIG_UBOOT_OFFSET(0x%lx))\n", current_pos, CONFIG_UBOOT_OFFSET);
 			return -1;
 
 		}
-	close(fd);
+#endif
+		close(fd);
 
-        return 0;
+		return 0;
 }
 
 void dump_cloner_params(struct burner_params *params)
