@@ -30,7 +30,7 @@ static int cmp_data(unsigned int *src,unsigned int *dst,unsigned int word_len)
         return 0;
 }
 
-void pss_hash(unsigned int *input, unsigned int len, unsigned int *output)
+static void pss_hash(unsigned int *input, unsigned int len, unsigned int *output)
 {
 	volatile struct sc_args *args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *tcsm_in = (volatile unsigned int *)MCU_TCSM_INDATA;

@@ -7,7 +7,7 @@ typedef unsigned long long dbn_t;
 typedef u32 bn_t;
 
 #define BN_DIGIT_BITS               32      // For u32
-#define BN_MAX_DIGITS               (RSA_MAX_MODULUS_LEN + 1)
+#define BN_MAX_DIGITS               ((RSA_MAX_MODULUS_LEN  / 4) + 1)
 
 #define BN_MAX_DIGIT                0xFFFFFFFF
 
