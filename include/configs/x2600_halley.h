@@ -583,6 +583,34 @@
 #define CONFIG_SPL_MAX_SIZE		(22 * 1024)
 
 
+#define CONFIG_JZ_SCBOOT
+#ifdef CONFIG_JZ_SCBOOT
+/* #define CONFIG_JZ_CKEYAES */
+#define CONFIG_JZ_SECURE_SUPPORT
+
+#define CONFIG_RSA3072
+
+#define CONFIG_JZ_SECURE_ROOTFS
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+    #define CONFIG_SPL_SIG_NAME         "signature"
+    #define CONFIG_SPL_ROOTFS_NAME      "rootfs"
+#endif
+
+#undef CONFIG_UBOOT_OFFSET
+#undef CONFIG_SPL_PAD_TO
+#undef CONFIG_SPL_MAX_SIZE
+
+#define CONFIG_UBOOT_OFFSET             0x7000
+#define CONFIG_SPL_PAD_TO               28672
+#define CONFIG_SPL_MAX_SIZE		(28 * 1024)
+
+#undef CONFIG_SPIFLASH_PART_OFFSET
+#undef CONFIG_SPI_NORFLASH_PART_OFFSET
+
+#define CONFIG_SPIFLASH_PART_OFFSET             0x6800
+#define CONFIG_SPI_NORFLASH_PART_OFFSET         0x6874
+#endif
+
 
 
 #ifdef CONFIG_SPL_NOR_SUPPORT
@@ -633,20 +661,5 @@
 /* Wrong keys. */
 #define CONFIG_GPIO_RECOVERY           GPIO_PB(11)
 #define CONFIG_GPIO_RECOVERY_ENLEVEL   0
-
-/* #define CONFIG_JZ_SCBOOT */
-#ifdef CONFIG_JZ_SCBOOT
-/* #define CONFIG_JZ_CKEYAES */
-#define CONFIG_JZ_SECURE_SUPPORT
-#define CONFIG_RSA3072
-
-#undef CONFIG_UBOOT_OFFSET
-#undef CONFIG_SPL_PAD_TO
-#undef CONFIG_SPL_MAX_SIZE
-
-#define CONFIG_UBOOT_OFFSET             0x6800
-#define CONFIG_SPL_PAD_TO               26624
-#define CONFIG_SPL_MAX_SIZE		(26 * 1024)
-#endif
 
 #endif/*END OF __X2600_HALLEY_H_ */

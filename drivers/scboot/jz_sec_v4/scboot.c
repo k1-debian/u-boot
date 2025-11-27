@@ -218,6 +218,7 @@ static int rsa3072_verify_signature(void *addr, struct sckey *sckey)
 	len = sckey->code_len;
 	padlen = sckey->pad_len;
 
+	//serial_debug("code len %d, pad len %d\n", len, padlen);
 	secall(args, SC_FUNC_INIT, 0, 1);
 
 	memset(m_hash, 0, 12);
