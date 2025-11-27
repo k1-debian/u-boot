@@ -74,6 +74,7 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 	unsigned int rmem_size = 0;
 	unsigned int rtos_size = 0;
 	unsigned int lcd_mem_size = 0;
+	unsigned int share_mem_size = 0;
 	unsigned int nmem_size = 0;
 	unsigned int real_size = ram_size;
 	int kb_flags = 0;
@@ -85,7 +86,7 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 	if (ram_size >= 256)
 		ram_size = 256;
 
-	if (CONFIG_RMEM_KB || CONFIG_NMEM_KB || CONFIG_RTOS_SIZE_KB || CONFIG_LCD_MEM_KB)
+	if (CONFIG_RMEM_KB || CONFIG_NMEM_KB || CONFIG_RTOS_SIZE_KB || CONFIG_LCD_MEM_KB || CONFIG_SHARE_MEM_KB)
 		kb_flags = 1;
 
 	if (kb_flags) {
@@ -101,15 +102,19 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 		lcd_mem_size = CONFIG_LCD_MEM_MB ? (CONFIG_LCD_MEM_MB * 1024) : CONFIG_LCD_MEM_KB;
 		lcd_mem_size = ALIGN(lcd_mem_size, ALIGN_4K);
 
+		share_mem_size = CONFIG_SHARE_MEM_MB ? (CONFIG_SHARE_MEM_MB * 1024) : CONFIG_SHARE_MEM_KB;
+		share_mem_size = ALIGN(share_mem_size, ALIGN_4K);
+
 		ram_size *= 1024;
 	} else {
 		rmem_size = CONFIG_RMEM_MB;
 		nmem_size = CONFIG_NMEM_MB;
 		rtos_size = CONFIG_RTOS_SIZE_MB;
 		lcd_mem_size = CONFIG_LCD_MEM_MB;
+		share_mem_size = CONFIG_SHARE_MEM_MB;
 	}
 
-	ram_size = ram_size - rmem_size - nmem_size - rtos_size - lcd_mem_size;
+	ram_size = ram_size - rmem_size - nmem_size - rtos_size - lcd_mem_size - share_mem_size;
 
 	args_mem = add_mem(args_mem, "mem=", 0, ram_size, kb_flags);
 	args_mem = add_mem(args_mem, "rmem=", ram_size, rmem_size, kb_flags);
@@ -120,6 +125,8 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 	ram_size += rtos_size;
 	args_mem = add_mem(args_mem, "lcd_mem=", ram_size, lcd_mem_size, kb_flags);
 	ram_size += lcd_mem_size;
+	args_mem = add_mem(args_mem, "share_mem=", ram_size, share_mem_size, kb_flags);
+	ram_size += share_mem_size;
 
 	if (real_size > 256) {
 		real_size = real_size - 256;
