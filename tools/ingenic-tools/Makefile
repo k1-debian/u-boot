@@ -206,6 +206,10 @@ $(obj)gpt_creator:	$(SRCTREE)/lib/crc32.c gpt_creator.c
 
 ifdef CONFIG_GPT_TABLE_PATH
 $(obj)mbr-gpt.bin:	$(obj)gpt_creator
+ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+	$(OBJTREE)/tools/ingenic-tools/gpt_creator		\
+	$(CONFIG_GPT_TABLE_PATH)/partitions_auto_detect_boot.tab mbr-of-gpt.bin gpt.bin
+else	#CONFIG_SPL_AUTO_DETECT_BOOT
 ifdef CONFIG_JZSD_OTA_VERSION20
 	$(OBJTREE)/tools/ingenic-tools/gpt_creator		\
 	$(CONFIG_GPT_TABLE_PATH)/partitions_mmc_ota.tab mbr-of-gpt.bin gpt.bin
@@ -213,6 +217,7 @@ else
 	$(OBJTREE)/tools/ingenic-tools/gpt_creator		\
 	$(CONFIG_GPT_TABLE_PATH)/partitions.tab mbr-of-gpt.bin gpt.bin
 endif
+endif	#CONFIG_SPL_AUTO_DETECT_BOOT
 	cat mbr-of-gpt.bin gpt.bin > $@
 	dd if=/dev/zero of=file.bin bs=512 count=33
 	cat $@ file.bin > file2.bin
@@ -323,6 +328,10 @@ $(obj)sfc_nand_params: nand_device/
 	cp -f nand_device/sfc_nand_params $@
 
 gpt_partitions_to_c:
+ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+	$(SRCTREE)/tools/ingenic-tools/gpt_tab_to_c.sh \
+	 $(CONFIG_GPT_TABLE_PATH)/partitions_auto_detect_boot.tab > $(SRCTREE)/common/spl/spl_gpt_tab_data.h
+else	#CONFIG_SPL_AUTO_DETECT_BOOT
 ifdef CONFIG_JZSD_OTA_VERSION20
 	$(SRCTREE)/tools/ingenic-tools/gpt_tab_to_c.sh \
 	 $(CONFIG_GPT_TABLE_PATH)/partitions_mmc_ota.tab > $(SRCTREE)/common/spl/spl_gpt_tab_data.h
@@ -330,6 +339,7 @@ else
 	$(SRCTREE)/tools/ingenic-tools/gpt_tab_to_c.sh \
 	 $(CONFIG_GPT_TABLE_PATH)/partitions.tab > $(SRCTREE)/common/spl/spl_gpt_tab_data.h
 endif
+endif	#CONFIG_SPL_AUTO_DETECT_BOOT
 
 .PHONY:gpt_partitions_to_c
 

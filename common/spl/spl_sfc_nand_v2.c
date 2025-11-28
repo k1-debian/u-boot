@@ -1451,6 +1451,7 @@ char* spl_sfc_nand_load_image(void)
 #ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 	struct jz_sfcnand_partition_param *partitions;
 	struct image_header *kernel_header;
+	struct rtos_header *auto_rtos_header;
 	int kernel_offset, nv_offset;
 
 	sfc_init();
@@ -1458,21 +1459,32 @@ char* spl_sfc_nand_load_image(void)
 
 	nv_offset = get_part_offset_by_name(partitions, "nv");
 	if(nv_offset > 0){	/* ota mode */
-		printf("boot to ota\n");
+		debug("boot to ota\n");
 		register_ota_ops(&ota_ops);
 		return spl_ota_load_image();
 	}
 
 	/* normal mode */
-	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 	kernel_offset = get_part_offset_by_name(partitions, "kernel");
 	sfc_nand_load(kernel_offset, sizeof(struct image_header), CONFIG_SYS_TEXT_BASE);
 
-	if(kernel_header->ih_os == IH_OS_ALIOS){
-		spl_parse_image_header(kernel_header);
-		sfc_nand_load(kernel_offset, spl_image.size, spl_image.load_addr);
+#ifdef CONFIG_SPL_RTOS_BOOT
+	auto_rtos_header = (struct rtos_header *)(CONFIG_SYS_TEXT_BASE);
+	if(auto_rtos_header->tag == 0x534f5452){	//SPL TO BOOT freertos/ALIOS/Libbare-cpu
+		debug("boot to rtos\n");
+		if (spl_sfc_rtos_load(&auto_rtos_header, kernel_offset))
+			hang();
+
+		flush_cache_all();
+
+		rtos_raw_start(&auto_rtos_header, NULL);
 		return NULL;
-	} else if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
+	}
+#endif
+
+	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+
+	if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
 		struct image_header *header;
 		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 

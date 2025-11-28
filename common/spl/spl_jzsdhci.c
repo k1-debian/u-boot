@@ -2022,7 +2022,16 @@ char *spl_mmc_load_image(void)
 
 #ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 	struct image_header *kernel_header;
-	int kernel_sector, ret;
+	int kernel_sector, nv_sector, ret;
+
+	ret = spl_get_built_in_gpt_partition("nv", &nv_sector, NULL);
+	if (ret) {
+		printf("mmc:failed get part nv, go to normal mode\n");
+	}else{
+		register_jzsd_ota_ops(&jzsd_ota_ops);
+		return spl_jzsd_ota_load_image();
+	}
+
 	ret = spl_get_built_in_gpt_partition("boot", &kernel_sector, NULL);
 	if (ret) {
 		printf("mmc:failed get part boot/kernel\n");
@@ -2038,6 +2047,32 @@ char *spl_mmc_load_image(void)
 		printf("spl: mmc blk read err - %lu\n", ret);
 		return ret;
 	}
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+	struct rtos_header *auto_rtos_header;
+	auto_rtos_header = (struct rtos_header *)(kernel_header);
+
+	if(auto_rtos_header->tag == 0x534f5452){    //SPL TO BOOT freertos/ALIOS/Libbare-cpu
+		/* RTOS镜像加载 */
+		debug("go rtos\n");
+		if (mmc_rtos_load(&auto_rtos_header, kernel_sector))
+			hang();
+
+		flush_cache_all();
+
+		/* RTOS-Linux 映射文件系统加载 */
+#ifdef CONFIG_SPL_RTOS_LINUX_MAPPED_FILESYSTEM_NAME
+		mmc_rtos_load_rtosdata_partition(&auto_rtos_header);
+#endif
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+		start_second_cpu();
+#else
+		/* NOTE: not return */
+		rtos_raw_start(&auto_rtos_header, &spl_rtos_args);
+#endif
+	}
+#endif
 
 	if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
 		mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR, NULL);

@@ -65,8 +65,16 @@
 /* #define CONFIG_SPL_AUTO_DETECT_BOOT */
 #ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 #define CONFIG_SPL_OS_BOOT
-#ifdef CONFIG_SPL_SFC_NAND
+#if defined(CONFIG_SPL_SFC_NAND) || defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
 #define CONFIG_OTA_VERSION30
+#endif
+#define CONFIG_SPL_RTOS_BOOT
+#define CONFIG_SPL_RTOS_NAME "boot"
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_RTOS_OFFSET (17 * 1024 + CONFIG_SPL_PAD_TO)
+#define CONFIG_RTOS_OFFSET_SECTOR (CONFIG_RTOS_OFFSET / 512)
+#else
+#define CONFIG_RTOS_OFFSET CONFIG_SPL_PAD_TO
 #endif
 #endif
 
@@ -116,10 +124,18 @@
  */
 #define CONFIG_BOOTDELAY 1
 
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+#if defined(CONFIG_JZ_MMC_MSC0)
+	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+#elif defined(CONFIG_JZ_MMC_MSC1)
+	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk1p8 rootdelay=3 rw"
+#endif
+#else
 #if defined(CONFIG_JZ_MMC_MSC0)
 	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
 #elif defined(CONFIG_JZ_MMC_MSC1)
 	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk1p7 rootdelay=3 rw"
+#endif
 #endif
 
 #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)

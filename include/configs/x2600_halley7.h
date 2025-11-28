@@ -50,8 +50,15 @@
 /* #define CONFIG_SPL_AUTO_DETECT_BOOT */
 #ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 #define CONFIG_SPL_OS_BOOT
-#ifdef CONFIG_SPL_SFC_NAND
+#if defined(CONFIG_SPL_SFC_NAND) || defined(CONFIG_SPL_JZMMC_SUPPORT)
 #define CONFIG_OTA_VERSION30
+#endif
+#define CONFIG_SPL_RTOS_BOOT
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_RTOS_OFFSET (17 * 1024 + CONFIG_SPL_PAD_TO)
+#define CONFIG_RTOS_OFFSET_SECTOR (CONFIG_RTOS_OFFSET / 512)
+#else
+#define CONFIG_RTOS_OFFSET CONFIG_SPL_PAD_TO
 #endif
 #endif
 
@@ -125,7 +132,11 @@
   #endif
 #else
   #if defined(CONFIG_SPL_JZMMC_SUPPORT) || defined(CONFIG_SPL_MMC_SUPPORT)
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+#else
 	#define CONFIG_BOOTARGS BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
+#endif
   #elif defined(CONFIG_SPL_NOR_SUPPORT)
   /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=192.168.10.210:192.168.10.1:192.168.10.1:255.255.255.0 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/root_ok rw" */
     /*#define CONFIG_BOOTARGS  BOOTARGS_COMMON " ip=off root=/dev/ram0 rw rdinit=/linuxrc"*/
