@@ -19,6 +19,36 @@ static int efuse_en_active = 0;
 
 static struct seg_info info;
 
+// 从 src 的第 src_bit_offset 位开始，拷贝 num_bits 个比特
+// 到 dst 的第 dst_bit_offset 位开始的位置
+static void bit_copy(void *dst, size_t dst_bit_offset,
+		const void *src, size_t src_bit_offset,
+		size_t num_bits)
+{
+	if (num_bits == 0) return;
+
+	uint8_t *d = (uint8_t *)dst;
+	const uint8_t *s = (const uint8_t *)src;
+	int i;
+
+	for (i = 0; i < num_bits; i++) {
+		// 计算源字节和位
+		size_t src_byte = (src_bit_offset + i) / 8;
+		size_t src_bit  = (src_bit_offset + i) % 8;
+
+		// 读取源 bit（假设小端，bit 0 是最低位）
+		uint8_t src_val = (s[src_byte] >> src_bit) & 1;
+
+		// 计算目标字节和位
+		size_t dst_byte = (dst_bit_offset + i) / 8;
+		size_t dst_bit  = (dst_bit_offset + i) % 8;
+
+		// 清除目标 bit，再写入
+		d[dst_byte] &= ~(1U << dst_bit);          // 清 0
+		d[dst_byte] |= (src_val << dst_bit);      // 写入
+	}
+}
+
 static uint32_t efuse_readl(uint32_t reg_off)
 {
 	return readl(EFUSE_BASE + reg_off);
@@ -354,8 +384,6 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 	uint32_t tmp[8] = {0};
 	uint32_t byte_num = 0;
 	uint32_t half_bit_num = 0;
-	uint32_t half_byte_num = 0;
-	uint32_t half_bit_align = 0;
 	uint32_t hamming_bit_num = 0;
 	uint32_t hamming_byte_num = 0;
 	int n, ret;
@@ -385,7 +413,7 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 	switch(info->verify_mode) {
 		case HAMMING:
 			hamming_bit_num = info->bit_num + cal_k(info->bit_num);
-			hamming_byte_num = hamming_bit_num / 8 + hamming_bit_num % 8 ? 1 : 0;
+			hamming_byte_num = hamming_bit_num / 8 + (hamming_bit_num % 8 ? 1 : 0);
 //			dump(rbuf, 0, hamming_bit_num);
 			if (info->seg_id == CHIPID) {
 				assemble_hamming(rbuf, dbuf);
@@ -397,16 +425,14 @@ static int jz_efuse_read(struct seg_info *info, uint32_t *buf)
 			break;
 		case DOUBLE:
 			half_bit_num = info->bit_num / 2;
-			half_byte_num = half_bit_num / 8;
-			half_bit_align = half_bit_num % 8;
-//			dump((unsigned int *)((char *)rbuf + info->begin_align), 0, half_bit_num);
-//			dump((unsigned int *)((char *)rbuf + info->begin_align + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
-			memcpy((char*)tmp, (char *)rbuf + info->begin_align + half_byte_num, half_byte_num);
-			ret = checkbit(rbuf, tmp, info->begin_align * 8, half_bit_align, half_bit_num);
+			bit_copy(tmp, 0, rbuf, info->begin_align * 8 + half_bit_num, half_bit_num);
+			ret = checkbit(rbuf, tmp, info->begin_align * 8, 0, half_bit_num);
 			if(ret){
 				printf("double verify failed!\n");
 				return -1;
 			}
+			memcpy((char *)buf, ((char *)rbuf + info->begin_align), byte_num);
+			break;
 		case NONE:
 		default:
 			memcpy((char *)buf, ((char *)rbuf + info->begin_align), byte_num);
@@ -484,8 +510,6 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 	uint32_t regval = 0;
 	uint32_t byte_num = 0;
 	uint32_t half_bit_num = 0;
-	uint32_t half_byte_num = 0;
-	uint32_t half_bit_align = 0;
 	uint32_t hamming_bit_num = 0;
 	uint32_t hamming_byte_num = 0;
 	int ret = 0;
@@ -511,7 +535,7 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 	switch(info->verify_mode) {
 		case HAMMING:
 			hamming_bit_num = info->bit_num + cal_k(info->bit_num);
-			hamming_byte_num = hamming_bit_num / 8 + hamming_bit_num % 8 ? 1 : 0;
+			hamming_byte_num = hamming_bit_num / 8 + (hamming_bit_num % 8 ? 1 : 0);
 //			dumphex(buf, info->word_num);
 			encode(buf, info->bit_num, tmp);
 			memcpy((char*)val + info->begin_align, (char*)tmp, byte_num + hamming_byte_num);
@@ -519,17 +543,18 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 //			dumphex(tmp, info->word_num);
 			break;
 		case DOUBLE:
+			if (info->bit_num % 2) {
+				printf("%s segment bits is not aliged!\n",info->seg_name);
+				return -1;
+			}
 			half_bit_num = info->bit_num / 2;
-			half_byte_num = half_bit_num / 8;
-			half_bit_align = half_bit_num % 8;
-//			dump(buf, 0, half_bit_num);
-//			dump((unsigned int *)((char*)buf + half_byte_num), half_bit_align, half_bit_num + half_bit_align);
-			memcpy((char*)tmp, (char*)buf + half_byte_num, byte_num);
-			ret = checkbit(buf, tmp, 0, half_bit_align, half_bit_num);
+			ret = checkbit(buf, buf, 0, half_bit_num, half_bit_num);
 			if(ret){
 				printf("double verify failed!\n");
 				return -1;
 			}
+			memcpy((char*)val + info->begin_align, (char *)buf, byte_num);
+			break;
 		case NONE:
 		default:
 			memcpy((char*)val + info->begin_align, (char *)buf, byte_num);
@@ -540,6 +565,7 @@ static int jz_efuse_write(struct seg_info *info, uint32_t *buf)
 		printf("%08x\n", val[n]);
 		efuse_writel(val[n], EFUSE_DATA(n));
 	}
+
 	otp_w(info->word_address, info->word_num);
 
 	if(info->verify_mode == HAMMING) {
@@ -733,6 +759,7 @@ int efuse_write(void *buf, int length, off_t seg_id)
 	}
 
 	if (left_num > 0)  {
+		memset(tmp, 0, 8);
 		memcpy(tmp, (char *)buf, left_num * 2);
 		val[i] = (unsigned int)simple_strtoull(tmp, NULL, 16);
 	}
