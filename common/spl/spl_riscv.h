@@ -32,4 +32,12 @@ void spl_mmc_load_riscv(void);
 void spl_nand_load_riscv(void);
 void spl_start_riscv(void);
 
+
+/*
+ * SPL传递参数到RISCV
+ */
+struct riscv_boot_os_args {
+    char *cmdargs;
+};
+
 #endif

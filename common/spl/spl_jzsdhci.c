@@ -28,6 +28,7 @@
 
 static struct spl_rtos_argument spl_rtos_args;
 static struct rtos_boot_os_args os_boot_args;
+static struct riscv_boot_os_args riscv_boot_args;
 
 /* global variables */
 static uint32_t io_base = MSC0_BASE;
@@ -1998,7 +1999,14 @@ void spl_mmc_mcu_rtos_boot(void)
 	if (ret)
 		printf("riscv partition not found\n");
 
-	spl_load_riscv(sfc_mmc_load, riscv_offset);
+	char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+	cmdargs = spl_board_process_mem_bootargs(cmdargs);
+#endif
+
+	riscv_boot_args.cmdargs = virt_to_phys(cmdargs);
+
+	spl_load_riscv(sfc_mmc_load, riscv_offset, virt_to_phys(&riscv_boot_args));
 
 	flush_cache_all();
 

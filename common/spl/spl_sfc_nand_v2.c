@@ -23,6 +23,7 @@ DECLARE_GLOBAL_DATA_PTR;
 static unsigned int sfc_params_addr;
 static struct spl_rtos_argument spl_rtos_args;
 static struct rtos_boot_os_args os_boot_args;
+static struct riscv_boot_os_args riscv_boot_args;
 
 static struct spl_nand_param *curr_device;
 
@@ -1292,8 +1293,6 @@ static char *spl_sfc_nand_os_ota_load(void)
 
 void spl_nand_mcu_rtos_boot(void)
 {
-    unsigned int riscv_offset;
-
     struct jz_sfcnand_partition_param *partitions = get_partitions();
 
     struct jz_sfcnand_partition *riscv_part = get_part_by_name(partitions, "riscv");
@@ -1302,7 +1301,14 @@ void spl_nand_mcu_rtos_boot(void)
         return;
     }
 
-    spl_load_riscv(sfc_nand_load, riscv_part->offset);
+    char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+    cmdargs = spl_board_process_mem_bootargs(cmdargs);
+#endif
+
+    riscv_boot_args.cmdargs = virt_to_phys(cmdargs);
+
+    spl_load_riscv(sfc_nand_load, riscv_part->offset, virt_to_phys(&riscv_boot_args));
 
     flush_cache_all();
 
