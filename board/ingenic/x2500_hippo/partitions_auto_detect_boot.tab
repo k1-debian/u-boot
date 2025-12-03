@@ -1,0 +1,19 @@
+property:
+    disk_size = 4096m
+    gpt_header_lba = 512
+    custom_signature = 0
+
+partition:
+	#name     =  start,   size, fstype
+	xboot     =     0m,     3m,				#mmcblk*p0
+	boot      =     3m,     8m, EMPTY		#mmcblk*p1
+	recovery  =    12m,    16m, EMPTY		#mmcblk*p2
+    pretest   =    28m,    16m, EMPTY		#mmcblk*p3
+    reserved1 =    44m,     4m, EMPTY		#mmcblk*p4
+    reserved2 =    48m,    48m, EMPTY		#mmcblk*p5
+	misc      =    96m,     4m, EMPTY		#mmcblk*p6
+	cache     =   100m,   100m, LINUX_FS	#mmcblk*p7
+	system    =   200m,   1800m, LINUX_FS	#mmcblk*p8
+	data      =   2000m,  2048m, LINUX_FS	#mmcblk*p9
+
+#fstype could be: LINUX_FS, FAT_FS, EMPTY

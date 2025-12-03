@@ -53,6 +53,8 @@
 #ifdef CONFIG_SPL_SFC_NAND
 #define CONFIG_OTA_VERSION30
 #endif
+#define CONFIG_SPL_RTOS_BOOT
+#define CONFIG_RTOS_OFFSET CONFIG_SPL_PAD_TO
 #endif
 
 /* Device Tree Configuration*/

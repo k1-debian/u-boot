@@ -49,6 +49,13 @@
 #ifdef CONFIG_SPL_SFC_NAND
 #define CONFIG_OTA_VERSION30
 #endif
+#define CONFIG_SPL_RTOS_BOOT
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_RTOS_OFFSET (17 * 1024 + CONFIG_SPL_PAD_TO)
+#define CONFIG_RTOS_OFFSET_SECTOR (CONFIG_RTOS_OFFSET / 512)
+#else
+#define CONFIG_RTOS_OFFSET CONFIG_SPL_PAD_TO
+#endif
 #endif
 
 /* Device Tree Configuration*/
@@ -126,10 +133,18 @@
 	#define BOOTARGS_COMMON "console=ttyS2,115200 mem=64M@0x0 "
 #endif
 
+#ifdef CONFIG_SPL_AUTO_DETECT_BOOT
+#if defined(CONFIG_JZ_MMC_MSC0)
+	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+#elif defined(CONFIG_JZ_MMC_MSC2)
+	#define MSC_BOOTARGS " rootfstype=ext4 root=/dev/mmcblk2p8 rootdelay=3 rw"
+#endif
+#else
 #if defined(CONFIG_JZ_MMC_MSC0)
 	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk0p7 rootdelay=3 rw"
 #elif defined(CONFIG_JZ_MMC_MSC2)
 	#define MSC_BOOTARGS "rootfstype=ext4 root=/dev/mmcblk2p7 rootdelay=3 rw"
+#endif
 #endif
 
 #ifdef CONFIG_BOOT_ANDROID

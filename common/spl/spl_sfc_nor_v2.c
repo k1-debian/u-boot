@@ -1680,18 +1680,34 @@ char* spl_sfc_nor_load_image(void)
 #ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 	struct norflash_partitions partitions;
 	struct image_header *kernel_header;
-	int kernel_offset;
+	struct rtos_header *auto_rtos_header;
+	int kernel_offset, ret;
 
 	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2,
 						sizeof(struct norflash_partitions), (unsigned char*)&partitions);
-	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 	kernel_offset = get_part_offset_by_name(partitions, "kernel");
-	sfc_read_data(kernel_offset, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
+	ret = sfc_read_data(kernel_offset, sizeof(struct image_header), (unsigned char *)CONFIG_SYS_TEXT_BASE);
 
-	if(kernel_header->ih_os == IH_OS_ALIOS){
-		spl_parse_image_header(kernel_header);
-		sfc_read_data(kernel_offset, spl_image.size, spl_image.load_addr);
-	} else if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
+#ifdef CONFIG_SPL_RTOS_BOOT
+	auto_rtos_header = (struct rtos_header *)(CONFIG_SYS_TEXT_BASE);
+	if(auto_rtos_header->tag == 0x534f5452){	//SPL TO BOOT freertos/ALIOS/Libbare-cpu
+
+		if (spl_sfc_nor_rtos_load(&auto_rtos_header, kernel_offset))
+			hang();
+
+		flush_cache_all();
+
+#ifdef CONFIG_RTOS_BOOT_ON_SECOND_CPU
+		start_second_cpu();
+#else
+		rtos_raw_start(&auto_rtos_header, NULL);
+#endif
+		return NULL;
+	}
+#endif
+
+	kernel_header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
+	if(kernel_header->ih_comp == IH_COMP_GZIP && kernel_header->ih_os == IH_OS_LINUX){ /* SPL TO UBOOT */
 		struct image_header *header;
 		header = (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 
