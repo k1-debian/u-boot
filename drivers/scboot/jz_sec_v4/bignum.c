@@ -3,7 +3,11 @@
 #include <common.h>
 #include "bignum.h"
 
+#ifdef CONFIG_RSA3072
+#define CONFIG_SPACE_SIZE                1536
+#else
 #define CONFIG_SPACE_SIZE                1024                                //默认1024*4 = 4096B
+#endif
 
 static bn_t bn_sub_digit_mul(bn_t *a, bn_t *b, bn_t c, bn_t *d, u32 digits);
 static bn_t bn_add_digit_mul(bn_t *a, bn_t *b, bn_t c, bn_t *d, u32 digits);
@@ -12,9 +16,16 @@ static u32 bn_digit_bits(bn_t a);
 static u32 cache_space[CONFIG_SPACE_SIZE];
 static int cache_space_pos = 0;
 void * rsa_malloc(int size){
+	int needed = (size + 3) / 4 + 1;
+	if (cache_space_pos + needed > CONFIG_SPACE_SIZE) {
+		serial_debug("ERROR: rsa_malloc overflow: needed %d > limit=%d\n",
+		       needed + cache_space_pos, CONFIG_SPACE_SIZE);
+		return NULL;
+	}
+
 	u32 *d = (u32 *)&cache_space[cache_space_pos];
 	d[0] = size;
-	cache_space_pos += (size + 3) / 4 + 1;
+	cache_space_pos += needed;
 	return (void*)&d[1];
 
 }
