@@ -458,6 +458,10 @@
 #define CONFIG_SHARE_MEM_MB 0
 #endif
 
+#ifndef CONFIG_VPU_MEM_MB
+#define CONFIG_VPU_MEM_MB 0
+#endif
+
 #ifndef CONFIG_RMEM_KB
 #define CONFIG_RMEM_KB 0
 #endif
@@ -476,6 +480,10 @@
 
 #ifndef CONFIG_SHARE_MEM_KB
 #define CONFIG_SHARE_MEM_KB 0
+#endif
+
+#ifndef CONFIG_VPU_MEM_KB
+#define CONFIG_VPU_MEM_KB 0
 #endif
 
 /* boot args init program
