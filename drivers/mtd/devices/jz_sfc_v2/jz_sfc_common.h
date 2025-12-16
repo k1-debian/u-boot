@@ -24,4 +24,5 @@ int set_flash_timing(struct sfc *sfc, unsigned int t_hold, unsigned int t_setup,
 
 int sfc_nor_get_special_ops(struct sfc_flash *flash);
 
+void sfc_nand_wp_disable(struct sfc *sfc);
 #endif

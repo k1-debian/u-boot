@@ -43,6 +43,10 @@ retry:
 		goto retry;
 
 	switch(flag) {
+		case GET_READY_STATUS:
+			if(ecc_status & 0x1)
+				ret = -EIO;
+			break;
 		case GET_WRITE_STATUS:
 			if(ecc_status & (0x1 << 3))
 				ret = -EIO;
@@ -91,3 +95,57 @@ int32_t nand_get_ecc_conf(struct sfc_flash *flash, uint8_t addr)
 	return buf;
 }
 EXPORT_SYMBOL_GPL(nand_get_ecc_conf);
+
+int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val)
+{
+	struct sfc_cdt_xfer xfer;
+	memset(&xfer, 0, sizeof(xfer));
+
+	/* set index */
+	xfer.cmd_index = NAND_GET_FEATURE;
+
+	/* set addr */
+	xfer.staaddr0 = addr;
+
+	/* set transfer config */
+	xfer.dataen = ENABLE;
+	xfer.config.datalen = 1;
+	xfer.config.data_dir = GLB_TRAN_DIR_READ;
+	xfer.config.ops_mode = CPU_OPS;
+	xfer.config.buf = val;
+
+	if(sfc_sync_cdt(flash->sfc, &xfer)) {
+		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sfc_nand_get_feature);
+
+int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8_t val)
+{
+	struct sfc_cdt_xfer xfer;
+	memset(&xfer, 0, sizeof(xfer));
+
+	/* set index */
+	xfer.cmd_index = NAND_SET_FEATURE;
+
+	/* set addr */
+	xfer.staaddr0 = addr;
+
+	/* set transfer config */
+	xfer.dataen = ENABLE;
+	xfer.config.datalen = 1;
+	xfer.config.data_dir = GLB_TRAN_DIR_WRITE;
+	xfer.config.ops_mode = CPU_OPS;
+	xfer.config.buf = (uint8_t *)&val;
+
+	if(sfc_sync_cdt(flash->sfc, &xfer)) {
+		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		return -EIO;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sfc_nand_set_feature);

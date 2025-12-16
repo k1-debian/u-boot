@@ -308,7 +308,7 @@ static int mcu_aes_decrypt(unsigned int *input, unsigned int *output, struct sck
 		return -1;
 	}
 
-	len = sckey->code_len + sckey->pad_len;
+	len = sckey->code_len;
 
 	args->arg[0] = AES_BY_UKEY | AES_CRYPT | (AES_256BIT << 12) | 1 << 1;
 	args->arg[2] = virt_to_phys(input);
@@ -437,10 +437,13 @@ static int start_scboot(void *input, void *output, struct sckey *sckey)
 		return -1;
 	}
 
-	serial_debug("SCBOOT: input = 0x%x, output = 0x%x, mode = %s\n",
-		     srcptr, dstptr, sckey->pad_len == 0 ? "cpu" : "dma");
+	int binlen = sckey->code_len;
+	int dmamode = sckey->pad_len > 0 ? 1 : 0;
 
-	if (!sckey->pad_len) {
+	serial_debug("SCBOOT: input = 0x%x, output = 0x%x, mode = %s\n",
+		     srcptr, dstptr, dmamode ? "cpu" : "dma");
+
+	if (!dmamode) {
 		int newround = 1;
 		int endround = 0;
 		int pos = 0;

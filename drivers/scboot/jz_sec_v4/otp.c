@@ -578,13 +578,11 @@ int cpu_burn_custid(void *idata,unsigned int length)
 		return -ESEC;
 	}
 
-#if 0
 	ret = efuse_init(efuse_args->efuse_en_gpio, efuse_args->efuse_en_active);
 	if (ret) {
 		LOG_ERROR("efuse init error\n");
 		return -ESEC;
 	}
-#endif
 
 	LOG_INFO("write custid0\n");
 	ret = efuse_write(idata, length, CUSTID0);

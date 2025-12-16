@@ -804,3 +804,11 @@ struct sfc *sfc_res_init(uint32_t def_sfc_rate)
 	return sfc;
 
 }
+
+void sfc_nand_wp_disable(struct sfc *sfc)
+{
+	uint32_t tmp = sfc_readl(sfc, SFC_GLB);
+	tmp &= ~GLB_WP_EN;
+	sfc_writel(sfc, SFC_GLB, tmp);
+}
+

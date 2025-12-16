@@ -41,7 +41,7 @@ static struct jz_sfcnand_device *yhy_midc9_nand;
 static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 
 	[0] = {
-		/*HYF1GQ4U */
+		/*HYF1GQ4UADCAE */
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -55,14 +55,14 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 		.tRD = TRD,
 		.tPP = TPP,
 		.tBE = TBE,
-                
+
                 .plane_select = 0,
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
 
 	[1] = {
-		/*HYF2GQ4U */
+		/*HYF2GQ4UADCAE */
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -83,7 +83,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 	},
 
 	[2] = {
-		/*HYF4GQ4U */
+		/*HYF4GQ4UAACEB*/
 		.pagesize = 4 * 1024,
 		.blocksize = 4 * 1024 * 64,
 		.oobsize = 256,
@@ -103,12 +103,33 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 		.need_quad = 1,
 	},
 
+	[3] = {
+		/*HYF512NACB */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 512,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+                .plane_select = 0,
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
-	DEVICE_ID_STRUCT(0x21, "HYF1GQ4U", &yhy_midc9_param[0]),
-	DEVICE_ID_STRUCT(0x52, "HYF2GQ4U", &yhy_midc9_param[1]),
-	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4U", &yhy_midc9_param[2]),
+	DEVICE_ID_STRUCT(0x21, "HYF1GQ4UADCAE", &yhy_midc9_param[0]),
+	DEVICE_ID_STRUCT(0x52, "HYF2GQ4UADCAE", &yhy_midc9_param[1]),
+	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4UAACEB", &yhy_midc9_param[2]),
+	DEVICE_ID_STRUCT(0x2B, "HYF512NACB", &yhy_midc9_param[3]),
 };
 
 static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint16_t device_id) {
@@ -117,6 +138,7 @@ static cdt_params_t *yhy_midc9_get_cdt_params(struct sfc_flash *flash, uint16_t 
 		case 0x21:
 		case 0x52:
 		case 0xD4:
+		case 0x2B:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -131,6 +153,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 		case 0x21:
 		case 0x52:
 		case 0xD4:
+		case 0x2B:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;

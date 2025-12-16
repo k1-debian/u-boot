@@ -6,6 +6,7 @@ static unsigned char etron_errstat_1[]= {0x3};
 static struct device_struct device[] = {
 	DEVICE_STRUCT(0x15, 2048, 2, 4, 2, 1, etron_errstat_1, 0),
 	DEVICE_STRUCT(0x25, 2048, 2, 4, 2, 1, etron_errstat_1, 0),
+	DEVICE_STRUCT(0x35, 2048, 2, 4, 2, 1, etron_errstat_1, 0),
 };
 
 static struct nand_desc etron_nand = {

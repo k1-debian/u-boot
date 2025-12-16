@@ -101,6 +101,7 @@ struct jz_sfcnand_ops {
 	cdt_params_t *(*get_cdt_params)(struct sfc_flash *, uint16_t);
 	int (*deal_ecc_status)(struct sfc_flash *, uint16_t, uint8_t);
 	int32_t (*get_feature)(struct sfc_flash *, uint8_t);
+	int32_t (*set_feature)(struct sfc_flash *, uint8_t);
 };
 
 struct jz_sfcnand_device {

@@ -22,7 +22,7 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[] = {
 		/*NM5A02G01A*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
-		.oobsize = 64,
+		.oobsize = 128,
 		.flashsize = 2 * 1024 * 64 * 2048,
 
 		.tSETUP  = TSETUP,

@@ -57,11 +57,32 @@ static struct jz_sfcnand_base_param etron_param[] = {
 		.ecc_max = 4,
 		.need_quad = 1,
 	},
+	[2] = {
+		/*HYF4GQ4UTACAE*/
+		.pagesize  = 2048,
+		.oobsize   = 128,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 4096,
+
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 4,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x15, "EM73C044VCG-H", &etron_param[0]),
 	DEVICE_ID_STRUCT(0x25, "EM73C044VCS-H", &etron_param[1]),
+	DEVICE_ID_STRUCT(0x35, "HYF4GQ4UTACAE", &etron_param[2]),
 };
 
 
@@ -72,6 +93,7 @@ static cdt_params_t *etron_get_cdt_params(struct sfc_flash *flash, uint16_t devi
 	switch(device_id) {
 		case 0x15:
 		case 0x25:
+		case 0x35:
 			break;
 		default:
 			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -87,6 +109,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	switch(device_id) {
 		case 0x15:
 		case 0x25:
+		case 0x35:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 				case 0x1:
@@ -105,6 +128,26 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	return -EINVAL;
 }
 
+static int etron_set_featrue(struct sfc_flash *flash, uint8_t flag)
+{
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	uint16_t device_id = nand_info->id_device;
+	int ret;
+
+	switch(device_id) {
+		case 0x15:
+		case 0x25:
+		case 0x35:
+			if((ret = sfc_nand_set_feature(flash, SPINAND_ADDR_PROTECT, 2)))
+				return -EIO;
+			break;
+		default:
+			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return -EIO;
+	}
+
+	return 0;
+}
 
 static int etron_nand_init(void) {
 
@@ -123,6 +166,7 @@ static int etron_nand_init(void) {
 
 	/* use private get feature interface, please define it in this document */
 	etron_nand->ops.get_feature = NULL;
+	etron_nand->ops.set_feature = etron_set_featrue;
 
 	return jz_sfcnand_register(etron_nand);
 }

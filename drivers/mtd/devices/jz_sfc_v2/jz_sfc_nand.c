@@ -62,6 +62,16 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 	struct jz_sfcnand_ops *ops = nand_info->ops;
 	struct sfc_cdt_xfer xfer;
 	int32_t ret = 0;
+	int wait_ready_times = 2;
+
+	while (wait_ready_times > 0) {
+		ret = ops->get_feature(flash, GET_READY_STATUS);
+		if(ret){
+			printf("get ready state error!\n");
+			continue;
+		}
+		wait_ready_times--;
+	}
 
 	memset(&xfer, 0, sizeof(xfer));
 
@@ -124,6 +134,16 @@ static int32_t jz_sfc_nand_write(struct sfc_flash *flash, const u_char *buffer, 
 	struct jz_sfcnand_ops *ops = nand_info->ops;
 	struct sfc_cdt_xfer xfer;
 	int32_t ret = 0;
+	int wait_ready_times = 2;
+
+	while (wait_ready_times > 0) {
+		ret = ops->get_feature(flash, GET_READY_STATUS);
+		if(ret){
+			printf("get ready state error!\n");
+			continue;
+		}
+		wait_ready_times--;
+	}
 
 	memset(&xfer, 0, sizeof(xfer));
 
@@ -168,6 +188,18 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
 	struct jz_sfcnand_ops *ops = nand_info->ops;
 	struct sfc_cdt_xfer xfer;
+	int ret;
+	int wait_ready_times = 2;
+
+	while (wait_ready_times > 0) {
+		ret = ops->get_feature(flash, GET_READY_STATUS);
+		if(ret){
+			printf("get ready state error!\n");
+			continue;
+		}
+		wait_ready_times--;
+	}
+
 
 	memset(&xfer, 0, sizeof(xfer));
 
@@ -677,60 +709,13 @@ int jz_sfcnand_register(struct jz_sfcnand_device *flash) {
 	return 0;
 }
 
-static int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val)
-{
-	struct sfc_cdt_xfer xfer;
-	memset(&xfer, 0, sizeof(xfer));
-
-	/* set index */
-	xfer.cmd_index = NAND_GET_FEATURE;
-
-	/* set addr */
-	xfer.staaddr0 = addr;
-
-	/* set transfer config */
-	xfer.dataen = ENABLE;
-	xfer.config.datalen = 1;
-	xfer.config.data_dir = GLB_TRAN_DIR_READ;
-	xfer.config.ops_mode = CPU_OPS;
-	xfer.config.buf = val;
-
-	if(sfc_sync_cdt(flash->sfc, &xfer)) {
-		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
-
-	return 0;
-}
-
-static int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8_t val)
-{
-	struct sfc_cdt_xfer xfer;
-	memset(&xfer, 0, sizeof(xfer));
-
-	/* set index */
-	xfer.cmd_index = NAND_SET_FEATURE;
-
-	/* set addr */
-	xfer.staaddr0 = addr;
-
-	/* set transfer config */
-	xfer.dataen = ENABLE;
-	xfer.config.datalen = 1;
-	xfer.config.data_dir = GLB_TRAN_DIR_WRITE;
-	xfer.config.ops_mode = CPU_OPS;
-	xfer.config.buf = (uint8_t *)&val;
-
-	if(sfc_sync_cdt(flash->sfc, &xfer)) {
-		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
-		return -EIO;
-	}
-
-	return 0;
-}
 
 static int32_t sfc_nand_clear_write_protect(struct sfc_flash *flash)
 {
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	struct jz_sfcnand_ops *ops = nand_info->ops;
+	int ret;
+
 #if 0 // KANY1D4S2WD block unlock.
 	uint8_t val = 0;
 	sfc_nand_get_feature(flash, 0xa0, &val);
@@ -738,6 +723,17 @@ static int32_t sfc_nand_clear_write_protect(struct sfc_flash *flash)
 	val |= (1 << 1);
 	sfc_nand_set_feature(flash, 0xa0, val);
 #endif
+
+	sfc_nand_wp_disable(flash->sfc);
+
+	if (ops->set_feature) {
+		ret = ops->set_feature(flash, SET_DIS_WP);
+		if (ret) {
+			printf("disable wirte protection error!\n");
+			return -EIO;
+		}
+	}
+
 	sfc_nand_set_feature(flash, 0xa0, 0);
 	return 0;
 }

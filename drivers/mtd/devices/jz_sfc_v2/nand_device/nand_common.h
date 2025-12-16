@@ -5,6 +5,8 @@
 #include <asm/arch/spinand.h>
 #include <ubi_uboot.h>
 
+#define SET_DIS_WP		0
+#define GET_READY_STATUS	0
 #define GET_WRITE_STATUS	1
 #define GET_ECC_STATUS		2
 #define GET_ERASE_STATUS	3
@@ -71,5 +73,6 @@
 
 int32_t nand_common_get_feature(struct sfc_flash *flash, uint8_t flag);
 int32_t nand_get_ecc_conf(struct sfc_flash *flash, uint8_t addr);
-
+int32_t sfc_nand_get_feature(struct sfc_flash *flash, uint8_t addr, uint8_t *val);
+int32_t sfc_nand_set_feature(struct sfc_flash *flash, uint8_t addr, uint8_t val);
 #endif
