@@ -30,9 +30,10 @@ struct binhead
 #define CONFIG_DEV_SPL_START 0x80001800
 #define CONFIG_DEV_ROT_START 0x80001000
 #define CONFIG_DEV_SN_START 0x80002000
-#define CONFIG_DEV_LOGO_START 0x81800000
 #define CONFIG_DEV_KERNEL_START 0x80f00000
-
+#ifndef CONFIG_DEV_LOGO_START
+#error "CONFIG_DEV_LOGO_START is not defined! Please define it in your board header file."
+#endif
 struct slave_share_mem
 {
     int debug;
