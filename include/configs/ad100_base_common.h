@@ -536,7 +536,8 @@
 /* boot args mem define
  */
 #define CONFIG_SPL_AUTO_PROBE_ARGS_MEM
-#define ARGS_MEM_RESERVED "[mem-start------------------------------------------------------------mem-end]"
+/* 这里内存占位字符长度需要确保足够大, 以保证存放预留内存描述字符不会溢出 */
+#define ARGS_MEM_RESERVED "[mem-start-------------------------------------------------------------------------------------------------------------------------------------------------------------------mem-end]"
 #ifndef CONFIG_RMEM_MB
 #define CONFIG_RMEM_MB 0
 #endif
