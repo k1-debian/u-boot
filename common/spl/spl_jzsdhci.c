@@ -1999,6 +1999,7 @@ void spl_mmc_mcu_rtos_boot(void)
 	if (ret)
 		printf("riscv partition not found\n");
 
+#ifdef CONFIG_SPL_OS_BOOT
 	char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 #ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
 	cmdargs = spl_board_process_mem_bootargs(cmdargs);
@@ -2007,6 +2008,9 @@ void spl_mmc_mcu_rtos_boot(void)
 	riscv_boot_args.cmdargs = virt_to_phys(cmdargs);
 
 	spl_load_riscv(sfc_mmc_load, riscv_offset, virt_to_phys(&riscv_boot_args));
+#else
+	spl_load_riscv(sfc_mmc_load, riscv_offset, 0);
+#endif
 
 	flush_cache_all();
 

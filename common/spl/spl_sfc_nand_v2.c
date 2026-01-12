@@ -1301,6 +1301,7 @@ void spl_nand_mcu_rtos_boot(void)
         return;
     }
 
+#ifdef CONFIG_SPL_OS_BOOT
     char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
 #ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
     cmdargs = spl_board_process_mem_bootargs(cmdargs);
@@ -1309,7 +1310,9 @@ void spl_nand_mcu_rtos_boot(void)
     riscv_boot_args.cmdargs = virt_to_phys(cmdargs);
 
     spl_load_riscv(sfc_nand_load, riscv_part->offset, virt_to_phys(&riscv_boot_args));
-
+#else
+	spl_load_riscv(sfc_nand_load, riscv_part->offset, 0);
+#endif
     flush_cache_all();
 
     riscv_reset();
