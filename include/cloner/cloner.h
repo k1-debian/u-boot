@@ -18,8 +18,8 @@ typedef enum {
 
 #define MIN_LOG_LEVEL           LOG_LEVEL_INFO
 
-#define LOG_BASE_ADDR           ((volatile unsigned int*)CONFIG_SPL_GINFO_BASE)
-#define LOG_BUFF_SIZE           CONFIG_SPL_GINFO_SIZE
+#define LOG_BASE_ADDR           ((volatile unsigned int*)CONFIG_SPL_GINFO_BASE + 0x20)
+#define LOG_BUFF_SIZE           (CONFIG_SPL_GINFO_SIZE - 0x20)
 #define LOG_INDEX_ADDR          (LOG_BASE_ADDR + LOG_BUFF_SIZE/sizeof(uint32_t))
 
 void log_init(void);
