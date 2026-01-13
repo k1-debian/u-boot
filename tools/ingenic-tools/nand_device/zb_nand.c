@@ -9,6 +9,9 @@ static struct device_struct device[] = {
 	DEVICE_STRUCT(0xA1A1, 2048, 2, 4, 2, 1, zb_errstat_2, 0),
 	DEVICE_STRUCT(0xA2A1, 2048, 2, 4, 2, 1, zb_errstat_2, 0),
 	DEVICE_STRUCT(0xA3,   2048, 2, 4, 2, 1, zb_errstat_2, 0),
+	DEVICE_STRUCT(0xC1,   2048, 2, 4, 2, 1, zb_errstat_2, 0),
+	DEVICE_STRUCT(0xC2,   2048, 2, 4, 2, 1, zb_errstat_2, 0),
+	DEVICE_STRUCT(0xC3,   2048, 2, 4, 2, 1, zb_errstat_2, 0),
 };
 
 static struct nand_desc zb_nand = {

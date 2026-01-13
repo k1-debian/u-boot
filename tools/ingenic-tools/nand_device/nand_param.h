@@ -10,6 +10,7 @@ int foresee_nand_register_func(void);
 int gd_nand_register_func(void);
 int gsto_nand_register_func(void);
 int hik_nand_register_func(void);
+int issi_mid9d_nand_register_func(void);
 int issi_nand_register_func(void);
 int kowin_mid01_nand_register_func(void);
 int kowin_midc9_nand_register_func(void);
@@ -56,6 +57,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)hik_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)issi_mid9d_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)issi_nand_register_func,

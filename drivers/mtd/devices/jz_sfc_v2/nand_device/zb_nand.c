@@ -97,6 +97,66 @@ static struct jz_sfcnand_base_param zb_param[] = {
 		.ecc_max = 8,
 		.need_quad = 1,
 	},
+	[4] = {
+		/*ZB35Q01CYIG*/
+		.pagesize = 2 * 1024,
+		.oobsize = 64,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 180,
+		.tPP = 520,
+		.tBE = 3,
+
+		.plane_select = 0,
+		.ecc_max = 8,
+		.need_quad = 1,
+	},
+	[5] = {
+		/*ZB35Q02CYIG*/
+		.pagesize = 2 * 1024,
+		.oobsize = 64,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 180,
+		.tPP = 520,
+		.tBE = 3,
+
+		.plane_select = 0,
+		.ecc_max = 8,
+		.need_quad = 1,
+	},
+	[6] = {
+		/*ZB35Q04CYIG*/
+		.pagesize = 2 * 1024,
+		.oobsize = 128,
+		.blocksize = 2 * 1024 * 128,
+		.flashsize = 2 * 1024 * 128 * 2048,
+
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 400,
+		.tPP = 1000,
+		.tBE = 5,
+
+		.plane_select = 0,
+		.ecc_max = 8,
+		.need_quad = 1,
+	},
 
 };
 
@@ -105,6 +165,9 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xA1A1, "ZB35Q01B", &zb_param[1]),
 	DEVICE_ID_STRUCT(0xA2A1, "ZB35Q02B", &zb_param[2]),
 	DEVICE_ID_STRUCT(0xA3,   "ZB35Q04B", &zb_param[3]),
+	DEVICE_ID_STRUCT(0xC1,   "ZB35Q01C", &zb_param[4]),
+	DEVICE_ID_STRUCT(0xC2,   "ZB35Q02C", &zb_param[5]),
+	DEVICE_ID_STRUCT(0xC3,   "ZB35Q04C", &zb_param[6]),
 };
 
 
@@ -117,6 +180,9 @@ static cdt_params_t *zb_get_cdt_params(struct sfc_flash *flash, uint16_t device_
 		case 0xA1A1:
 		case 0xA2A1:
 		case 0xA3:
+		case 0xC1:
+		case 0xC2:
+		case 0xC3:
 			break;
 		default:
 			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -155,6 +221,9 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 					break;
 			}
 		case 0xA3:
+		case 0xC1:
+		case 0xC2:
+		case 0xC3:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;

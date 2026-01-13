@@ -110,11 +110,11 @@ static unsigned int pll_get_rate(int pll)
 	n = ((cpxpcr >> 18) & 0x1f) + 1;
 	od = (cpxpcr >> 16) & 0x3;
 	od = 1 << od;
-#ifdef CONFIG_BURNER
-	return (unsigned int)((unsigned long)gd->arch.gi->extal * m / n / od);
-#else
+//#ifdef CONFIG_BURNER
+//	return (unsigned int)((unsigned long)gd->arch.gi->extal * m / n / od);
+//#else
 	return (unsigned int)((unsigned long)CONFIG_SYS_EXTAL * m / n / od);
-#endif
+//#endif
 }
 
 static unsigned int get_ddr_rate(void)
