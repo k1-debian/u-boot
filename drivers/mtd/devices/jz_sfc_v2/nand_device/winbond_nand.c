@@ -97,9 +97,31 @@ static struct jz_sfcnand_base_param winbond_param[] = {
 		.ecc_max      = 4,  /* Support max 8 bits ECC */
 		.need_quad    = 1,
 	},
+	[4] = {
+		/*W25N512GVxIG/IT*/
+		.pagesize  = 2 * 1024,
+		.oobsize   = 64,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 2 * 1024 * 64 * 512,
+
+		.tSETUP    = TSETUP,
+		.tHOLD     = THOLD,
+		.tSHSL_R   = TSHSL_R,
+		.tSHSL_W   = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max      = 4,  /* Support max 8 bits ECC */
+		.need_quad    = 1,
+	},
+
 };
 
 static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0xAA20, "W25N512GVxIG/1T", &winbond_param[4]),
 	DEVICE_ID_STRUCT(0xAA21, "W25N01GVZEIG",   &winbond_param[0]),
 	DEVICE_ID_STRUCT(0xAA22, "W25N02KVxxIR/U", &winbond_param[1]),
 	DEVICE_ID_STRUCT(0xAE21, "W25N01KVxxIR/U", &winbond_param[2]),
@@ -112,6 +134,7 @@ static cdt_params_t *winbond_get_cdt_params(struct sfc_flash *flash, uint16_t de
 	CDT_PARAMS_INIT(winbond_nand->cdt_params);
 
 	switch(device_id) {
+		case 0xAA20:
 		case 0xAA21:
 		case 0xAA22:
 		case 0xAE21:
@@ -129,6 +152,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 {
 	int ret = 0;
 	switch(device_id) {
+		case 0xAA20:
 		case 0xAA21:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
