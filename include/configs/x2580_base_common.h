@@ -553,6 +553,36 @@
 
 #define ARGS_ROOTFS CONFIG_ROOTFS_INITRC" "CONFIG_ROOTFS_PARAM" "ARG_ROOTFS_TYPE
 
+/* boot args rootfs2
+ */
+#if defined(CONFIG_ROOTFS2_EXT2)
+#define ARG_ROOTFS2_TYPE " ro" /* rootfstype=ext2 */
+#elif defined(CONFIG_ROOTFS2_UBI)
+#define ARG_ROOTFS2_TYPE "rootfstype=ubifs ro"
+#elif defined(CONFIG_ROOTFS2_SQUASHFS)
+#define ARG_ROOTFS2_TYPE "rootfstype=squashfs ro"
+#elif defined(CONFIG_ROOTFS2_RAMDISK)
+#define ARG_ROOTFS2_TYPE "rw"
+#else
+#error "please add more define here"
+#endif
+
+#ifndef CONFIG_ROOTFS2_DEV
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS2_DEV "root=/dev/mmcblk0p4 rootwait"
+#else
+#define CONFIG_ROOTFS2_DEV "root=/dev/mtdblock_bbt_ro4"
+#endif /* CONFIG_SPL_JZMMC_SUPPORT */
+#endif /* CONFIG_ROOTFS2_DEV */
+
+#ifdef CONFIG_SPL_JZMMC_SUPPORT
+#define CONFIG_ROOTFS2_PARAM CONFIG_ROOTFS2_DEV
+#else
+#define CONFIG_ROOTFS2_PARAM CONFIG_FLASH_TYPE " " CONFIG_ROOTFS2_DEV
+#endif
+
+#define ARGS_ROOTFS2 CONFIG_ROOTFS2_INITRC" "CONFIG_ROOTFS2_PARAM" "ARG_ROOTFS2_TYPE
+
 #define ARGS_CONSOLE ARG_CONSOLE_TTY ARG_CONSOLE_RATE
 #define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " ARGS_MEM_RESERVED
 /* #define BOOTARGS_COMMON ARGS_CONSOLE " " ARGS_QUIET " " "mem=128M@0x0" */
@@ -926,6 +956,18 @@
 #define CONFIG_MBR_P3_OFF	1609mb
 #define CONFIG_MBR_P3_END	7800mb
 #define CONFIG_MBR_P3_TYPE 	fat
+#endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+#define CONFIG_SPL_OS_BOOT
+#endif
+
+#ifdef CONFIG_SPL_OS_OTA_BOOT
+    #define CONFIG_SPL_OTA_NAME       "ota"
+    #define CONFIG_SPL_OS_NAME2       "kernel2"
+
+    #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
+    #define CONFIG_SYS_SPL_ARGS_ADDR2 CONFIG_SPL_BOOTARGS2
 #endif
 
 #ifdef CONFIG_SPL_OS_BOOT
