@@ -84,8 +84,10 @@
 #define CONFIG_DDR_PHY_IMPEDANCE             40
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE         120
 
+#ifndef CONFIG_X1670
 #define CONFIG_DDR_AUTO_SELF_REFRESH
 #define CONFIG_DDR_AUTO_SELF_REFRESH_CNT     257
+#endif
 
 #define CONFIG_BOOTARGS_MEM_8M			"mem=8M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_16M			"mem=16M@0x0"	/* customize bootargs for default env.*/

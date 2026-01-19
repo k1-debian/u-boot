@@ -16,14 +16,23 @@
 
 #include "x1600_ddr.h"
 
-
-#define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ		300000000	/*If EPLL not use mast be set 0*/
-#define CONFIG_CPU_SEL_PLL		APLL
-#define CONFIG_DDR_SEL_PLL		MPLL
-#define CONFIG_SYS_CPU_FREQ		1104000000
-#define CONFIG_SYS_MEM_FREQ		350000000
+#ifdef CONFIG_X1670
+  #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
+  #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
+  #define CONFIG_SYS_EPLL_FREQ		300000000	/*If EPLL not use mast be set 0*/
+  #define CONFIG_CPU_SEL_PLL		APLL
+  #define CONFIG_DDR_SEL_PLL		MPLL
+  #define CONFIG_SYS_CPU_FREQ		1008000000
+  #define CONFIG_SYS_MEM_FREQ		300000000
+#else
+  #define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
+  #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
+  #define CONFIG_SYS_EPLL_FREQ		300000000	/*If EPLL not use mast be set 0*/
+  #define CONFIG_CPU_SEL_PLL		APLL
+  #define CONFIG_DDR_SEL_PLL		MPLL
+  #define CONFIG_SYS_CPU_FREQ		1104000000
+  #define CONFIG_SYS_MEM_FREQ		350000000
+#endif
 
 #define CONFIG_SYS_AHB0_FREQ		280000000
 #define CONFIG_SYS_AHB2_FREQ		280000000	/*APB = AHB2/2*/
@@ -47,8 +56,12 @@
 #endif
 
 #ifndef CONFIG_SYS_UART_INDEX
+#ifdef CONFIG_X1670
+#define CONFIG_SYS_UART_INDEX		0
+#else
 #define CONFIG_SYS_UART_INDEX		2
-#endif
+#endif /* CONFIG_X1670 */
+#endif /* CONFIG_SYS_UART_INDEX */
 
 #ifndef CONFIG_BAUDRATE
 #define CONFIG_BAUDRATE			3000000
