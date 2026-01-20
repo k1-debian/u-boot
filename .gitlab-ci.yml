@@ -1,3 +1,10 @@
+# 使用此配置后，流水线仅在计划任务触发时运行，而在代码提交（push）或其他事件时不会自动触发。
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "push"'
+      when: always
+    - when: never
+
 include:
     - project: pzqi/ingenic-cicd
       file: uboot/uboot-2013/ci-cd.yml
