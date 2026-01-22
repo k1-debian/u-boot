@@ -15,6 +15,6 @@ static struct nand_desc esmtlc_nand = {
 	.device = device,
 };
 
-int esmtlc_nand_register_func(void) {
+int esmt_mid8c_nand_register_func(void) {
 	return nand_register(&esmtlc_nand);
 }
