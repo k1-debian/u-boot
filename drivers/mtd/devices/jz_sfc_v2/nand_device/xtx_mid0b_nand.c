@@ -4,6 +4,11 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
+/*
+XT26G04C:
+include/configs/x1600_halley6.h
+	#define CONFIG_SPI_NAND_BPP                    (4096 + 256)      //Bytes Per Page
+*/
 #define TSETUP		20
 #define THOLD		5
 #define	TSHSL_R		20
@@ -120,6 +125,26 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[5] = {
+		/*XT26G04C */
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 256,
+		.flashsize = 4 * 1024 * 64 * 2048,
+
+		.tSETUP  = 5,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 175,
+		.tPP = 360,
+		.tBE = 4,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
@@ -128,6 +153,7 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[2]),
 	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[3]),
 	DEVICE_ID_STRUCT(0x32, "XT26G02D ", &xtx_mid0b_param[4]),
+	DEVICE_ID_STRUCT(0x13, "XT26G04C ", &xtx_mid0b_param[5]),
 };
 
 
@@ -141,6 +167,7 @@ static cdt_params_t *xtx_mid0b_get_cdt_params(struct sfc_flash *flash, uint16_t 
 		case 0x11:
 		case 0x12:
 		case 0x32:
+		case 0x13:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -205,6 +232,18 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 				case 0x3:
 					return 8;
 				default:
+					break;
+			}
+			break;
+		case 0x13:
+			switch ((ecc_status >> 4) & 0xF) {
+				case 0x0:
+					return 0;
+			        case 0x1 ... 0x8:
+					return (ecc_status >> 4) & 0xF;
+				case 0xF:
+					return -EBADMSG;
+			        default:
 					break;
 			}
 			break;
