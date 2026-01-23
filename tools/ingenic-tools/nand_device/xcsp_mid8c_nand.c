@@ -6,6 +6,7 @@ static unsigned char xcsp_mid8c_errstat_1[] = {0x03};
 
 static struct device_struct device[] = {
 	DEVICE_STRUCT(0x01, 2048, 2, 4, 2, 1, xcsp_mid8c_errstat_1, 0),
+	DEVICE_STRUCT(0xa1, 2048, 2, 4, 2, 1, xcsp_mid8c_errstat_1, 0),
 };
 
 static struct nand_desc xcsp_mid8c_nand = {

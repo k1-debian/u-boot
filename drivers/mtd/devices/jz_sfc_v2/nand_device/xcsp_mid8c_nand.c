@@ -38,10 +38,32 @@ static struct jz_sfcnand_base_param xcsp_mid8c_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+
+	[1] = {
+		/*XCSP2AAPK-IT*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 150,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x01, "XCSP1AAPK-IT", &xcsp_mid8c_param[0]),
+	DEVICE_ID_STRUCT(0xa1, "XCSP2AAPK-IT", &xcsp_mid8c_param[1]),
 };
 
 
@@ -51,6 +73,7 @@ static cdt_params_t *xcsp_mid8c_get_cdt_params(struct sfc_flash *flash, uint16_t
 
 	switch(device_id) {
 		case 0x01:
+		case 0xa1:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -65,6 +88,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 	int ret = 0;
 	switch(device_id) {
 		case 0x01:
+		case 0xa1:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
