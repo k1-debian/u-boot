@@ -20,6 +20,7 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[] = {
 	[0] = {
 		/*XT26G02E */
 		/*NM5A02G01A*/
+		/*F50L2G41XA*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -44,6 +45,7 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[] = {
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x24, "XT26G02E ", &xtx_mid2c_param[0]),
 	/* DEVICE_ID_STRUCT(0x24, "NM5A02G01A", &xtx_mid2c_param[0]), */
+	/* DEVICE_ID_STRUCT(0x24, "F50L2G41XA", &xtx_mid2c_param[0]), */
 };
 
 
@@ -52,7 +54,7 @@ static cdt_params_t *xtx_mid2c_get_cdt_params(struct sfc_flash *flash, uint16_t 
 	CDT_PARAMS_INIT(xtx_mid2c_nand->cdt_params);
 
 	switch(device_id) {
-		case 0x24:            /* same as NM5A02G01A nand device */
+		case 0x24:            /* same as NM5A02G01A and F50L2G41XA nand device */
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
