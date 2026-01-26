@@ -13,7 +13,7 @@
 #define TPP	    900
 #define TBE	    10
 
-struct jz_sfcnand_device *esmt_nand;
+struct jz_sfcnand_device *esmt_mid8c_nand;
 
 static struct jz_sfcnand_base_param esmt_param[] = {
 	[0] = {
@@ -44,7 +44,7 @@ static struct device_id_struct device_id[] = {
 
 static cdt_params_t *esmt_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
 {
-	CDT_PARAMS_INIT(esmt_nand->cdt_params);
+	CDT_PARAMS_INIT(esmt_mid8c_nand->cdt_params);
 	switch(device_id) {
 		case 0x2C:
 			break;
@@ -52,7 +52,7 @@ static cdt_params_t *esmt_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
 			return NULL;
 	}
-	return &esmt_nand->cdt_params;
+	return &esmt_mid8c_nand->cdt_params;
 }
 
 static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
@@ -78,25 +78,25 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 }
 
 
-static int esmt_nand_init(void) {
+static int esmt_mid8c_nand_init(void) {
 
-	esmt_nand = kzalloc(sizeof(*esmt_nand), GFP_KERNEL);
-	if(!esmt_nand) {
-		pr_err("alloc esmt_nand struct fail\n");
+	esmt_mid8c_nand = kzalloc(sizeof(*esmt_mid8c_nand), GFP_KERNEL);
+	if(!esmt_mid8c_nand) {
+		pr_err("alloc esmt_mid8c_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	esmt_nand->id_manufactory = 0x8C;
-	esmt_nand->id_device_list = device_id;
-	esmt_nand->id_device_count = ARRAY_SIZE(esmt_param);
+	esmt_mid8c_nand->id_manufactory = 0x8C;
+	esmt_mid8c_nand->id_device_list = device_id;
+	esmt_mid8c_nand->id_device_count = ARRAY_SIZE(esmt_param);
 
-	esmt_nand->ops.get_cdt_params = esmt_get_cdt_params;
-	esmt_nand->ops.deal_ecc_status = deal_ecc_status;
+	esmt_mid8c_nand->ops.get_cdt_params = esmt_get_cdt_params;
+	esmt_mid8c_nand->ops.deal_ecc_status = deal_ecc_status;
 
 	/* use private get feature interface, please define it in this document */
-	esmt_nand->ops.get_feature = NULL;
+	esmt_mid8c_nand->ops.get_feature = NULL;
 
-	return jz_sfcnand_register(esmt_nand);
+	return jz_sfcnand_register(esmt_mid8c_nand);
 }
 
-SPINAND_MOUDLE_INIT(esmt_nand_init);
+SPINAND_MOUDLE_INIT(esmt_mid8c_nand_init);
