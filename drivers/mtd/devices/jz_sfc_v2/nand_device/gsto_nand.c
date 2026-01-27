@@ -57,11 +57,53 @@ static struct jz_sfcnand_base_param gsto_param[] = {
 		.ecc_max      = 8,
 		.need_quad    = 1,
 	},
+	[2] = {
+		/*GSS01GSAK1*/
+		.pagesize  = 2048,
+		.oobsize   = 64,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max      = 4,
+		.need_quad    = 1,
+	},
+	[3] = {
+		/*GSS02GSAK1*/
+		.pagesize  = 2048,
+		.oobsize   = 64,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 2048,
+
+		.tSETUP    = TSETUP,
+		.tHOLD     = THOLD,
+		.tSHSL_R   = TSHSL_R,
+		.tSHSL_W   = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max      = 4,
+		.need_quad    = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xCA13, "GSS01GSAX1", &gsto_param[0]),
 	DEVICE_ID_STRUCT(0xCA23, "GSS02GSAX1", &gsto_param[1]),
+	DEVICE_ID_STRUCT(0xBA13, "GSS01GSAK1", &gsto_param[2]),
+	DEVICE_ID_STRUCT(0xBA23, "GSS02GSAK1", &gsto_param[3]),
 };
 
 
@@ -72,6 +114,8 @@ static cdt_params_t *gsto_get_cdt_params(struct sfc_flash *flash, uint16_t devic
 	switch(device_id) {
 		case 0xCA13:
 		case 0xCA23:
+		case 0xBA13:
+		case 0xBA23:
 			break;
 		default:
 			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
@@ -92,6 +136,19 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 					return 0;
 				case 0x1:
 					return 8;
+				case 0x2:
+					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
+		case 0xBA13:
+		case 0xBA23:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
 				case 0x2:
 					return -EBADMSG;
 				default:
