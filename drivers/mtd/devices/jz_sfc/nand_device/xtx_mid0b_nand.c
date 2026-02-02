@@ -114,6 +114,25 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[5] = {
+		/*XT26G04C */
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 256,
+		.flashsize = 4 * 1024 * 64 * 2048,
+
+		.tSETUP  = 5,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 175,
+		.tPP = 360,
+		.tBE = 4,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
@@ -121,6 +140,8 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xF2, "XT26G02B ", &xtx_mid0b_param[1]),
 	DEVICE_ID_STRUCT(0x11, "XT26G01C ", &xtx_mid0b_param[2]),
 	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[3]),
+	DEVICE_ID_STRUCT(0x32, "XT26G02D ", &xtx_mid0b_param[4]),
+	DEVICE_ID_STRUCT(0x13, "XT26G04C ", &xtx_mid0b_param[5]),
 };
 
 static int32_t xtx_mid0b_get_read_feature(struct flash_operation_message *op_info) {
@@ -210,6 +231,18 @@ retry:
 				case 0x3:
 					return 8;
 				default:
+					break;
+			}
+			break;
+		case 0x13:
+			switch ((ecc_status >> 4) & 0xF) {
+				case 0x0:
+					return 0;
+			        case 0x1 ... 0x8:
+					return (ecc_status >> 4) & 0xF;
+				case 0xF:
+					return -EBADMSG;
+			        default:
 					break;
 			}
 			break;

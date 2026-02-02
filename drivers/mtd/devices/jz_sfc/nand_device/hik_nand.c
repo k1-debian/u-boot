@@ -4,22 +4,20 @@
 #include <asm/arch/spinand.h>
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
-#include <ubi_uboot.h>
+
+#define THOLD	    5
+#define TSETUP	    5
+#define TSHSL_R	    20
+#define TSHSL_W	    20
+
+#define TRD	    450
+#define TPP	    800
+#define TBE	    10
 
 
-#define TSETUP		20
-#define THOLD		20
-#define	TSHSL_R		50
-#define	TSHSL_W		50
-
-#define TRD		200
-#define TPP		800
-#define TBE		10
-
-static struct jz_sfcnand_base_param yhy_midc9_param[] = {
-
+static struct jz_sfcnand_base_param hik_param[] = {
 	[0] = {
-		/*HYF1GQ4UADCAE */
+		/*HSESYHDSW1G*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -37,9 +35,8 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
-
 	[1] = {
-		/*HYF2GQ4UADCAE */
+		/*HSESYHDSW2G*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
@@ -57,33 +54,12 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
-
 	[2] = {
-		/*HYF4GQ4UAACEB*/
-		.pagesize = 4 * 1024,
-		.blocksize = 4 * 1024 * 64,
-		.oobsize = 256,
-		.flashsize = 4 * 1024 * 64 * 2048,
-
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = TRD,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.ecc_max = 0x4,
-		.need_quad = 1,
-	},
-
-	[3] = {
-		/*HYF512NACB */
+		/*HSESYHDSW4G*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 512,
+		.flashsize = 2 * 1024 * 64 * 4096,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
@@ -100,13 +76,14 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 };
 
 static struct device_id_struct device_id[] = {
-	DEVICE_ID_STRUCT(0x21, "HYF1GQ4UADCAE", &yhy_midc9_param[0]),
-	DEVICE_ID_STRUCT(0x52, "HYF2GQ4UADCAE", &yhy_midc9_param[1]),
-	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4UAACEB", &yhy_midc9_param[2]),
-	DEVICE_ID_STRUCT(0x2B, "HYF512NACB", &yhy_midc9_param[3]),
+	DEVICE_ID_STRUCT(0xD1D1, "HSESYHDSW1G", &hik_param[0]),
+	DEVICE_ID_STRUCT(0xD2D2, "HSESYHDSW2G", &hik_param[1]),
+	DEVICE_ID_STRUCT(0xD4D4, "HSESYHDSW4G", &hik_param[2]),
 };
 
-static int32_t yhy_midc9_get_read_feature(struct flash_operation_message *op_info) {
+
+static int32_t hik_get_read_feature(struct flash_operation_message *op_info)
+{
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -135,7 +112,7 @@ retry:
 	transfer.ops_mode = CPU_OPS;
 
 	if(sfc_sync(flash->sfc, &transfer)) {
-		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
@@ -143,15 +120,13 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0x21:
-		case 0x52:
-		case 0xD4:
-		case 0x2B:
+		case 0xD1D1:
+		case 0xD2D2:
+		case 0xD4D4:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
 				case 0x1:
-				case 0x3:
 					return 4;
 				case 0x2:
 					return -EBADMSG;
@@ -166,17 +141,22 @@ retry:
 	return -EINVAL;
 }
 
-static int yhy_midc9_nand_init(void) {
-	struct jz_sfcnand_device *yhy_midc9_nand;
-	yhy_midc9_nand = kzalloc(sizeof(*yhy_midc9_nand), GFP_KERNEL);
-	if(!yhy_midc9_nand) {
-		pr_err("alloc yhy_midc9_nand struct fail\n");
+
+static int hik_nand_init(void) {
+	struct jz_sfcnand_device *hik_nand;
+	hik_nand = kzalloc(sizeof(*hik_nand), GFP_KERNEL);
+	if(!hik_nand) {
+		pr_err("alloc hik_nand struct fail\n");
 		return -ENOMEM;
 	}
-	yhy_midc9_nand->id_manufactory = 0xC9;
-	yhy_midc9_nand->id_device_list = device_id;
-	yhy_midc9_nand->id_device_count = ARRAY_SIZE(yhy_midc9_param);
-	yhy_midc9_nand->ops.nand_read_ops.get_feature = yhy_midc9_get_read_feature;
-	return jz_sfcnand_register(yhy_midc9_nand);
+
+	hik_nand->id_manufactory = 0x3C;
+	hik_nand->id_device_list = device_id;
+	hik_nand->id_device_count = ARRAY_SIZE(hik_param);
+
+	hik_nand->ops.nand_read_ops.get_feature = hik_get_read_feature;
+
+	return jz_sfcnand_register(hik_nand);
 }
-SPINAND_MOUDLE_INIT(yhy_midc9_nand_init);
+
+SPINAND_MOUDLE_INIT(hik_nand_init);

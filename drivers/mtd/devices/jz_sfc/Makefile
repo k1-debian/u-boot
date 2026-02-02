@@ -47,15 +47,26 @@ COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/dosilicon_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/fm_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/yhy_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/issi_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/issi_mid9d_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/xcsp_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/tc_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/zb_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/kowin_mid01_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/kowin_midc9_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/gsto_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/hik_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/etron_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/unim_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/micron_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/wodposit_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/cochipgo_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/esmt_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/xcsp_mid8c_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/esmt_mid8c_nand.o
+COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/esmt_mid2c_nand.o
+
 
 endif
-
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

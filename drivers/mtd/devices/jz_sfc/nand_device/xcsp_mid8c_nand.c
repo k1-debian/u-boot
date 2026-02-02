@@ -7,81 +7,50 @@
 
 #define TSETUP		5
 #define THOLD		5
-#define	TSHSL_R		80
-#define	TSHSL_W		80
+#define	TSHSL_R		20
+#define	TSHSL_W		20
 
-#define TRD		100
-#define TPP		900
-#define TBE		10
+#define TRD		600
+#define TPP		1000
+#define TBE		5
 
-static struct jz_sfcnand_base_param fm_param[] = {
+
+static struct jz_sfcnand_base_param xcsp_mid8c_param[] = {
+
 	[0] = {
-		/*FM25S01A*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024,
-
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = TRD,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.ecc_max = 0x1,
-		.need_quad = 1,
-	},
-	[1] = {
-		/*FM25S02A*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024 * 2,
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = TRD,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.ecc_max = 0x1,
-		.need_quad = 1,
-	},
-	[2] = {
-		/*FM25S01B*/
+		/*XCSP1AAPK-IT*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 128,
-		.flashsize = 2 * 1024 * 64 * 1024,
+		/*Block 1013 ~ 1023 (10 blocks) are restricted area.*/
+		.flashsize = 2 * 1024 * 64 * 1024 - (10 * 2 * 1024 * 64),
+
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.tRD = 105,
+		.tRD = TRD,
 		.tPP = TPP,
 		.tBE = TBE,
 
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
-	[3] = {
-		/*FM25S02B*/
+
+	[1] = {
+		/*XCSP2AAPK-IT*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
-		.oobsize = 128,
-		.flashsize = 2 * 1024 * 64 * 2048,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.tRD = 70,
+		.tRD = 150,
 		.tPP = TPP,
 		.tBE = TBE,
 
@@ -91,13 +60,12 @@ static struct jz_sfcnand_base_param fm_param[] = {
 };
 
 static struct device_id_struct device_id[] = {
-	DEVICE_ID_STRUCT(0xE4, "FM25S01A", &fm_param[0]),
-	DEVICE_ID_STRUCT(0xE5, "FM25S02A", &fm_param[1]),
-	DEVICE_ID_STRUCT(0xD4, "FM25S01B", &fm_param[2]),
-	DEVICE_ID_STRUCT(0xD6, "FM25S02B", &fm_param[3]),
+	DEVICE_ID_STRUCT(0x01, "XCSP1AAPK-IT", &xcsp_mid8c_param[0]),
+	DEVICE_ID_STRUCT(0xa1, "XCSP2AAPK-IT", &xcsp_mid8c_param[1]),
 };
 
-static int32_t fm_get_read_feature(struct flash_operation_message *op_info) {
+static int32_t xcsp_mid8c_get_read_feature(struct flash_operation_message *op_info)
+{
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -134,32 +102,16 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0xE4:
-		case 0xE5:
+		case 0x01:
+		case 0xa1:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
 				case 0x1:
-					return 1;
-				case 0x2:
-				case 0x3:
-					return -EBADMSG;
-				default:
-					break;
-			}
-			break;
-		case 0xD4:
-		case 0xD6:
-			switch((ecc_status >> 4) & 0x7) {
-				case 0x0:
-					return 0;
-				case 0x1:
-					return 3;
+					return 4;
 				case 0x2:
 					return -EBADMSG;
 				case 0x3:
-					return 6;
-				case 0x5:
 					return 8;
 				default:
 					break;
@@ -172,19 +124,23 @@ retry:
 	return -EINVAL;
 }
 
-static int fm_nand_init(void) {
-	struct jz_sfcnand_device *fm_nand;
-	fm_nand = kzalloc(sizeof(*fm_nand), GFP_KERNEL);
-	if(!fm_nand) {
-		pr_err("alloc fm_nand struct fail\n");
+
+static int xcsp_mid8c_nand_init(void)
+{
+	struct jz_sfcnand_device *xcsp_mid8c_nand;
+	xcsp_mid8c_nand = kzalloc(sizeof(*xcsp_mid8c_nand), GFP_KERNEL);
+	if(!xcsp_mid8c_nand) {
+		pr_err("alloc xcsp_mid8c_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	fm_nand->id_manufactory = 0xA1;
-	fm_nand->id_device_list = device_id;
-	fm_nand->id_device_count = ARRAY_SIZE(fm_param);
+	xcsp_mid8c_nand->id_manufactory = 0x8C;
+	xcsp_mid8c_nand->id_device_list = device_id;
+	xcsp_mid8c_nand->id_device_count = ARRAY_SIZE(xcsp_mid8c_param);
 
-	fm_nand->ops.nand_read_ops.get_feature = fm_get_read_feature;
-	return jz_sfcnand_register(fm_nand);
+	xcsp_mid8c_nand->ops.nand_read_ops.get_feature = xcsp_mid8c_get_read_feature;
+
+	return jz_sfcnand_register(xcsp_mid8c_nand);
 }
-SPINAND_MOUDLE_INIT(fm_nand_init);
+
+SPINAND_MOUDLE_INIT(xcsp_mid8c_nand_init);

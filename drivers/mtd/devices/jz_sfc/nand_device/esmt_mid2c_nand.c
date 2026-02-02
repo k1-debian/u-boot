@@ -14,16 +14,14 @@
 #define TPP		600
 #define TBE		10
 
-static struct jz_sfcnand_base_param xtx_mid2c_param[] = {
 
+static struct jz_sfcnand_base_param esmt_mid2c_param[] = {
 	[0] = {
-		/*XT26G02E */
-		/*NM5A02G01A*/
-		/*F50L2G41XA*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 128,
-		.flashsize = 2 * 1024 * 64 * 2048,
+		/*F50L4G41XB*/
+		.pagesize = 4 * 1024,
+		.blocksize = 4 * 1024 * 64,
+		.oobsize = 256,
+		.flashsize = 4 * 1024 * 64 * 2048,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
@@ -41,29 +39,11 @@ static struct jz_sfcnand_base_param xtx_mid2c_param[] = {
 };
 
 static struct device_id_struct device_id[] = {
-	DEVICE_ID_STRUCT(0x24, "XT26G02E ", &xtx_mid2c_param[0]),
-	/* DEVICE_ID_STRUCT(0x24, "NM5A02G01A", &xtx_mid2c_param[0]), */
-	/* DEVICE_ID_STRUCT(0x24, "F50L2G41XA", &xtx_mid2c_param[0]), */
+	DEVICE_ID_STRUCT(0x34, "F50L4G41XB", &esmt_mid2c_param[0]),
 };
 
 
-static void xtx_mid2c_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
-
-	transfer->cmd_info.cmd = SPINAND_CMD_PARD;
-	transfer->sfc_mode = TM_STD_SPI;
-
-	transfer->addr = op_info->pageaddr;
-	transfer->addr_len = 3;
-
-	transfer->cmd_info.dataen = DISABLE;
-	transfer->len = 0;
-
-	transfer->data_dummy_bits = 0;
-	transfer->ops_mode = CPU_OPS;
-	return;
-}
-
-static int32_t xtx_mid2c_get_read_feature(struct flash_operation_message *op_info) {
+static int32_t esmt_mid2c_get_read_feature(struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -92,7 +72,7 @@ retry:
 	transfer.ops_mode = CPU_OPS;
 
 	if(sfc_sync(flash->sfc, &transfer)) {
-	        printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
+		printf("sfc_sync error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
@@ -100,7 +80,7 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0x24:
+		case 0x34:
 			switch((ecc_status >> 4) & 0x7) {
 				case 0x0:
 				case 0x1:
@@ -121,7 +101,8 @@ retry:
 	return -EINVAL;
 }
 
-static void xtx_mid2c_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
+
+static void esmt_mid2c_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -130,7 +111,7 @@ static void xtx_mid2c_single_read(struct sfc_transfer *transfer, struct flash_op
 	int plane_flag = 0;
 
 	switch(device_id) {
-	    case 0x24:
+		case 0x34:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
 			break;
@@ -155,7 +136,7 @@ static void xtx_mid2c_single_read(struct sfc_transfer *transfer, struct flash_op
 	return;
 }
 
-static void xtx_mid2c_quad_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
+static void esmt_mid2c_quad_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -164,7 +145,7 @@ static void xtx_mid2c_quad_read(struct sfc_transfer *transfer, struct flash_oper
 	int plane_flag = 0;
 
 	switch(device_id) {
-	    case 0x24:
+		case 0x34:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
 			break;
@@ -189,7 +170,7 @@ static void xtx_mid2c_quad_read(struct sfc_transfer *transfer, struct flash_oper
 	return;
 }
 
-static void xtx_mid2c_single_load(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
+static void esmt_mid2c_single_load(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -198,7 +179,7 @@ static void xtx_mid2c_single_load(struct sfc_transfer *transfer, struct flash_op
 	int plane_flag = 0;
 
 	switch(device_id) {
-		case 0x24:
+		case 0x34:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
 			break;
@@ -222,7 +203,7 @@ static void xtx_mid2c_single_load(struct sfc_transfer *transfer, struct flash_op
 	transfer->ops_mode = DMA_OPS;
 }
 
-static void xtx_mid2c_quad_load(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
+static void esmt_mid2c_quad_load(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -231,7 +212,7 @@ static void xtx_mid2c_quad_load(struct sfc_transfer *transfer, struct flash_oper
 	int plane_flag = 0;
 
 	switch(device_id) {
-		case 0x24:
+		case 0x34:
 			plane_flag = (op_info->pageaddr >> 6) & 1;
 			columnaddr |= (plane_flag << 12);
 			break;
@@ -256,42 +237,26 @@ static void xtx_mid2c_quad_load(struct sfc_transfer *transfer, struct flash_oper
 
 }
 
-static void xtx_mid2c_program_exec(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
 
-	transfer->cmd_info.cmd = SPINAND_CMD_PRO_EN;
-	transfer->sfc_mode = TM_STD_SPI;
-
-	transfer->addr = op_info->pageaddr;
-	transfer->addr_len = 3;
-
-	transfer->cmd_info.dataen = DISABLE;
-	transfer->len = 0;
-
-	transfer->data_dummy_bits = 0;
-	transfer->ops_mode = CPU_OPS;
-}
-
-static int xtx_mid2c_nand_init(void) {
-	struct jz_sfcnand_device *xtx_mid2c_nand;
-	xtx_mid2c_nand = kzalloc(sizeof(*xtx_mid2c_nand), GFP_KERNEL);
-	if(!xtx_mid2c_nand) {
-		pr_err("alloc xtx_mid2c_nand struct fail\n");
+static int esmt_mid2c_nand_init(void) {
+	struct jz_sfcnand_device *esmt_mid2c_nand;
+	esmt_mid2c_nand = kzalloc(sizeof(*esmt_mid2c_nand), GFP_KERNEL);
+	if(!esmt_mid2c_nand) {
+		pr_err("alloc esmt_mid2c_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	xtx_mid2c_nand->id_manufactory = 0x2C;
-	xtx_mid2c_nand->id_device_list = device_id;
-	xtx_mid2c_nand->id_device_count = ARRAY_SIZE(xtx_mid2c_param);
+	esmt_mid2c_nand->id_manufactory = 0x2C;
+	esmt_mid2c_nand->id_device_list = device_id;
+	esmt_mid2c_nand->id_device_count = ARRAY_SIZE(esmt_mid2c_param);
 
-	xtx_mid2c_nand->ops.nand_read_ops.pageread_to_cache = xtx_mid2c_pageread_to_cache;
-	xtx_mid2c_nand->ops.nand_read_ops.get_feature = xtx_mid2c_get_read_feature;
-	xtx_mid2c_nand->ops.nand_read_ops.single_read = xtx_mid2c_single_read;
-	xtx_mid2c_nand->ops.nand_read_ops.quad_read = xtx_mid2c_quad_read;
+	esmt_mid2c_nand->ops.nand_read_ops.get_feature = esmt_mid2c_get_read_feature;
+	esmt_mid2c_nand->ops.nand_read_ops.single_read = esmt_mid2c_single_read;
+	esmt_mid2c_nand->ops.nand_read_ops.quad_read = esmt_mid2c_quad_read;
+	esmt_mid2c_nand->ops.nand_write_ops.single_load = esmt_mid2c_single_load;
+	esmt_mid2c_nand->ops.nand_write_ops.quad_load = esmt_mid2c_quad_load;
 
-	xtx_mid2c_nand->ops.nand_write_ops.single_load = xtx_mid2c_single_load;
-	xtx_mid2c_nand->ops.nand_write_ops.quad_load = xtx_mid2c_quad_load;
-	xtx_mid2c_nand->ops.nand_write_ops.program_exec = xtx_mid2c_program_exec;
-
-	return jz_sfcnand_register(xtx_mid2c_nand);
+	return jz_sfcnand_register(esmt_mid2c_nand);
 }
-SPINAND_MOUDLE_INIT(xtx_mid2c_nand_init);
+
+SPINAND_MOUDLE_INIT(esmt_mid2c_nand_init);

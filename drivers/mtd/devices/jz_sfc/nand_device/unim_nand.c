@@ -5,23 +5,23 @@
 #include "../jz_sfc_common.h"
 #include "nand_common.h"
 
-#define TSETUP		5
-#define THOLD		5
-#define	TSHSL_R		100
-#define	TSHSL_W		100
+#define THOLD	    5
+#define TSETUP	    5
+#define TSHSL_R	    30
+#define TSHSL_W	    30
 
-#define TRD		30
-#define TPP		360
-#define TBE		2
+#define TRD	    95
+#define TPP	    600
+#define TBE	    10
 
-static struct jz_sfcnand_base_param tc_param[] = {
 
+static struct jz_sfcnand_base_param unim_param[] = {
 	[0] = {
-		/*TC58CVG0S3HRAIG*/
+		/*UM19A9HISW*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024,
+		.flashsize = 2 * 1024 * 64 * 512,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
@@ -33,23 +33,23 @@ static struct jz_sfcnand_base_param tc_param[] = {
 		.tBE = TBE,
 
 		.ecc_max = 0x4,
-		.need_quad = 0, // unsupport quad
+		.need_quad = 1,
 	},
 	[1] = {
-		/*TC58CVG2S0HRAIJ */
-		.pagesize = 4 * 1024,
-		.blocksize = 4 * 1024 * 64,
-		.oobsize = 128,
-		.flashsize = 4 * 1024 * 64 * 2048,
+		/*UM19A8HISW*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 256,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.tRD = 300,
-		.tPP = 600,
-		.tBE = 7,
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
 
 		.ecc_max = 0x4,
 		.need_quad = 1,
@@ -57,11 +57,13 @@ static struct jz_sfcnand_base_param tc_param[] = {
 };
 
 static struct device_id_struct device_id[] = {
-	DEVICE_ID_STRUCT(0xC2, "TC58CVG0S3HRAIG", &tc_param[0]),
-	DEVICE_ID_STRUCT(0xed, "TC58CVG2S0HRAIJ", &tc_param[1]),
+	DEVICE_ID_STRUCT(0x0C, "UM19A9HISW", &unim_param[0]),
+	DEVICE_ID_STRUCT(0xFC, "UM19A8HISW", &unim_param[1]),
+
 };
 
-static int32_t tc_get_read_feature(struct flash_operation_message *op_info) {
+static int32_t unim_get_read_feature(struct flash_operation_message *op_info)
+{
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -98,30 +100,17 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0xC2:
+		case 0x0C:
+		case 0xFC:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
 				case 0x1:
-					return 8;
+					return 2;
 				case 0x2:
 					return -EBADMSG;
-				default:
-					break;
-			}
-			break;
-		case 0xED:
-			switch((ecc_status >> 4) & 0x3) {
-				case 0x0:
-					return 0;
-				case 0x1:
-					ret = nand_get_ecc_conf(flash, 0x30);
-					if (ret < 0)
-						return ret;
-					ret >>= 4;
-					return ret;
-				case 0x2:
-					return -EBADMSG;
+				case 0x3:
+					return 4;
 				default:
 					break;
 			}
@@ -133,19 +122,21 @@ retry:
 	return -EINVAL;
 }
 
-static int tc_nand_init(void) {
-	struct jz_sfcnand_device *tc_nand;
-	tc_nand = kzalloc(sizeof(*tc_nand), GFP_KERNEL);
-	if(!tc_nand) {
-		pr_err("alloc tc_nand struct fail\n");
+static int unim_nand_init(void) {
+	struct jz_sfcnand_device *unim_nand;
+	unim_nand = kzalloc(sizeof(*unim_nand), GFP_KERNEL);
+	if(!unim_nand) {
+		pr_err("alloc unim_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	tc_nand->id_manufactory = 0x98;
-	tc_nand->id_device_list = device_id;
-	tc_nand->id_device_count = ARRAY_SIZE(tc_param);
+	unim_nand->id_manufactory = 0xB0;
+	unim_nand->id_device_list = device_id;
+	unim_nand->id_device_count = ARRAY_SIZE(unim_param);
 
-	tc_nand->ops.nand_read_ops.get_feature = tc_get_read_feature;
-	return jz_sfcnand_register(tc_nand);
+	unim_nand->ops.nand_read_ops.get_feature = unim_get_read_feature;
+
+	return jz_sfcnand_register(unim_nand);
 }
-SPINAND_MOUDLE_INIT(tc_nand_init);
+
+SPINAND_MOUDLE_INIT(unim_nand_init);

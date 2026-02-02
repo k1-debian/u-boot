@@ -192,6 +192,25 @@ static struct jz_sfcnand_base_param dosilicon_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[9] = {
+		/*DS35Q2GBSXX*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 128,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tHOLD  = THOLD,
+		.tSETUP = TSETUP,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
@@ -204,6 +223,7 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xB4, "DS35Q4GBXXX",     &dosilicon_param[6]),
 	DEVICE_ID_STRUCT(0x75, "DS35Q12C-1B",     &dosilicon_param[7]),
 	DEVICE_ID_STRUCT(0xF4, "LC35X4GMXXX",     &dosilicon_param[8]),
+	DEVICE_ID_STRUCT(0xB2, "DS35Q2GBSXX",     &dosilicon_param[9]),
 };
 
 static void dosilicon_pageread_to_cache(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -289,6 +309,7 @@ retry:
 					break;
 			}
 			break;
+		case 0xB2:
 		case 0xB4:
 		case 0x75:
 		case 0xF4:
@@ -450,6 +471,7 @@ static void dosilicon_quad_load(struct sfc_transfer *transfer, struct flash_oper
 	switch(device_id) {
 		case 0x71:
 		case 0x21:
+		case 0xB2:
 			break;
 		case 0x72:
 		case 0xF2:

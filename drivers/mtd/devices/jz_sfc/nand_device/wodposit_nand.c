@@ -7,20 +7,22 @@
 
 #define TSETUP		5
 #define THOLD		5
-#define	TSHSL_R		80
-#define	TSHSL_W		80
+#define TSHSL_R		20
+#define TSHSL_W		20
 
-#define TRD		100
-#define TPP		900
+#define TRD		450
+#define TPP		800
 #define TBE		10
 
-static struct jz_sfcnand_base_param fm_param[] = {
+
+static struct jz_sfcnand_base_param wodposit_param[] = {
+
 	[0] = {
-		/*FM25S01A*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
+		/* WPS3NS01W */
+		.pagesize = 2048,
+		.blocksize = 2048 * 64,
 		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024,
+		.flashsize = 2048 * 64 * 1024,
 
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
@@ -28,60 +30,44 @@ static struct jz_sfcnand_base_param fm_param[] = {
 		.tSHSL_W = TSHSL_W,
 
 		.tRD = TRD,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.ecc_max = 0x1,
-		.need_quad = 1,
-	},
-	[1] = {
-		/*FM25S02A*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 64,
-		.flashsize = 2 * 1024 * 64 * 1024 * 2,
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = TRD,
-		.tPP = TPP,
-		.tBE = TBE,
-
-		.ecc_max = 0x1,
-		.need_quad = 1,
-	},
-	[2] = {
-		/*FM25S01B*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 128,
-		.flashsize = 2 * 1024 * 64 * 1024,
-		.tSETUP  = TSETUP,
-		.tHOLD   = THOLD,
-		.tSHSL_R = TSHSL_R,
-		.tSHSL_W = TSHSL_W,
-
-		.tRD = 105,
 		.tPP = TPP,
 		.tBE = TBE,
 
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
-	[3] = {
-		/*FM25S02B*/
-		.pagesize = 2 * 1024,
-		.blocksize = 2 * 1024 * 64,
-		.oobsize = 128,
-		.flashsize = 2 * 1024 * 64 * 2048,
+	[1] = {
+		/* WPS3NS02W */
+		.pagesize = 2048,
+		.blocksize = 2048 * 64,
+		.oobsize = 64,
+		.flashsize = 2048 * 64 * 2048,
+
 		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
-		.tRD = 70,
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+	[2] = {
+		/* WPS3NS04W */
+		.pagesize = 4096,
+		.blocksize = 4096 * 64,
+		.oobsize = 128,
+		.flashsize = 4096 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
 		.tPP = TPP,
 		.tBE = TBE,
 
@@ -91,13 +77,13 @@ static struct jz_sfcnand_base_param fm_param[] = {
 };
 
 static struct device_id_struct device_id[] = {
-	DEVICE_ID_STRUCT(0xE4, "FM25S01A", &fm_param[0]),
-	DEVICE_ID_STRUCT(0xE5, "FM25S02A", &fm_param[1]),
-	DEVICE_ID_STRUCT(0xD4, "FM25S01B", &fm_param[2]),
-	DEVICE_ID_STRUCT(0xD6, "FM25S02B", &fm_param[3]),
+	DEVICE_ID_STRUCT(0xA081, "WPS3NS01W", &wodposit_param[0]),
+	DEVICE_ID_STRUCT(0xA082, "WPS3NS02W", &wodposit_param[1]),
+	DEVICE_ID_STRUCT(0xA083, "WPS3NS04W", &wodposit_param[2]),
 };
 
-static int32_t fm_get_read_feature(struct flash_operation_message *op_info) {
+static int32_t wodposit_get_read_feature(struct flash_operation_message *op_info)
+{
 
 	struct sfc_flash *flash = op_info->flash;
 	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
@@ -134,33 +120,17 @@ retry:
 		goto retry;
 
 	switch(device_id) {
-		case 0xE4:
-		case 0xE5:
+		case 0xA081:
+		case 0xA082:
+		case 0xA083:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
 				case 0x1:
-					return 1;
+					return 4;
 				case 0x2:
 				case 0x3:
 					return -EBADMSG;
-				default:
-					break;
-			}
-			break;
-		case 0xD4:
-		case 0xD6:
-			switch((ecc_status >> 4) & 0x7) {
-				case 0x0:
-					return 0;
-				case 0x1:
-					return 3;
-				case 0x2:
-					return -EBADMSG;
-				case 0x3:
-					return 6;
-				case 0x5:
-					return 8;
 				default:
 					break;
 			}
@@ -172,19 +142,22 @@ retry:
 	return -EINVAL;
 }
 
-static int fm_nand_init(void) {
-	struct jz_sfcnand_device *fm_nand;
-	fm_nand = kzalloc(sizeof(*fm_nand), GFP_KERNEL);
-	if(!fm_nand) {
-		pr_err("alloc fm_nand struct fail\n");
+
+static int wodposit_nand_init(void) {
+	struct jz_sfcnand_device *wodposit_nand;
+	wodposit_nand = kzalloc(sizeof(*wodposit_nand), GFP_KERNEL);
+	if(!wodposit_nand) {
+		pr_err("alloc wodposit_nand struct fail\n");
 		return -ENOMEM;
 	}
 
-	fm_nand->id_manufactory = 0xA1;
-	fm_nand->id_device_list = device_id;
-	fm_nand->id_device_count = ARRAY_SIZE(fm_param);
+	wodposit_nand->id_manufactory = 0xA5;
+	wodposit_nand->id_device_list = device_id;
+	wodposit_nand->id_device_count = ARRAY_SIZE(wodposit_param);
 
-	fm_nand->ops.nand_read_ops.get_feature = fm_get_read_feature;
-	return jz_sfcnand_register(fm_nand);
+	wodposit_nand->ops.nand_read_ops.get_feature = wodposit_get_read_feature;
+
+	return jz_sfcnand_register(wodposit_nand);
 }
-SPINAND_MOUDLE_INIT(fm_nand_init);
+
+SPINAND_MOUDLE_INIT(wodposit_nand_init);

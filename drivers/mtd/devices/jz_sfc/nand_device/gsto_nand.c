@@ -18,13 +18,13 @@
 static struct jz_sfcnand_base_param gsto_param[] = {
 	[0] = {
 		/*GSS01GSAX1*/
-		.pagesize = 2 * 1024,
-		.oobsize = 64,
-		.blocksize = 2 * 1024 * 64,
-		.flashsize = 2 * 1024 * 64 * 1024,
+		.pagesize  = 2048,
+		.oobsize   = 64,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 1024,
 
-		.tSETUP = TSETUP,
-		.tHOLD  = THOLD,
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
 
@@ -32,13 +32,73 @@ static struct jz_sfcnand_base_param gsto_param[] = {
 		.tPP = TPP,
 		.tBE = TBE,
 
-		.ecc_max = 8,
-		.need_quad = 1,
+		.ecc_max      = 8,
+		.need_quad    = 1,
+	},
+	[1] = {
+		/*GSS02GSAX1*/
+		.pagesize  = 2048,
+		.oobsize   = 64,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 2048,
+
+		.tSETUP    = TSETUP,
+		.tHOLD     = THOLD,
+		.tSHSL_R   = TSHSL_R,
+		.tSHSL_W   = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max      = 8,
+		.need_quad    = 1,
+	},
+	[2] = {
+		/*GSS01GSAK1*/
+		.pagesize  = 2048,
+		.oobsize   = 64,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max      = 4,
+		.need_quad    = 1,
+	},
+	[3] = {
+		/*GSS02GSAK1*/
+		.pagesize  = 2048,
+		.oobsize   = 64,
+		.blocksize = 2048 * 64,
+		.flashsize = 2048 * 64 * 2048,
+
+		.tSETUP    = TSETUP,
+		.tHOLD     = THOLD,
+		.tSHSL_R   = TSHSL_R,
+		.tSHSL_W   = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max      = 4,
+		.need_quad    = 1,
 	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xCA13, "GSS01GSAX1", &gsto_param[0]),
+	DEVICE_ID_STRUCT(0xCA23, "GSS02GSAX1", &gsto_param[1]),
+	DEVICE_ID_STRUCT(0xBA13, "GSS01GSAK1", &gsto_param[2]),
+	DEVICE_ID_STRUCT(0xBA23, "GSS02GSAK1", &gsto_param[3]),
 };
 
 static int32_t gsto_get_read_feature(struct flash_operation_message *op_info) {
@@ -78,11 +138,25 @@ retry:
 
 	switch(device_id) {
 		case 0xCA13:
+		case 0xCA23:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
 				case 0x1:
 					return 8;
+				case 0x2:
+					return -EBADMSG;
+				default:
+					break;
+			}
+			break;
+		case 0xBA13:
+		case 0xBA23:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
 				case 0x2:
 					return -EBADMSG;
 				default:

@@ -75,12 +75,73 @@ static struct jz_sfcnand_base_param winbond_param[] = {
 		.ecc_max = 0x4,
 		.need_quad = 1,
 	},
+	[3] = {
+		/*W25N01KVxxIR/U test failed*/
+		/*Power outage test file system damage, resulting in inability to start normally*/
+		.pagesize = 2 * 1024,
+		.oobsize = 128,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 1 * 1024 * 64 * 2048,
+
+		.tSETUP = TSETUP,
+		.tHOLD  = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+	[4] = {
+		/*W25N04KVxxIR/U*/
+		.pagesize  = 2 * 1024,
+		.oobsize   = 128,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 2 * 1024 * 64 * 4096,
+
+		.tSETUP    = TSETUP,
+		.tHOLD     = THOLD,
+		.tSHSL_R   = TSHSL_R,
+		.tSHSL_W   = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max      = 4,  /* Support max 8 bits ECC */
+		.need_quad    = 1,
+	},
+	[5] = {
+		/*W25N512GVxIG/IT*/
+		.pagesize  = 2 * 1024,
+		.oobsize   = 64,
+		.blocksize = 2 * 1024 * 64,
+		.flashsize = 2 * 1024 * 64 * 512,
+
+		.tSETUP    = TSETUP,
+		.tHOLD     = THOLD,
+		.tSHSL_R   = TSHSL_R,
+		.tSHSL_W   = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.ecc_max      = 4,  /* Support max 8 bits ECC */
+		.need_quad    = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xAA21, "W25N01GVZEIG", &winbond_param[0]),
 	DEVICE_ID_STRUCT(0xAB21, "W25M02GV", &winbond_param[1]),
 	DEVICE_ID_STRUCT(0xAA22, "W25N02KVxxIR/U", &winbond_param[2]),
+	DEVICE_ID_STRUCT(0xAE21, "W25N01KVxxIR/U", &winbond_param[3]),
+	DEVICE_ID_STRUCT(0xAA23, "W25N04KVxxIR/U", &winbond_param[4]),
+	DEVICE_ID_STRUCT(0xAA20, "W25N512GVxIG/1T", &winbond_param[5]),
 };
 
 void active_die(struct sfc_flash *flash, uint8_t die_id) {
@@ -163,8 +224,11 @@ static void winbond_pageread_to_cache(struct sfc_transfer *transfer, struct flas
 	uint32_t pageaddr = op_info->pageaddr;
 
 	switch(device_id) {
+		case 0xAA20:
 		case 0xAA21:
 		case 0xAA22:
+		case 0xAE21:
+		case 0xAA23:
 			break;
 		case 0xAB21:
 			if(pageaddr > 65535) {
@@ -265,6 +329,7 @@ retry:
 		goto retry;
 
 	switch(device_id) {
+		case 0xAA20:
 		case 0xAA21:
 		case 0xAB21:
 			switch((ecc_status >> 4) & 0x3) {
@@ -280,6 +345,8 @@ retry:
 			}
 			break;
 		case 0xAA22:
+		case 0xAE21:
+		case 0xAA23:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;

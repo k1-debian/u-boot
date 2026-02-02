@@ -112,7 +112,7 @@ static struct jz_sfcnand_base_param fs_param[] = {
 		.need_quad = 1,
 	},
 	[5] = {
-		/*FS35SQA512M*/
+		/*F35SQA512M*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -131,7 +131,7 @@ static struct jz_sfcnand_base_param fs_param[] = {
 		.need_quad = 1,
 	},
 	[6] = {
-		/*FS35SQA002G*/
+		/*F35SQA002G*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -150,7 +150,7 @@ static struct jz_sfcnand_base_param fs_param[] = {
 		.need_quad = 1,
 	},
 	[7] = {
-		/*FS35SQA004G*/
+		/*F35SQA004G*/
 		.pagesize = 2 * 2 * 1024,
 		.blocksize = 2 * 2 * 1024 * 64,
 		.oobsize = 128,
@@ -169,7 +169,7 @@ static struct jz_sfcnand_base_param fs_param[] = {
 		.need_quad = 1,
 	},
 	[8] = {
-		/*FS35SQB002G*/
+		/*F35SQB002G*/
 		.pagesize = 2 * 1024,
 		.blocksize = 2 * 1024 * 64,
 		.oobsize = 64,
@@ -194,11 +194,11 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0xB1, "FS35ND01G-V2", &fs_param[1]),
 	DEVICE_ID_STRUCT(0xEB, "FS35ND02G",    &fs_param[2]),
 	DEVICE_ID_STRUCT(0xEA, "FS35ND01G-S1", &fs_param[3]),
-	DEVICE_ID_STRUCT(0x71, "FS35SQA001G",  &fs_param[4]),
-	DEVICE_ID_STRUCT(0x70, "FS35SQA512M",  &fs_param[5]),
-	DEVICE_ID_STRUCT(0x72, "FS35SQA002G",  &fs_param[6]),
-	DEVICE_ID_STRUCT(0x53, "FS35SQA004G",  &fs_param[7]),
-	DEVICE_ID_STRUCT(0x52, "FS35SQB002G",  &fs_param[8]),
+	DEVICE_ID_STRUCT(0x71, "F35SQA001G",   &fs_param[4]),
+	DEVICE_ID_STRUCT(0x70, "F35SQA512M",   &fs_param[5]),
+	DEVICE_ID_STRUCT(0x72, "F35SQA002G",   &fs_param[6]),
+	DEVICE_ID_STRUCT(0x53, "F35SQA004G",   &fs_param[7]),
+	DEVICE_ID_STRUCT(0x52, "F35SQB002G",   &fs_param[8]),
 };
 
 static int32_t fs_get_read_feature(struct flash_operation_message *op_info) {

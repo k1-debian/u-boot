@@ -328,6 +328,82 @@ static struct jz_sfcnand_base_param gd_param[] = {
 		.ecc_max = 0x8,
 		.need_quad = 1,
 	},
+	[16] = {
+		/*GD5F1GQ5RE-1.8V*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD_Q5,
+		.tPP = TPP_Q5,
+		.tBE = TBE,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+	[17] = {
+		/*GD5F1GQ5UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 60,
+		.tPP = 600,
+		.tBE = 10,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+	[18] = {
+		/*GD5F1GQ5RE-1.8V*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 60,
+		.tPP = 600,
+		.tBE = 10,
+
+		.ecc_max = 0x4,
+		.need_quad = 1,
+	},
+	[19] = {
+		/*GD5F1GM7UE*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 120,
+		.tPP = TPP_Q5,
+		.tBE = 10,
+
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
 };
 
 static struct device_id_struct device_id[] = {
@@ -347,6 +423,10 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x32,   "GD5F2GQ5UExxH", &gd_param[13]),
 	DEVICE_ID_STRUCT(0x95,   "GD5F4GM8UE",    &gd_param[14]),
 	DEVICE_ID_STRUCT(0xD9,   "GD5F1GQ4UExxH", &gd_param[15]),
+	DEVICE_ID_STRUCT(0x41, "GD5F1GQ5RE-1.8V", &gd_param[16]),
+	DEVICE_ID_STRUCT(0x31, "GD5F1GQ5UE",      &gd_param[17]),
+	DEVICE_ID_STRUCT(0x21, "GD5F1GQ5RE-1.8V", &gd_param[18]),
+	DEVICE_ID_STRUCT(0x81, "GD5F1GM7RE-1.8V", &gd_param[19]),
 };
 
 static void gd_single_read(struct sfc_transfer *transfer, struct flash_operation_message *op_info) {
@@ -409,11 +489,15 @@ static void gd_quad_read(struct sfc_transfer *transfer, struct flash_operation_m
 			break;
 		case 0xD1 ... 0xD4:
 		case 0x51 ... 0x55:
-		case 0x91:
+		case 0x32:
 		case 0x92:
+		case 0x91:
 		case 0x95:
-		case 0xd9:
-			addr_len = 2;
+		case 0xD9:
+		case 0x41:
+		case 0x31:
+		case 0x21:
+		case 0x81:
 			break;
 		default:
 			printf("device_id err, please check your device id: device_id = 0x%02x\n", device_id);
@@ -505,6 +589,7 @@ retry:
 		case 0x91:
 		case 0x95:
 		case 0xD9:
+		case 0x81:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
@@ -521,10 +606,13 @@ retry:
 					break;
 			}
 			break;
+		case 0x41:
 		case 0x51:
 		case 0x55:
 		case 0x52:
 		case 0x32:
+		case 0x31:
+		case 0x21:
 			switch((ecc_status >> 4) & 0x3) {
 				case 0x0:
 					return 0;
