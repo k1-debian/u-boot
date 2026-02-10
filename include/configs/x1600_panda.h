@@ -38,7 +38,7 @@
 
 #define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
-#define CONFIG_SYS_EPLL_FREQ		200000000	/*If EPLL not use mast be set 0*/
+#define CONFIG_SYS_EPLL_FREQ		288000000	/*If EPLL not use mast be set 0， pwm audio need 384k*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		1104000000
@@ -52,7 +52,7 @@
 
 /*#define CONFIG_UART2_PA*/
 #define CONFIG_SYS_UART_INDEX		2
-#define CONFIG_BAUDRATE			115200
+#define CONFIG_BAUDRATE			3000000
 
 #define CONFIG_SYS_DCACHE_SIZE		(16 * 1024)
 #define CONFIG_SYS_DCACHELINE_SIZE	(32)

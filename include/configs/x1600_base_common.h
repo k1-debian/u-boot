@@ -19,23 +19,24 @@
 #ifdef CONFIG_X1670
   #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
-  #define CONFIG_SYS_EPLL_FREQ		300000000	/*If EPLL not use mast be set 0*/
+  #define CONFIG_SYS_EPLL_FREQ		288000000	/*If EPLL not use mast be set 0， pwm audio need 384k*/
   #define CONFIG_CPU_SEL_PLL		APLL
   #define CONFIG_DDR_SEL_PLL		MPLL
   #define CONFIG_SYS_CPU_FREQ		1008000000
   #define CONFIG_SYS_MEM_FREQ		300000000
+  #define CONFIG_SYS_AHB0_FREQ		240000000
+  #define CONFIG_SYS_AHB2_FREQ		240000000	/*APB = AHB2/2*/
 #else
   #define CONFIG_SYS_APLL_FREQ		1104000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1400000000	/*If MPLL not use mast be set 0*/
-  #define CONFIG_SYS_EPLL_FREQ		300000000	/*If EPLL not use mast be set 0*/
+  #define CONFIG_SYS_EPLL_FREQ		288000000	/*If EPLL not use mast be set 0， pwm audio need 384k*/
   #define CONFIG_CPU_SEL_PLL		APLL
   #define CONFIG_DDR_SEL_PLL		MPLL
   #define CONFIG_SYS_CPU_FREQ		1104000000
   #define CONFIG_SYS_MEM_FREQ		350000000
+  #define CONFIG_SYS_AHB0_FREQ		280000000
+  #define CONFIG_SYS_AHB2_FREQ		280000000	/*APB = AHB2/2*/
 #endif
-
-#define CONFIG_SYS_AHB0_FREQ		280000000
-#define CONFIG_SYS_AHB2_FREQ		280000000	/*APB = AHB2/2*/
 
 #ifdef CONFIG_QUICK_START
 #define CONFIG_SPL_RTOS_LOAD_KERNEL
