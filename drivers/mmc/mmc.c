@@ -864,6 +864,28 @@ static void mmc_is_wp(unsigned int csd_response4)
 		mmc_csd_perm_w_protect = 0;
 }
 
+static unsigned int get_gp_size_mult(unsigned char *ext_csd, unsigned int gp_index)
+{
+	int idx;
+
+	if (gp_index >= 4)
+		return 0;
+
+	idx = EXT_CSD_GP_SIZE_MULT_1_0 + gp_index * 3;
+	return (ext_csd[idx + 2] << 16) |
+		(ext_csd[idx + 1] << 8) |
+		ext_csd[idx];
+}
+
+static unsigned long get_gpp_size(unsigned char *ext_csd, unsigned int gp_index)
+{
+	unsigned int size_mult = get_gp_size_mult(ext_csd, gp_index);
+
+	return 512l * size_mult *
+		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
+		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+}
+
 #ifdef CONFIG_MMC_CREATE_GPP_AND_ENH
 static unsigned int get_sector_count(unsigned char *ext_csd)
 {
@@ -896,27 +918,6 @@ static unsigned int get_partition_config(unsigned char *ext_csd)
 	return ext_csd[179];
 }
 
-static unsigned int get_gp_size_mult(unsigned char *ext_csd, unsigned int gp_index)
-{
-	int idx;
-
-	if (gp_index >= 4)
-		return 0;
-
-	idx = EXT_CSD_GP_SIZE_MULT_1_0 + gp_index * 3;
-	return (ext_csd[idx + 2] << 16) |
-		(ext_csd[idx + 1] << 8) |
-		ext_csd[idx];
-}
-
-static unsigned long get_gpp_size(unsigned char *ext_csd, unsigned int gp_index)
-{
-	unsigned int size_mult = get_gp_size_mult(ext_csd, gp_index);
-
-	return 512l * size_mult *
-		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
-		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-}
 
 static unsigned long get_enh_uda_size(unsigned char *ext_csd)
 {
