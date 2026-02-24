@@ -58,7 +58,7 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 #ifdef CONFIG_MMC_CREATE_GPP_AND_ENH
 	if (mmc_args->mmc_gpp_area) {
 		for(i=0; i<mmc_args->mmc_gpp_area_count; i++) {
-			ret = create_gp_partition(mmc, i + 1,
+			ret = create_gp_partition(mmc, i,
 					mmc_args->gpp_area[i].length_kib,
 					mmc_args->gpp_area[i].enh_attr,
 					mmc_args->gpp_area[i].ext_attr);

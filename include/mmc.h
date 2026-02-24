@@ -225,6 +225,7 @@
 #define EXT_CSD_ENH_3                   (1<<3)
 #define EXT_CSD_ENH_2                   (1<<2)
 #define EXT_CSD_ENH_1                   (1<<1)
+#define EXT_CSD_ENH_GPP(x)              (1<<x)
 #define EXT_CSD_ENH_USR                 (1<<0)
 
 #define EXT_CSD_CMD_SET_NORMAL		(1 << 0)
@@ -366,6 +367,7 @@ void print_mmc_devices(char separator);
 int get_mmc_num(void);
 int board_mmc_getcd(struct mmc *mmc);
 int mmc_switch_part(int dev_num, unsigned int part_num);
+int mmc_switch_boot(int dev_num, unsigned int part_num);
 int mmc_getcd(struct mmc *mmc);
 int mmc_getwp(struct mmc *mmc);
 void spl_mmc_load(void) __noreturn;

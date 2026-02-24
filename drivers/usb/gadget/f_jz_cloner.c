@@ -51,6 +51,7 @@
 #include "../../scboot/jz_sec_v4/secure.h"
 #include "../../scboot/jz_sec_v4/aes.h"
 #include "../../scboot/jz_sec_v4/spi_checksum.h"
+#include "../../scboot/jz_sec_v4/jz_pdma.h"
 #else
 #include "../../scboot/jz_sec_v1/otp.h"
 #include "../../scboot/jz_sec_v1/secure.h"
@@ -465,6 +466,21 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 		case VR_WRITE:
 			realloc_buf(cloner, cmd->write.length);
 			cloner->write_req->length = cmd->write.length;
+#if defined(CONFIG_JZ_SCBOOT) && (defined(CONFIG_X2600) || defined(CONFIG_AD100))
+			if (cmd->write.ops == OPS_BURN_NKU || cmd->write.ops == OPS_BURN_ENUK) {
+				if (cmd->write.length <= MCU_TCSM_NKULEN ||
+						cmd->write.length <= MCU_TCSM_KEYLEN) {
+					cloner->write_req->buf = (void *)MCU_TCSM_OUTDATA;
+				} else {
+					LOG_ERROR("key length %u > %u, fallback to DDR\n",
+							cmd->write.length,
+							(unsigned int)MCU_TCSM_NKULEN);
+					cloner->write_req->buf = cloner->buf;
+				}
+			} else {
+				cloner->write_req->buf = cloner->buf;
+			}
+#endif
 			usb_ep_queue(cloner->ep_out, cloner->write_req, 0);
 			break;
 		case VR_INIT:

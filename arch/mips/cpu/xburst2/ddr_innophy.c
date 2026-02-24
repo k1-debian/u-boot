@@ -561,7 +561,7 @@ int get_ddr_params_socid(void)
 		printf("Check socid return invalid ddr id.\n");
 		return -1;
 	}
-	printf("SOC: %s\n", chip_name);
+	printf("SOC: %s, DDR ID: %x\n", chip_name, ddrid);
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];

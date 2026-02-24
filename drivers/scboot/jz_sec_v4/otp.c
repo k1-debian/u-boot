@@ -1,4 +1,3 @@
-//#define DEBUG
 
 #include <common.h>
 #include <asm/io.h>
@@ -25,8 +24,8 @@ static struct regulator *efuse_1v8 = NULL;
 extern int ricoh61x_regulator_init(void);
 #endif
 
-unsigned int rsakey[256];
-unsigned int rsakeylen;
+static unsigned int rsakey[256];
+static unsigned int rsakeylen;
 
 static void set_rsakey(unsigned int *idata, unsigned int length)
 {
@@ -62,7 +61,7 @@ static int cmp_data(unsigned int *src, unsigned int *dst,unsigned int len)
 
 static void efuse_1v8_output(int value)
 {
-	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
+	if(efuse_en_gpio != -1) {
 		mdelay(2);		/* wait for EFUSE IO power for mdelay(1). */
 		gpio_direction_output(efuse_en_gpio, value);
 		LOG_INFO("EFUSE_EN_N gpio(%d) output %s!\n", efuse_en_gpio, value == 0 ? "low" : "high");
@@ -156,7 +155,9 @@ static int efuse_update_state(void)
 {
 	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_STAT) = 0;
+	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
+	REG32(EFUSE_REG_CTRL) |= (1 << EFUSE_REGOFF_CRTL_LENG);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
 	LOG_INFO("PROT = %x\n", REG32(EFUSE_REG_DAT0));
@@ -173,6 +174,7 @@ static int redundancy_rd(void)
 {
 	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_DAT0) = 0;
+	REG32(EFUSE_REG_CTRL) = 0;
 	REG32(EFUSE_REG_CTRL) = (0x1f << EFUSE_REGOFF_CRTL_ADDR) | (1 << EFUSE_REGOFF_CRTL_LENG) | EFUSE_REG_CTRL_RWL;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
@@ -186,6 +188,24 @@ static int redundancy_rd(void)
 	return 0;
 }
 
+static int efuse_wait_wtdone(unsigned int timeout_ms)
+{
+	unsigned int i;
+	unsigned int seen = 0;
+
+	for (i = 0; i < timeout_ms; i++) {
+		if (REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE) {
+			if (seen++ >= 2)
+				return 0;
+		} else {
+			seen = 0;
+		}
+		mdelay(1);
+	}
+	LOG_ERROR("wait WTDONE timeout (%u ms)\n", timeout_ms);
+	return -ETIMEDOUT;
+}
+
 static int otp_w(unsigned int offset)
 {
 	if (offset >= 16) {
@@ -193,33 +213,35 @@ static int otp_w(unsigned int offset)
 		return -1;
 	}
 	unsigned int ret;
+	int wtdone_ret;
+
+	REG32(EFUSE_REG_CTRL) = 0;
+
+	efuse_1v8_output(efuse_args->efuse_en_active);
 
 #define PRT_REDUNDANCY  0x00010001
 	REG32(EFUSE_REG_DAT0) = PRT_REDUNDANCY << offset;
 	REG32(EFUSE_REG_CTRL) = (EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR) | (0 << EFUSE_REGOFF_CRTL_LENG);
 
-	efuse_1v8_output(efuse_args->efuse_en_active);
-
+//	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PD;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
-	mdelay(10);
-
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_WTEN; /*write en*/
 
-	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_WTDONE));
+	wtdone_ret = efuse_wait_wtdone(100);
 
 	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_WTEN;
 	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PGEN;
-	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PS; /*power on*/
-
-//	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
-	mdelay(10);
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PS;
+//	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD;
 
 	efuse_1v8_output(!efuse_args->efuse_en_active);
 
 	redundancy_rd();
 	efuse_update_state();
 
+	if (wtdone_ret < 0)
+		return wtdone_ret;
 	return 0;
 }
 
@@ -231,30 +253,35 @@ static int mcu_wtotp(int opera)
 	volatile struct sc_args *args;
 	args = (volatile struct sc_args *)GET_SC_ARGS();
 	volatile unsigned int *retval = (volatile unsigned int *)MCU_TCSM_RETVAL;
+	int wtdone_ret = 0;
 
 	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_CTRL) = 0;
 
 	efuse_1v8_output(efuse_args->efuse_en_active);
 
+//	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PD;
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PS; /*power on*/
-	mdelay(10);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PGEN; /*pg en*/
 
 	args->arg[0] = opera;
 	ret = secall(args, SC_FUNC_WTOTP, 0, 1);
 
-	efuse_1v8_output(!efuse_args->efuse_en_active);
+	wtdone_ret = efuse_wait_wtdone(100);
 
-	mdelay(10);
+	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_WTEN;
 	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PGEN;
 	REG32(EFUSE_REG_CTRL) &= ~EFUSE_REG_CTRL_PS;
 //	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_PD; /*power down*/
 //	REG32(EFUSE_REG_CTRL) = 0;
 
+	efuse_1v8_output(!efuse_args->efuse_en_active);
+
 	redundancy_rd();
 	efuse_update_state();
 
+	if (wtdone_ret < 0)
+		return wtdone_ret;
 	if (*retval != SC_ERR_SUCC) {
 		LOG_INFO("SC_FUNC_WTOTP failed, ret = 0x%08x\n", *retval);
 		return -ESEC;
@@ -273,7 +300,7 @@ int otp_init(void)
 
 	LOG_INFO("Enter: %s\n",__func__);
 	efuse_en_gpio = efuse_args->efuse_en_gpio;
-	if(efuse_en_gpio != 0xffffffff || efuse_en_gpio != -1) {
+	if(efuse_en_gpio != -1) {
 		efuse_1v8_output(!efuse_args->efuse_en_active);
 	}
 #ifdef CONFIG_PMU_RICOH6x
@@ -621,13 +648,22 @@ int cpu_burn_custid(void *idata,unsigned int length)
 
 int cpu_burn_nku(void *idata,unsigned int length)
 {
-	unsigned int ret = 0;
+	int attempt;
 
 	LOG_INFO("Enter: %s\n",__func__);
 
 	if (EFUSTATE_NKU_PRT) {
 		LOG_INFO("EFUSTATE: nku protection bit is set!\n");
-		return 0;
+		goto nku_check;
+	}
+
+	if (length < 8 || length > MCU_TCSM_NKULEN) {
+		LOG_ERROR("nku length invalid: %u\n", length);
+		return -ESEC;
+	}
+	if (length != MCU_TCSM_NKULEN) {
+		LOG_INFO("nku length %u != %u, will zero-pad\n",
+			 length, (unsigned int)MCU_TCSM_NKULEN);
 	}
 
         LOG_INFO("NKU loaded into mcu sram\n");
@@ -653,13 +689,18 @@ int cpu_burn_nku(void *idata,unsigned int length)
 		return -ESEC;
 	}
 
-        LOG_INFO("check NKU\n");
-	if (check_nku(idata, length) < 0) {
-		LOG_ERROR("nku check failed\n");
-		return -ESEC;
+nku_check:
+	for (attempt = 0; attempt < 3; attempt++) {
+		LOG_INFO("NKU check attempt %d\n", attempt + 1);
+		if (check_nku(idata, length) < 0) {
+			LOG_ERROR("nku check failed\n");
+			mdelay(10);
+			continue;
+		}
+		return 0;
 	}
 
-	return 0;
+	return -ESEC;
 
 }
 

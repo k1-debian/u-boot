@@ -608,6 +608,43 @@ int mmc_switch_part(int dev_num, unsigned int part_num)
 	if (ret)
 		return ret;
 
+	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, MMC_MAX_BLOCK_LEN);
+	ret = mmc_send_ext_csd(mmc, ext_csd);
+	if (ret) {
+		printf("Could not read EXT_CSD from %s\n", mmc->name);
+		return ret;
+	}
+	printf("%s port num %d, part_conf %x\n",__func__,part_num,ext_csd[179]);
+
+	return mmc_set_capacity(mmc, part_num);
+}
+
+int mmc_switch_boot(int dev_num, unsigned int part_num)
+{
+	struct mmc *mmc = find_mmc_device(dev_num);
+	int ret;
+	int ack = 0;
+	u8 value;
+
+	if (!mmc)
+		return -1;
+
+	value = mmc->part_config;
+	value &= ~(0xf << 3);
+	value |= ack ? EXT_CSD_BOOT_ACK(ack) : 0;
+	value |= EXT_CSD_BOOT_PART_NUM(part_num);
+	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_PART_CONF, value);
+	if (ret)
+		return ret;
+
+	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, MMC_MAX_BLOCK_LEN);
+	ret = mmc_send_ext_csd(mmc, ext_csd);
+	if (ret) {
+		printf("Could not read EXT_CSD from %s\n", mmc->name);
+		return ret;
+	}
+	printf("%s port num %d, part_conf %x\n",__func__,part_num,ext_csd[179]);
+
 	return mmc_set_capacity(mmc, part_num);
 }
 
@@ -854,7 +891,56 @@ static unsigned int get_hc_erase_grp_size(unsigned char *ext_csd)
 	return ext_csd[224];
 }
 
-static int set_partitioning_setting_completed(struct mmc *mmc)
+static unsigned int get_partition_config(unsigned char *ext_csd)
+{
+	return ext_csd[179];
+}
+
+static unsigned int get_gp_size_mult(unsigned char *ext_csd, unsigned int gp_index)
+{
+	int idx;
+
+	if (gp_index >= 4)
+		return 0;
+
+	idx = EXT_CSD_GP_SIZE_MULT_1_0 + gp_index * 3;
+	return (ext_csd[idx + 2] << 16) |
+		(ext_csd[idx + 1] << 8) |
+		ext_csd[idx];
+}
+
+static unsigned long get_gpp_size(unsigned char *ext_csd, unsigned int gp_index)
+{
+	unsigned int size_mult = get_gp_size_mult(ext_csd, gp_index);
+
+	return 512l * size_mult *
+		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
+		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+}
+
+static unsigned long get_enh_uda_size(unsigned char *ext_csd)
+{
+	unsigned int size_mult = (ext_csd[EXT_CSD_ENH_SIZE_MULT_2] << 16) |
+		(ext_csd[EXT_CSD_ENH_SIZE_MULT_1] << 8) |
+		ext_csd[EXT_CSD_ENH_SIZE_MULT_0];
+
+	return 512l * size_mult *
+		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
+		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+}
+
+static unsigned int get_max_enhanced_area(unsigned char *ext_csd)
+{
+	unsigned int size_mult = (ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_2] << 16) |
+		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_1] << 8) |
+		ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_0];
+
+	return 512l * size_mult *
+		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
+		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+}
+
+int set_partition_setting_completed(struct mmc *mmc)
 {
 	int ret;
 
@@ -870,26 +956,12 @@ static int set_partitioning_setting_completed(struct mmc *mmc)
 	return 0;
 }
 
-static unsigned int get_max_enhanced_area(unsigned char *ext_csd)
-{
-	unsigned int wp_sz = get_hc_wp_grp_size(ext_csd);
-	unsigned int erase_sz = get_hc_erase_grp_size(ext_csd);
-	unsigned int regl = (ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_2] << 16) |
-		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_1] << 8) |
-		ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_0];
-	unsigned long max_enh_area_sz = 512l * regl * erase_sz * wp_sz;
-
-	return max_enh_area_sz;
-}
-
 static int check_enhanced_area_total_limit(struct mmc *mmc)
 {
-	unsigned int regl;
 	unsigned long max_enh_area_sz, user_area_sz, enh_area_sz = 0;
-	unsigned long gp4_part_sz, gp3_part_sz, gp2_part_sz, gp1_part_sz;
-	unsigned long total_sz, total_gp_user_sz;
-	unsigned int wp_sz, erase_sz;
+	unsigned long gp_part_sz, total_sz;
 	int ret;
+	int i;
 
 	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, MMC_MAX_BLOCK_LEN);
 	ret = mmc_send_ext_csd(mmc, ext_csd);
@@ -897,93 +969,79 @@ static int check_enhanced_area_total_limit(struct mmc *mmc)
 		printf("Could not read EXT_CSD from %s\n", mmc->name);
 		return ret;
 	}
-	wp_sz = get_hc_wp_grp_size(ext_csd);
-	erase_sz = get_hc_erase_grp_size(ext_csd);
+	printf("EXT_CSD: PARTITIONING_SUPPORT=0x%02x SETTING_COMPLETED=0x%02x\n",
+	       ext_csd[EXT_CSD_PARTITIONING_SUPPORT],
+	       ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED]);
+	printf("EXT_CSD: HC_WP_GRP_SIZE=%u HC_ERASE_GRP_SIZE=%u\n",
+	       ext_csd[EXT_CSD_HC_WP_GRP_SIZE],
+	       ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
+	printf("EXT_CSD: GP_SIZE_MULT_1=0x%02x%02x%02x GP_SIZE_MULT_2=0x%02x%02x%02x\n",
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_1_2],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_1_1],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_1_0],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_2_2],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_2_1],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_2_0]);
+	printf("EXT_CSD: GP_SIZE_MULT_3=0x%02x%02x%02x GP_SIZE_MULT_4=0x%02x%02x%02x\n",
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_3_2],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_3_1],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_3_0],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_4_2],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_4_1],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_4_0]);
 
-	regl = (ext_csd[EXT_CSD_GP_SIZE_MULT_4_2] << 16) |
-		(ext_csd[EXT_CSD_GP_SIZE_MULT_4_1] << 8) |
-		ext_csd[EXT_CSD_GP_SIZE_MULT_4_0];
-	gp4_part_sz = 512l * regl * erase_sz * wp_sz;
-	if (ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE] & EXT_CSD_ENH_4) {
-		enh_area_sz += gp4_part_sz;
-		printf("Enhanced GP4 Partition Size [GP_SIZE_MULT_4]: 0x%06x\n", regl);
-		printf(" i.e. %lu KiB\n", gp4_part_sz);
+	for (i = 0; i < 4; i++) {
+		gp_part_sz = get_gpp_size(ext_csd, i);
+		if (ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE] & EXT_CSD_ENH_GPP(i+1)) {
+			enh_area_sz += gp_part_sz;
+			printf("Enhanced GP Partition Size [%d]: %lu KiB\n", i, gp_part_sz);
+		}
 	}
 
-	regl = (ext_csd[EXT_CSD_GP_SIZE_MULT_3_2] << 16) |
-		(ext_csd[EXT_CSD_GP_SIZE_MULT_3_1] << 8) |
-		ext_csd[EXT_CSD_GP_SIZE_MULT_3_0];
-	gp3_part_sz = 512l * regl * erase_sz * wp_sz;
-	if (ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE] & EXT_CSD_ENH_3) {
-		enh_area_sz += gp3_part_sz;
-		printf("Enhanced GP3 Partition Size [GP_SIZE_MULT_3]: 0x%06x\n", regl);
-		printf(" i.e. %lu KiB\n", gp3_part_sz);
-	}
-
-	regl = (ext_csd[EXT_CSD_GP_SIZE_MULT_2_2] << 16) |
-		(ext_csd[EXT_CSD_GP_SIZE_MULT_2_1] << 8) |
-		ext_csd[EXT_CSD_GP_SIZE_MULT_2_0];
-	gp2_part_sz = 512l * regl * erase_sz * wp_sz;
-	if (ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE] & EXT_CSD_ENH_2) {
-		enh_area_sz += gp2_part_sz;
-		printf("Enhanced GP2 Partition Size [GP_SIZE_MULT_2]: 0x%06x\n", regl);
-		printf(" i.e. %lu KiB\n", gp2_part_sz);
-	}
-
-	regl = (ext_csd[EXT_CSD_GP_SIZE_MULT_1_2] << 16) |
-		(ext_csd[EXT_CSD_GP_SIZE_MULT_1_1] << 8) |
-		ext_csd[EXT_CSD_GP_SIZE_MULT_1_0];
-	gp1_part_sz = 512l * regl * erase_sz * wp_sz;
-	if (ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE] & EXT_CSD_ENH_1) {
-		enh_area_sz += gp1_part_sz;
-		printf("Enhanced GP1 Partition Size [GP_SIZE_MULT_1]: 0x%06x\n", regl);
-		printf(" i.e. %lu KiB\n", gp1_part_sz);
-	}
-
-	regl = (ext_csd[EXT_CSD_ENH_SIZE_MULT_2] << 16) |
-		(ext_csd[EXT_CSD_ENH_SIZE_MULT_1] << 8) |
-		ext_csd[EXT_CSD_ENH_SIZE_MULT_0];
-	user_area_sz = 512l * regl * erase_sz * wp_sz;
+	user_area_sz = get_enh_uda_size(ext_csd);
 	if (ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE] & EXT_CSD_ENH_USR) {
 		enh_area_sz += user_area_sz;
-		printf("Enhanced User Data Area Size [ENH_SIZE_MULT]: 0x%06x\n", regl);
-		printf(" i.e. %lu KiB\n", user_area_sz);
+		printf("Enhanced User Data Area Size [ENH_SIZE_MULT]: %lu KiB\n", user_area_sz);
 	}
 
-	regl = (ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_2] << 16) |
-		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_1] << 8) |
-		ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_0];
-	max_enh_area_sz = 512l * regl * erase_sz * wp_sz;
-	printf("Max Enhanced Area Size [MAX_ENH_SIZE_MULT]: 0x%06x\n", regl);
-	printf(" i.e. %lu KiB\n", max_enh_area_sz);
+	max_enh_area_sz = get_max_enhanced_area(ext_csd);
+	printf("Max Enhanced Area Size [MAX_ENH_SIZE_MULT]: %lu KiB\n", max_enh_area_sz);
 	if (enh_area_sz > max_enh_area_sz) {
 		printf("Programmed total enhanced size %lu KiB cannot exceed max enhanced area %lu KiB %s\n",
 			enh_area_sz, max_enh_area_sz, mmc->name);
-		return 1;
+		return -1;
 	}
+
 	total_sz = get_sector_count(ext_csd) / 2;
-	total_gp_user_sz = gp4_part_sz + gp3_part_sz + gp2_part_sz +
-				gp1_part_sz + user_area_sz;
-	if (total_gp_user_sz > total_sz) {
-		printf(	"requested total partition size %lu KiB cannot exceed card capacity %lu KiB %s\n",
-			total_gp_user_sz, total_sz, mmc->name);
-		return 1;
+	if (enh_area_sz > total_sz) {
+		printf("Requested total partition size %lu KiB cannot exceed card capacity %lu KiB %s\n",
+			enh_area_sz, total_sz, mmc->name);
+		return -1;
 	}
 
 	return 0;
 }
 
-int create_gp_partition(struct mmc *mmc, int partition, unsigned int length_kib, int enh_attr, int ext_attr)
+int create_gp_partition(struct mmc *mmc, int partition, unsigned int length_kib,
+			int enh_attr, int ext_attr)
 {
 	int ret;
-	unsigned int gp_size_mult;
-	unsigned long align;
-	unsigned char value;
-	unsigned char address;
+	u32 wp_grp_sz;
+	u32 erase_grp_sz;
+	u32 align_kib;
+	u32 gp_size_mult;
+	u8 value;
+	u8 address;
+	u8 part_attr;
 	char *device = mmc->name;
+	int i;
 
-	if (partition < 1 || partition > 4) {
-		printf("Invalid gp partition number; valid range [1-4].\n");
+	if (partition < 0 || partition > 3) {
+		printf("Invalid gp partition number; valid range [0-3].\n");
+		return -1;
+	}
+	if (!length_kib) {
+		printf("Invalid length 0 KiB\n");
 		return -1;
 	}
 
@@ -993,83 +1051,134 @@ int create_gp_partition(struct mmc *mmc, int partition, unsigned int length_kib,
 		printf("Could not read EXT_CSD from %s\n", mmc->name);
 		return ret;
 	}
+	printf("EXT_CSD: SETTING_COMPLETED=0x%02x GP_SIZE_MULT_%d=0x%02x%02x%02x\n",
+	       ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED],
+	       partition,
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_1_2 + partition * 3],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_1_1 + partition * 3],
+	       ext_csd[EXT_CSD_GP_SIZE_MULT_1_0 + partition * 3]);
 
-	/* assert not PARTITION_SETTING_COMPLETED */
+	if (!(ext_csd[EXT_CSD_PARTITIONING_SUPPORT] & EXT_CSD_PARTITIONING_EN)) {
+		printf("Device does not support GP partitions: EXT_CSD_PARTITIONING_SUPPORT=0x%02x\n",
+		       ext_csd[EXT_CSD_PARTITIONING_SUPPORT]);
+		return -1;
+	}
+
 	if (ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED]) {
-		printf(" Device is already partitioned\n");
+		printf("Device is already partitioned\n");
 		return 0;
 	}
 
-	align = 512l * get_hc_wp_grp_size(ext_csd) * get_hc_erase_grp_size(ext_csd);
-	gp_size_mult = (length_kib + align/2l) / align;
+	wp_grp_sz = get_hc_wp_grp_size(ext_csd);
+	erase_grp_sz = get_hc_erase_grp_size(ext_csd);
+	if (!wp_grp_sz || !erase_grp_sz) {
+		printf("Invalid HC group size(s): WP=%u ER=%u\n", wp_grp_sz, erase_grp_sz);
+		return -1;
+	}
 
-	/* set EXT_CSD_ERASE_GROUP_DEF bit 0 */
+	align_kib = 512ul * wp_grp_sz * erase_grp_sz;
+	gp_size_mult = (u32)((length_kib + (align_kib / 2ul)) / align_kib);
+	if (!gp_size_mult) {
+		printf("Requested length %u KiB is below alignment %llu KiB\n",
+		       length_kib, (unsigned long long)align_kib);
+		return -1;
+	}
+	if (gp_size_mult > 0x00ffffff) {
+		printf("Requested GP_SIZE_MULT 0x%x exceeds 24-bit limit\n", gp_size_mult);
+		return -1;
+	}
+
 	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_ERASE_GROUP_DEF, 0x1);
 	if (ret) {
 		printf("Could not write 0x1 to EXT_CSD[%d] in %s\n",
-				EXT_CSD_ERASE_GROUP_DEF, device);
+		       EXT_CSD_ERASE_GROUP_DEF, device);
 		return ret;
 	}
 
+	address = EXT_CSD_GP_SIZE_MULT_1_2 + partition * 3;
 	value = (gp_size_mult >> 16) & 0xff;
-	address = EXT_CSD_GP_SIZE_MULT_1_2 + (partition - 1) * 3;
 	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, address, value);
 	if (ret) {
 		printf("Could not write 0x%02x to EXT_CSD[%d] in %s\n",
-			value, address, device);
+		       value, address, device);
 		return ret;
 	}
+
+	address = EXT_CSD_GP_SIZE_MULT_1_1 + partition * 3;
 	value = (gp_size_mult >> 8) & 0xff;
-	address = EXT_CSD_GP_SIZE_MULT_1_1 + (partition - 1) * 3;
 	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, address, value);
 	if (ret) {
 		printf("Could not write 0x%02x to EXT_CSD[%d] in %s\n",
-			value, address, device);
+		       value, address, device);
 		return ret;
 	}
+
+	address = EXT_CSD_GP_SIZE_MULT_1_0 + partition * 3;
 	value = gp_size_mult & 0xff;
-	address = EXT_CSD_GP_SIZE_MULT_1_0 + (partition - 1) * 3;
 	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, address, value);
 	if (ret) {
 		printf("Could not write 0x%02x to EXT_CSD[%d] in %s\n",
-			value, address, device);
+		       value, address, device);
 		return ret;
 	}
 
-	value = ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE];
+	part_attr = ext_csd[EXT_CSD_PARTITIONS_ATTRIBUTE];
 	if (enh_attr)
-		value |= (1 << partition);
+		part_attr |= (1 << (partition + 1));
 	else
-		value &= ~(1 << partition);
+		part_attr &= ~(1 << (partition + 1));
 
-	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_PARTITIONS_ATTRIBUTE, value);
+	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
+			 EXT_CSD_PARTITIONS_ATTRIBUTE, part_attr);
 	if (ret) {
 		printf("Could not write EXT_CSD_ENH_%x to EXT_CSD[%d] in %s\n",
-			partition, EXT_CSD_PARTITIONS_ATTRIBUTE, device);
+		       partition, EXT_CSD_PARTITIONS_ATTRIBUTE, device);
 		return ret;
 	}
 
-	address = EXT_CSD_EXT_PARTITIONS_ATTRIBUTE_0 + (partition - 1) / 2;
+	if (enh_attr) {
+		ret = check_enhanced_area_total_limit(mmc);
+		if (ret)
+			return -1;
+	}
+
+	address = EXT_CSD_EXT_PARTITIONS_ATTRIBUTE_0 + partition / 2;
 	value = ext_csd[address];
 	if (ext_attr)
-		value |= (ext_attr << (4 * ((partition - 1) % 2)));
+		value |= (ext_attr << (4 * (partition % 2)));
 	else
-		value &= (0xF << (4 * ((partition % 2))));
+		value &= ~(0xF << (4 * (partition % 2)));
 
 	ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, address, value);
 	if (ret) {
 		printf("Could not write 0x%x to EXT_CSD[%d] in %s\n",
-			value, address, device);
+		       value, address, device);
 		return ret;
 	}
 
-	ret = check_enhanced_area_total_limit(mmc);
-	if (ret)
-		return -1;
+	memset(ext_csd, 0, MMC_MAX_BLOCK_LEN);
+	ret = mmc_send_ext_csd(mmc, ext_csd);
+	if (ret) {
+		printf("Could not read EXT_CSD from %s\n", mmc->name);
+		return ret;
+	}
 
-	ret = set_partitioning_setting_completed(mmc);
-	if (ret)
-		return -1;
+	gp_size_mult = get_gp_size_mult(ext_csd, partition);
+	if (!gp_size_mult) {
+		printf("GP_SIZE_MULT readback is 0; power-cycle may be required\n");
+	}
+
+	for (i = 0; i < 4; i++) {
+		mmc->capacity_gp[i] = get_gpp_size(ext_csd, i);
+		printf("GP[%d] capacity %llu\n",
+		       i, (unsigned long long)mmc->capacity_gp[i]);
+	}
+
+	printf ("EXT_CSD: PARTITION_CONFIG=%x\n",get_partition_config(ext_csd));
+
+//	ret = set_partition_setting_completed(mmc);
+//	if (ret)
+//		return -1;
 
 	return 0;
 }
@@ -1194,9 +1303,9 @@ int set_enh_area(struct mmc *mmc, unsigned int start_kib, unsigned int length_ki
 
 	printf("Done setting ENH_USR area on %s\n", device);
 
-	ret = set_partitioning_setting_completed(mmc);
-	if (ret)
-		return -1;
+	//ret = set_partition_setting_completed(mmc);
+	//if (ret)
+	//	return -1;
 
 	return 0;
 }
@@ -1416,14 +1525,8 @@ static int mmc_startup(struct mmc *mmc)
 
 		mmc->capacity_rpmb = ext_csd[EXT_CSD_RPMB_MULT] << 17;
 
-		for (i = 0; i < 4; i++) {
-			int idx = EXT_CSD_GP_SIZE_MULT + i * 3;
-			mmc->capacity_gp[i] = (ext_csd[idx + 2] << 16) +
-				(ext_csd[idx + 1] << 8) + ext_csd[idx];
-			mmc->capacity_gp[i] *=
-				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-			mmc->capacity_gp[i] *= ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-		}
+		for (i = 0; i < 4; i++)
+			mmc->capacity_gp[i] = get_gpp_size(ext_csd, i);
 #endif
 	}
 

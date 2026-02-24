@@ -16,7 +16,7 @@ typedef enum {
 	LOG_LEVEL_ERROR
 } LogLevel;
 
-#define MIN_LOG_LEVEL           LOG_LEVEL_INFO
+#define MIN_LOG_LEVEL           LOG_LEVEL_DEBUG
 
 #define LOG_BASE_ADDR           ((volatile unsigned int*)CONFIG_SPL_GINFO_BASE + 0x20)
 #define LOG_BUFF_SIZE           (CONFIG_SPL_GINFO_SIZE - 0x20)

@@ -30,6 +30,7 @@ static int efuse_update_state(void)
 {
 	mdelay(10); /* Introduce delay between consecutive operations */
 	REG32(EFUSE_REG_CTRL) = EFUSE_ADDR_PROT << EFUSE_REGOFF_CRTL_ADDR;
+	REG32(EFUSE_REG_CTRL) |= (1 << EFUSE_REGOFF_CRTL_LENG);
 	REG32(EFUSE_REG_CTRL) |= EFUSE_REG_CTRL_RDEN;
 	while(!(REG32(EFUSE_REG_STAT) & EFUSE_REG_STAT_RDDONE));
 	LOG_INFO("efuse state = 0x%08x\n",REG32(EFUSE_REG_STAT));
@@ -143,7 +144,7 @@ int cpu_burn_rckey(void)
         LOG_INFO("Enter: %s\n",__func__);
 
         if(EFUSTATE_CK_PRT) {
-		LOG_ERROR("chipkey protect bit have been written\n");
+		LOG_INFO("chipkey protect bit have been written\n");
 		return 0;
 	}
 
@@ -206,6 +207,7 @@ static int cpu_load_nku(unsigned int *data, unsigned int length)
 			LOG_DEBUG("\n");
 	}
 
+	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_BURNNKU, 0, 1);
 
@@ -253,6 +255,7 @@ static int check_nku(unsigned int *data, unsigned int length)
 			LOG_DEBUG("\n");
 	}
 
+	REG32(EFUSE_REG_CTRL) = 0;
 	args->arg[0] = MCU_TCSM_PADDR(nku);
 	ret = secall(args, SC_FUNC_CHECKNKU, 0, 1);
 

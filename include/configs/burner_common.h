@@ -119,5 +119,7 @@
 #define CONFIG_JZ_VERDOR_BURN_EP_TEST
 */
 
+#define CONFIG_MMC_CREATE_GPP_AND_ENH
+
 #endif /* __BURNER_COMMON_H__ */
 
