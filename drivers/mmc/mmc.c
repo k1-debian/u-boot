@@ -881,7 +881,7 @@ static unsigned long get_gpp_size(unsigned char *ext_csd, unsigned int gp_index)
 {
 	unsigned int size_mult = get_gp_size_mult(ext_csd, gp_index);
 
-	return 512l * size_mult *
+	return 512ul * 1024ul * size_mult *
 		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
 		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
 }
@@ -925,18 +925,18 @@ static unsigned long get_enh_uda_size(unsigned char *ext_csd)
 		(ext_csd[EXT_CSD_ENH_SIZE_MULT_1] << 8) |
 		ext_csd[EXT_CSD_ENH_SIZE_MULT_0];
 
-	return 512l * size_mult *
+	return 512ul * 1024ul * size_mult *
 		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
 		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
 }
 
-static unsigned int get_max_enhanced_area(unsigned char *ext_csd)
+static unsigned long get_max_enhanced_area(unsigned char *ext_csd)
 {
 	unsigned int size_mult = (ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_2] << 16) |
 		(ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_1] << 8) |
 		ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT_0];
 
-	return 512l * size_mult *
+	return 512ul * 1024ul * size_mult *
 		ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
 		ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
 }
@@ -1218,7 +1218,7 @@ int set_enh_area(struct mmc *mmc, unsigned int start_kib, unsigned int length_ki
 		length_kib = get_max_enhanced_area(ext_csd);
 	}
 
-	align = 512l * get_hc_wp_grp_size(ext_csd) * get_hc_erase_grp_size(ext_csd);
+	align = 512ul * get_hc_wp_grp_size(ext_csd) * get_hc_erase_grp_size(ext_csd);
 	enh_size_mult = (length_kib + align/2l) / align;
 	enh_start_addr = start_kib * (1024 / (is_blockaddresed(ext_csd) ? 512 : 1));
 	enh_start_addr /= align;
