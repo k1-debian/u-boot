@@ -76,6 +76,9 @@ static int clmd_mmc_init(struct cloner *cloner, void *args, void *mdata)
 			return -EPERM;
 		}
 	}
+
+	if (mmc_args->mmc_gpp_area || mmc_args->mmc_uda_enh_area)
+		set_partition_setting_completed(mmc);
 #endif
 
 	if (mmc_args->mmc_erase == MMC_ERASE_ALL) {

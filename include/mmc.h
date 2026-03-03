@@ -368,6 +368,7 @@ int get_mmc_num(void);
 int board_mmc_getcd(struct mmc *mmc);
 int mmc_switch_part(int dev_num, unsigned int part_num);
 int mmc_switch_boot(int dev_num, unsigned int part_num);
+int set_partition_setting_completed(struct mmc *mmc);
 int mmc_getcd(struct mmc *mmc);
 int mmc_getwp(struct mmc *mmc);
 void spl_mmc_load(void) __noreturn;
