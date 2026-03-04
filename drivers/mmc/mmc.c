@@ -1478,7 +1478,7 @@ static int mmc_startup(struct mmc *mmc)
 					| ext_csd[EXT_CSD_SEC_CNT + 2] << 16
 					| ext_csd[EXT_CSD_SEC_CNT + 3] << 24;
 			capacity *= MMC_MAX_BLOCK_LEN;
-			if ((capacity >> 20) > 2 * 1024)
+//			if ((capacity >> 20) > 2 * 1024)
 				mmc->capacity_user = capacity;
 		}
 
