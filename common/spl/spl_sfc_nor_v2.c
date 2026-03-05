@@ -1644,6 +1644,8 @@ static void spl_sfc_nor_rtos_ota_boot(void)
 {
 	unsigned int ota_offset;
 	unsigned int offset;
+	int is_rtos_ota = 0;
+	const char *rtos_name = CONFIG_SPL_RTOS_NAME;
 	struct norflash_partitions partition;
 	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
 
@@ -1652,22 +1654,37 @@ static void spl_sfc_nor_rtos_ota_boot(void)
 		char buf[128];
 		const char *ota_part_info = CONFIG_SPL_RTOS_OTA_INFO;
 		sfc_read_data(ota_offset, sizeof(buf), (unsigned char *)buf);
-		if (strncmp(ota_part_info, buf, strlen(ota_part_info))) {
-			return;
+		if (!strncmp(ota_part_info, buf, strlen(ota_part_info))) {
+			is_rtos_ota = 1;
+			rtos_name = CONFIG_SPL_RTOS_OTA_NAME;
 		}
+	}
 
-		offset = get_part_offset_by_name(partition, CONFIG_SPL_RTOS_OTA_NAME);
+#ifdef CONFIG_JZ_WATCHDOG
+	if (spl_test_ota_result()) {
+		serial_debug("ota fail!\n");
+		if (is_rtos_ota) {
+			rtos_name = CONFIG_SPL_RTOS_NAME;
+			is_rtos_ota = 0;
+		} else {
+			rtos_name = CONFIG_SPL_RTOS_OTA_NAME;
+			is_rtos_ota = 1;
+		}
+	} else
+		spl_ota_set_flag_and_boot_wdt();
+#endif
+
+		offset = get_part_offset_by_name(partition, rtos_name);
 		if (offset == -1) {
-			serial_debug("rtos not found: "CONFIG_SPL_RTOS_OTA_NAME"\n");
-			return;
+			serial_debug("rtos not found: %s\n", rtos_name);
+			hang();
 		}
 
 		if (spl_sfc_nor_rtos_load(&rtos_header, offset))
-			return;
+			hang();
 
         flush_cache_all();
 		rtos_raw_start(&rtos_header, NULL);
-	}
 }
 #endif
 

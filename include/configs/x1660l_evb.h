@@ -125,6 +125,30 @@
 #define CONFIG_SPL_RTOS_NAME            "rtos"
 #endif
 
+#ifdef CONFIG_BOOT_RTOS_OTA
+    #define CONFIG_SPL_RTOS_OTA_NAME  "rtos_ota"
+#ifndef CONFIG_SPL_OTA_NAME
+    #define CONFIG_SPL_OTA_NAME       "ota"
+#endif
+
+#ifndef CONFIG_SPL_RTOS_OTA_INFO
+    #define CONFIG_SPL_RTOS_OTA_INFO       "ota:rtos_ota"
+#endif
+
+#endif
+
+#ifndef PARTITION_NUM
+#define PARTITION_NUM			10
+#endif
+
+#ifdef CONFIG_JZ_WATCHDOG
+#define CONFIG_HW_WATCHDOG
+#ifndef CONFIG_WDT_TIMEOUT_BY_MS
+#define CONFIG_WDT_TIMEOUT_BY_MS (20*1000)
+#endif
+#define CONFIG_WDT_FREQ_BY_RTC
+#define CONFIG_RTC_SELEXC_BY_RTC
+#endif
 
 
 /* SFC */
