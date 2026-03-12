@@ -14,7 +14,7 @@ static struct device_struct device[] = {
 
 static struct nand_desc mxic_nand = {
 
-	.id_manufactory = 0xc2,
+	.id_manufactory = 0xC2,
 	.device_counts = ARRAY_SIZE(device),
 	.device = device,
 };

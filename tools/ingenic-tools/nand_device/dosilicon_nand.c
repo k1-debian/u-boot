@@ -15,6 +15,7 @@ static struct device_struct device[] = {
         DEVICE_STRUCT(0x75, 2048, 2, 4, 3, 1, ds_errstat_1, 1),
         DEVICE_STRUCT(0xF4, 2048, 2, 4, 3, 1, ds_errstat_1, 1),
         DEVICE_STRUCT(0xB2, 2048, 2, 4, 3, 1, ds_errstat_2, 0),
+        DEVICE_STRUCT(0x52, 2048, 2, 4, 3, 1, ds_errstat_2, 0),
 };
 
 static struct nand_desc dosilicon_nand = {

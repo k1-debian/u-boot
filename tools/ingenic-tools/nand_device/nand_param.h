@@ -3,6 +3,8 @@
 int ato_nand_register_func(void);
 int cochipgo_nand_register_func(void);
 int dosilicon_nand_register_func(void);
+int esmt_mid2c_nand_register_func(void);
+int esmt_mid8c_nand_register_func(void);
 int esmt_nand_register_func(void);
 int etron_nand_register_func(void);
 int fm_nand_register_func(void);
@@ -20,6 +22,7 @@ int tc_nand_register_func(void);
 int unim_nand_register_func(void);
 int winbond_nand_register_func(void);
 int wodposit_nand_register_func(void);
+int xcsp_mid8c_nand_register_func(void);
 int xcsp_nand_register_func(void);
 int xtx_mid0b_nand_register_func(void);
 int xtx_mid2c_nand_register_func(void);
@@ -36,6 +39,12 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)dosilicon_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)esmt_mid2c_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)esmt_mid8c_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)esmt_nand_register_func,
@@ -87,6 +96,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)wodposit_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)xcsp_mid8c_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)xcsp_nand_register_func,
