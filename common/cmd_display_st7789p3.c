@@ -31,6 +31,7 @@
 
 /* Logo在Flash中的存储地址和大小 */
 #define LOGO_SIZE (LCD_W * LCD_H * 2)
+#define INGENIC_LOGO_MAGIC 0x4c4f474fU
 
 
 
@@ -416,7 +417,8 @@ static void st7789p3_display_logo(int rotate_angle)
     volatile struct _logo_info *pinfo = (volatile struct _logo_info *)(0x81800000);
     printf("Logo info: %d, %d, %d, 0x%x\n", pinfo->width, pinfo->height, pinfo->bpp, pinfo->background_color);
 
-    if (!pinfo || pinfo->width <= 0 || pinfo->height <= 0) {
+    if (!pinfo || pinfo->p8 != INGENIC_LOGO_MAGIC ||
+        pinfo->width <= 0 || pinfo->height <= 0) {
         printf("ST7789P3: Invalid logo info\n");
         gpio_direction_output(GPIO_LCD_CS, 1);
         return;

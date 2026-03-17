@@ -71,6 +71,7 @@ static int get_signature(const int signature)
 #define ARGS_BUFFER_MAX_SIZE 256
 #define SN_MAX_SIZE 64
 #define MAC_MAX_SIZE 32
+#define INGENIC_LOGO_MAGIC 0x4c4f474fU
 
 static char *args_buffer = (char *)0x80001000;
 static char *sn_buffer   = (char *)0x80001000 + 256;
@@ -124,9 +125,46 @@ struct slave_share_mem
     void* logo;
 };
 
+struct logo_blob_header {
+	int width;
+	int height;
+	int bpp;
+	unsigned int p8;
+	unsigned int background_color;
+} __attribute__ ((packed));
+
 extern int sfc_nand_load(unsigned int src_addr, unsigned int count,
                          unsigned int dst_addr);
 extern void flush_cache_all(void);
+
+static int spl_ota_prepare_logo(unsigned int logo_ddr, unsigned int logo_size)
+{
+	struct logo_blob_header *hdr = (struct logo_blob_header *)logo_ddr;
+	u64 payload_size;
+
+	if (logo_size < sizeof(*hdr))
+		return -EINVAL;
+
+	if (hdr->p8 != INGENIC_LOGO_MAGIC) {
+		if (hdr->p8 != 0)
+			return -EINVAL;
+
+		/* Upgrade legacy blobs in DDR so both kernels see the same format. */
+		hdr->p8 = INGENIC_LOGO_MAGIC;
+	}
+
+	if (hdr->width <= 0 || hdr->height <= 0)
+		return -EINVAL;
+
+	if (hdr->bpp != 16 && hdr->bpp != 32)
+		return -EINVAL;
+
+	payload_size = (u64)hdr->width * hdr->height * (hdr->bpp / 8);
+	if (payload_size > logo_size - sizeof(*hdr))
+		return -EINVAL;
+
+	return 0;
+}
 
 static void spl_ota_load_slavecore (struct jz_sfcnand_partition_param *partitions,char* name)
 {
@@ -187,6 +225,12 @@ char* spl_ota_load_image(void)
 		hang();
 	}
 	sfc_nand_load(logo_addr, logo_size, (void *)ximage_logo_ddr);
+	if (spl_ota_prepare_logo(ximage_logo_ddr, logo_size)) {
+		printf("WARNING: invalid logo header at 0x%x, ignore external logo\n",
+		       ximage_logo_ddr);
+		memset((void *)ximage_logo_ddr, 0, sizeof(struct logo_blob_header));
+		logo_size = 0;
+	}
 #endif
     spl_ota_load_deviceinfo();
 
