@@ -31,6 +31,10 @@
 #endif
 #include <asm/io.h>
 #include <asm/arch/clk.h>
+#if defined(CONFIG_X2600)
+#include <asm/arch/base.h>
+#include <asm/arch/efuse.h>
+#endif
 
 /*#define CONFIG_DWC_DEBUG 0*/
 #define ddr_hang() do{						\
@@ -40,6 +44,44 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
+
+#if defined(CONFIG_X2600)
+static u32 x2600_read_efuse_trim1(void)
+{
+	u32 val;
+
+	writel((0x2 << EFUSE_CFG_RD_ADJ) | (0x5 << EFUSE_CFG_RD_STROBE),
+	       EFUSE_BASE + EFUSE_CFG);
+	writel(0, EFUSE_BASE + EFUSE_CTRL);
+	writel((TRIM1_OFFSET_ADDR << EFUSE_CTRL_ADDR) |
+	       ((4 - 1) << EFUSE_CTRL_LEN) |
+	       EFUSE_CTRL_RDEN,
+	       EFUSE_BASE + EFUSE_CTRL);
+
+	while (!(readl(EFUSE_BASE + EFUSE_STATE) & EFUSE_STA_RD_DONE))
+		;
+
+	val = readl(EFUSE_BASE + EFUSE_DATA(0));
+	writel(0, EFUSE_BASE + EFUSE_STATE);
+
+	return val;
+}
+
+static void x2600_efuse_trim1_overrides(void)
+{
+	u32 trim1 = x2600_read_efuse_trim1();
+
+	if ((trim1 >> 8) & 0x1) {
+		global_reg_value->DDRC_CFG_VALUE &= ~(1 << 2);
+		serial_debug("efuse trim1[8]=1, force disable ddr chip odt\n");
+	}
+
+	if ((trim1 >> 9) & 0x1) {
+		global_reg_value->DDRC_AUTOSR_EN_VALUE = 0;
+		serial_debug("efuse trim1[9]=1, force disable auto self-refresh\n");
+	}
+}
+#endif
 
 
 extern void ddrp_auto_calibration(void);
@@ -677,6 +719,11 @@ void sdram_init(void)
 
 	get_ddr_params();
 	type = get_ddr_type();
+
+#if defined(CONFIG_X2600)
+	x2600_efuse_trim1_overrides();
+#endif
+
 	clk_set_rate(DDR, global_reg_value->h.freq);
 
 	if(ddr_hook && ddr_hook->prev_ddr_init)

@@ -28,6 +28,8 @@
 #include <ddr/ddr_common.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/cpm.h>
+#include <asm/arch/base.h>
+#include <asm/arch/efuse.h>
 #include <asm/io.h>
 #include "ddr_innophy.h"
 #include "ddr_debug.h"
@@ -48,6 +50,44 @@ static struct phy_deskew_config *deskew = NULL;
 /* #define CONFIG_DDRP_SOFTWARE_TRAINING */
 
 extern struct ddr_reg_value supported_ddr_reg_values[];
+
+
+static u32 x1600_read_efuse_trim1(void)
+{
+	u32 val;
+
+	writel((0x2 << EFUSE_CFG_RD_ADJ) | (0x5 << EFUSE_CFG_RD_STROBE),
+	       EFUSE_BASE + EFUSE_CFG);
+	writel(0, EFUSE_BASE + EFUSE_CTRL);
+	writel((TRIM1_OFFSET_ADDR << EFUSE_CTRL_ADDR) |
+	       ((4 - 1) << EFUSE_CTRL_LEN) |
+	       EFUSE_CTRL_RDEN,
+	       EFUSE_BASE + EFUSE_CTRL);
+
+	while (!(readl(EFUSE_BASE + EFUSE_STATE) & EFUSE_STA_RD_DONE))
+		;
+
+	val = readl(EFUSE_BASE + EFUSE_DATA(0));
+	writel(0, EFUSE_BASE + EFUSE_STATE);
+
+	return val;
+}
+
+static void x1600_efuse_trim1_overrides(void)
+{
+	u32 trim1 = x1600_read_efuse_trim1();
+
+	if ((trim1 >> 8) & 0x1) {
+		global_reg_value->DDRC_CFG_VALUE &= ~(1 << 16);
+		serial_debug("efuse trim1[8]=1, force disable ddr chip odt\n");
+	}
+
+	if ((trim1 >> 9) & 0x1) {
+		global_reg_value->DDRC_AUTOSR_EN_VALUE = 0;
+		serial_debug("efuse trim1[9]=1, force disable auto self-refresh\n");
+	}
+}
+
 
 #ifdef CONFIG_DDR_DRVODT_DEBUG
 #include <asm/spl.h>
@@ -1034,7 +1074,7 @@ int get_ddr_params_socid(void)
 		printf("Check socid return invalid ddr id\n");
 		return -1;
 	}
-	printf("SOC: %s\n", chip_name);
+	printf("SOC: %s, DDR ID: %x\n", chip_name, ddrid);
 
 	for(i = 0; i < ARRAY_SIZE(supported_ddr_reg_values); i++) {
 		global_reg_value = &supported_ddr_reg_values[i];
@@ -1147,6 +1187,8 @@ void sdram_init(void)
 
 	current_ddr_type = get_ddr_type();
 
+	x1600_efuse_trim1_overrides();
+
 	clk_set_rate(DDR, global_reg_value->h.freq);
 	reset_dll();
 	rate = clk_get_rate(DDR);
@@ -1188,7 +1230,7 @@ void sdram_init(void)
 
 #ifdef CONFIG_DDR_AUTO_SELF_REFRESH
 	ddr_writel(CONFIG_DDR_AUTO_SELF_REFRESH_CNT ,DDRC_AUTOSR_CNT);
-	ddr_writel(0x1 ,DDRC_AUTOSR_EN);
+	ddr_writel(global_reg_value->DDRC_AUTOSR_EN_VALUE ,DDRC_AUTOSR_EN);
 #endif
 	{
 		unsigned int dlp = 0;
