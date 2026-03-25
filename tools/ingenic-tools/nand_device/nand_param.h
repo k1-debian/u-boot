@@ -17,6 +17,7 @@ int issi_nand_register_func(void);
 int kowin_mid01_nand_register_func(void);
 int kowin_midc9_nand_register_func(void);
 int micron_nand_register_func(void);
+int mk_nand_register_func(void);
 int mxic_nand_register_func(void);
 int tc_nand_register_func(void);
 int unim_nand_register_func(void);
@@ -81,6 +82,9 @@ static void *nand_param[] = {
 /*##################*/
 /*##################*/
 (void *)micron_nand_register_func,
+/*##################*/
+/*##################*/
+(void *)mk_nand_register_func,
 /*##################*/
 /*##################*/
 (void *)mxic_nand_register_func,
