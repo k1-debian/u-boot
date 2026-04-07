@@ -481,7 +481,7 @@ static void reset_nor(void)
 
 	sfc_sync_cdt(&xfer);
 
-	udelay(100);
+	udelay(1000);
 }
 
 static void params_to_cdt(struct mini_spi_nor_info *params, struct sfc_cdt *cdt)

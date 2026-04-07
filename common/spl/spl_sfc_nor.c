@@ -324,7 +324,7 @@ static void reset_nor(void)
 
 	transfer.cmd_info.cmd = SPINOR_OP_RST;
 	sfc_sync(&transfer);
-	udelay(100);
+	udelay(1000);
 }
 
 void sfc_init(struct mini_spi_nor_info *spi_nor_info)

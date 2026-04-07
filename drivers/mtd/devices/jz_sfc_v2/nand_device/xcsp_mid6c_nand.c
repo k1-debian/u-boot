@@ -1,0 +1,152 @@
+#include <errno.h>
+#include <malloc.h>
+#include <linux/mtd/partitions.h>
+#include "../jz_sfc_common.h"
+#include "nand_common.h"
+
+#define TSETUP		5
+#define THOLD		5
+#define	TSHSL_R		30
+#define	TSHSL_W		30
+
+#define TRD		110
+#define TPP		800
+#define TBE		6
+
+static struct jz_sfcnand_device *xcsp_mid6c_nand;
+
+static struct jz_sfcnand_base_param xcsp_mid6c_param[] = {
+
+	[0] = {
+		/*XCSP1xXPK-IT*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+
+	[1] = {
+		/*XCSP2xXPK-IT*/
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 2048,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = TRD,
+		.tPP = TPP,
+		.tBE = TBE,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+};
+
+static struct device_id_struct device_id[] = {
+	DEVICE_ID_STRUCT(0x010A, "XCSP1xXPK-IT", &xcsp_mid6c_param[0]),
+	DEVICE_ID_STRUCT(0xA10A, "XCSP2xXPK-IT", &xcsp_mid6c_param[1]),
+};
+
+
+static cdt_params_t *xcsp_mid6c_get_cdt_params(struct sfc_flash *flash, uint16_t device_id)
+{
+	CDT_PARAMS_INIT(xcsp_mid6c_nand->cdt_params);
+
+	switch(device_id) {
+		case 0x010A:
+		case 0xA10A:
+			break;
+		default:
+			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return NULL;
+	}
+
+	return &xcsp_mid6c_nand->cdt_params;
+}
+
+static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, uint8_t ecc_status)
+{
+	int ret = 0;
+	switch(device_id) {
+		case 0x010A:
+		case 0xA10A:
+			switch((ecc_status >> 4) & 0x3) {
+				case 0x0:
+					return 0;
+				case 0x1:
+					return 4;
+				case 0x2:
+					return -EBADMSG;
+				case 0x3:
+					return 8;
+				default:
+					break;
+			}
+		default:
+			printf("device_id err, it maybe don`t support this device, check your device id: device_id = 0x%02x\n", device_id);
+			break;
+	}
+	return -EINVAL;
+}
+
+static int xcsp_mid6c_set_featrue(struct sfc_flash *flash, uint8_t flag)
+{
+	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
+	uint16_t device_id = nand_info->id_device;
+	int ret;
+
+	switch(device_id) {
+		case 0x010A:
+		case 0xA10A:
+			if((ret = sfc_nand_set_feature(flash, SPINAND_ADDR_PROTECT, 0)))
+				return -EIO;
+			break;
+		default:
+			printf("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
+			return -EIO;
+	}
+
+	return 0;
+}
+
+static int xcsp_mid6c_nand_init(void)
+{
+	xcsp_mid6c_nand = kzalloc(sizeof(*xcsp_mid6c_nand), GFP_KERNEL);
+	if(!xcsp_mid6c_nand) {
+		pr_err("alloc xcsp_mid6c_nand struct fail\n");
+		return -ENOMEM;
+	}
+
+	xcsp_mid6c_nand->id_manufactory = 0x6C;
+	xcsp_mid6c_nand->id_device_list = device_id;
+	xcsp_mid6c_nand->id_device_count = ARRAY_SIZE(xcsp_mid6c_param);
+
+	xcsp_mid6c_nand->ops.get_cdt_params = xcsp_mid6c_get_cdt_params;
+	xcsp_mid6c_nand->ops.deal_ecc_status = deal_ecc_status;
+
+	/* use private get feature interface, please define it in this document */
+	xcsp_mid6c_nand->ops.get_feature = NULL;
+	xcsp_mid6c_nand->ops.set_feature = xcsp_mid6c_set_featrue;
+
+	return jz_sfcnand_register(xcsp_mid6c_nand);
+}
+
+SPINAND_MOUDLE_INIT(xcsp_mid6c_nand_init);

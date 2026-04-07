@@ -138,7 +138,7 @@ int32_t sfc_nor_reset()
 		ret = -EIO;
 	}
 
-	udelay(100);
+	udelay(1000);
 	return ret;
 }
 

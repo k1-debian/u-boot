@@ -150,7 +150,7 @@ int sfc_nor_reset(void)
 		return -EIO;
 	}
 
-	udelay(100);
+	udelay(1000);
 	return 0;
 }
 
