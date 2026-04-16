@@ -123,6 +123,14 @@ static void dump_data(unsigned char *buf,size_t len)
 }
 #endif
 
+static void sfc_poll_time(struct sfc *sfc,uint32_t value)
+{
+	uint32_t tmp = sfc_readl(sfc,SFC_GLB);
+	tmp &= ~GLB_POLL_TIME_MSK;
+	tmp |= value << GLB_POLL_TIME_OFFSET;
+	sfc_writel(sfc, SFC_GLB, tmp);
+}
+
 void sfc_init(struct sfc *sfc)
 {
 	unsigned int tmp;
@@ -754,6 +762,7 @@ static int sfc_ctl_init(struct sfc *sfc)
 	sfc_clear_all_intc(sfc);
 	sfc_mask_all_intc(sfc);
 
+	sfc_poll_time(sfc, 0x10);
 	sfc_threshold(sfc, sfc->threshold);
 	/*config the sfc pin init state*/
 	sfc_clock_phase(sfc, 0);
