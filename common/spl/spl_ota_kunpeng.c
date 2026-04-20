@@ -10,6 +10,7 @@
 #include <asm/arch/cpm.h>
 #include "spl_ota_kunpeng.h"
 #include "spl_read_reserved.h"
+#include "spl_ota_slavecore_loader.h"
 #include "ccu.h"
 
 #define ENV_DATA_SIZE 1024
@@ -137,6 +138,37 @@ extern int sfc_nand_load(unsigned int src_addr, unsigned int count,
                          unsigned int dst_addr);
 extern void flush_cache_all(void);
 
+static int spl_ota_sfcnand_read(void *priv, unsigned int src, unsigned int len,
+                                unsigned long dst)
+{
+    (void)priv;
+    return sfc_nand_load(src, len, (unsigned int)dst);
+}
+
+static void spl_ota_flush_cache(void *priv)
+{
+    (void)priv;
+    flush_cache_all();
+}
+
+static unsigned int spl_ota_get_reset(void *priv)
+{
+    (void)priv;
+    return get_ccu_csrr();
+}
+
+static void spl_ota_set_reset(void *priv, unsigned int value)
+{
+    (void)priv;
+    set_ccu_csrr(value);
+}
+
+static void spl_ota_set_reset_entry(void *priv, unsigned int value)
+{
+    (void)priv;
+    set_ccu_rer(value);
+}
+
 static int spl_ota_prepare_logo(unsigned int logo_ddr, unsigned int logo_size)
 {
 	struct logo_blob_header *hdr = (struct logo_blob_header *)logo_ddr;
@@ -166,24 +198,26 @@ static int spl_ota_prepare_logo(unsigned int logo_ddr, unsigned int logo_size)
 	return 0;
 }
 
-static void spl_ota_load_slavecore (struct jz_sfcnand_partition_param *partitions,char* name)
+static void spl_ota_load_slavecore(struct jz_sfcnand_partition_param *partitions, char *name)
 {
+    struct spl_ota_slavecore_ops ops;
     unsigned int addr;
-    unsigned int len = 0;
+    int ret;
+
     addr = ota_ops->flash_get_part_offset_by_name(partitions, name);
-    if(addr && addr != -1) {
-        unsigned int reset;
-        int cpu = 1;
-        sfc_nand_load(addr, 2048, CONFIG_SLAVE_CORE_START);
-        len = *(unsigned int *)(CONFIG_SLAVE_CORE_START + 12);
-        sfc_nand_load(addr, len, CONFIG_SLAVE_CORE_START);
-        flush_cache_all();
-        set_ccu_rer(CONFIG_SLAVE_CORE_START & 0x1fffffff);
-        reset = get_ccu_csrr();
-        reset |= 1 << cpu;
-        set_ccu_csrr(reset);
-        reset &= ~(1 << cpu);
-        set_ccu_csrr(reset);
+    if (addr && addr != (unsigned int)-1) {
+        memset(&ops, 0, sizeof(ops));
+        ops.priv = ota_ops;
+        ops.load = spl_ota_sfcnand_read;
+        ops.flush_cache_all = spl_ota_flush_cache;
+        ops.get_reset = spl_ota_get_reset;
+        ops.set_reset = spl_ota_set_reset;
+        ops.set_reset_entry = spl_ota_set_reset_entry;
+
+        ret = spl_ota_slavecore_load_and_start(&ops, addr,
+                                               CONFIG_SLAVE_CORE_START, 1);
+        if (ret)
+            printf("WARNING: %s load failed: %d\n", name, ret);
     } else {
         printf("WARNING: %s not finded!\n",name);
     }

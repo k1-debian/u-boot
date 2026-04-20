@@ -23,7 +23,7 @@ endif
 COBJS-$(CONFIG_SPL_ONENAND_SUPPORT) += spl_onenand.o
 COBJS-$(CONFIG_SPL_NET_SUPPORT) += spl_net.o
 COBJS-$(CONFIG_SPL_MMC_SUPPORT) += spl_mmc.o
-COBJS-$(CONFIG_JZSD_OTA_VERSION20) += spl_ota_jzsd.o #mmc ota
+COBJS-$(CONFIG_JZSD_OTA_VERSION20) += spl_ota_jzsd.o spl_ota_slavecore_loader.o #mmc ota
 ifdef CONFIG_SPL_JZSDHCI
 COBJS-$(CONFIG_SPL_JZMMC_SUPPORT) += spl_jzsdhci.o
 else
@@ -39,7 +39,7 @@ endif
 COBJS-$(CONFIG_SPL_SPI_NAND) += spl_spi_nand.o
 ifdef CONFIG_SPL_SFC_NAND
 COBJS-$(CONFIG_OTA_VERSION20) += spl_ota.o
-COBJS-$(CONFIG_KUNPENG_OTA_VERSION20) += spl_ota_kunpeng.o spl_read_reserved.o
+COBJS-$(CONFIG_KUNPENG_OTA_VERSION20) += spl_ota_kunpeng.o spl_read_reserved.o spl_ota_slavecore_loader.o
 endif
 
 ifndef CONFIG_SPL_LIBCOMMON_SUPPORT
