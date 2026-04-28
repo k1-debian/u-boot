@@ -1,5 +1,7 @@
 #include <common.h>
 #include <command.h>
+#include <asm/addrspace.h>
+#include "spl/spl_slavecore_sync.h"
 #include "usb_load.h"
 
 /*******************************************************************************
@@ -34,31 +36,15 @@ struct binhead
 #ifndef CONFIG_DEV_LOGO_START
 #error "CONFIG_DEV_LOGO_START is not defined! Please define it in your board header file."
 #endif
-struct slave_share_mem
-{
-    int debug;
-    int rot;
-    int sn_len;
-    char sn[64];
-    int mac_len;
-    char mac[32];
-    int logo_len;
-    void* logo;
-};
-
-#define CCU_IO_BASE			0xb2200000
-#define ccu_inl(addr) *(volatile unsigned int *)(addr)
-#define ccu_outl(val,addr) *(volatile unsigned int *)(addr)=(unsigned int)val
-
-#define get_ccu_csrr()			ccu_inl(CCU_IO_BASE + 0x40)
-#define set_ccu_csrr(val)		ccu_outl(val, CCU_IO_BASE + 0x40)
+extern void flush_cache_all(void);
 
 static int do_usb_price(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned long addr, offset;
     struct binhead *head = (struct binhead *)(CONFIG_SYS_TEXT_BASE + 12);
-	int len, rc;
-    struct slave_share_mem *share = (struct slave_share_mem*)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_SHARE_START);
+    int ret;
+    struct slave_share_mem *share =
+        (struct slave_share_mem *)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_SHARE_START);
+
     gpio_direction_output(RESET_PIN,0);
     usb_stop();
     gpio_direction_output(RESET_PIN,1);
@@ -67,23 +53,60 @@ static int do_usb_price(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
     printf("shared: mac len = %d\n",share->mac_len);
     printf("shared: logo len = %d\n",share->logo_len);
 
-    if(usb_init() >= 0) {
-        usb_load_scan(1);
-        usb_load_run_stage1_firmware((unsigned char*)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_SPL_BIN_OFF), CONFIG_DEV_SPL_START, head->spl_len);
+    share->magic = SLAVECORE_SHARE_MAGIC;
+    share->state = SLAVECORE_STATE_TX_RUNNING;
+    flush_cache_all();
 
-        usb_load_run_send_data((unsigned char*)&share->rot, CONFIG_DEV_ROT_START,4);
-        if(share->sn_len)
-            usb_load_run_send_data((unsigned char*)share->sn, CONFIG_DEV_SN_START,share->sn_len + 1);
-        if(share->logo_len)
-            usb_load_run_send_data((unsigned char*)share->logo, CONFIG_DEV_LOGO_START,share->logo_len);
+    ret = usb_init();
+    if (ret < 0)
+        goto tx_fail;
 
-        usb_load_run_stage2_firmware((unsigned char*)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_KENEL_BIN_OFF), CONFIG_DEV_KERNEL_START, head->kernel_len);
+    ret = usb_load_scan(1);
+    if (ret < 0)
+        goto tx_fail;
 
-        printf("download ok!\n");
-        while(1) asm volatile ("wait \t\n");
+    ret = usb_load_run_stage1_firmware((unsigned char *)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_SPL_BIN_OFF),
+                                       CONFIG_DEV_SPL_START, head->spl_len);
+    if (ret)
+        goto tx_fail;
+
+    ret = usb_load_run_send_data((unsigned char *)&share->rot, CONFIG_DEV_ROT_START, 4);
+    if (ret)
+        goto tx_fail;
+
+    if (share->sn_len) {
+        ret = usb_load_run_send_data((unsigned char *)share->sn, CONFIG_DEV_SN_START,
+                                     share->sn_len + 1);
+        if (ret)
+            goto tx_fail;
     }
 
-	return 0;
+    if (share->logo_len) {
+        ret = usb_load_run_send_data((unsigned char *)share->logo, CONFIG_DEV_LOGO_START,
+                                     share->logo_len);
+        if (ret)
+            goto tx_fail;
+    }
+
+    ret = usb_load_run_stage2_firmware((unsigned char *)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_KENEL_BIN_OFF),
+                                       CONFIG_DEV_KERNEL_START, head->kernel_len);
+    if (ret)
+        goto tx_fail;
+
+    usb_stop();
+    share->state = SLAVECORE_STATE_TX_DONE;
+    flush_cache_all();
+    printf("download ok!\n");
+    while(1) asm volatile ("wait 	\n");
+
+ tx_fail:
+    usb_stop();
+    share->state = SLAVECORE_STATE_TX_FAIL;
+    flush_cache_all();
+    printf("download failed: %d\n", ret);
+    while(1) asm volatile ("wait 	\n");
+
+    return 0;
 }
 
 U_BOOT_CMD(

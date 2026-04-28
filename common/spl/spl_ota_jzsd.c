@@ -11,6 +11,7 @@
 #include "spl_ota_jzsd.h"
 #include "spl_gpt_partition.h"
 #include "spl_ota_slavecore_loader.h"
+#include "spl_slavecore_sync.h"
 #include "ccu.h"
 
 static struct jzsd_ota_ops *ota_ops = NULL;
@@ -25,18 +26,15 @@ struct nv_flags {
 };
 
 #ifdef CONFIG_SLAVE_CORE_LOAD
-struct slave_share_mem {
-    int debug;
-    int rot;
-    int sn_len;
-    char sn[64];
-    int mac_len;
-    char mac[32];
-    int logo_len;
-    void *logo;
-};
+#define SLAVECORE_CPU_ID 1
+#define SLAVECORE_TX_TIMEOUT_US (5U * 1000U * 1000U)
 
 extern void flush_cache_all(void);
+
+static struct slave_share_mem *spl_jzsd_get_slave_share(void)
+{
+    return (struct slave_share_mem *)(CONFIG_SLAVE_SHARE_START);
+}
 
 static int spl_jzsd_raw_read(void *priv, unsigned int src, unsigned int len,
                              unsigned long dst)
@@ -78,12 +76,46 @@ static void spl_jzsd_set_reset_entry(void *priv, unsigned int value)
 
 static void spl_jzsd_prepare_slave_share(void)
 {
-    struct slave_share_mem *share = (struct slave_share_mem *)CONFIG_SLAVE_SHARE_START;
+    struct slave_share_mem *share = spl_jzsd_get_slave_share();
 
-    memset(share, 0, sizeof(*share));
+    spl_slavecore_share_init(share);
+    flush_cache_all();
 }
 
-static void spl_jzsd_load_slavecore(void)
+static int spl_jzsd_wait_slavecore_tx_done(unsigned int timeout_us)
+{
+    struct slave_share_mem *share = spl_jzsd_get_slave_share();
+
+    while (timeout_us--) {
+        int state = spl_slavecore_check_state(share);
+
+        if (state == SLAVECORE_CHECK_DONE) {
+            printf("slavecore tx done\n");
+            return 0;
+        }
+
+        if (state == SLAVECORE_CHECK_FAIL) {
+            printf("WARNING: slavecore tx failed\n");
+            return state;
+        }
+
+        udelay(1);
+    }
+
+    printf("WARNING: slavecore tx timeout\n");
+    return -ETIMEDOUT;
+}
+
+static void spl_jzsd_reclaim_slavecore_cpu1(void)
+{
+    unsigned int reset = get_ccu_csrr();
+
+    reset |= 1U << SLAVECORE_CPU_ID;
+    set_ccu_csrr(reset);
+    printf("slavecore cpu1 reclaimed\n");
+}
+
+static int spl_jzsd_load_slavecore(void)
 {
     struct spl_ota_slavecore_ops ops;
     unsigned int start_sector;
@@ -92,7 +124,7 @@ static void spl_jzsd_load_slavecore(void)
     ret = spl_get_built_in_gpt_partition("slavecore", &start_sector, NULL);
     if (ret) {
         printf("WARNING: slavecore not found\n");
-        return;
+        return ret;
     }
 
     spl_jzsd_prepare_slave_share();
@@ -106,9 +138,11 @@ static void spl_jzsd_load_slavecore(void)
     ops.set_reset_entry = spl_jzsd_set_reset_entry;
 
     ret = spl_ota_slavecore_load_and_start(&ops, start_sector,
-                                           CONFIG_SLAVE_CORE_START, 1);
+                                           CONFIG_SLAVE_CORE_START, SLAVECORE_CPU_ID);
     if (ret)
         printf("WARNING: slavecore load failed: %d\n", ret);
+
+    return ret;
 }
 #endif
 
@@ -167,7 +201,13 @@ char* spl_jzsd_ota_load_image(void)
            ((struct nv_flags*)nvdata)->needfullpkg);
 
 #ifdef CONFIG_SLAVE_CORE_LOAD
-    spl_jzsd_load_slavecore();
+    ret = spl_jzsd_load_slavecore();
+    if (!ret) {
+        ret = spl_jzsd_wait_slavecore_tx_done(SLAVECORE_TX_TIMEOUT_US);
+        if (ret)
+            printf("WARNING: slavecore tx incomplete: %d\n", ret);
+        spl_jzsd_reclaim_slavecore_cpu1();
+    }
 #endif
 
     if(get_signature(RECOVERY_SIGNATURE) || (((struct nv_flags*)nvdata)->start == 0x5a5a5a5a)) {
