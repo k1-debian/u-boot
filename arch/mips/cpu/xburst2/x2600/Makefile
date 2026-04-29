@@ -30,6 +30,7 @@ COBJS-y	= soc.o
 
 COBJS-y += clk.o
 COBJS-y += pllsetting.o
+COBJS-$(CONFIG_X2600_BOOTROOM_HELP) += bootroom_help.o sd_boot.o
 
 COBJS-y += ddr_set_dll.o
 COBJS-y += ../ddr_innophy.o

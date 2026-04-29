@@ -386,7 +386,6 @@ static int setup_sckeys(void *addr, unsigned int *len, struct sckey *sckey)
 		rsa_key[NKU_KUKEY_WORD_OFF + iLoop] = ddrptr[SC_KEY_KU_WORD_OFF + iLoop];
 
 	*len = tcsmptr[0]; /* len in spl structure */
-
 	/* len must 4 wrod align */
 	if((*len) == 0 || (*len) % 16)
 		return -1;
@@ -441,7 +440,7 @@ static int start_scboot(void *input, void *output, struct sckey *sckey)
 	int dmamode = sckey->pad_len > 0 ? 1 : 0;
 
 	serial_debug("SCBOOT: input = 0x%x, output = 0x%x, mode = %s\n",
-		     srcptr, dstptr, dmamode ? "cpu" : "dma");
+		     srcptr, dstptr, dmamode ? "dma" : "cpu" );
 
 	if (!dmamode) {
 		int newround = 1;
@@ -479,11 +478,16 @@ static int start_scboot(void *input, void *output, struct sckey *sckey)
 		ret = secall(args, SC_FUNC_SCBOOT, 0, 1);
 		flush_cache_all();
 
-		int diff = dstptr - srcptr;
+		/*
+		 * Compare source/destination spacing in bytes. The original code
+		 * used int-pointer subtraction here, which returns a word count and
+		 * can falsely reject valid adjacent buffers such as keybox unwrap.
+		 */
+		long diff = (long)((unsigned char *)dstptr - (unsigned char *)srcptr);
 		if (diff == 0) {
 		} else if (diff < 0) {
 			memmove(dstptr, srcptr, binlen);
-		} else if(diff > binlen) {
+		} else if (diff > binlen) {
 			memcpy(dstptr, srcptr, binlen);
 		} else {
 			serial_debug("SCBOOT: destination address error!\n");
@@ -538,6 +542,10 @@ int secure_scboot(void *input, void *output)
 	boot_up_mcu();
 
 	secure_check(input, &issig);
+#ifdef CONFIG_X2600_BOOTROOM_HELP_STAGE1
+    // bootroom helper使用时，强制签名。
+    issig = 1;
+#endif
 
 	if(EFUSTATE_SECBOOT_EN == 0) {
 		if (issig == 0) {

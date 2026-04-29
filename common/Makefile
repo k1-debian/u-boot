@@ -113,6 +113,7 @@ COBJS-$(CONFIG_CMD_DIAG) += cmd_diag.o
 endif
 COBJS-$(CONFIG_CMD_DISPLAY) += cmd_display.o
 COBJS-$(CONFIG_CMD_DTT) += cmd_dtt.o
+COBJS-$(CONFIG_CMD_DMVERITY) += cmd_dmverity.o
 COBJS-$(CONFIG_CMD_ECHO) += cmd_echo.o
 COBJS-$(CONFIG_ENV_IS_IN_EEPROM) += cmd_eeprom.o
 COBJS-$(CONFIG_CMD_EEPROM) += cmd_eeprom.o
@@ -218,6 +219,7 @@ COBJS-$(CONFIG_USB_UVC) += uvc/uvc_video.o
 COBJS-$(CONFIG_USB_LOAD) += usb_load.o
 endif
 COBJS-$(CONFIG_CMD_USB_MASS_STORAGE) += cmd_usb_mass_storage.o
+COBJS-$(CONFIG_DM_VERITY) += bootargs_mem.o
 COBJS-$(CONFIG_CMD_PRICE) += cmd_usb_price.o
 COBJS-$(CONFIG_CMD_USB_LOAD) += cmd_usb_load.o
 COBJS-$(CONFIG_CMD_XIMG) += cmd_ximg.o

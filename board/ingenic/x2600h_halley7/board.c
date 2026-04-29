@@ -28,6 +28,9 @@
 #include <asm/arch/cpm.h>
 #include <asm/arch/clk.h>
 #include <asm/arch/mmc.h>
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_BOARD_DM_VERITY_HELPER)
+#include "dmverity.h"
+#endif
 
 #ifdef CONFIG_BOOT_ANDROID
 extern void boot_mode_select(void);
@@ -112,6 +115,13 @@ int checkboard(void)
 	return 0;
 }
 
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_BOARD_DM_VERITY_HELPER)
+int board_dm_verity_get_config(struct dm_verity_boot_config *out)
+{
+	return board_dm_verity_helper_get_config(out);
+}
+#endif
+
 #ifdef CONFIG_SPL_BUILD
 
 void spl_board_init(void)
@@ -119,5 +129,3 @@ void spl_board_init(void)
 }
 
 #endif /* CONFIG_SPL_BUILD */
-
-
