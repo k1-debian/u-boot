@@ -21,7 +21,12 @@
 *
 *******************************************************************************/
 
-#define RESET_PIN GPIO_PB(28)
+/*
+ * Default RESET PIN is PB28 to support legacy versions. In the newer revisions the board headers can cover it.
+ */
+#ifndef CONFIG_PRICE_RESET_PIN
+#define CONFIG_PRICE_RESET_PIN GPIO_PB(28)
+#endif
 struct binhead
 {
     unsigned int total_len;
@@ -45,9 +50,9 @@ static int do_usb_price(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
     struct slave_share_mem *share =
         (struct slave_share_mem *)(CONFIG_SYS_TEXT_BASE + CONFIG_LAYOUT_SHARE_START);
 
-    gpio_direction_output(RESET_PIN,0);
+    gpio_direction_output(CONFIG_PRICE_RESET_PIN,0);
     usb_stop();
-    gpio_direction_output(RESET_PIN,1);
+    gpio_direction_output(CONFIG_PRICE_RESET_PIN,1);
     printf("shared: rot = %d\n",share->rot);
     printf("shared: sn len = %d\n",share->sn_len);
     printf("shared: mac len = %d\n",share->mac_len);
