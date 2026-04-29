@@ -123,6 +123,23 @@ static int mmc_load_img_from_partition(const char *name)
 	return mmc_load_image_raw(mmc, start_sector);
 }
 
+#if defined(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR)
+static int mmc_load_uboot(void)
+{
+	struct mmc *mmc;
+
+	mmc = find_mmc_device(0);
+	if (!mmc) {
+#ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
+		puts("spl: mmc device not found!!\n");
+#endif
+		hang();
+	}
+
+	return mmc_load_image_raw(mmc, CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+}
+#endif
+
 static int mmc_load_image_raw_os(struct mmc *mmc)
 {
 #ifdef CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR
@@ -250,6 +267,9 @@ static void mmc_load_rtos_boot(struct mmc *mmc)
 static struct jzsd_ota_ops jzsd_ota_ops = {
 	.jzsd_read = mmc_block_read,
 	.jzsd_load_img_from_partition = mmc_load_img_from_partition,
+#if defined(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR)
+	.jzsd_load_uboot = mmc_load_uboot,
+#endif
 };
 #endif
 

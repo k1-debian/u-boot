@@ -284,6 +284,7 @@ LIBS-y += drivers/crypto/libcrypto.o
 LIBS-y += drivers/dma/libdma.o
 LIBS-y += drivers/fpga/libfpga.o
 LIBS-y += drivers/gpio/libgpio.o
+LIBS-$(CONFIG_KEYBOX) += drivers/keybox/libkeybox.o
 ifdef CONFIG_JZ_SCBOOT
 ifneq ($(findstring y, $(CONFIG_X2000_V12)$(CONFIG_M300)$(CONFIG_X2100)),)
 LIBS-y += drivers/scboot/jz_sec_v2/libscboot.o
@@ -318,6 +319,7 @@ LIBS-y += drivers/power/libpower.o \
 	drivers/power/pmic/libpmic.o \
 	drivers/power/battery/libbattery.o
 LIBS-y += drivers/regulator/libregulator.o
+LIBS-$(CONFIG_DM_VERITY) += drivers/verity/libverity.o
 
 ifndef CONFIG_SFC_V20
 LIBS-$(CONFIG_JZ_SFC) += drivers/mtd/devices/jz_sfc/libsfc.o

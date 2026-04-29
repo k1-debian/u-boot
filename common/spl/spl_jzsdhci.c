@@ -1428,6 +1428,9 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 	u32 image_size_sectors;
 	struct image_header *header;
 	unsigned int load_addr;
+	const char *image_name = name ? name : "raw";
+	int secure_os_image = 0;
+	int raw_uboot = (!name || !strcmp(name, "u-boot"));
 
 	header = (struct image_header *)(CONFIG_SYS_TEXT_BASE -
 					 sizeof(struct image_header));
@@ -1438,8 +1441,11 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 		goto end;
 
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
-	header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE -
+	if (!raw_uboot) {
+		header = (struct image_header *)(CONFIG_SYS_SC_TEXT_BASE -
 					 sizeof(struct image_header));
+		secure_os_image = 1;
+	}
 #endif
 
 #ifdef DEBUG_DDR_CONTENT
@@ -1448,6 +1454,9 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 	header->ih_name[IH_NMLEN - 1] = 0;
 	spl_parse_image_header(header);
 	load_addr = spl_image.load_addr;
+    //serial_debug("BOOTROOM-HELP: stage2 image=%s sector=%x load=0x%x entry=0x%x size=0x%x\n",
+            //image_name, sector, spl_image.load_addr,
+            //spl_image.entry_point, spl_image.size);
 
 #ifdef CONFIG_JZ_SECURE_ROOTFS
 	/*
@@ -1464,7 +1473,8 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 	/* Read the header too to avoid extra memcpy */
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
 	/* 加载地址前移2048,使kernel签名加载到kernel起始地址前2048 */
-	load_addr -= 2048;
+	if (secure_os_image)
+		load_addr -= 2048;
 #endif
 	err = mmc_block_read(sector, image_size_sectors,
 			     (void *)load_addr);
@@ -1486,10 +1496,13 @@ static int mmc_load_image_raw(unsigned long sector, const char *name)
 	flush_cache_all();
 
 #if defined(CONFIG_SPL_OS_BOOT) && defined(CONFIG_JZ_SECURE_SUPPORT)
-	int ret = secure_scboot(spl_image.load_addr - 2048, spl_image.load_addr);
-	if(ret) {
-		serial_debug("Error spl secure load kernel.\n");
-		hang();
+	if (secure_os_image) {
+		int ret = secure_scboot(spl_image.load_addr - 2048,
+					 spl_image.load_addr);
+		if(ret) {
+			serial_debug("Error spl secure load kernel.\n");
+			hang();
+		}
 	}
 #endif
 
@@ -1531,6 +1544,16 @@ static int mmc_load_img_from_partition(const char *name)
 
 	return mmc_load_image_raw(start_sector, name);
 }
+
+#if defined(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR)
+static int mmc_load_uboot(void)
+{
+	//serial_debug("BOOTROOM-HELP: stage2 load raw u-boot sector=%x\n",
+		     //CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+	return mmc_load_image_raw(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR,
+				 "u-boot");
+}
+#endif
 #endif
 
 #ifdef CONFIG_SPL_OS_OTA_BOOT
@@ -1590,6 +1613,9 @@ static int mmc_ota_load_img_from_partition(const char *name)
 static struct jzsd_ota_ops jzsd_ota_ops = {
 	.jzsd_read = mmc_block_read,
 	.jzsd_load_img_from_partition = mmc_load_img_from_partition,
+#if defined(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR)
+	.jzsd_load_uboot = mmc_load_uboot,
+#endif
 };
 #endif
 

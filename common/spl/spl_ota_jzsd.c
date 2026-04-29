@@ -151,6 +151,21 @@ void register_jzsd_ota_ops(struct jzsd_ota_ops *ops)
     ota_ops = ops;
 }
 
+static char *spl_jzsd_load_normal_image(void)
+{
+#if defined(CONFIG_BOARD_DM_VERITY_ENABLE) && CONFIG_BOARD_DM_VERITY_ENABLE
+	if (ota_ops && ota_ops->jzsd_load_uboot) {
+		//printf("BOOTROOM-HELP: stage2 ota choose dmverity\n");
+		ota_ops->jzsd_load_uboot();
+		return NULL;
+	}
+#endif
+
+	//printf("BOOTROOM-HELP: stage2 ota choose kernel\n");
+	ota_ops->jzsd_load_img_from_partition("kernel");
+	return CONFIG_SYS_SPL_ARGS_ADDR;
+}
+
 static void nv_read(unsigned int start, unsigned int blkcnt, unsigned int *dst)
 {
     ota_ops->jzsd_read(start, blkcnt, dst);
@@ -210,18 +225,17 @@ char* spl_jzsd_ota_load_image(void)
     }
 #endif
 
-    if(get_signature(RECOVERY_SIGNATURE) || (((struct nv_flags*)nvdata)->start == 0x5a5a5a5a)) {
-        if(((struct nv_flags*)nvdata)->boot) {
-            ota_ops->jzsd_load_img_from_partition("recovery");
-            cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
-        } else {
-            ota_ops->jzsd_load_img_from_partition("kernel");
-            cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
-        }
-    } else {
-        ota_ops->jzsd_load_img_from_partition("kernel");
-        cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
-    }
+	if(get_signature(RECOVERY_SIGNATURE) || (((struct nv_flags*)nvdata)->start == 0x5a5a5a5a)) {
+	    if(((struct nv_flags*)nvdata)->boot) {
+	        //printf("BOOTROOM-HELP: stage2 ota choose recovery\n");
+	        ota_ops->jzsd_load_img_from_partition("recovery");
+	        cmdargs = CONFIG_SYS_SPL_OTA_ARGS_ADDR;
+	    } else {
+	        cmdargs = spl_jzsd_load_normal_image();
+	    }
+	} else {
+	    cmdargs = spl_jzsd_load_normal_image();
+	}
 
     return cmdargs;
 }

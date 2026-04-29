@@ -42,14 +42,20 @@
 
 
 #if defined (CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
-#define SPL_SCKEY_START   0x00004600 //mmc boot offset 17Kb + 512b
-#define UBOOT_SCKEY_START 0x0000a600
 #define IMAGE_START       0x00004400
 #else
-#define SPL_SCKEY_START   0x00000200
-#define UBOOT_SCKEY_START 0x00006200
 #define IMAGE_START       0x0
 #endif
+
+/*
+ * Secure image layout:
+ * - IMAGE_START points to the beginning of the secure image in flash
+ * - the SC key block starts right after the 512-byte SC header
+ * - the U-Boot SC key block must track CONFIG_UBOOT_OFFSET instead of using
+ *   the old fixed 0x6200/0xa600 values
+ */
+#define SPL_SCKEY_START   (IMAGE_START + SC_MAGIC_SIZE)
+#define UBOOT_SCKEY_START (IMAGE_START + CONFIG_UBOOT_OFFSET + SC_MAGIC_SIZE)
 
 #define CRC_POSITION        9	/* 9th bytes */
 #define SPL_LENGTH_POSITION 12	/* 11th */

@@ -36,6 +36,9 @@
 #include <generated/audio.h>
 #endif
 #ifdef CONFIG_SPL_BUILD
+#ifdef CONFIG_X2600_BOOTROOM_HELP_STAGE1
+#include <x2600_bootroom_help.h>
+#endif
 
 /* Pointer to as well as the global data structure for SPL */
 DECLARE_GLOBAL_DATA_PTR;
@@ -93,7 +96,6 @@ void board_init_f(ulong dummy)
 	/* Set global data pointer */
 	gd = &gdata;
 
-
 	/* Setup global info */
 #ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
@@ -113,6 +115,10 @@ void board_init_f(ulong dummy)
 		return;
 	}
 #endif
+#endif
+
+#ifdef CONFIG_X2600_BOOTROOM_HELP_STAGE1
+	x2600_bootroom_help_stage1_entry();
 #endif
 
 	gpio_init();
@@ -218,7 +224,6 @@ void jump_to_image_no_args(struct spl_image_info *spl_image)
 		hang();
 	}
 #endif
-
 	debug("image entry point: 0x%x\n", spl_image->entry_point);
 	image_entry_noargs_t image_entry =
 			(image_entry_noargs_t) spl_image->entry_point;
