@@ -16,7 +16,7 @@
 
 #include "x1600_ddr.h"
 
-#ifdef CONFIG_X1670
+#ifdef CONFIG_X1670EN_DDR
   #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
   #define CONFIG_SYS_MPLL_FREQ		1200000000	/*If MPLL not use mast be set 0*/
   #define CONFIG_SYS_EPLL_FREQ		288000000	/*If EPLL not use mast be set 0， pwm audio need 384k*/

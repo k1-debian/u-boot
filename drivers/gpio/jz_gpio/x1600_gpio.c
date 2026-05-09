@@ -51,4 +51,10 @@ static struct jz_gpio_func_def gpio_func[] = {
 #if defined(CONFIG_HALLEY6_MAC_POWER_EN)
 	{ .port = GPIO_PORT_B, .func = GPIO_OUTPUT1, .pins = 0x1 << 30},
 #endif
+#if defined(CONFIG_X1670) /*设置x1670/x1670en未引出的gpio引脚状态*/
+	{ .port = GPIO_PORT_A, .func = GPIO_INPUT | GPIO_PULL, .pins = 0x0A0FFFFE},
+	{ .port = GPIO_PORT_B, .func = GPIO_INPUT | GPIO_PULL, .pins = 0xFFFC0843},
+	{ .port = GPIO_PORT_C, .func = GPIO_INPUT | GPIO_PULL, .pins = 0xEB81FFFD},
+	{ .port = GPIO_PORT_D, .func = GPIO_INPUT | GPIO_PULL, .pins = 0xFFFFFFFF},
+#endif
 };
