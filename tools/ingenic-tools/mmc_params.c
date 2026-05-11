@@ -25,11 +25,12 @@
 #include <string.h>
 #include <config.h>
 
-#if defined(CONFIG_X2000) || defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2500) || defined(CONFIG_X2600) ||defined(CONFIG_AD100) || defined(CONFIG_X2580)
-#define SPL_SIZE (24 * 1024)
-#endif
-#if defined(CONFIG_X1600)
-#define SPL_SIZE (26 * 1024)
+#ifdef CONFIG_SPL_PAD_TO
+#define SPL_SIZE CONFIG_SPL_PAD_TO
+#elif defined(CONFIG_SPL_MAX_SIZE)
+#define SPL_SIZE CONFIG_SPL_MAX_SIZE
+#else
+#error "No SPL size limit is defined for mmc_params"
 #endif
 
 #define BLOCK_SIZE 512
