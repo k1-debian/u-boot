@@ -725,6 +725,9 @@
 #endif
     #define CONFIG_SPL_OTA_NAME       "ota"
     #define CONFIG_SPL_OS_NAME2       "kernel2"
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+    #define CONFIG_SPL_ROOTFS_NAME2   "rootfs2"
+#endif /* end of CONFIG_JZ_SECURE_ROOTFS */
     #define CONFIG_SPL_BOOTARGS2      BOOTARGS_COMMON " " ARGS_ROOTFS2
 #ifndef CONFIG_SPL_OF_LIBFDT
     #define CONFIG_SYS_SPL_ARGS_ADDR2    CONFIG_SPL_BOOTARGS2
@@ -743,6 +746,10 @@
     #define CONFIG_SYS_SPL_ARGS_ADDR    CONFIG_SPL_BOOTARGS
 #else
     #define CONFIG_SYS_SPL_ARGS_ADDR " "
+#endif
+#ifdef CONFIG_JZ_SECURE_ROOTFS
+    #define CONFIG_SPL_SIG_NAME         "signature"
+    #define CONFIG_SPL_ROOTFS_NAME      "rootfs"
 #endif
     #define CONFIG_BOOTX_BOOTARGS ""
     #undef  CONFIG_BOOTCOMMAND
