@@ -83,8 +83,8 @@ static void dwc_otg_core_init(void)
 	udc_set_reg(GINTSTS_RXFIFO_NEMPTY,0,GINT_MASK);
 	/*HNP SRP not support , usb2.0 , utmi+, 16bit phy*/
 	gusbcfg = udc_read_reg(GUSB_CFG);
-	if (!(gusbcfg | USBCFG_16BIT_PHY) ||
-			(gusbcfg | USBCFG_PHY_INF_UPLI))
+	if (!(gusbcfg & USBCFG_16BIT_PHY) ||
+			(gusbcfg & USBCFG_PHY_INF_UPLI))
 		reset = 1;
 	udc_set_reg(USBCFG_HNP_EN|USBCFG_SRP_EN|USBCFG_PHY_SEL_USB1|
 			USBCFG_TRDTIME_MASK|USBCFG_PHY_INF_UPLI,
@@ -106,7 +106,7 @@ static void dwc2_otg_flush_tx_fifo(unsigned char txf_num)
 	/*Set globle nak*/
 	if (udc_test_reg(GINTSTS_GINNAK_EFF,GINT_STS))
 	{
-		udc_set_reg(0,GINTSTS_GINNAK_EFF,OTG_DCTL);
+		udc_set_reg(0,DCTL_SET_GNPINNAK,OTG_DCTL);
 		while(!(udc_read_reg(GINT_STS) & GINTSTS_GINNAK_EFF) && --timeout)
 			udelay(1);
 		if (!timeout) pr_warn("flush fifo globle in nak set timeout\n");
@@ -117,7 +117,7 @@ static void dwc2_otg_flush_tx_fifo(unsigned char txf_num)
 	if (!timeout) pr_warn("flush fifo ahb idle timeout\n");
 	/*Check fifo is not in flushing*/
 	timeout = 10000;
-	while(!(udc_test_reg(RSTCTL_TXFIFO_FLUSH,GRST_CTL)) && --timeout);
+	while((udc_test_reg(RSTCTL_TXFIFO_FLUSH,GRST_CTL)) && --timeout);
 	/*Flush fifo*/
 	udc_set_reg(0,(txf_num << 6),GRST_CTL);
 	udc_set_reg(0,RSTCTL_TXFIFO_FLUSH ,GRST_CTL);
@@ -577,7 +577,6 @@ static int jz_queue(struct usb_ep *ep, struct usb_request *req, gfp_t gfp_flags)
 		return -ESHUTDOWN;
 	}
 
-	INIT_LIST_HEAD(&dep->urb_list);
 	transfer_idle = list_empty(&dep->urb_list);
 
 	req->status = -EINPROGRESS;
@@ -700,6 +699,8 @@ int jz_dwc_pullup(struct usb_gadget *gadget, int is_on)
 		udc_set_reg(0, DCTL_SOFT_DISCONN, OTG_DCTL);
 		mdelay(2000); //wait for host disconnect
 	}
+
+	return 0;
 }
 
 static const struct usb_gadget_ops jz_udc_ops = {
@@ -807,6 +808,13 @@ void handle_enum_done_intr(struct dwc2_udc *dev)
 	udc_write_reg(GINTSTS_ENUM_DONE, GINT_STS);
 }
 
+static void dwc2_ep0_stall_and_restart(void)
+{
+	udc_set_reg(0, DEPCTL_STALL, DIEP_CTL(0));
+	udc_set_reg(0, DEPCTL_STALL, DOEP_CTL(0));
+	udc_start_new_setup();
+}
+
 static void parse_setup(struct dwc2_ep *dep)
 {
 	struct dwc2_udc *dev = the_controller;
@@ -837,7 +845,7 @@ static void parse_setup(struct dwc2_ep *dep)
 		ret = dev->driver->setup(&dev->gadget, &dev->crq);
 	}
 	if (ret) {
-		//usb_stall_ep0(dep);
+		dwc2_ep0_stall_and_restart();
 		return;
 	}
 
@@ -854,14 +862,17 @@ static void udc_fetch_data_packet(struct dwc2_ep *dep, int flush_fifo)
 	int rxsts_pop = udc_read_reg(GRXSTS_READ);
 	int fifo_count = (rxsts_pop&GRXSTSP_BYTE_CNT_MASK) >> GRXSTSP_BYTE_CNT_BIT;
 
-	if (unlikely(!request && fifo_count != 0 && epnum != 0 && !!flush_fifo)) {
-		printf("no request happen\n");
-		return;
-	}
-
 	rxsts_pop = udc_read_reg(GRXSTS_POP);
 	fifo_count = (rxsts_pop&GRXSTSP_BYTE_CNT_MASK) >> GRXSTSP_BYTE_CNT_BIT;
 	dwords = (fifo_count + 3) / 4;
+
+	if (unlikely(!request)) {
+		for (i = 0; i < dwords; i++)
+			udc_read_reg(EP_FIFO(epnum));
+		if (!flush_fifo && epnum != 0)
+			pr_warn("ep%d out packet dropped because no request is queued\n", epnum);
+		return;
+	}
 
 	pr_info("fetch %d start:",fifo_count);
 
@@ -1078,7 +1089,7 @@ void handle_inep_intr(struct dwc2_udc *dev)
         int epnum;
 	struct dwc2_ep *dep = NULL;
 	for (epnum = 0, intr = udc_read_reg(OTG_DAINT) & DAINT_IN_MASK;
-			intr != 0 && epnum <= DWC2_MAX_IN_ENDPOINTS;
+			intr != 0 && epnum < DWC2_MAX_IN_ENDPOINTS;
 			intr &= ~(0x1 << epnum), epnum++) {
 
 		if (!(intr & (0x1 << epnum)))
@@ -1192,7 +1203,7 @@ int handle_outep_intr(struct dwc2_udc *dev)
 	struct dwc2_ep *dep = NULL;
 
 	for (epnum = 0, intr = (udc_read_reg(OTG_DAINT)& DAINT_OUT_MASK)>>DAINT_OUT_BIT;
-			intr != 0 && epnum <= DWC2_MAX_OUT_ENDPOINTS;
+			intr != 0 && epnum < DWC2_MAX_OUT_ENDPOINTS;
 			intr &= ~(0x1 << epnum), epnum++) {
 
 		if (!(intr & (0x1 << epnum)))
@@ -1276,7 +1287,9 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 		return retval;
 	dev->driver = driver;
 
-	dwc_udc_init(dev);
+	retval = dwc_udc_init(dev);
+	if (retval)
+		return retval;
 
 	usb_poll_active = true;
 
