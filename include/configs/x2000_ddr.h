@@ -35,6 +35,9 @@
         #define CONFIG_LPDDR3_KGD_MR3_DS             0x2
         #define CONFIG_LPDDR3_KGD_MR11_PD            0x0
         #define CONFIG_LPDDR3_KGD_MR11_ODT           0x0
+
+	#define CONFIG_DDR_AUTO_SELF_REFRESH
+	#define CONFIG_DDR_AUTO_SELF_REFRESH_CNT     257
 #endif
 
 #define CONFIG_PHY_DRVODT_CONFIG             0x0
@@ -69,8 +72,6 @@
 #define CONFIG_DDR_PHY_IMPEDANCE             40
 #define CONFIG_DDR_PHY_ODT_IMPEDANCE         120
 
-#define CONFIG_DDR_AUTO_SELF_REFRESH
-#define CONFIG_DDR_AUTO_SELF_REFRESH_CNT     257
 
 #define CONFIG_BOOTARGS_MEM_32M			"mem=32M@0x0"	/* customize bootargs for default env.*/
 #define CONFIG_BOOTARGS_MEM_64M			"mem=64M@0x0"	/* customize bootargs for default env.*/
