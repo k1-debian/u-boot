@@ -1187,10 +1187,14 @@ void outepx_transfer_complete(struct dwc2_ep *dep)
 	if (request->req.actual >= request->req.length)
 		is_last = 1;
 
-	if (is_last)
+	if (is_last) {
 		dwc2_giveback_urb(dep, request, 0);
-	else
+		if (next_request(&dep->urb_list))
+			dwc2_start_transfer(dep);
+	} else {
 		dwc2_start_transfer(dep);
+	}
+
 	return;
 }
 
