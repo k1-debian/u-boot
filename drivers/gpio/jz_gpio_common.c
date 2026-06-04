@@ -623,6 +623,15 @@ void gpio_init(void)
 	pca953x_init();
 #endif
 #endif
+
+     /*The power-on condition controlled by one POWER PIN
+       can be set through this configuration */
+#if defined(CONFIG_POWER_PIN_HIGH)
+	gpio_direction_output(CONFIG_POWER_PIN_HIGH, 1);
+#elif defined(CONFIG_POWER_PIN_LOW)
+	gpio_direction_output(CONFIG_POWER_PIN_LOW, 0);
+#endif
+
 }
 
 void dump_gpio_func( unsigned int gpio)
