@@ -114,6 +114,9 @@ endif
 COBJS-$(CONFIG_CMD_DISPLAY) += cmd_display.o
 COBJS-$(CONFIG_CMD_DTT) += cmd_dtt.o
 COBJS-$(CONFIG_CMD_DMVERITY) += cmd_dmverity.o
+COBJS-$(CONFIG_CMD_VERITYROOTFS) += cmd_verityrootfs.o verity_trust.o
+COBJS-$(CONFIG_CMD_VERIFYKERNEL) += cmd_verifykernel.o verity_trust.o
+COBJS-$(CONFIG_CMD_TRUSTBOOT) += cmd_trustboot.o verity_trust.o
 COBJS-$(CONFIG_CMD_ECHO) += cmd_echo.o
 COBJS-$(CONFIG_ENV_IS_IN_EEPROM) += cmd_eeprom.o
 COBJS-$(CONFIG_CMD_EEPROM) += cmd_eeprom.o
@@ -205,6 +208,9 @@ COBJS-$(CONFIG_CMD_TIME) += cmd_time.o
 COBJS-$(CONFIG_CMD_TRACE) += cmd_trace.o
 COBJS-$(CONFIG_SYS_HUSH_PARSER) += cmd_test.o
 COBJS-$(CONFIG_CMD_TPM) += cmd_tpm.o
+ifdef CONFIG_TPM_TIS_SPI
+COBJS-$(CONFIG_CMD_TPM_TIS_SPI) += cmd_tpm_tis_spi.o
+endif
 COBJS-$(CONFIG_CMD_TSI148) += cmd_tsi148.o
 COBJS-$(CONFIG_CMD_UBI) += cmd_ubi.o
 COBJS-$(CONFIG_CMD_UBIFS) += cmd_ubifs.o

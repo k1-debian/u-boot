@@ -30,6 +30,7 @@ COBJS-$(CONFIG_TPM_ATMEL_TWI) += tpm_atmel_twi.o
 COBJS-$(CONFIG_TPM_TIS_I2C) += tpm.o
 COBJS-$(CONFIG_TPM_TIS_I2C) += tpm_tis_i2c.o
 COBJS-$(CONFIG_TPM_TIS_LPC) += tpm_tis_lpc.o
+COBJS-$(CONFIG_TPM_TIS_SPI) += tpm_tis_spi.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
