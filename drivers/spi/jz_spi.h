@@ -73,6 +73,12 @@ struct jz_spi_slave {
 	struct spi_slave slave;
 	unsigned int mode;
 	unsigned int max_hz;
+#ifdef CONFIG_INGENIC_SPI
+	unsigned int bus;
+	unsigned int cs;
+	unsigned int base;
+	unsigned int cs_active;
+#endif
 };
 struct jz_spi_support_from_burner{
 		unsigned int id_manufactory;

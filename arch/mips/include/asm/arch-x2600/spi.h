@@ -17,6 +17,8 @@
 #define	SSI_ITR		 0x10
 #define	SSI_ICR		 0x14
 #define	SSI_GR		 0x18
+#define SSI_GR_MAX		0xff
+#define SSI_FIFO_SIZE		128
 
 #define SSI_CR0_SSIE		(1 << 15)
 #define SSI_CR0_EACLRUN		(1 << 7)
@@ -28,22 +30,29 @@
 #define SSI_CR1_POL		(1 << 0)
 #define SSI_CR1_FLEN_8BIT	(0x6 << SSI_CR1_FLEN_BIT)
 #define SSI_CR1_FLEN_BIT	3
+#define SSI_CR1_FLEN_MASK	(0x1f << SSI_CR1_FLEN_BIT)
 #define SSI_CR1_FMAT_SPI	(0 << SSI_CR1_FMAT_BIT)
 #define SSI_CR1_FMAT_BIT	20
 #define SSI_CR1_TCKFI_3		(3 << SSI_CR1_TCKFI_BIT)
 #define SSI_CR1_TCKFI_BIT	26
+#define SSI_CR1_TCKFI_MASK	(0x3 << SSI_CR1_TCKFI_BIT)
 #define SSI_CR1_TFVCK_3		(3 << SSI_CR1_TFVCK_BIT)
 #define SSI_CR1_TFVCK_BIT	28
+#define SSI_CR1_TFVCK_MASK	(0x3 << SSI_CR1_TFVCK_BIT)
 #define SSI_CR1_UNFIN		(1 << 23)
 #define SSI_GPCHL_LOW           (0 << 2)
 #define SSI_GPCHL_HIGH          (1 << 2)
 
 
 #define SSI_SR_BUSY             (1 << 6)
+#define SSI_SR_END              (1 << 7)
 #define SSI_SR_RFE		(1 << 4)
 #define SSI_SR_TFF		(1 << 5)
 #define SSI_SR_UNDR             (1 << 1)
+#define SSI_SR_OVER             (1 << 0)
 
+#define SSI_SR_TFIFONUM_BIT	16
+#define SSI_SR_TFIFONUM_MASK	(0xff << SSI_SR_TFIFONUM_BIT)
 #define SSI_SR_RFIFONUM_BIT	8
 #define SSI_SR_RFIFONUM_MASK	(0xff << SSI_SR_RFIFONUM_BIT)
 
@@ -80,6 +89,7 @@
 #define SSI_FRMHL_CE0_HIGH_CE1_LOW  (1 << 30)
 #define SSI_FRMHL_CE0_LOW_CE1_HIGH  (2 << 30)
 #define SSI_FRMHL_CE0_HIGH_CE1_HIGH (3 << 30)
+#define SSI_FRMHL_MASK              (3 << 30)
 #define SSI_GPCMD           (1 << 25)
 
 #define TRAN_SPI_QUAD 0x5

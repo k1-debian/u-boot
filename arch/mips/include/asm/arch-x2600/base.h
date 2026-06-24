@@ -70,6 +70,8 @@
 #define SFC_BASE        0xb3440000
 #define EFUSE_BASE      0xb3480000
 
+#define SSI0_BASE		0xb0043000
+#define SSI1_BASE		0xb0044000
 /* AHB_MCU BUS Devices Base */
 #define	TCU_BASE	0xb3630000
 #define	WDT_BASE	0xb3630000

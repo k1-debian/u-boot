@@ -27,6 +27,7 @@
 #include <spi_flash.h>
 #include <malloc.h>
 #include <asm/gpio.h>
+#include <asm-generic/errno.h>
 #include <asm/io.h>
 #include <asm/arch/cpm.h>
 #include <asm/arch/spi.h>
@@ -36,6 +37,40 @@
 #include "jz_spi.h"
 
 #include <asm/arch/spi.h>
+
+#ifndef CONFIG_JZ_SPI_DEFAULT_HZ
+#define CONFIG_JZ_SPI_DEFAULT_HZ	1000000
+#endif
+
+#ifdef CONFIG_INGENIC_SPI
+#ifdef CONFIG_JZ_SPI1
+#define JZ_SPI_MAX_BUS		1
+#else
+#define JZ_SPI_MAX_BUS		0
+#endif
+#define JZ_SPI_MAX_CS		1
+#define JZ_SPI_TIMEOUT_US	10000
+#define JZ_SPI_CS_END_DELAY_US	5
+#ifndef CONFIG_JZ_SPI_SRC_HZ
+#define CONFIG_JZ_SPI_SRC_HZ		100000000
+#endif
+
+#if defined(CONFIG_JZ_SPI0) && \
+	(!defined(CONFIG_INGENIC_SPI0_PINMUX_PORT) || \
+	 !defined(CONFIG_INGENIC_SPI0_PINMUX_FUNC) || \
+	 !defined(CONFIG_INGENIC_SPI0_PINMUX_PINS))
+#error "CONFIG_INGENIC_SPI0 pinmux must be defined by board config"
+#endif
+
+#if defined(CONFIG_JZ_SPI1) && \
+	(!defined(CONFIG_INGENIC_SPI1_PINMUX_PORT) || \
+	 !defined(CONFIG_INGENIC_SPI1_PINMUX_FUNC) || \
+	 !defined(CONFIG_INGENIC_SPI1_PINMUX_PINS))
+#error "CONFIG_INGENIC_SPI1 pinmux must be defined by board config"
+#endif
+
+static int jz_spi_pinmux_done[JZ_SPI_MAX_BUS + 1];
+#endif
 
 static struct jz_spi_support *gparams;
 unsigned int ssi_rate = 0;
@@ -55,6 +90,323 @@ static void jz_spi_writel(unsigned int value, unsigned int offset)
 {
 	writel(value, SSI_BASE + offset);
 }
+
+#ifdef CONFIG_INGENIC_SPI
+static inline u32 jz_spi_bus_readl(struct jz_spi_slave *ss, u32 offset)
+{
+	return readl(ss->base + offset);
+}
+
+static inline void jz_spi_bus_writel(struct jz_spi_slave *ss, u32 value,
+				     u32 offset)
+{
+	writel(value, ss->base + offset);
+}
+
+static inline unsigned int jz_spi_base(unsigned int bus)
+{
+	return bus ? SSI1_BASE : SSI0_BASE;
+}
+
+static inline unsigned int jz_spi_txfifo_count(u32 sr)
+{
+	return (sr & SSI_SR_TFIFONUM_MASK) >> SSI_SR_TFIFONUM_BIT;
+}
+
+static inline unsigned int jz_spi_rxfifo_count(u32 sr)
+{
+	return (sr & SSI_SR_RFIFONUM_MASK) >> SSI_SR_RFIFONUM_BIT;
+}
+
+static void jz_spi_apply_default_pinmux(unsigned int bus)
+{
+	if (bus == 0) {
+		gpio_set_func(CONFIG_INGENIC_SPI0_PINMUX_PORT,
+			      CONFIG_INGENIC_SPI0_PINMUX_FUNC,
+			      CONFIG_INGENIC_SPI0_PINMUX_PINS);
+	}
+#ifdef CONFIG_JZ_SPI1
+	else {
+		gpio_set_func(CONFIG_INGENIC_SPI1_PINMUX_PORT,
+			      CONFIG_INGENIC_SPI1_PINMUX_FUNC,
+			      CONFIG_INGENIC_SPI1_PINMUX_PINS);
+	}
+#endif
+}
+
+static void jz_spi_enable_clk(unsigned int bus)
+{
+	u32 clkgr;
+	u32 bit;
+
+	bit = bus ? CPM_CLKGR_SSI1 : CPM_CLKGR_SSI0;
+	clkgr = cpm_inl(CPM_CLKGR0);
+	clkgr &= ~bit;
+	cpm_outl(clkgr, CPM_CLKGR0);
+}
+
+static void jz_spi_disable_clk(unsigned int bus)
+{
+	u32 clkgr;
+	u32 bit;
+
+	bit = bus ? CPM_CLKGR_SSI1 : CPM_CLKGR_SSI0;
+	clkgr = cpm_inl(CPM_CLKGR0);
+	clkgr |= bit;
+	cpm_outl(clkgr, CPM_CLKGR0);
+}
+
+static int jz_spi_wait_sr(struct jz_spi_slave *ss, u32 mask, int expect_set,
+			  unsigned int timeout_us)
+{
+	unsigned int i;
+	u32 v = 0;
+
+	for (i = 0; i < timeout_us; i++) {
+		v = jz_spi_bus_readl(ss, SSI_SR);
+		if (!!(v & mask) == !!expect_set)
+			return 0;
+		udelay(1);
+	}
+
+	printf("jz_spi: wait timeout bus%u cs%u mask=0x%08x sr=0x%08x\n",
+	       ss->bus, ss->cs, mask, v);
+	return -ETIMEDOUT;
+}
+
+static void jz_spi_bus_flush(struct jz_spi_slave *ss)
+{
+	u32 cr0;
+
+	cr0 = jz_spi_bus_readl(ss, SSI_CR0);
+	cr0 |= SSI_CR0_TFLUSH | SSI_CR0_RFLUSH;
+	jz_spi_bus_writel(ss, cr0, SSI_CR0);
+}
+
+static void jz_spi_clear_errors(struct jz_spi_slave *ss)
+{
+	u32 sr;
+
+	sr = jz_spi_bus_readl(ss, SSI_SR);
+	sr &= ~(SSI_SR_UNDR | SSI_SR_OVER);
+	jz_spi_bus_writel(ss, sr, SSI_SR);
+}
+
+static void jz_spi_set_speed(struct jz_spi_slave *ss)
+{
+	unsigned int hz = ss->max_hz ? ss->max_hz : CONFIG_JZ_SPI_DEFAULT_HZ;
+	unsigned int src_hz = CONFIG_JZ_SPI_SRC_HZ;
+	unsigned int div;
+
+	clk_set_rate(SSI, src_hz);
+	div = (src_hz + (2 * hz) - 1) / (2 * hz);
+	if (div == 0)
+		div = 1;
+	if (div > (SSI_GR_MAX + 1))
+		div = SSI_GR_MAX + 1;
+
+	jz_spi_bus_writel(ss, div - 1, SSI_GR);
+}
+
+static void jz_spi_config_mode(struct jz_spi_slave *ss)
+{
+	u32 cr1;
+
+	cr1 = jz_spi_bus_readl(ss, SSI_CR1);
+	cr1 &= ~(SSI_CR1_PHA | SSI_CR1_POL | SSI_FRMHL_MASK);
+	cr1 |= SSI_GPCMD | SSI_GPCHL_HIGH | SSI_CR1_FLEN_8BIT;
+	cr1 |= SSI_CR1_TFVCK_3 | SSI_CR1_TCKFI_3;
+
+	if (ss->mode & SPI_CPHA)
+		cr1 |= SSI_CR1_PHA;
+	if (ss->mode & SPI_CPOL)
+		cr1 |= SSI_CR1_POL;
+
+	if (ss->cs)
+		cr1 |= (ss->mode & SPI_CS_HIGH) ?
+			SSI_FRMHL_CE0_LOW_CE1_HIGH :
+			SSI_FRMHL_CE0_HIGH_CE1_LOW;
+	else
+		cr1 |= (ss->mode & SPI_CS_HIGH) ?
+			SSI_FRMHL_CE0_HIGH_CE1_LOW :
+			SSI_FRMHL_CE0_LOW_CE1_HIGH;
+
+	jz_spi_bus_writel(ss, cr1, SSI_CR1);
+}
+
+static int jz_spi_enhanced_cs_enable(struct jz_spi_slave *ss)
+{
+	u32 cr1;
+
+	if (ss->cs_active)
+		return 0;
+
+	jz_spi_clear_errors(ss);
+	cr1 = jz_spi_bus_readl(ss, SSI_CR1);
+	cr1 |= SSI_CR1_UNFIN;
+	jz_spi_bus_writel(ss, cr1, SSI_CR1);
+	ss->cs_active = 1;
+	return 0;
+}
+
+static int jz_spi_enhanced_cs_disable(struct jz_spi_slave *ss)
+{
+	u32 cr1;
+	int ret;
+
+	if (!ss->cs_active)
+		return 0;
+
+	cr1 = jz_spi_bus_readl(ss, SSI_CR1);
+	cr1 &= ~SSI_CR1_UNFIN;
+	jz_spi_bus_writel(ss, cr1, SSI_CR1);
+	ss->cs_active = 0;
+	jz_spi_clear_errors(ss);
+
+	ret = jz_spi_wait_sr(ss, SSI_SR_END, 1, JZ_SPI_TIMEOUT_US);
+	if (ret)
+		return ret;
+
+	ret = jz_spi_wait_sr(ss, SSI_SR_BUSY, 0, JZ_SPI_TIMEOUT_US);
+	if (ret)
+		return ret;
+
+	jz_spi_bus_flush(ss);
+	return 0;
+}
+
+static int jz_spi_enhanced_claim_bus(struct jz_spi_slave *ss)
+{
+	u32 cr0;
+
+	if (!jz_spi_pinmux_done[ss->bus]) {
+		jz_spi_apply_default_pinmux(ss->bus);
+		jz_spi_pinmux_done[ss->bus] = 1;
+	}
+
+	jz_spi_enable_clk(ss->bus);
+
+	cr0 = jz_spi_bus_readl(ss, SSI_CR0);
+	cr0 &= ~SSI_CR0_SSIE;
+	jz_spi_bus_writel(ss, cr0, SSI_CR0);
+
+	cr0 |= SSI_CR0_EACLRUN;
+	jz_spi_bus_writel(ss, cr0, SSI_CR0);
+
+	jz_spi_set_speed(ss);
+	jz_spi_config_mode(ss);
+	jz_spi_bus_flush(ss);
+	jz_spi_clear_errors(ss);
+
+	cr0 = jz_spi_bus_readl(ss, SSI_CR0);
+	cr0 |= SSI_CR0_SSIE;
+	jz_spi_bus_writel(ss, cr0, SSI_CR0);
+
+	return 0;
+}
+
+static void jz_spi_enhanced_release_bus(struct jz_spi_slave *ss)
+{
+	u32 cr0;
+
+	if (ss->cs_active)
+		jz_spi_enhanced_cs_disable(ss);
+
+	cr0 = jz_spi_bus_readl(ss, SSI_CR0);
+	cr0 &= ~SSI_CR0_SSIE;
+	jz_spi_bus_writel(ss, cr0, SSI_CR0);
+	jz_spi_disable_clk(ss->bus);
+}
+
+static int jz_spi_enhanced_xfer(struct jz_spi_slave *ss, unsigned int bitlen,
+				const void *dout, void *din,
+				unsigned long flags)
+{
+	const u8 *tx = dout;
+	u8 *rx = din;
+	unsigned int len;
+	unsigned int tx_pos = 0;
+	unsigned int rx_pos = 0;
+	unsigned int idle = 0;
+	int ret = 0;
+
+	if (bitlen & 0x7)
+		return -EINVAL;
+
+	len = bitlen >> 3;
+
+	if (flags & SPI_XFER_BEGIN) {
+		ret = jz_spi_enhanced_cs_enable(ss);
+		if (ret)
+			return ret;
+		jz_spi_bus_flush(ss);
+	}
+
+	while (rx_pos < len) {
+		unsigned int moved = 0;
+		unsigned int tx_space;
+		unsigned int rx_count;
+		u32 sr;
+
+		sr = jz_spi_bus_readl(ss, SSI_SR);
+		if (tx_pos < len) {
+			unsigned int tx_count = jz_spi_txfifo_count(sr);
+
+			tx_space = tx_count < SSI_FIFO_SIZE ?
+				SSI_FIFO_SIZE - tx_count : 0;
+			while (tx_space && tx_pos < len) {
+				jz_spi_bus_writel(ss, tx ? tx[tx_pos] : 0,
+						  SSI_DR);
+				tx_pos++;
+				tx_space--;
+				moved = 1;
+			}
+		}
+
+		sr = jz_spi_bus_readl(ss, SSI_SR);
+		rx_count = jz_spi_rxfifo_count(sr);
+		if (!rx_count && !(sr & SSI_SR_RFE))
+			rx_count = 1;
+
+		while (rx_count && rx_pos < len) {
+			u8 val = (u8)jz_spi_bus_readl(ss, SSI_DR);
+
+			if (rx)
+				rx[rx_pos] = val;
+			rx_pos++;
+			rx_count--;
+			moved = 1;
+		}
+
+		if (moved) {
+			idle = 0;
+			continue;
+		}
+
+		if (++idle > JZ_SPI_TIMEOUT_US) {
+			printf("jz_spi: xfer timeout bus%u cs%u pos=%u len=%u sr=0x%08x\n",
+			       ss->bus, ss->cs, rx_pos, len,
+			       jz_spi_bus_readl(ss, SSI_SR));
+			ret = -ETIMEDOUT;
+			break;
+		}
+		udelay(1);
+	}
+
+	if (flags & SPI_XFER_END) {
+		int cs_ret;
+
+		if (len)
+			udelay(JZ_SPI_CS_END_DELAY_US);
+		cs_ret = jz_spi_enhanced_cs_disable(ss);
+		jz_spi_clear_errors(ss);
+		if (!ret)
+			ret = cs_ret;
+	}
+
+	return ret;
+}
+#endif
 
 static void jz_spi_flush(void )
 {
@@ -200,8 +552,16 @@ void spi_recv_cmd(unsigned char *read_buf, unsigned int count)
 struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 		unsigned int max_hz, unsigned int mode)
 {
-	spi_init();
 	struct jz_spi_slave *ss;
+
+#ifndef CONFIG_INGENIC_SPI
+	spi_init();
+#else
+	if (bus > JZ_SPI_MAX_BUS || cs > JZ_SPI_MAX_CS) {
+		printf("jz_spi: invalid bus/cs (%u/%u)\n", bus, cs);
+		return NULL;
+	}
+#endif
 
 	ss = spi_alloc_slave(struct jz_spi_slave, bus, cs);
 	if (!ss)
@@ -209,6 +569,11 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 
 	ss->mode = mode;
 	ss->max_hz = max_hz;
+#ifdef CONFIG_INGENIC_SPI
+	ss->bus = bus;
+	ss->cs = cs;
+	ss->base = jz_spi_base(bus);
+#endif
 
 	return &ss->slave;
 }
@@ -222,19 +587,39 @@ void spi_free_slave(struct spi_slave *slave)
 
 int spi_claim_bus(struct spi_slave *slave)
 {
+#ifdef CONFIG_INGENIC_SPI
+	if (!slave)
+		return -EINVAL;
+
+	return jz_spi_enhanced_claim_bus(to_jz_spi(slave));
+#else
 	jz_spi_writel(jz_spi_readl(SSI_CR1) | SSI_CR1_UNFIN, SSI_CR1);
 	return 0;
+#endif
 }
 
 void spi_release_bus(struct spi_slave *slave)
 {
+#ifdef CONFIG_INGENIC_SPI
+	if (!slave)
+		return;
+
+	jz_spi_enhanced_release_bus(to_jz_spi(slave));
+#else
 	jz_spi_writel(jz_spi_readl(SSI_CR1) & (~SSI_CR1_UNFIN), SSI_CR1);
 	jz_spi_writel(jz_spi_readl(SSI_SR) & (~SSI_SR_UNDR) , SSI_SR);
+#endif
 }
 
 int  spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 		const void *dout, void *din, unsigned long flags)
 {
+#ifdef CONFIG_INGENIC_SPI
+	if (!slave)
+		return -EINVAL;
+
+	return jz_spi_enhanced_xfer(to_jz_spi(slave), bitlen, dout, din, flags);
+#else
 	unsigned int count = bitlen / 8;
 	unsigned char *cmd = (unsigned char *)dout;
 	unsigned char *addr = din;
@@ -258,15 +643,23 @@ int  spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	}
 
 	return 0;
+#endif
 }
 
 void jz_cs_reversal(void )
 {
+#ifdef CONFIG_INGENIC_SPI
+	jz_spi_writel(jz_spi_readl(SSI_CR1) & (~SSI_CR1_UNFIN), SSI_CR1);
+	jz_spi_writel(jz_spi_readl(SSI_SR) & (~SSI_SR_UNDR), SSI_SR);
+	udelay(1);
+	jz_spi_writel(jz_spi_readl(SSI_CR1) | SSI_CR1_UNFIN, SSI_CR1);
+#else
 	spi_release_bus(NULL);
 
 	udelay(1);
 
 	spi_claim_bus(NULL);
+#endif
 
 	return ;
 }
@@ -1139,4 +1532,3 @@ void spl_spi_load_image(void)
 #endif
 }
 #endif
-
