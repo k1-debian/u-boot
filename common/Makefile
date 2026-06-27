@@ -211,6 +211,12 @@ COBJS-$(CONFIG_CMD_TPM) += cmd_tpm.o
 ifdef CONFIG_TPM_TIS_SPI
 COBJS-$(CONFIG_CMD_TPM_TIS_SPI) += cmd_tpm_tis_spi.o
 endif
+ifdef CONFIG_TPM_TIS_SPI
+ifdef CONFIG_SECURE_PROVISION
+COBJS-$(CONFIG_SECURE_PROVISION) += secure_provision.o
+COBJS-$(CONFIG_CMD_SECUREPROV) += cmd_secureprov.o
+endif
+endif
 COBJS-$(CONFIG_CMD_TSI148) += cmd_tsi148.o
 COBJS-$(CONFIG_CMD_UBI) += cmd_ubi.o
 COBJS-$(CONFIG_CMD_UBIFS) += cmd_ubifs.o

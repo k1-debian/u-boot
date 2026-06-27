@@ -63,7 +63,11 @@
 #define TPM2_CC_SEQUENCE_COMPLETE      0x0000013e
 #define TPM2_CC_STARTUP                0x00000144
 #define TPM2_CC_FLUSH_CONTEXT          0x00000165
+#define TPM2_CC_NV_DEFINE_SPACE        0x0000012a
+#define TPM2_CC_NV_UNDEFINE_SPACE      0x00000122
+#define TPM2_CC_NV_WRITE               0x00000137
 #define TPM2_CC_NV_READ                0x0000014e
+#define TPM2_CC_NV_READ_PUBLIC         0x00000169
 #define TPM2_CC_LOAD_EXTERNAL          0x00000167
 #define TPM2_CC_VERIFY_SIGNATURE       0x00000177
 #define TPM2_SU_CLEAR                  0x0000
@@ -104,6 +108,7 @@
 
 #define TPM_TIS_SPI_POLICY_PUBKEY_OFFSET      0x004c
 #define TPM_TIS_SPI_POLICY_PUBKEY_SIZE        65
+#define TPM_TIS_SPI_NV_RW_CHUNK               512
 
 struct tpm_tis_spi_context {
 	struct spi_slave *slave;
@@ -777,7 +782,7 @@ static int tpm_tis_spi_submit(struct tpm_tis_spi_context *ctx,
 			goto out;
 		}
 		printf("TPM_TIS_SPI: TPM command failed cc=0x%08x rc=0x%08x\n", cc, rc_code);
-		if (cc == TPM2_CC_NV_READ &&
+		if ((cc == TPM2_CC_NV_READ || cc == TPM2_CC_NV_READ_PUBLIC) &&
 		    (rc_code == TPM2_RC_NV_UNDEFINED_1 ||
 		     rc_code == TPM2_RC_NV_UNDEFINED_0 ||
 		     rc_code == TPM2_RC_NV_UNDEFINED_2 ||
@@ -1060,6 +1065,391 @@ static int tpm_tis_spi_nv_read(struct tpm_tis_spi_context *ctx, u32 auth_handle,
 
 	memcpy(data, &rsp[parameter_offset + 2], out_len);
 	return 0;
+}
+
+/*
+ * Define a TPM2 NV index with an empty NV auth and empty authPolicy.
+ *
+ * The command layout follows the Linux tpm2-cmd.c pattern: handles first,
+ * then a password session auth area, then command parameters.
+ */
+static int tpm_tis_spi_nv_define_space_ctx(struct tpm_tis_spi_context *ctx,
+					  u32 auth_handle, u32 nv_index,
+					  u16 size, u32 attrs)
+{
+	u8 cmd[96];
+	u8 rsp[64];
+	u32 rsp_len;
+	u32 off = 0;
+	int rc;
+
+	if (!size)
+		return -EINVAL;
+
+	tpm_tis_spi_put_u16_be(&cmd[off], TPM2_ST_SESSIONS);
+	off += 2;
+	off += 4; /* commandSize */
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_CC_NV_DEFINE_SPACE);
+	off += 4;
+
+	tpm_tis_spi_put_u32_be(&cmd[off], auth_handle);
+	off += 4;
+
+	tpm_tis_spi_put_u32_be(&cmd[off], 9);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_RS_PW);
+	off += 4;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0);
+	off += 2;
+	cmd[off++] = 0x00;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0);
+	off += 2;
+
+	tpm_tis_spi_put_u16_be(&cmd[off], 0); /* TPM2B_AUTH userAuth */
+	off += 2;
+
+	/* TPM2B_NV_PUBLIC: size + nvPublic with empty authPolicy. */
+	tpm_tis_spi_put_u16_be(&cmd[off], 14);
+	off += 2;
+	tpm_tis_spi_put_u32_be(&cmd[off], nv_index);
+	off += 4;
+	tpm_tis_spi_put_u16_be(&cmd[off], TPM2_ALG_SM3_256);
+	off += 2;
+	tpm_tis_spi_put_u32_be(&cmd[off], attrs);
+	off += 4;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0); /* authPolicy */
+	off += 2;
+	tpm_tis_spi_put_u16_be(&cmd[off], size);
+	off += 2;
+
+	tpm_tis_spi_put_u32_be(&cmd[2], off);
+
+	rc = tpm_tis_spi_submit(ctx, cmd, off, rsp, &rsp_len, sizeof(rsp));
+	if (rc)
+		return rc;
+	if (rsp_len < 10)
+		return -EPROTO;
+
+	return 0;
+}
+
+/*
+ * Undefine an existing NV index using the same hierarchy authorization that
+ * created it.  This is needed for WRITEDEFINE indexes whose content is already
+ * written and cannot be changed by a second TPM2_NV_Write.
+ */
+static int tpm_tis_spi_nv_undefine_space_ctx(struct tpm_tis_spi_context *ctx,
+					     u32 auth_handle, u32 nv_index)
+{
+	u8 cmd[64];
+	u8 rsp[64];
+	u32 rsp_len;
+	u32 off = 0;
+	int rc;
+
+	tpm_tis_spi_put_u16_be(&cmd[off], TPM2_ST_SESSIONS);
+	off += 2;
+	off += 4; /* commandSize */
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_CC_NV_UNDEFINE_SPACE);
+	off += 4;
+
+	tpm_tis_spi_put_u32_be(&cmd[off], auth_handle);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[off], nv_index);
+	off += 4;
+
+	tpm_tis_spi_put_u32_be(&cmd[off], 9);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_RS_PW);
+	off += 4;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0);
+	off += 2;
+	cmd[off++] = 0x00;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0);
+	off += 2;
+
+	tpm_tis_spi_put_u32_be(&cmd[2], off);
+
+	rc = tpm_tis_spi_submit(ctx, cmd, off, rsp, &rsp_len, sizeof(rsp));
+	if (rc)
+		return rc;
+	if (rsp_len < 10)
+		return -EPROTO;
+
+	return 0;
+}
+
+static int tpm_tis_spi_nv_read_public_ctx(struct tpm_tis_spi_context *ctx,
+					  u32 nv_index, u16 *data_size,
+					  u32 *attrs)
+{
+	u8 cmd[32];
+	u8 rsp[256];
+	u32 rsp_len;
+	u32 off = 0;
+	u32 public_off;
+	u16 total;
+	u16 policy_len;
+	int rc;
+
+	tpm_tis_spi_put_u16_be(&cmd[off], TPM2_ST_NO_SESSIONS);
+	off += 2;
+	off += 4; /* commandSize */
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_CC_NV_READ_PUBLIC);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[off], nv_index);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[2], off);
+
+	rc = tpm_tis_spi_submit(ctx, cmd, off, rsp, &rsp_len, sizeof(rsp));
+	if (rc)
+		return rc;
+	if (rsp_len < 10 + 2)
+		return -EPROTO;
+
+	total = tpm_tis_spi_get_u16_be(&rsp[10]);
+	if (total < 14 || rsp_len < 10 + 2 + total)
+		return -EPROTO;
+
+	public_off = 12;
+	if (tpm_tis_spi_get_u32_be(&rsp[public_off]) != nv_index)
+		return -EPROTO;
+	if (attrs)
+		*attrs = tpm_tis_spi_get_u32_be(&rsp[public_off + 6]);
+
+	policy_len = tpm_tis_spi_get_u16_be(&rsp[public_off + 10]);
+	if (14 + policy_len > total)
+		return -EPROTO;
+	if (data_size)
+		*data_size = tpm_tis_spi_get_u16_be(&rsp[public_off + 12 + policy_len]);
+
+	return 0;
+}
+
+/*
+ * Write one TPM2B_MAX_NV_BUFFER chunk to an NV index.
+ */
+static int tpm_tis_spi_nv_write(struct tpm_tis_spi_context *ctx, u32 auth_handle,
+			       u32 nv_index, u16 offset_in, const u8 *data,
+			       u16 data_len)
+{
+	u8 cmd[TPM_TIS_SPI_NV_RW_CHUNK + 64];
+	u8 rsp[64];
+	u32 rsp_len;
+	u32 off = 0;
+	int rc;
+
+	if (!data || !data_len || data_len > TPM_TIS_SPI_NV_RW_CHUNK)
+		return -EINVAL;
+
+	tpm_tis_spi_put_u16_be(&cmd[off], TPM2_ST_SESSIONS);
+	off += 2;
+	off += 4; /* commandSize */
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_CC_NV_WRITE);
+	off += 4;
+
+	tpm_tis_spi_put_u32_be(&cmd[off], auth_handle);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[off], nv_index);
+	off += 4;
+
+	tpm_tis_spi_put_u32_be(&cmd[off], 9);
+	off += 4;
+	tpm_tis_spi_put_u32_be(&cmd[off], TPM2_RS_PW);
+	off += 4;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0);
+	off += 2;
+	cmd[off++] = 0x00;
+	tpm_tis_spi_put_u16_be(&cmd[off], 0);
+	off += 2;
+
+	tpm_tis_spi_put_u16_be(&cmd[off], data_len);
+	off += 2;
+	memcpy(&cmd[off], data, data_len);
+	off += data_len;
+	tpm_tis_spi_put_u16_be(&cmd[off], offset_in);
+	off += 2;
+
+	tpm_tis_spi_put_u32_be(&cmd[2], off);
+
+	rc = tpm_tis_spi_submit(ctx, cmd, off, rsp, &rsp_len, sizeof(rsp));
+	if (rc)
+		return rc;
+	if (rsp_len < 10)
+		return -EPROTO;
+
+	return 0;
+}
+
+static int tpm_tis_spi_prepare(struct tpm_tis_spi_context *ctx, const char *who)
+{
+	int rc;
+
+	rc = tpm_tis_spi_open(ctx);
+	if (rc) {
+		tpm_tis_spi_stage_fail(who, "spi_open", rc);
+		return rc;
+	}
+
+	rc = tpm_tis_spi_tis_request_locality(ctx);
+	if (rc) {
+		tpm_tis_spi_stage_fail(who, "request_locality", rc);
+		tpm_tis_spi_close(ctx);
+		return rc;
+	}
+
+	rc = tpm_tis_spi_startup(ctx);
+	if (rc) {
+		tpm_tis_spi_stage_fail(who, "startup", rc);
+		(void)tpm_tis_spi_tis_release_locality(ctx);
+		tpm_tis_spi_close(ctx);
+		return rc;
+	}
+
+	return 0;
+}
+
+static void tpm_tis_spi_unprepare(struct tpm_tis_spi_context *ctx)
+{
+	(void)tpm_tis_spi_tis_release_locality(ctx);
+	tpm_tis_spi_close(ctx);
+}
+
+int tpm_tis_spi_nv_define_space(u32 auth_handle, u32 nv_index,
+				u16 size, u32 attrs)
+{
+	struct tpm_tis_spi_context *ctx = &g_tpm_tis_spi_ctx;
+	int rc;
+
+	rc = tpm_tis_spi_prepare(ctx, "nv-define");
+	if (rc)
+		return rc;
+
+	rc = tpm_tis_spi_nv_define_space_ctx(ctx, auth_handle, nv_index,
+					     size, attrs);
+	if (rc)
+		tpm_tis_spi_stage_fail("nv-define", "define_space", rc);
+
+	tpm_tis_spi_unprepare(ctx);
+	return rc;
+}
+
+int tpm_tis_spi_nv_undefine_space(u32 auth_handle, u32 nv_index)
+{
+	struct tpm_tis_spi_context *ctx = &g_tpm_tis_spi_ctx;
+	int rc;
+
+	rc = tpm_tis_spi_prepare(ctx, "nv-undefine");
+	if (rc)
+		return rc;
+
+	rc = tpm_tis_spi_nv_undefine_space_ctx(ctx, auth_handle, nv_index);
+	if (rc)
+		tpm_tis_spi_stage_fail("nv-undefine", "undefine_space", rc);
+
+	tpm_tis_spi_unprepare(ctx);
+	return rc;
+}
+
+int tpm_tis_spi_nv_read_full(u32 auth_handle, u32 nv_index,
+			     u8 *data, u16 data_len)
+{
+	struct tpm_tis_spi_context *ctx = &g_tpm_tis_spi_ctx;
+	u16 offset = 0;
+	u16 chunk;
+	int rc;
+
+	if (!data || !data_len)
+		return -EINVAL;
+
+	rc = tpm_tis_spi_prepare(ctx, "nv-read");
+	if (rc)
+		return rc;
+
+	while (offset < data_len) {
+		chunk = data_len - offset;
+		if (chunk > 64)
+			chunk = 64;
+
+		rc = tpm_tis_spi_nv_read(ctx, auth_handle, nv_index,
+					 offset, data + offset, chunk);
+		if (rc) {
+			if (rc != -ENOENT)
+				tpm_tis_spi_stage_fail("nv-read", "read", rc);
+			break;
+		}
+		offset += chunk;
+	}
+
+	tpm_tis_spi_unprepare(ctx);
+	return rc;
+}
+
+int tpm_tis_spi_nv_write_full(u32 auth_handle, u32 nv_index,
+			      const u8 *data, u16 data_len)
+{
+	struct tpm_tis_spi_context *ctx = &g_tpm_tis_spi_ctx;
+	u16 offset = 0;
+	u16 chunk;
+	int rc;
+
+	if (!data || !data_len)
+		return -EINVAL;
+
+	rc = tpm_tis_spi_prepare(ctx, "nv-write");
+	if (rc)
+		return rc;
+
+	while (offset < data_len) {
+		chunk = data_len - offset;
+		if (chunk > TPM_TIS_SPI_NV_RW_CHUNK)
+			chunk = TPM_TIS_SPI_NV_RW_CHUNK;
+
+		rc = tpm_tis_spi_nv_write(ctx, auth_handle, nv_index,
+					  offset, data + offset, chunk);
+		if (rc) {
+			tpm_tis_spi_stage_fail("nv-write", "write", rc);
+			break;
+		}
+		offset += chunk;
+	}
+
+	tpm_tis_spi_unprepare(ctx);
+	return rc;
+}
+
+int tpm_tis_spi_nv_index_defined(u32 nv_index)
+{
+	struct tpm_tis_spi_context *ctx = &g_tpm_tis_spi_ctx;
+	int rc;
+
+	rc = tpm_tis_spi_prepare(ctx, "nv-read-public");
+	if (rc)
+		return rc;
+
+	rc = tpm_tis_spi_nv_read_public_ctx(ctx, nv_index, NULL, NULL);
+	if (rc && rc != -ENOENT)
+		tpm_tis_spi_stage_fail("nv-read-public", "read_public", rc);
+
+	tpm_tis_spi_unprepare(ctx);
+	return rc;
+}
+
+int tpm_tis_spi_nv_read_public(u32 nv_index, u16 *data_size, u32 *attrs)
+{
+	struct tpm_tis_spi_context *ctx = &g_tpm_tis_spi_ctx;
+	int rc;
+
+	rc = tpm_tis_spi_prepare(ctx, "nv-read-public");
+	if (rc)
+		return rc;
+
+	rc = tpm_tis_spi_nv_read_public_ctx(ctx, nv_index, data_size, attrs);
+	if (rc && rc != -ENOENT)
+		tpm_tis_spi_stage_fail("nv-read-public", "read_public", rc);
+
+	tpm_tis_spi_unprepare(ctx);
+	return rc;
 }
 
 /*

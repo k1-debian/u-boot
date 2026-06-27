@@ -50,12 +50,6 @@
 #ifndef CONFIG_VERITY_TRUST_BOOTCMD
 #error "CONFIG_VERITY_TRUST_BOOTCMD must be defined"
 #endif
-#ifndef CONFIG_VERITY_TRUST_FALLBACK_BOOTARGS
-#error "CONFIG_VERITY_TRUST_FALLBACK_BOOTARGS must be defined"
-#endif
-#ifndef CONFIG_VERITY_TRUST_FALLBACK_BOOTCMD
-#error "CONFIG_VERITY_TRUST_FALLBACK_BOOTCMD must be defined"
-#endif
 #ifndef CONFIG_VERITY_TRUST_NV_AUTH
 #define CONFIG_VERITY_TRUST_NV_AUTH  0x4000000C
 #endif
@@ -84,14 +78,6 @@ static void bytes_to_hex(const u8 *data, unsigned int len,
 		hex[i * 2 + 1] = lut[data[i] & 0xf];
 	}
 	hex[len * 2] = '\0';
-}
-
-/* Boot the unsigned normal rootfs used only for first-time TPM_TIS_SPI setup. */
-static int verity_trust_boot_normal_rootfs(void)
-{
-	printf("TRUSTBOOT: TPM_TIS_SPI policy undefined, booting normal rootfs\n");
-	setenv("bootargs", CONFIG_VERITY_TRUST_FALLBACK_BOOTARGS);
-	return run_command(CONFIG_VERITY_TRUST_FALLBACK_BOOTCMD, 0);
 }
 
 /* ---- metadata I/O ---- */
@@ -441,7 +427,7 @@ int verity_trust_boot_trusted(u32 nv_index, u32 auth_handle)
  * Automatic trustboot entry point used by the U-Boot trustboot command.
  *
  *   - configured policy NV  -> trusted boot
- *   - undefined policy NV   -> normal rootfs for provisioning
+ *   - undefined policy NV   -> abort, require explicit secure provisioning
  *   - invalid/error         -> abort
  */
 int verity_trust_auto_boot(void)
@@ -453,12 +439,16 @@ int verity_trust_auto_boot(void)
 	verity_trust_get_nv_auth_from_env(&nv_index, &auth_handle);
 
 	ret = verity_trust_policy_probe(nv_index, auth_handle);
-	if (ret == TPM_TIS_SPI_POLICY_NV_UNDEFINED)
-		return verity_trust_boot_normal_rootfs();
 	if (ret == TPM_TIS_SPI_POLICY_NV_CONFIGURED)
 		return verity_trust_boot_trusted(nv_index, auth_handle);
+	if (ret == TPM_TIS_SPI_POLICY_NV_UNDEFINED) {
+		printf("TRUSTBOOT: TPM_TIS_SPI policy undefined, abort boot\n");
+		printf("TRUSTBOOT: run 'secureprov embedded', then run 'reset'\n");
+		return CMD_RET_FAILURE;
+	}
 	if (ret == TPM_TIS_SPI_POLICY_NV_INVALID) {
 		printf("TRUSTBOOT: TPM_TIS_SPI policy invalid, abort\n");
+		printf("TRUSTBOOT: inspect NV state; run 'secureprov embedded', then run 'reset' if provisioning is required\n");
 		return CMD_RET_FAILURE;
 	}
 

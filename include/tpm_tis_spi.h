@@ -19,6 +19,15 @@
 #define TPM_TIS_SPI_POLICY_NV_INVALID    2
 
 int tpm_tis_spi_probe(u32 *did_vid, u8 *rid);
+int tpm_tis_spi_nv_define_space(u32 auth_handle, u32 nv_index,
+				u16 size, u32 attrs);
+int tpm_tis_spi_nv_undefine_space(u32 auth_handle, u32 nv_index);
+int tpm_tis_spi_nv_read_full(u32 auth_handle, u32 nv_index,
+			     u8 *data, u16 data_len);
+int tpm_tis_spi_nv_write_full(u32 auth_handle, u32 nv_index,
+			      const u8 *data, u16 data_len);
+int tpm_tis_spi_nv_index_defined(u32 nv_index);
+int tpm_tis_spi_nv_read_public(u32 nv_index, u16 *data_size, u32 *attrs);
 int tpm_tis_spi_hash_sm3_mem(ulong addr, ulong len, u8 digest[TPM_TIS_SPI_DIGEST_SIZE]);
 int tpm_tis_spi_verify_mem_with_hex(ulong addr, ulong len, const char *hex_digest);
 int tpm_tis_spi_verify_mem_with_env(ulong addr, ulong len, const char *env_name);
