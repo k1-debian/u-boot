@@ -298,6 +298,13 @@ else
 LIBS-y += drivers/scboot/jz_sec_v1/libscboot.o
 endif
 endif
+ifdef CONFIG_JZ_VERDOR_BURN_FUNCTION
+ifdef CONFIG_TPM_TIS_SPI
+ifdef CONFIG_SECURE_PROVISION
+LIBS-y += drivers/scboot/ext_secure_provision/libext_secure_provision.o
+endif
+endif
+endif
 LIBS-y += drivers/hwmon/libhwmon.o
 LIBS-y += drivers/i2c/libi2c.o
 LIBS-y += drivers/pwm/libpwm.o

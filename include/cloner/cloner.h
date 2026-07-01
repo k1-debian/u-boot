@@ -156,6 +156,7 @@ enum medium_type {
 	EFUSE,
 	REGISTER,
 	SPISFC,
+	SEC_KEY,
 	EXT_POL,
 };
 

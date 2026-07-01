@@ -35,6 +35,10 @@
 #include "cloner/cloner_moudle.h"
 #include <asm/usb_boot.h>
 
+#if defined(CONFIG_TPM_TIS_SPI) && defined(CONFIG_SECURE_PROVISION)
+#include "../../scboot/ext_secure_provision/ext_secure_provision.h"
+#endif
+
 #ifdef CONFIG_JZ_SCBOOT
 #if defined(CONFIG_X2000_V12) || defined(CONFIG_X2100) || defined(CONFIG_M300)
 #include "../../scboot/jz_sec_v2/otp.h"
@@ -417,6 +421,26 @@ void handle_write(struct usb_ep *ep,struct usb_request *req)
 					cloner->ack = -ENODEV;
 				}
 			}
+			break;
+		case OPS(SEC_KEY,0):
+#if defined(CONFIG_TPM_TIS_SPI) && defined(CONFIG_SECURE_PROVISION)
+			if (!length) {
+				LOG_ERROR("trust provision length is zero\n");
+				cloner->ack = -EINVAL;
+				break;
+			}
+			if (length > EXT_SECURE_PROVISION_MAX_PACKAGE_SIZE) {
+				LOG_ERROR("trust provision length too large: %u > %u\n",
+					  length,
+					  (unsigned int)EXT_SECURE_PROVISION_MAX_PACKAGE_SIZE);
+				cloner->ack = -EINVAL;
+				break;
+			}
+			cloner->ack = ext_secure_provision_apply_package(addr, length);
+#else
+			LOG_ERROR("trust provision: feature is not enabled\n");
+			cloner->ack = -ENOSYS;
+#endif
 			break;
 #ifdef CONFIG_JZ_SCBOOT
 		case OPS_BURN_CUSTID:

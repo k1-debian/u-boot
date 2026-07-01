@@ -14,7 +14,7 @@ extern unsigned int ssi_rate;
 #ifdef CONFIG_MTD_SFCNAND
 #include "cloner_sfcnand.c"
 #endif
-#ifdef CONFIG_JZ_SPI
+#if defined(CONFIG_JZ_SPI) && defined(CONFIG_SPI_FLASH)
 extern unsigned int ssi_rate;
 #include "cloner_spinor.c"
 #endif
@@ -84,7 +84,7 @@ int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 		mtd_spinand_probe_burner();
 	}
 #endif
-#ifdef CONFIG_JZ_SPI
+#if defined(CONFIG_JZ_SPI) && defined(CONFIG_SPI_FLASH)
 	ssi_rate = CONFIG_SPI_RATE;
 	if(policy_args->use_spi_nor){
 		if (spi_args->spi_erase) {
@@ -100,7 +100,7 @@ int clmd_sfc_write(struct cloner *cloner, int sub_type, void *ops_data)
 	int ret = 0;
 	switch(sub_type)
 	{
-#ifdef CONFIG_JZ_SPI
+#if defined(CONFIG_JZ_SPI) && defined(CONFIG_SPI_FLASH)
 		case SPI_NOR:
 			ret = spi_program(cloner);
 			break;
@@ -149,7 +149,7 @@ static int32_t clmd_sfc_read(struct cloner *cloner, int sub_type, void *ops_data
 
 	switch(sub_type)
 	{
-#ifdef CONFIG_JZ_SPI
+#if defined(CONFIG_JZ_SPI) && defined(CONFIG_SPI_FLASH)
 		case SPI_NOR:
 			ret = spinor_read(cloner);
 			break;
