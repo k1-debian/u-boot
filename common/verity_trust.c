@@ -443,12 +443,12 @@ int verity_trust_auto_boot(void)
 		return verity_trust_boot_trusted(nv_index, auth_handle);
 	if (ret == TPM_TIS_SPI_POLICY_NV_UNDEFINED) {
 		printf("TRUSTBOOT: TPM_TIS_SPI policy undefined, abort boot\n");
-		printf("TRUSTBOOT: run 'secureprov embedded', then run 'reset'\n");
+		printf("TRUSTBOOT: burn trust-provision.pkg, then press reset\n");
 		return CMD_RET_FAILURE;
 	}
 	if (ret == TPM_TIS_SPI_POLICY_NV_INVALID) {
 		printf("TRUSTBOOT: TPM_TIS_SPI policy invalid, abort\n");
-		printf("TRUSTBOOT: inspect NV state; run 'secureprov embedded', then run 'reset' if provisioning is required\n");
+		printf("TRUSTBOOT: inspect NV state; burn trust-provision.pkg if provisioning is required, then press reset\n");
 		return CMD_RET_FAILURE;
 	}
 
