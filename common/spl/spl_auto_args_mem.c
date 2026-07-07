@@ -51,7 +51,7 @@ static char *add_mem(char *str, char *tag,
 {
 	if (size == 0)
 		return str;
-	if (start != 0) 
+	if (start != 0)
 		str += string_copy(str, " ", 1);
 	str += string_copy(str, tag, strlen(tag));
 	str += int_to_string(str, size, 10);
@@ -146,6 +146,42 @@ static char* process_mem_bootargs(char *cmdargs, int ram_size)
 	return cmdargs;
 }
 
+unsigned int spl_get_bootargs_mem_start(const char *cmdargs, const char *name)
+{
+	unsigned int name_len;
+	const char *pos;
+
+	if (!cmdargs || !name)
+		return 0;
+
+	name_len = strlen(name);
+	if (!name_len)
+		return 0;
+
+	pos = cmdargs;
+	while ((pos = strstr(pos, name)) != NULL) {
+		const char *addr, *end;
+
+		if (pos != cmdargs && pos[-1] != ' ') {
+			pos += name_len;
+			continue;
+		}
+
+		if (pos[name_len] != '=') {
+			pos += name_len;
+			continue;
+		}
+
+		end = strchr(pos, ' ');
+		addr = strchr(pos + name_len + 1, '@');
+		if (!addr || (end && addr > end))
+			return 0;
+
+		return simple_strtoul(addr + 1, NULL, 16);
+	}
+
+	return 0;
+}
 
 extern unsigned int get_ddr_size(void);
 
