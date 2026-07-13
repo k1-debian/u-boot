@@ -327,6 +327,8 @@ void handle_read(struct cloner *cloner)
 			break;
 		default:
 			cloner->ack = clmg_read(cloner);
+			if (cloner->ack > 0)
+				length = cloner->ack;
 			break;
 	}
 

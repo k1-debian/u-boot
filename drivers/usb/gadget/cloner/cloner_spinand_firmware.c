@@ -5,7 +5,6 @@
 #include <cloner/cloner.h>
 #include "cloner_moudle.h"
 
-#define FMW_SIZE_MAX	512
 
 struct sn_config {
 
@@ -23,6 +22,9 @@ struct license_config {
 	uint32_t license_len;
 	uint32_t crc_val;
 };
+
+#define SN_DATA_SIZE_MAX	(CONFIG_SN_SIZE - sizeof(struct sn_config))
+#define LICENSE_DATA_SIZE_MAX	(CONFIG_LICENSE_SIZE - sizeof(struct license_config))
 
 static int32_t firmware_buf_compare(uint8_t *wbuf, uint8_t *rbuf, uint32_t len) {
 
@@ -150,6 +152,12 @@ int32_t spinand_license_program(struct cloner *cloner) {
 	};
 	int32_t ret = 0;
 
+	if (license.license_len > LICENSE_DATA_SIZE_MAX) {
+		LOG_ERROR("license data too large: %u > %u\n",
+			license.license_len, (unsigned int)LICENSE_DATA_SIZE_MAX);
+		return -EINVAL;
+	}
+
 	if (!spi_args->reserve_space) {
 		LOG_ERROR("reserved space is disabled!\n");
 		return -EACCES;
@@ -185,7 +193,7 @@ int32_t spinand_license_read(struct cloner *cloner) {
 
 	struct mtd_info *mtd = (void *)nand_info;
 	struct license_config license;
-	uint32_t read_off = mtd->size + CONFIG_MAC_SIZE + CONFIG_LICENSE_SIZE;
+	uint32_t read_off = mtd->size + CONFIG_MAC_SIZE + CONFIG_SN_SIZE;
 	int32_t ret = 0, i = 0;
 	void *buf = cloner->read_req->buf;
 
@@ -207,7 +215,7 @@ int32_t spinand_license_read(struct cloner *cloner) {
 
 	if(license.license_len == -1 ||
 	    license.crc_val == -1 ||
-	    license.license_len >= FMW_SIZE_MAX) {
+	    license.license_len > LICENSE_DATA_SIZE_MAX) {
 		LOG_ERROR("license data error!\n");
 		return -EINVAL;
 	}
@@ -242,6 +250,12 @@ int32_t spinand_sn_program(struct cloner *cloner) {
 		.crc_val = cloner->cmd->write.crc,
 	};
 	int32_t ret = 0;
+
+	if (sn.sn_len > SN_DATA_SIZE_MAX) {
+		LOG_ERROR("sn data too large: %u > %u\n",
+			sn.sn_len, (unsigned int)SN_DATA_SIZE_MAX);
+		return -EINVAL;
+	}
 
 	if (!spi_args->reserve_space) {
 		LOG_ERROR("reserved space is disabled!\n");
@@ -300,7 +314,7 @@ int32_t spinand_sn_read(struct cloner *cloner) {
 
 	if(sn.sn_len == -1 ||
 	    sn.crc_val == -1 ||
-	    sn.sn_len >= FMW_SIZE_MAX) {
+	    sn.sn_len > SN_DATA_SIZE_MAX) {
 		LOG_ERROR("sn data error!\n");
 		return -EINVAL;
 	}
@@ -334,6 +348,11 @@ int32_t spinand_mac_program(struct cloner *cloner) {
 		.crc_val = cloner->cmd->write.crc,
 	};
 	int32_t ret = 0;
+
+	if (mac.mac_len != 12) {
+		LOG_ERROR("mac data length error: %u\n", mac.mac_len);
+		return -EINVAL;
+	}
 
 	if (!spi_args->reserve_space) {
 		LOG_ERROR("reserved space is disabled!\n");
@@ -389,8 +408,7 @@ int32_t spinand_mac_read(struct cloner *cloner) {
 	}
 
 	if(mac.mac_len != 12 ||
-		mac.crc_val == -1 ||
-		mac.mac_len >= FMW_SIZE_MAX) {
+		mac.crc_val == -1) {
 		LOG_ERROR("mac data error!\n");
 		return -EINVAL;
 	}
@@ -408,7 +426,7 @@ int32_t spinand_mac_read(struct cloner *cloner) {
 		read_off += mtd->erasesize;
 	}
 
-	if(i == CONFIG_SN_SIZE / mtd->erasesize) {
+	if(i == CONFIG_MAC_SIZE / mtd->erasesize) {
 		LOG_ERROR("%s %s %d: read mac failed!\n",
 			__FILE__, __func__, __LINE__);
 		return -EIO;

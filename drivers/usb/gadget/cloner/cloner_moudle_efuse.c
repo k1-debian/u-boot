@@ -6,8 +6,8 @@ static int enabled = 0;
 
 static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_data)
 {
+	off_t offset;
 	int ret = 0;
-	u32 id = cloner->cmd->read.offset;
 	void *addr = (void *)cloner->read_req->buf;
 	u32 length = cloner->read_req->length;
 
@@ -20,7 +20,8 @@ static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_da
 		enabled = 1;
 	}
 
-	ret = efuse_read_id(addr, length, id);
+	offset = cloner->cmd->read.partition + cloner->cmd->read.offset;
+	ret = efuse_read_segment(addr, length, offset);
 	if (ret < 0)
 		LOG_ERROR("efuse read error\n");
 
@@ -29,7 +30,8 @@ static int32_t clmd_efuse_read(struct cloner *cloner, int sub_type, void *ops_da
 
 static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_data)
 {
-	u32 partition, length;
+	off_t offset;
+	u32 length;
 	void *addr;
 	int ret = 0;
 
@@ -42,11 +44,11 @@ static int32_t clmd_efuse_write(struct cloner *cloner, int sub_type, void *ops_d
 		enabled = 1;
 	}
 
-	partition = cloner->cmd->write.partition;
-	length = cloner->cmd->write.length;
+	offset = cloner->cmd->write.partition + cloner->cmd->write.offset;
+	length = cloner->write_req->actual ? cloner->write_req->actual : cloner->cmd->write.length;
 	addr = (void *)cloner->write_req->buf;
 
-	ret = efuse_write(addr, length, partition);
+	ret = efuse_write_segment(addr, length, offset);
 	if (ret)
 		LOG_ERROR("efuse write error\n");
 
@@ -72,4 +74,3 @@ int cloner_efuse_init(void)
 	return register_cloner_moudle(clmd);
 }
 CLONER_MOUDLE_INIT(cloner_efuse_init);
-

@@ -474,6 +474,34 @@ int efuse_read(void *buf, int length, off_t offset)
 	return ret;
 }
 
+int efuse_write_segment(void *buf, int length, off_t offset)
+{
+	int input_length;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	input_length = strnlen((char *)buf, length);
+	if (!input_length)
+		return -EINVAL;
+
+	return efuse_write(buf, input_length, offset);
+}
+
+int efuse_read_segment(void *buf, int length, off_t offset)
+{
+	int ret;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	ret = efuse_read(buf, length, offset);
+	if (ret < 0)
+		return ret;
+
+	return length;
+}
+
 int efuse_read_id(void *buf, int length, int id)
 {
 	uint32_t *ptmp_buf = (uint32_t *)buf;

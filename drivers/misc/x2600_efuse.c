@@ -49,6 +49,17 @@ static void bit_copy(void *dst, size_t dst_bit_offset,
 	}
 }
 
+
+static void efuse_segment_bytes_to_hex(const unsigned char *raw,
+		unsigned int raw_bytes, char *hex)
+{
+	unsigned int i;
+
+	for (i = 0; i < raw_bytes; i++)
+		sprintf(hex + (i * 2), "%02x", raw[raw_bytes - 1 - i]);
+	hex[raw_bytes * 2] = '\0';
+}
+
 static uint32_t efuse_readl(uint32_t reg_off)
 {
 	return readl(EFUSE_BASE + reg_off);
@@ -770,6 +781,128 @@ int efuse_write(void *buf, int length, off_t seg_id)
 		return ret;
 	}
 
+	return ret;
+}
+
+
+static int x2600_get_segment_by_offset(unsigned int offset, struct seg_info *seg,
+		unsigned int *seg_start, unsigned int *seg_bytes)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(seg_info_array); i++) {
+		unsigned int start = seg_info_array[i].word_address * 4 +
+			seg_info_array[i].begin_align;
+		unsigned int bytes = seg_info_array[i].bit_num / 8;
+
+		bytes += seg_info_array[i].bit_num % 8 ? 1 : 0;
+		if (offset >= start && offset < start + bytes) {
+			if (seg)
+				*seg = seg_info_array[i];
+			if (seg_start)
+				*seg_start = start;
+			if (seg_bytes)
+				*seg_bytes = bytes;
+			return 0;
+		}
+	}
+
+	return -EINVAL;
+}
+
+int efuse_read_segment(void *buf, int length, off_t offset)
+{
+	struct seg_info seg;
+	unsigned int seg_start;
+	unsigned int seg_bytes;
+	unsigned int inner_offset;
+	unsigned int storage_bytes;
+	unsigned char *raw = NULL;
+	int ret;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	ret = x2600_get_segment_by_offset(offset, &seg, &seg_start, &seg_bytes);
+	if (ret)
+		return ret;
+
+	inner_offset = offset - seg_start;
+	if (length > seg_bytes - inner_offset)
+		length = seg_bytes - inner_offset;
+
+	storage_bytes = seg.word_num * 4;
+	raw = malloc(storage_bytes);
+	if (!raw)
+		return -ENOMEM;
+	memset(raw, 0, storage_bytes);
+
+	ret = jz_efuse_read(&seg, (uint32_t *)raw);
+	if (ret < 0)
+		goto out;
+
+	memcpy(buf, raw + inner_offset, length);
+	ret = length;
+out:
+	free(raw);
+	return ret;
+}
+
+int efuse_write_segment(void *buf, int length, off_t offset)
+{
+	struct seg_info seg;
+	unsigned int seg_start;
+	unsigned int seg_bytes;
+	unsigned int inner_offset;
+	unsigned int storage_bytes;
+	unsigned int max_input_length;
+	unsigned char *raw = NULL;
+	char *hex = NULL;
+	int input_length;
+	int hex_offset;
+	int ret;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	ret = x2600_get_segment_by_offset(offset, &seg, &seg_start, &seg_bytes);
+	if (ret)
+		return ret;
+
+	inner_offset = offset - seg_start;
+	max_input_length = (seg_bytes - inner_offset) * 2;
+	if (length > max_input_length)
+		length = max_input_length;
+
+	input_length = strnlen((char *)buf, length);
+	if (!input_length)
+		return -EINVAL;
+
+	storage_bytes = seg.word_num * 4;
+	raw = malloc(storage_bytes);
+	hex = malloc(seg_bytes * 2 + 1);
+	if (!raw || !hex) {
+		ret = -ENOMEM;
+		goto out;
+	}
+	memset(raw, 0, storage_bytes);
+
+	ret = jz_efuse_read(&seg, (uint32_t *)raw);
+	if (ret < 0)
+		goto out;
+
+	efuse_segment_bytes_to_hex(raw, seg_bytes, hex);
+	hex_offset = (seg_bytes - inner_offset) * 2 - input_length;
+	if (hex_offset < 0) {
+		ret = -EINVAL;
+		goto out;
+	}
+	memcpy(hex + hex_offset, buf, input_length);
+
+	ret = efuse_write(hex, seg_bytes * 2, seg.seg_id);
+out:
+	free(raw);
+	free(hex);
 	return ret;
 }
 

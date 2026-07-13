@@ -47,9 +47,6 @@ static struct spi_nor_cmd_info set_status_info[3] = {
 };
 
 
-
-#define MULTI_DIE_FLASH_NUM 1
-
 #define ACTIVE_DIE(addr)					\
 ({								\
 	uint8_t die_id = addr >> flash->die_shift;		\
@@ -469,8 +466,9 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	return 0;
 }
 
-static struct multi_die_flash die_flash[MULTI_DIE_FLASH_NUM] = {
+static struct multi_die_flash die_flash[] = {
 	[0] = {0xc84019, 2, "GD25S512MD"},
+	[1] = {0x684019, 2, "BY25Q512ES"},
 };
 
 static void sfc_nor_clear_status(struct sfc_flash *flash)
@@ -540,7 +538,7 @@ void sfc_nor_do_special_func(void)
 
 	/* Multi Die support */
 	flash->die_num = 1;
-	for (i = 0; i < MULTI_DIE_FLASH_NUM; i++) {
+	for (i = 0; i < ARRAY_SIZE(die_flash); i++) {
 		if(!(strcmp(die_flash[i].flash_name, spi_nor_info->name))) {
 			flash->die_num = die_flash[i].die_num;
 			uint32_t die_size = spi_nor_info->chip_size / flash->die_num;

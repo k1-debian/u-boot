@@ -44,16 +44,37 @@ static int efuse_en_active = 0;
 #define CUT_ID_ADDR	(0x220)
 #define CUT_ID_END	(0x22F)
 #define CUT_ID_SIZE	(128)	/* X1000 CUT_ID(USER_ID) is 128 bit */
-#define PTR_ADDR	(0x23E)
-#define PTR_END	        (0x23F)
-#define PTR_SIZE	(16)
+#define PRT_ADDR	(0x23E)
+#define PRT_END	        (0x23F)
+#define PRT_SIZE	(16)
 
 static uint32_t seg_addr[] = {
 	CHIP_ID_ADDR,
 	RN_ADDR,
 	CUT_ID_ADDR,
-	PTR_ADDR,
+	PRT_ADDR,
 };
+
+static int get_segment_bounds(unsigned int start, unsigned int *seg_start, unsigned int *seg_end)
+{
+	if (start >= CHIP_ID_ADDR && start <= CHIP_ID_END) {
+		*seg_start = CHIP_ID_ADDR;
+		*seg_end = CHIP_ID_END;
+	} else if (start >= RN_ADDR && start <= RN_END) {
+		*seg_start = RN_ADDR;
+		*seg_end = RN_END;
+	} else if (start >= CUT_ID_ADDR && start <= CUT_ID_END) {
+		*seg_start = CUT_ID_ADDR;
+		*seg_end = CUT_ID_END;
+	} else if (start >= PRT_ADDR && start <= PRT_END) {
+		*seg_start = PRT_ADDR;
+		*seg_end = PRT_END;
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 static inline unsigned int max_integral_multiple(unsigned int val, unsigned int base)
 {
@@ -125,11 +146,11 @@ static int adjust_efuse(void)
 static void boost_vddq(int gpio)
 {
 	int val;
-	printf("boost vddq\n");
+	debug_cond(efuse_debug, "boost vddq\n");
 	gpio_direction_output(gpio , efuse_en_active);
 	do {
 		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
+		debug_cond(efuse_debug, "gpio %d level %d\n", gpio, val);
 	} while (val != efuse_en_active);
 	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ setup. */
 }
@@ -137,11 +158,11 @@ static void boost_vddq(int gpio)
 static void reduce_vddq(int gpio)
 {
 	int val;
-	printf("reduce vddq\n");
+	debug_cond(efuse_debug, "reduce vddq\n");
 	gpio_direction_output(gpio, !efuse_en_active);
 	do {
 		val = gpio_get_value(gpio);
-		printf("gpio %d level %d\n",gpio,val);
+		debug_cond(efuse_debug, "gpio %d level %d\n", gpio, val);
 	} while (val == efuse_en_active);
 	mdelay(10);		/*  mdelay(10) wait for EFUSE VDDQ fall down. */
 }
@@ -195,7 +216,7 @@ static int efuse_read_data(void *buf, uint32_t start_addr, int length)
 		pbuf[i] = tmp_buf[i];
 		/* printf("0x%02x, 0x%02x\n", pbuf[i],tmp_buf[i]); */
 	}
-	if (efuse_debug || 1) {
+	if (efuse_debug) {
 		int i = 0;
 		printf("====read data infomation====\n");
 		for (i = 0; i < word_num; i++) {
@@ -230,7 +251,7 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 	unsigned int addr = start_addr - EFU_ROM_BASE;
 	int timeout = EFUSE_W_TIMEOUT;		//vddq high is less than 1 sec
 
-	printf("write data to start_addr: %x, length: %d\n", start_addr, length);
+	debug_cond(efuse_debug, "write data to start_addr: %x, length: %d\n", start_addr, length);
 
 	if  (efuse_en_gpio < 0) {
 		error("efuse gpio is not init");
@@ -240,18 +261,18 @@ static int efuse_write_data(void *buf, uint32_t start_addr, int length)
 	word_num = max_integral_multiple(length, 4);
 
 	for (i = 0; i < word_num; i++) {
-		printf("0x%08x\n", pbuf[i]);
+		debug_cond(efuse_debug, "0x%08x\n", pbuf[i]);
 	}
 
 
 	if(word_num > 8) {
-		printf("strongly recommend operate each segment separately\n");
+		debug_cond(efuse_debug, "strongly recommend operate each segment separately\n");
 	} else {
 		for(i = 0; i < word_num; i++) {
 			val = pbuf[i];
 			debug_cond(efuse_debug,"====write data to register====\n");
 			debug_cond(efuse_debug,"%d(0x%x):0x%x\n",i,(EFUSE_BASE+EFUSE_DATA(i)),val);
-			printf("%d(0x%x):0x%08x\n",i,(EFUSE_BASE+EFUSE_DATA(i)),val);
+			debug_cond(efuse_debug, "%d(0x%x):0x%08x\n", i, (EFUSE_BASE + EFUSE_DATA(i)), val);
 			efuse_writel(val, EFUSE_DATA(i));
 		}
 	}
@@ -354,14 +375,10 @@ static int check_vaild_addr(int rw, unsigned int start, unsigned int length)
 			}
 		}
 		break;
-	case PTR_ADDR ... PTR_END:
+	case PRT_ADDR ... PRT_END:
 		printf("protect id,");
-		if(length_bits > PTR_SIZE) {
-			printf("data max length %d bits ", PTR_SIZE);
-			return -EINVAL;
-		}
-		if(rw == WRITE_EFUSE) {
-			printf("only support read\n");
+		if(length_bits > PRT_SIZE) {
+			printf("data max length %d bits ", PRT_SIZE);
 			return -EINVAL;
 		}
 		break;
@@ -372,9 +389,7 @@ static int check_vaild_addr(int rw, unsigned int start, unsigned int length)
 
 	printf("addr %x length %d bits end %x\n", start, length_bits, start + length - 1);
 	return 0;
-
 }
-
 
 static int fromhex(int a)
 {
@@ -384,8 +399,8 @@ static int fromhex(int a)
         return a - 'a' + 10;
     else if (a >= 'A' && a <= 'F')
         return a - 'A' + 10;
+    return 0;
 }
-
 
 static int hex2bin(const char *hex, char *bin, int count)
 {
@@ -395,8 +410,6 @@ static int hex2bin(const char *hex, char *bin, int count)
     {
         if (hex[0] == 0 || hex[1] == 0)
         {
-            /*  Hex string is short, or of uneven length.
-             *  Return the count that has been converted so far.  */
             return i;
         }
         *bin++ = fromhex (hex[0]) * 16 + fromhex (hex[1]);
@@ -405,15 +418,12 @@ static int hex2bin(const char *hex, char *bin, int count)
     return i;
 }
 
-
-
-
 /**
 * @brief efuse write data to efuse.
 *
-* @param buf		!!, buf stores a hex string, like "E0", "AB", "12"
+* @param buf            !!, buf stores a hex string, like "E0", "AB", "12"
 * @param length
-* @param offset		!!, offset , which starts at 0
+* @param offset         !!, offset , which starts at 0
 *
 * @return
 */
@@ -421,75 +431,120 @@ int efuse_write(void *buf, int length, off_t offset)
 {
 	unsigned int start = (offset + EFU_ROM_BASE);
 	unsigned int start_read = start;
-
 	int ret = -EPERM;
 	unsigned int data_length;
-	unsigned long long *data_buf = NULL;
+	unsigned long long write_val;
+	unsigned int *data_buf = NULL;
+	unsigned int *read_data = NULL;
+	unsigned int *expect_data = NULL;
+	unsigned char *read_bytes;
+	unsigned char *write_bytes;
+	unsigned char *expect_bytes;
 	int word_num;
-	unsigned int hex;
 	int i;
+	int input_length;
+	int is_prt = (start >= PRT_ADDR && start <= PRT_END);
 	char *pbuf = NULL;
 
+	if (!buf || length <= 0)
+		return -EINVAL;
 
-	data_length = max_integral_multiple(length, 2);
+	pbuf = malloc(length + 1);
+	if (!pbuf)
+		return -ENOMEM;
+	memset(pbuf, 0, length + 1);
+	memcpy(pbuf, buf, length);
+	input_length = strnlen(pbuf, length);
+	if (!input_length) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	write_val = simple_strtoull(pbuf, NULL, 16);
+	if (is_prt) {
+		if (write_val > 0xffffULL) {
+			printf("protect id only supports 16-bit data\n");
+			ret = -EINVAL;
+			goto out;
+		}
+		data_length = PRT_SIZE / 8;
+	} else {
+		data_length = max_integral_multiple(input_length, 2);
+	}
+
 	word_num = max_integral_multiple(data_length, 4);
 
-	unsigned int *read_data = NULL;
+	debug_cond(efuse_debug, "length = %d\n", length);
+	debug_cond(efuse_debug, "offset = %x\n", (unsigned int)offset);
+	debug_cond(efuse_debug, "data_length = %d\n", data_length);
+
+	if (check_vaild_addr(WRITE_EFUSE, start, data_length)) {
+		ret = -EINVAL;
+		goto out;
+	}
+
 	read_data = malloc(word_num * 4);
-	if(read_data == NULL) {
-		printf("error allocate read data!\n");
-		return ret;
+	data_buf = malloc(word_num * 4);
+	expect_data = malloc(word_num * 4);
+	if (!read_data || !data_buf || !expect_data) {
+		printf("error allocate efuse buffers!\n");
+		ret = -ENOMEM;
+		goto out;
 	}
 	memset(read_data, 0, word_num * 4);
+	memset(data_buf, 0, word_num * 4);
+	memset(expect_data, 0, word_num * 4);
+
+	*data_buf = write_val;
+	for(i = 0; i < word_num; i++) {
+		debug_cond(efuse_debug, "databuf[%d]: %x\n", i, data_buf[i]);
+	}
+
 	ret = efuse_read_data(read_data, start_read, data_length);
 	if (ret < 0)
-		return ret;
-	else
-		ret = 0;
-	if(*read_data & 0xffffffff){
-		error("The position has been written data, write efuse failed!\n");
-		return -EINVAL;
+		goto out;
+	ret = 0;
+
+	read_bytes = (unsigned char *)read_data;
+	write_bytes = (unsigned char *)data_buf;
+	expect_bytes = (unsigned char *)expect_data;
+
+	if (is_prt) {
+		int need_write = 0;
+
+		for (i = 0; i < data_length; i++) {
+			expect_bytes[i] = read_bytes[i] | write_bytes[i];
+			write_bytes[i] &= ~read_bytes[i];
+			if (write_bytes[i])
+				need_write = 1;
+		}
+
+		if (!need_write)
+			goto verify;
+	} else {
+		for (i = 0; i < data_length; i++) {
+			if (read_bytes[i]) {
+				error("The position has been written data, write efuse failed!\n");
+				ret = -EINVAL;
+				goto out;
+			}
+		}
+		memcpy(expect_data, data_buf, data_length);
 	}
 
-	data_buf = malloc(word_num * 4);
-	if(data_buf == NULL) {
-		printf("error allocate data_buf!\n");
-		return -EINVAL;
-	}
-	memset(data_buf, 0, word_num * 4);
-
-	printf("length = %d\n", length);
-	printf("offset = %x\n", (unsigned int)offset);
-
-	printf("data_length = %d\n", data_length);
-
-	if (check_vaild_addr(WRITE_EFUSE, start, data_length))
-		return -EINVAL;
-
-	pbuf = malloc(length);
-	memset(pbuf, 0, length);
-	memcpy(pbuf, buf, length);
-	/* convert hex str to hex value */
-	*data_buf = simple_strtoull(pbuf, NULL, 16);
-	for(i = 0; i < word_num; i++) {
-		printf("databuf[%d]: %x\n", i, data_buf[i]);
-	}
-
-	if ((start + data_length) < 0x230) {
+	if (is_prt || (start + data_length) <= 0x230) {
 		ret = efuse_write_data(data_buf, start, data_length);
 	} else if ((start + data_length) < CUT_ID_END) {
-		/* addr between 0x220 to 0x23d */
-
-		unsigned char *pdata = data_buf;
+		unsigned char *pdata = (unsigned char *)data_buf;
 		unsigned int data_left = data_length;
 		unsigned int write_cnt = 0;
+		int data_word_num;
 
-		/* 1. write data from 0x220 to 0x230 */
 		if(start < 0x230) {
 			write_cnt = 0x230 - start;
-
 			ret = efuse_write_data(pdata, start, 0x230 - start);
-
+			if (ret)
+				goto out;
 			pdata += write_cnt;
 			data_left -= write_cnt;
 			start += write_cnt;
@@ -497,49 +552,48 @@ int efuse_write(void *buf, int length, off_t offset)
 
 		if(start % 4) {
 			printf("start addr should be 4 byte align\n");
-			return -EINVAL;
+			ret = -EINVAL;
+			goto out;
 		}
 
-		/* 2. write data from 0x230 to 0x23d in word */
-
-		int data_word_num = max_integral_multiple(data_left, 4);
-
+		data_word_num = max_integral_multiple(data_left, 4);
 		for(i = 0; i < data_word_num; i++) {
 			write_cnt = data_left < 4 ? data_left : 4;
-
 			ret = efuse_write_data(pdata, start, write_cnt);
-
+			if (ret)
+				goto out;
 			data_left -= write_cnt;
 			pdata += write_cnt;
 			start += write_cnt;
 		}
 	}
 
-
 #ifdef EFUSE_CHECK
+verify:
 	memset(read_data, 0, word_num * 4);
 	ret = efuse_read_data(read_data, start_read, data_length);
 	if (ret < 0)
-		return ret;
-	else
-		ret = 0;
+		goto out;
+	ret = 0;
 
-	if (memcmp(read_data, data_buf, data_length)) {
+	if (memcmp(read_data, expect_data, data_length)) {
 		error(" compare error . write efuse failed");
 		ret = -EFAULT;
 	}
-
 #endif
+
+out:
+	free(pbuf);
 	free(read_data);
 	free(data_buf);
+	free(expect_data);
 	return ret;
 }
+
 int efuse_read(void *buf, int length, off_t offset)
 {
 	unsigned int start = (offset + EFU_ROM_BASE);
 	int ret = -EPERM;
-
-	/* length = max_integral_multiple(length, 2); */
 
 	if (check_vaild_addr(READ_EFUSE, start, length))
 		return -EINVAL;
@@ -548,10 +602,56 @@ int efuse_read(void *buf, int length, off_t offset)
 	return ret;
 }
 
+int efuse_write_segment(void *buf, int length, off_t offset)
+{
+	unsigned int start = offset + EFU_ROM_BASE;
+	unsigned int seg_start;
+	unsigned int seg_end;
+	unsigned int max_input_length;
+	int input_length;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	if (get_segment_bounds(start, &seg_start, &seg_end))
+		return -EINVAL;
+
+	max_input_length = (seg_end - seg_start + 1 - (start - seg_start)) * 2;
+	if (length > max_input_length)
+		length = max_input_length;
+
+	input_length = strnlen((char *)buf, length);
+	if (!input_length)
+		return -EINVAL;
+
+	return efuse_write(buf, input_length, offset);
+}
+
+int efuse_read_segment(void *buf, int length, off_t offset)
+{
+	unsigned int start = offset + EFU_ROM_BASE;
+	unsigned int seg_start;
+	unsigned int seg_end;
+	int ret;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	if (get_segment_bounds(start, &seg_start, &seg_end))
+		return -EINVAL;
+
+	if (length > (seg_end - seg_start + 1 - (start - seg_start)))
+		length = seg_end - seg_start + 1 - (start - seg_start);
+
+	ret = efuse_read(buf, length, offset);
+	if (ret < 0)
+		return ret;
+
+	return length;
+}
+
 int efuse_read_chipid(void *buf, int length, off_t offset)
 {
-	char *random_buf = NULL;
-	uint32_t *ptmp_buf = (uint32_t *)buf;
 	int ret = -EPERM;
 
 	ret = efuse_read(buf, length, offset);
@@ -565,7 +665,6 @@ int efuse_read_chipid(void *buf, int length, off_t offset)
 
 int efuse_read_id(void *buf, int length, int id)
 {
-	uint32_t *ptmp_buf = (uint32_t *)buf;
 	int ret = -EPERM;
 	int offset = 0;
 	id = id + 1;
@@ -582,10 +681,13 @@ int efuse_read_id(void *buf, int length, int id)
 			offset = RN_ADDR;
 			length = RN_SIZE / 8;
 			break;
+		case EFUSE_R_PRT:
+			offset = PRT_ADDR;
+			length = PRT_SIZE / 8;
+			break;
 		default:
 			printf("Unkown id !\n");
 			return -EPERM;
-			break;
 	}
 
 	offset = offset - EFU_ROM_BASE;
@@ -596,7 +698,7 @@ int efuse_read_id(void *buf, int length, int id)
 		return ret;
 	}
 
-	return ret * 4;
+	return length;
 }
 
 int efuse_init(int gpio_pin, int active)

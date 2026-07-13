@@ -685,6 +685,147 @@ int efuse_write(void *buf, int length, int seg_id)
         return 0;
 }
 
+
+static int x2500_get_segment_by_offset(unsigned int offset, unsigned int *seg_id,
+		unsigned int *seg_start, unsigned int *seg_bytes)
+{
+	if (offset >= CHIP_ID_ADDR && offset < USER_ID_ADDR) {
+		*seg_id = CHIP_ID;
+		*seg_start = CHIP_ID_ADDR;
+		*seg_bytes = CHIP_ID_SIZE / 8;
+	} else if (offset >= USER_ID_ADDR && offset < SARADC_CAL) {
+		*seg_id = USER_ID;
+		*seg_start = USER_ID_ADDR;
+		*seg_bytes = USER_ID_SIZE / 8;
+	} else if (offset >= SARADC_CAL && offset < TRIM_ADDR) {
+		*seg_id = SARADC_CAL_DAT;
+		*seg_start = SARADC_CAL;
+		*seg_bytes = SARADC_CAL_DAT_SIZE / 8;
+	} else if (offset >= TRIM_ADDR && offset < PROGRAM_PROTECT_ADDR) {
+		*seg_id = TRIM_DATA;
+		*seg_start = TRIM_ADDR;
+		*seg_bytes = TRIM_DATA_SIZE / 8;
+	} else if (offset >= PROGRAM_PROTECT_ADDR && offset < CPU_ID_ADDR) {
+		*seg_id = PROGRAM_PROTECT;
+		*seg_start = PROGRAM_PROTECT_ADDR;
+		*seg_bytes = PROGRAM_PROTECT_SIZE / 8;
+	} else if (offset >= CPU_ID_ADDR && offset < SPECIAL_ADDR) {
+		*seg_id = CPU_ID;
+		*seg_start = CPU_ID_ADDR;
+		*seg_bytes = CPU_ID_SIZE / 8;
+	} else if (offset >= SPECIAL_ADDR && offset < CUSTOMER_RESV_ADDR) {
+		*seg_id = SPECIAL_USE;
+		*seg_start = SPECIAL_ADDR;
+		*seg_bytes = SPECIAL_USE_SIZE / 8;
+	} else if (offset >= CUSTOMER_RESV_ADDR &&
+			offset < CUSTOMER_RESV_ADDR + CUSTOMER_RESV_SIZE / 8) {
+		*seg_id = CUSTOMER_RESV;
+		*seg_start = CUSTOMER_RESV_ADDR;
+		*seg_bytes = CUSTOMER_RESV_SIZE / 8;
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+int efuse_read_segment(void *buf, int length, off_t offset)
+{
+	unsigned int seg_id;
+	unsigned int seg_start;
+	unsigned int seg_bytes;
+	unsigned int inner_offset;
+	unsigned int storage_bytes;
+	unsigned char *raw = NULL;
+	int ret;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	ret = x2500_get_segment_by_offset(offset, &seg_id, &seg_start, &seg_bytes);
+	if (ret)
+		return ret;
+
+	inner_offset = offset - seg_start;
+	if (length > seg_bytes - inner_offset)
+		length = seg_bytes - inner_offset;
+
+	storage_bytes = ((length + 3) / 4) * 4;
+	raw = malloc(storage_bytes);
+	if (!raw)
+		return -ENOMEM;
+	memset(raw, 0, storage_bytes);
+
+	ret = jz_efuse_read(seg_id, length, inner_offset, (uint32_t *)raw);
+	if (ret < 0)
+		goto out;
+
+	memcpy(buf, raw, length);
+	ret = length;
+out:
+	free(raw);
+	return ret;
+}
+
+int efuse_write_segment(void *buf, int length, off_t offset)
+{
+	unsigned int seg_id;
+	unsigned int seg_start;
+	unsigned int seg_bytes;
+	unsigned int inner_offset;
+	unsigned int max_input_length;
+	unsigned int input_bytes;
+	unsigned int storage_bytes;
+	unsigned char *raw = NULL;
+	char tmp[3] = {0};
+	int input_length;
+	int i;
+	int ret;
+
+	if (!buf || length <= 0)
+		return -EINVAL;
+
+	ret = x2500_get_segment_by_offset(offset, &seg_id, &seg_start, &seg_bytes);
+	if (ret)
+		return ret;
+
+	inner_offset = offset - seg_start;
+	max_input_length = (seg_bytes - inner_offset) * 2;
+	if (length > max_input_length)
+		length = max_input_length;
+
+	input_length = strnlen((char *)buf, length);
+	if (!input_length)
+		return -EINVAL;
+
+	input_bytes = input_length / 2;
+	if (input_length % 2)
+		input_bytes++;
+	storage_bytes = ((input_bytes + 3) / 4) * 4;
+	raw = malloc(storage_bytes);
+	if (!raw)
+		return -ENOMEM;
+	memset(raw, 0, storage_bytes);
+
+	for (i = 0; i < input_bytes; i++) {
+		int src = input_length - ((i + 1) * 2);
+
+		tmp[0] = '0';
+		tmp[1] = '0';
+		if (src >= 0) {
+			tmp[0] = ((char *)buf)[src];
+			tmp[1] = ((char *)buf)[src + 1];
+		} else {
+			tmp[1] = ((char *)buf)[0];
+		}
+		raw[i] = (unsigned char)simple_strtoul(tmp, NULL, 16);
+	}
+
+	ret = jz_efuse_write(seg_id, input_bytes, inner_offset, (uint32_t *)raw);
+	free(raw);
+	return ret;
+}
+
 int efuse_init(int gpio_pin,int active)
 {
       if(gpio_pin >= 0){
