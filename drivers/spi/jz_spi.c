@@ -120,6 +120,7 @@ static inline unsigned int jz_spi_rxfifo_count(u32 sr)
 
 static void jz_spi_apply_default_pinmux(unsigned int bus)
 {
+#ifndef CONFIG_BURNER
 	if (bus == 0) {
 		gpio_set_func(CONFIG_INGENIC_SPI0_PINMUX_PORT,
 			      CONFIG_INGENIC_SPI0_PINMUX_FUNC,
@@ -131,6 +132,7 @@ static void jz_spi_apply_default_pinmux(unsigned int bus)
 			      CONFIG_INGENIC_SPI1_PINMUX_FUNC,
 			      CONFIG_INGENIC_SPI1_PINMUX_PINS);
 	}
+#endif
 #endif
 }
 

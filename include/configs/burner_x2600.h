@@ -169,4 +169,10 @@
 
 #include "burner_common.h"
 
+/* for NS350 */
+#define CONFIG_JZ_SPI
+#define CONFIG_INGENIC_SPI
+#define CONFIG_TPM_TIS_SPI
+#define CONFIG_SECURE_PROVISION
+
 #endif /* __BURNER_H__ */
