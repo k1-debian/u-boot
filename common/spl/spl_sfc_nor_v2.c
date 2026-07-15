@@ -14,6 +14,7 @@
 #include <generated/sfc_timing_val.h>
 #include "spl_rtos.h"
 #include "spl_rtos_argument.h"
+#include "spl_riscv.h"
 
 #ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
 DECLARE_GLOBAL_DATA_PTR;
@@ -22,6 +23,7 @@ static unsigned int sfc_params_addr;
 
 static struct spl_rtos_argument spl_rtos_args;
 static struct rtos_boot_os_args os_boot_args;
+static struct riscv_boot_os_args riscv_boot_args;
 
 
 #define STATUS_MAX_LEN  4      //4 * byte = 32 bit
@@ -1639,6 +1641,42 @@ static char *spl_sfc_nor_os_ota_load(void)
 }
 #endif
 
+#ifdef CONFIG_SPL_MCU_RTOS_BOOT
+#ifdef CONFIG_X2600
+#include "x2600_riscv.h"
+#endif
+
+void spl_nor_mcu_rtos_boot(void)
+{
+	unsigned int riscv_offset;
+	struct norflash_partitions partition;
+	sfc_read_data(sfc_params_addr + sizeof(struct spi_nor_info) + sizeof(int) * 2, sizeof(struct norflash_partitions), (unsigned char *)&partition);
+
+	riscv_offset = get_part_offset_by_name(partition, "riscv");
+	if (riscv_offset == -1) {
+		serial_debug("not found riscv\n");
+		return;
+	}
+
+#ifdef CONFIG_SPL_OS_BOOT
+    char *cmdargs = CONFIG_SYS_SPL_ARGS_ADDR;
+#ifdef CONFIG_SPL_AUTO_PROBE_ARGS_MEM
+    cmdargs = spl_board_process_mem_bootargs(cmdargs);
+#endif
+
+	riscv_boot_args.cmdargs = virt_to_phys(cmdargs);
+
+    spl_load_riscv(sfc_read_data, riscv_offset, virt_to_phys(&riscv_boot_args));
+#else
+	spl_load_riscv(sfc_read_data, riscv_offset, 0);
+#endif
+	flush_cache_all();
+
+    riscv_reset();
+}
+
+#endif
+
 #ifdef CONFIG_BOOT_RTOS_OTA
 static void spl_sfc_nor_rtos_ota_boot(void)
 {
@@ -1754,6 +1792,10 @@ char* spl_sfc_nor_load_image(void)
 	return spl_sfc_nor_os_ota_load();
 #elif defined(CONFIG_SPL_OS_BOOT)
 	spl_sfc_nor_os_load();
+
+#ifdef CONFIG_SPL_MCU_RTOS_BOOT
+    spl_nor_mcu_rtos_boot();
+#endif
 	return NULL;
 #elif defined(CONFIG_SPL_RTOS_BOOT)
 	spl_sfc_nor_rtos_boot();
