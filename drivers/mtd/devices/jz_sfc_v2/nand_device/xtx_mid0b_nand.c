@@ -132,7 +132,7 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[] = {
 		.oobsize = 256,
 		.flashsize = 4 * 1024 * 64 * 2048,
 
-		.tSETUP  = 5,
+		.tSETUP  = TSETUP,
 		.tHOLD   = THOLD,
 		.tSHSL_R = TSHSL_R,
 		.tSHSL_W = TSHSL_W,
@@ -140,6 +140,26 @@ static struct jz_sfcnand_base_param xtx_mid0b_param[] = {
 		.tRD = 175,
 		.tPP = 360,
 		.tBE = 4,
+
+		.plane_select = 0,
+		.ecc_max = 0x8,
+		.need_quad = 1,
+	},
+	[6] = {
+		/*XT26G01FWSIGA */
+		.pagesize = 2 * 1024,
+		.blocksize = 2 * 1024 * 64,
+		.oobsize = 64,
+		.flashsize = 2 * 1024 * 64 * 1024,
+
+		.tSETUP  = TSETUP,
+		.tHOLD   = THOLD,
+		.tSHSL_R = TSHSL_R,
+		.tSHSL_W = TSHSL_W,
+
+		.tRD = 140,
+		.tPP = 1300,
+		.tBE = 18,
 
 		.plane_select = 0,
 		.ecc_max = 0x8,
@@ -154,6 +174,7 @@ static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x12, "XT26G02C ", &xtx_mid0b_param[3]),
 	DEVICE_ID_STRUCT(0x32, "XT26G02D ", &xtx_mid0b_param[4]),
 	DEVICE_ID_STRUCT(0x13, "XT26G04C ", &xtx_mid0b_param[5]),
+	DEVICE_ID_STRUCT(0x71, "XT26G01F ", &xtx_mid0b_param[6]),
 };
 
 
@@ -168,6 +189,7 @@ static cdt_params_t *xtx_mid0b_get_cdt_params(struct sfc_flash *flash, uint16_t 
 		case 0x12:
 		case 0x32:
 		case 0x13:
+		case 0x71:
 			break;
 		default:
 			pr_err("device_id err, please check your  device id: device_id = 0x%02x\n", device_id);
@@ -210,6 +232,7 @@ static inline int deal_ecc_status(struct sfc_flash *flash, uint16_t device_id, u
 			break;
 		case 0x11:
 		case 0x12:
+		case 0x71:
 			switch((ecc_status >> 4) & 0xf) {
 				case 0x0 ... 0x4:
 					return 0;
