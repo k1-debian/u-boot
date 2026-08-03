@@ -31,7 +31,7 @@
 #endif
 #include <asm/io.h>
 #include <asm/arch/clk.h>
-#if defined(CONFIG_X2600)
+#if defined(CONFIG_X2600) || defined(CONFIG_X2000_V12)
 #include <asm/arch/base.h>
 #include <asm/arch/efuse.h>
 #endif
@@ -45,8 +45,8 @@
 DECLARE_GLOBAL_DATA_PTR;
 struct ddr_reg_value *global_reg_value __attribute__ ((section(".data")));
 
-#if defined(CONFIG_X2600)
-static u32 x2600_read_efuse_trim1(void)
+#if defined(CONFIG_X2600) || defined(CONFIG_X2000_V12)
+static u32 read_efuse_trim1(void)
 {
 	u32 val;
 
@@ -67,9 +67,9 @@ static u32 x2600_read_efuse_trim1(void)
 	return val;
 }
 
-static void x2600_efuse_trim1_overrides(void)
+static void efuse_trim1_overrides(void)
 {
-	u32 trim1 = x2600_read_efuse_trim1();
+	u32 trim1 = read_efuse_trim1();
 
 	if ((trim1 >> 8) & 0x1) {
 		global_reg_value->DDRC_CFG_VALUE &= ~(1 << 2);
@@ -720,8 +720,8 @@ void sdram_init(void)
 	get_ddr_params();
 	type = get_ddr_type();
 
-#if defined(CONFIG_X2600)
-	x2600_efuse_trim1_overrides();
+#if defined(CONFIG_X2600) || defined(CONFIG_X2000_V12)
+	efuse_trim1_overrides();
 #endif
 
 	clk_set_rate(DDR, global_reg_value->h.freq);
