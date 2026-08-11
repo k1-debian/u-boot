@@ -785,10 +785,10 @@ int sfc_nor_flash_init(void)
 				sfc_nor_concat_setup_from_params(&concat_params);
 			return concat_ret ? -1 : 0;
 		}
-	}
+		}
 #endif
 	sfc_nor_read_params(sfc_params_addr, (unsigned char *)&params,
-			    NOR_BURNER_PARAMS_PREFIX_SIZE);
+			    sizeof(struct burner_params));
 	printf("params.magic : 0x%x   params.version : 0x%x\n", params.magic, params.version);
 	if((params.magic != NOR_MAGIC) || (params.version != NOR_VERSION)) {
 		printf("sfc nor read params error\n");
@@ -1120,9 +1120,9 @@ int norflash_get_params_from_burner()
 	LOG_INFO("spi nor flash chip_id is : %x\n", chip_id);
 
 	mini_spi_nor_info = (struct mini_spi_nor_info *)
-		(nor_payload + NOR_BURNER_PARAMS_PREFIX_SIZE);
+		(nor_payload + sizeof(struct burner_params));
 	memset(&params, 0, sizeof(params));
-	memcpy(&params, burner_params, NOR_BURNER_PARAMS_PREFIX_SIZE);
+	memcpy(&params, burner_params, sizeof(struct burner_params));
 	memcpy(&mini_params, mini_spi_nor_info,
 	       sizeof(struct mini_spi_nor_info));
 

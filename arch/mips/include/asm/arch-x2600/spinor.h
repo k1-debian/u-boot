@@ -2,7 +2,6 @@
 #define SFC_PARAMS_H
 
 #include "spinor_cmd.h"
-#include <linux/stddef.h>
 
 #define SIZEOF_NAME			32
 
@@ -158,13 +157,6 @@ struct spiflash_info {
 	struct burner_params burner_params;
 	struct mini_spi_nor_info mini_spi_nor_info;
 };
-
-#ifdef CONFIG_SFC_NOR_CONCAT
-#define NOR_BURNER_PARAMS_PREFIX_SIZE \
-	offsetof(struct burner_params, concat)
-#else
-#define NOR_BURNER_PARAMS_PREFIX_SIZE sizeof(struct burner_params)
-#endif
 
 struct nor_block_info {
 	unsigned int blocksize;

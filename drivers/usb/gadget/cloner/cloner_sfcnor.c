@@ -72,8 +72,8 @@ static void sfcnor_add_info_to_flash(unsigned char *buf)
 		case 1:
 			params.version = NOR_VERSION;
 			memcpy(buf + param_offset, &params,
-			       NOR_BURNER_PARAMS_PREFIX_SIZE);
-			memcpy(buf + param_offset + NOR_BURNER_PARAMS_PREFIX_SIZE,
+			       sizeof(struct burner_params));
+			memcpy(buf + param_offset + sizeof(struct burner_params),
 			       &mini_params, sizeof(struct mini_spi_nor_info));
 			break;
 		default:
