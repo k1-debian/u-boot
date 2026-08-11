@@ -26,13 +26,16 @@ include $(TOPDIR)/config.mk
 LIB	:= $(obj)libsfc.o
 
 COBJS-y += jz_sfc_common.o
+COBJS-$(CONFIG_SFC_FLASH_CONCAT) += jz_sfc_cs.o
 
 ifdef CONFIG_MTD_SFCNOR
 COBJS-y += jz_sfc_nor.o
+COBJS-$(CONFIG_SFC_NOR_CONCAT) += jz_sfc_nor_concat.o
 COBJS-y += jz_sfc_ops.o
 endif
 ifdef CONFIG_MTD_SFCNAND
 COBJS-$(CONFIG_MTD_SFCNAND) +=jz_sfc_nand.o
+COBJS-$(CONFIG_SFC_NAND_CONCAT) += jz_sfc_nand_concat.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/ato_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/gd_nand.o
 COBJS-$(CONFIG_MTD_SFCNAND) +=nand_device/mxic_nand.o

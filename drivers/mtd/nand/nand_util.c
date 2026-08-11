@@ -57,6 +57,31 @@ typedef struct mtd_info		mtd_info_t;
 #define cpu_to_je16(x) (x)
 #define cpu_to_je32(x) (x)
 
+int __weak nand_concat_is_managed(nand_info_t *nand)
+{
+	return 0;
+}
+
+int __weak nand_concat_read_skip_bad(nand_info_t *nand, loff_t offset,
+				     size_t *length, size_t *actual,
+				     loff_t lim, u_char *buffer)
+{
+	return -ENOSYS;
+}
+
+int __weak nand_concat_write_skip_bad(nand_info_t *nand, loff_t offset,
+				      size_t *length, size_t *actual,
+				      loff_t lim, u_char *buffer, int flags)
+{
+	return -ENOSYS;
+}
+
+int __weak nand_concat_erase_opts(nand_info_t *meminfo,
+				  const nand_erase_options_t *opts)
+{
+	return -ENOSYS;
+}
+
 /**
  * nand_erase_opts: - erase NAND flash with support for various options
  *		      (jffs2 formatting)
@@ -78,6 +103,9 @@ int nand_erase_opts(nand_info_t *meminfo, const nand_erase_options_t *opts)
 	const char *mtd_device = meminfo->name;
 	struct mtd_oob_ops oob_opts;
 	struct nand_chip *chip = meminfo->priv;
+
+	if (nand_concat_is_managed(meminfo))
+		return nand_concat_erase_opts(meminfo, opts);
 
 	if ((opts->offset & (meminfo->erasesize - 1)) != 0) {
 		printf("Attempt to erase non block-aligned data\n");
@@ -518,6 +546,10 @@ int nand_write_skip_bad(nand_info_t *nand, loff_t offset, size_t *length,
 	if (actual)
 		*actual = 0;
 
+	if (nand_concat_is_managed(nand))
+		return nand_concat_write_skip_bad(nand, offset, length,
+						  actual, lim, buffer, flags);
+
 #ifdef CONFIG_CMD_NAND_YAFFS
 	if (flags & WITH_YAFFS_OOB) {
 		if (flags & ~WITH_YAFFS_OOB)
@@ -688,11 +720,16 @@ int nand_read_skip_bad(nand_info_t *nand, loff_t offset, size_t *length,
 	u_char *p_buffer = buffer;
 	int need_skip;
 
+	if (actual)
+		*actual = 0;
+
+	if (nand_concat_is_managed(nand))
+		return nand_concat_read_skip_bad(nand, offset, length,
+						 actual, lim, buffer);
+
 	if ((offset & (nand->writesize - 1)) != 0) {
 		printf("Attempt to read non page-aligned data\n");
 		*length = 0;
-		if (actual)
-			*actual = 0;
 		return -EINVAL;
 	}
 

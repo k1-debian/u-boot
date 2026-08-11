@@ -8,6 +8,7 @@
 #include <rtc.h>
 #include <spi.h>
 #include <ingenic_nand_mgr/nand_param.h>
+#include <sfc_concat.h>
 
 typedef enum {
 	LOG_LEVEL_DEBUG = 0,
@@ -58,6 +59,7 @@ const char* log_buffer(void);
 #define VR_GET_CRC		0x19
 #define VR_GET_FLASH_INFO	0x26
 #define VR_REBURN		0x27
+#define VR_SET_SFC_CS_TOPOLOGY	0x28
 
 /*************** security boot ****************/
 #ifdef CONFIG_JZ_SCBOOT
@@ -218,6 +220,7 @@ struct spi_param {
 	int reserve_space;
 	int reserve_space_protect;
 	int param_offset;
+	struct sfc_cs_topology cs_topology;
 	char* flash_info[0];
 };
 struct policy_param{

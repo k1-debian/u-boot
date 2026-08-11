@@ -138,12 +138,15 @@ int clmg_init(struct cloner *cloner, void *args)
 int clmg_info(struct cloner *cloner)
 {
 	struct cloner_moudle *clmd = NULL;
+	int ret;
 
 	list_for_each_entry(clmd, &clmg_list, node)
 	{
 		if (!clmd || !clmd->info)
 			continue;
-		clmd->info(cloner);
+		ret = clmd->info(cloner);
+		if (ret < 0)
+			return ret;
 	}
 	return 0;
 }
@@ -485,6 +488,18 @@ void handle_cmd(struct usb_ep *ep,struct usb_request *req)
 	union cmd *cmd = req->buf;
 	debug_cond(BURNNER_DEBUG,"handle_cmd type=%x\n",cloner->cmd_type);
 	switch(cloner->cmd_type) {
+		case VR_SET_SFC_CS_TOPOLOGY:
+#ifdef CONFIG_SFC_FLASH_CONCAT
+			if (req->actual != sizeof(struct sfc_cs_topology))
+				cloner->ack = -EINVAL;
+			else
+				cloner->ack =
+					jz_sfc_flash_concat_set_runtime_topology(
+						(const struct sfc_cs_topology *)req->buf);
+#else
+			cloner->ack = -ENOSYS;
+#endif
+			break;
 		case VR_UPDATE_CFG:
 			cloner->args_req->length = cmd->update.length;
 			usb_ep_queue(cloner->ep_out, cloner->args_req, 0);
@@ -607,7 +622,11 @@ int f_cloner_setup_handle(struct usb_function *f,
 		case VR_INIT:
 			break;
 		case VR_GET_FLASH_INFO:
+			cloner->info_chip_index = ctlreq->wIndex;
 			cloner->ack = clmg_info(cloner);
+			break;
+		case VR_SET_SFC_CS_TOPOLOGY:
+			cloner->ack = -EBUSY;
 			break;
 		case VR_UPDATE_CFG:
 		case VR_WRITE:

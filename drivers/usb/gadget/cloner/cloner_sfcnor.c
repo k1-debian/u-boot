@@ -8,10 +8,46 @@ extern struct nor_partition *get_partition_index(u32 offset,u32 length,int *pt_i
 extern struct burner_params params;
 extern struct mini_spi_nor_info mini_params;
 extern struct legacy_params *params_compatibility();
+#ifdef CONFIG_SFC_NOR_CONCAT
+extern int sfc_nor_read_chip_id(uint32_t chip_index, uint32_t *jedec_id);
+#else
+extern int sfc_nor_flash_init(void);
+extern unsigned int get_norflash_id(void);
+#endif
+
+static void sfcnor_patch_boot_image_common(unsigned char *buf)
+{
+	if (ddr_args != NULL && ddr_args->ddr_type > 0)
+		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
+
+	if (*(volatile unsigned int *)(buf + 512) == 0 ||
+	    *(volatile unsigned int *)(buf + 512) > 65535)
+		*(volatile unsigned int *)(buf + 512) = 0x1111;
+}
 
 int sfc_reset()
 {
 	return sfc_nor_reset();
+}
+
+int sfcnor_get_flash_id(uint32_t chip_index, uint32_t *jedec_id)
+{
+	if (!jedec_id)
+		return -EINVAL;
+
+#ifdef CONFIG_SFC_NOR_CONCAT
+	return sfc_nor_read_chip_id(chip_index, jedec_id);
+#else
+	if (chip_index)
+		return -EINVAL;
+	if (sfc_nor_flash_init() < 0) {
+		LOG_ERROR("sfc nor init failed\n");
+		return -EIO;
+	}
+
+	*jedec_id = get_norflash_id();
+	return 0;
+#endif
 }
 
 static void sfcnor_add_info_to_flash(unsigned char *buf)
@@ -35,19 +71,17 @@ static void sfcnor_add_info_to_flash(unsigned char *buf)
 			break;
 		case 1:
 			params.version = NOR_VERSION;
-			memcpy(buf + param_offset, &params, sizeof(struct burner_params));
-			memcpy(buf + param_offset + sizeof(struct burner_params), &mini_params, sizeof(struct mini_spi_nor_info));
+			memcpy(buf + param_offset, &params,
+			       NOR_BURNER_PARAMS_PREFIX_SIZE);
+			memcpy(buf + param_offset + NOR_BURNER_PARAMS_PREFIX_SIZE,
+			       &mini_params, sizeof(struct mini_spi_nor_info));
 			break;
 		default:
 			LOG_ERROR("spl uboot version error !\n");
 			break;
 	}
 
-	if(ddr_args != NULL && ddr_args->ddr_type > 0)
-		*(volatile unsigned int *)(buf + 128) = ddr_args->ddr_type;
-
-	if(*(volatile unsigned int *)(buf + 512) == 0 || *(volatile unsigned int *)(buf + 512) > 65535)
-		*(volatile unsigned int *)(buf + 512) = 0x1111;
+	sfcnor_patch_boot_image_common(buf);
 }
 
 int sfcnor_read(struct cloner *cloner)
@@ -66,22 +100,15 @@ int sfcnor_read(struct cloner *cloner)
 
 int sfc_nor_program(struct cloner *cloner)
 {
-	unsigned int bus = CONFIG_SF_DEFAULT_BUS;
-	unsigned int cs = CONFIG_SF_DEFAULT_CS;
-	unsigned int speed = CONFIG_SF_DEFAULT_SPEED;
-	unsigned int mode = CONFIG_SF_DEFAULT_MODE;
 	u32 offset = cloner->cmd->write.partition + cloner->cmd->write.offset;
 	u32 length = cloner->cmd->write.length;
 	int blk_size = spi_args->spi_erase_block_size;
 	void *addr = (void *)cloner->write_req->buf;
-	unsigned int ret;
-	int len = 0,err = 0;
-	struct spi_flash *flash;
+	int ret = 0;
+	int len = 0;
 	struct nor_partition *partition;
-
-	volatile int pt_index;
-	static pt_index_bak = -1;
-
+	int pt_index;
+	static int pt_index_bak = -1;
 
 	LOG_INFO("the offset = %x\n",offset);
 
@@ -108,9 +135,9 @@ int sfc_nor_program(struct cloner *cloner)
 			pt_index_bak = pt_index;
 
 			if (partition->manager_mode == MTD_D_MODE) {
-				ret = sfc_nor_erase(offset, length);
+				ret = sfc_nor_erase(offset, len);
 				LOG_INFO("SF: %zu bytes @ %#x Erased: %s\n",
-						(size_t)length, (u32)offset,
+						(size_t)len, (u32)offset,
 						ret ? "ERROR" : "OK");
 			} else {
 				ret = sfc_nor_erase(partition->offset, partition->size);
@@ -122,8 +149,17 @@ int sfc_nor_program(struct cloner *cloner)
 	}
 
 	if (offset == 0 && spi_args->download_params != 0) {
-		sfcnor_add_info_to_flash(addr);
+#if defined(CONFIG_SFC_NOR_CONCAT) && defined(CONFIG_BURNER)
+		ret = sfc_nor_concat_inject_burner_params(offset, len, addr);
+		if (ret < 0)
+			return ret;
+		if (ret > 0)
+			sfcnor_patch_boot_image_common(addr);
+		else
+#endif
+			sfcnor_add_info_to_flash(addr);
 	}
+
 	ret = sfc_nor_write(offset, len, addr);
 	LOG_INFO("SF: %zu bytes @ %#x write: %s\n", (size_t)len, (u32)offset,
 			ret ? "ERROR" : "OK");

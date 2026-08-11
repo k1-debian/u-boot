@@ -6,6 +6,9 @@
 #include <asm/arch/sfc.h>
 #include <asm/arch/spinor.h>
 #include "jz_sfc_common.h"
+#ifdef CONFIG_SFC_NOR_CONCAT
+#include "jz_sfc_concat.h"
+#endif
 #ifdef CONFIG_BURNER
 #include <cloner/cloner.h>
 #endif
@@ -13,7 +16,7 @@
 #ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
 DECLARE_GLOBAL_DATA_PTR;
 #endif
-static unsigned int sfc_params_addr;
+unsigned int sfc_params_addr;
 
 struct sfc_flash *flash = NULL;
 struct burner_params params;
@@ -21,6 +24,7 @@ struct burner_params params;
 struct mini_spi_nor_info mini_params;
 
 static int is_readonly_partition(uint32_t offset, uint32_t size);
+void sfc_clk_set(struct sfc *sfc, uint32_t sfc_rate);
 
 //#define SFC_NOR_CLONER_DEBUG
 //#define SFC_REG_DEBUG
@@ -188,8 +192,8 @@ unsigned int get_norflash_id(void)
 	return id;
 }
 
-
-static unsigned int sfc_nor_read_params(unsigned int addr, unsigned char *buf, unsigned int len)
+unsigned int sfc_nor_read_params(unsigned int addr, unsigned char *buf,
+				 unsigned int len)
 {
 	struct sfc_cdt_xfer xfer;
 	memset(&xfer, 0, sizeof(xfer));
@@ -251,7 +255,7 @@ static unsigned int sfc_do_read(unsigned int addr, unsigned char *buf, unsigned 
 	return xfer.config.cur_len;
 }
 
-static unsigned  int sfc_do_write(unsigned int addr, unsigned int len, unsigned char *buf)
+unsigned int sfc_do_write(unsigned int addr, unsigned int len, unsigned char *buf)
 {
 	struct sfc_cdt_xfer xfer;
 	memset(&xfer, 0, sizeof(xfer));
@@ -286,7 +290,7 @@ static unsigned  int sfc_do_write(unsigned int addr, unsigned int len, unsigned 
 	return xfer.config.cur_len;
 }
 
-static int sfc_do_erase(uint32_t addr)
+int sfc_do_erase(uint32_t addr)
 {
 	struct sfc_cdt_xfer xfer;
 
@@ -313,7 +317,7 @@ static int sfc_do_erase(uint32_t addr)
 	return 0;
 }
 
-static int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
+int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
 {
 	int tmp_len = 0, current_len = 0;
 
@@ -326,9 +330,12 @@ static int sfc_read(unsigned int from, unsigned int len, unsigned char *buf)
 	return current_len;
 }
 
-
 int sfc_nor_read(unsigned int from, unsigned int len, unsigned char *buf)
 {
+#if defined(CONFIG_SFC_NOR_CONCAT)
+	if (sfc_nor_concat_is_enabled())
+		return sfc_nor_concat_read(from, len, buf);
+#endif
 	sfc_read(from, len, buf);
 	return 0;
 }
@@ -428,6 +435,16 @@ struct legacy_params *params_compatibility()
 int sfc_nor_write(unsigned int to, unsigned int len, unsigned char *buf)
 {
 
+#if defined(CONFIG_SFC_NOR_CONCAT)
+	if (sfc_nor_concat_is_enabled()) {
+#ifndef CONFIG_BURNER
+		if (is_readonly_partition((uint32_t)to, len))
+			return -EROFS;
+#endif
+
+		return sfc_nor_concat_write(to, len, buf);
+	}
+#endif
 	sfc_nor_page_write(to, len, buf);
 
 	return 0;
@@ -440,6 +457,17 @@ int sfc_nor_erase(unsigned int addr, unsigned int len)
 	int erasesize;
 
 	struct spi_nor_info *spi_nor_info;
+
+#if defined(CONFIG_SFC_NOR_CONCAT)
+	if (sfc_nor_concat_is_enabled()) {
+#ifndef CONFIG_BURNER
+		if (is_readonly_partition((uint32_t)addr, len))
+			return -EROFS;
+#endif
+
+		return sfc_nor_concat_erase(addr, len);
+	}
+#endif
 
 	spi_nor_info = flash->g_nor_info;
 	erasesize = spi_nor_info->erase_size;
@@ -471,7 +499,7 @@ static struct multi_die_flash die_flash[] = {
 	[1] = {0x684019, 2, "BY25Q512ES"},
 };
 
-static void sfc_nor_clear_status(struct sfc_flash *flash)
+void sfc_nor_clear_status(struct sfc_flash *flash)
 {
 	unsigned char val;
 	unsigned int tmp;
@@ -497,7 +525,7 @@ static void sfc_nor_clear_status(struct sfc_flash *flash)
 
 }
 
-void sfc_nor_do_special_func(void)
+void sfc_nor_do_special_func_internal(int disable_quad)
 {
 	int tchsh;
 	int tslch;
@@ -518,9 +546,9 @@ void sfc_nor_do_special_func(void)
 
 	flash->quad_succeed = 0;
 #ifndef CONFIG_BURNER
-	if (params.uk_quad) {
+	if (params.uk_quad && !disable_quad) {
 #else
-	if (spi_args->sfc_quad_mode) {
+	if (spi_args->sfc_quad_mode && !disable_quad) {
 #endif
 		if (flash->nor_flash_ops->set_quad_mode) {
 			flash->nor_flash_ops->set_quad_mode(flash);
@@ -698,6 +726,13 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 #endif
 }
 
+#ifdef CONFIG_SFC_NOR_CONCAT
+void sfc_nor_create_cdt_table(struct sfc_flash *flash, uint32_t flag)
+{
+	create_cdt_table(flash, flag);
+}
+#endif
+
 int sfc_nor_flash_init(void)
 {
 	uint32_t sfc_rate = 100000000;
@@ -717,6 +752,11 @@ int sfc_nor_flash_init(void)
 	/* try creating default CDT table */
 	create_cdt_table(flash, DEFAULT_CDT);
 
+#if defined(CONFIG_SFC_NOR_CONCAT)
+	if (sfc_nor_concat_select_boot_chip())
+		return -1;
+#endif
+
 	sfc_nor_reset();
 
 #ifndef CONFIG_BURNER
@@ -728,7 +768,27 @@ int sfc_nor_flash_init(void)
 
 	set_flash_timing(flash->sfc, DEF_TCHSH, DEF_TSLCH, DEF_TSHSL_R, DEF_TSHSL_W);
 	/* Note: make sure the flash parameter are on die0. */
-	sfc_nor_read_params(sfc_params_addr, (unsigned char *)&params, sizeof(struct burner_params));
+#ifdef CONFIG_SFC_NOR_CONCAT
+	{
+		struct burner_params concat_params;
+		int concat_ret;
+
+		concat_ret =
+			sfc_nor_concat_load_persistent_params(&concat_params);
+		if (concat_ret < 0) {
+			printf("sfc nor concat read params error ret=%d\n",
+			       concat_ret);
+			return -1;
+		}
+		if (concat_ret > 0) {
+			concat_ret =
+				sfc_nor_concat_setup_from_params(&concat_params);
+			return concat_ret ? -1 : 0;
+		}
+	}
+#endif
+	sfc_nor_read_params(sfc_params_addr, (unsigned char *)&params,
+			    NOR_BURNER_PARAMS_PREFIX_SIZE);
 	printf("params.magic : 0x%x   params.version : 0x%x\n", params.magic, params.version);
 	if((params.magic != NOR_MAGIC) || (params.version != NOR_VERSION)) {
 		printf("sfc nor read params error\n");
@@ -744,7 +804,12 @@ int sfc_nor_flash_init(void)
 	/* update sfc rate */
 	sfc_clk_set(flash->sfc, CONFIG_SFC_NOR_RATE);
 
-	sfc_nor_do_special_func();
+	sfc_nor_do_special_func_internal(0);
+
+#ifdef CONFIG_SFC_NOR_CONCAT
+	if (sfc_nor_concat_setup_from_static_params())
+		return -1;
+#endif
 
 #else /* define CONFIG_BURNER */
 	flash->g_nor_info = malloc(sizeof(struct spi_nor_info));
@@ -759,23 +824,34 @@ struct nor_partition *get_sfc_nor_partition(u32 offset,u32 length, int *pt_index
         struct norflash_partitions *nor_parts = flash->norflash_partitions;
 	struct nor_partition *partition = nor_parts->nor_partition;
         struct spi_nor_info *spi_nor_info = flash->g_nor_info;
+	uint32_t flash_size = spi_nor_info->chip_size;
 	int i;
 
-	if (offset > spi_nor_info->chip_size) {
+#ifdef CONFIG_SFC_NOR_CONCAT
+	if (sfc_nor_concat_capacity())
+		flash_size = sfc_nor_concat_capacity();
+#endif
+
+	if (offset > flash_size) {
 		printf("offset address exceeds flash size.\n");
 		return NULL;
 	}
 
 	for (i = 0; i < nor_parts->num_partition_info; i++) {
-		if (offset >= partition[i].offset) {
-			if ((int)partition[i].size <= 0) {
-				partition[i].size = spi_nor_info->chip_size - partition[i].offset;
-			}
+		uint32_t part_end;
 
-			if ((offset + length) <= (partition[i].offset + partition[i].size)) {
-				*pt_index = i;
-				break;
-			}
+		if ((int)partition[i].size <= 0)
+			partition[i].size = flash_size - partition[i].offset;
+
+		part_end = partition[i].offset + partition[i].size;
+		if (part_end < partition[i].offset)
+			continue;
+
+		if (offset >= partition[i].offset &&
+		    offset < part_end &&
+		    (offset + length) <= part_end) {
+			*pt_index = i;
+			break;
 		}
 	}
 	if (i == nor_parts->num_partition_info) {
@@ -853,14 +929,14 @@ int jz_sfc_chip_erase(void)
 	return 0;
 }
 
-static int sfc_nor_partition_erase()
+int sfc_nor_partition_erase()
 {
         struct norflash_partitions *nor_parts = flash->norflash_partitions;
 	struct nor_partition *partition = nor_parts->nor_partition;
 	struct spi_nor_info *spi_nor_info = flash->g_nor_info;
         uint32_t offset, size, flag;
         char *name = NULL;
-        int ret;
+        int ret = 0;
         int i;
 
         for (i = 0; i < nor_parts->num_partition_info; i++) {
@@ -872,8 +948,11 @@ static int sfc_nor_partition_erase()
                 flag = partition[i].mask_flags;
                 if (flag == PART_RO)
                         LOG_WARNING("\n%s partition is read-only and does not allow erase or write operation.\n", name);
-                else
+                else {
                         ret = sfc_nor_erase(offset, size);
+                        if (ret)
+                                return ret;
+                }
         }
 
         return ret;
@@ -1022,23 +1101,30 @@ static void dump_mini_cloner_params()
 
 int norflash_get_params_from_burner()
 {
-	unsigned int chip_id ,chipnum, i, ret;
-	struct spi_nor_info *spi_nor_info;
+	unsigned int chip_id;
+	int ret = 0;
+	unsigned char *nor_payload;
+	struct burner_params *burner_params;
 	struct mini_spi_nor_info *mini_spi_nor_info;
-	unsigned int id_len = 3;
-	unsigned int id_addr = 0;
-	unsigned int id_addr_len = 0;
-	unsigned int dummy = 0;
-	struct spiflash_info *spiflash_info;
 
-	spiflash_info = (struct spiflash_info *)
-		((unsigned char *)spi_args + sizeof(struct spi_param));
+	nor_payload = (unsigned char *)spi_args + sizeof(struct spi_param);
+	burner_params = (struct burner_params *)nor_payload;
+
+#ifdef CONFIG_SFC_NOR_CONCAT
+	if (burner_params->magic == NOR_MAGIC &&
+	    burner_params->version == NOR_CONCAT_VERSION)
+		return mtd_sfcnor_probe_burner_concat(burner_params);
+#endif
 
 	chip_id = sfc_nor_read_id();
 	LOG_INFO("spi nor flash chip_id is : %x\n", chip_id);
 
-	memcpy(&params, spiflash_info, sizeof(struct burner_params));
-	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
+	mini_spi_nor_info = (struct mini_spi_nor_info *)
+		(nor_payload + NOR_BURNER_PARAMS_PREFIX_SIZE);
+	memset(&params, 0, sizeof(params));
+	memcpy(&params, burner_params, NOR_BURNER_PARAMS_PREFIX_SIZE);
+	memcpy(&mini_params, mini_spi_nor_info,
+	       sizeof(struct mini_spi_nor_info));
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();
@@ -1058,14 +1144,22 @@ int norflash_get_params_from_burner()
 		sfc_clk_set(flash->sfc, spi_args->sfc_frequency);
 
 	sfc_nor_clear_status(flash);
-	sfc_nor_do_special_func();
+	sfc_nor_do_special_func_internal(0);
 
 #ifdef SFC_NOR_CLONER_DEBUG
-	LOG_DEBUG("partition num=%d\n", flash->norflash_partitions->num_partition_info);
-	for (i = 0; i < flash->norflash_partitions->num_partition_info; i++) {
-		LOG_DEBUG("p[%d].name=%s\n", i, flash->norflash_partitions->nor_partition[i].name);
-		LOG_DEBUG("p[%d].size=%x\n", i, flash->norflash_partitions->nor_partition[i].size);
-		LOG_DEBUG("p[%d].offset=%x\n", i, flash->norflash_partitions->nor_partition[i].offset);
+	{
+		int i;
+
+		LOG_DEBUG("partition num=%d\n",
+			  flash->norflash_partitions->num_partition_info);
+		for (i = 0; i < flash->norflash_partitions->num_partition_info; i++) {
+			LOG_DEBUG("p[%d].name=%s\n", i,
+				  flash->norflash_partitions->nor_partition[i].name);
+			LOG_DEBUG("p[%d].size=%x\n", i,
+				  flash->norflash_partitions->nor_partition[i].size);
+			LOG_DEBUG("p[%d].offset=%x\n", i,
+				  flash->norflash_partitions->nor_partition[i].offset);
+		}
 	}
 #endif
         if (spi_args->spi_erase != PART_ERASE)

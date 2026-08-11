@@ -6,7 +6,9 @@
 #include <asm/arch/sfc.h>
 #include <asm/arch/spinand.h>
 
-extern struct jz_sfcnand_partition *get_partion_index(u32 startaddr,u32 length,int *pt_index);
+extern struct jz_sfcnand_partition *get_sfc_nand_partition(u32 startaddr,
+							   u32 length,
+							   int *pt_index);
 /*******************************************************************************
  * in burner init,we find spinand information from stage2_arg
  * and change it to struct nand_param_from_burner which uboot can use
@@ -19,15 +21,26 @@ struct jz_sfcnand_burner_param bp;
 void get_burner_nandinfo()
 {
 	int i;
-	struct jz_sfcnand_burner_param *flash_info = spi_args->flash_info;
-	struct jz_sfcnand_burner_param *tmpbp = (struct jz_sfcnand_burner_param*)flash_info;
+	struct jz_sfcnand_burner_param *flash_info =
+		(struct jz_sfcnand_burner_param *)spi_args->flash_info;
+	struct jz_sfcnand_burner_param *tmpbp = flash_info;
+	const void *partition_src = &tmpbp->partition;
 
 	bp.magic_num = tmpbp->magic_num;
 	bp.partition_num= tmpbp->partition_num;
 
-	bp.partition = malloc(sizeof(struct jz_sfcnand_partition) * bp.partition_num);
+	if (bp.partition_num <= 0) {
+		bp.partition = NULL;
+		return;
+	}
 
-	memcpy(bp.partition, &tmpbp->partition, sizeof(struct jz_sfcnand_partition) * bp.partition_num);
+	bp.partition = malloc(sizeof(struct jz_sfcnand_partition) *
+			      bp.partition_num);
+	if (!bp.partition)
+		return;
+
+	memcpy(bp.partition, partition_src,
+	       sizeof(struct jz_sfcnand_partition) * bp.partition_num);
 
 #ifdef DEBUG
 	struct jz_sfcnand_partition *partition = bp.partition;
@@ -66,9 +79,24 @@ int spinand_read(struct cloner *cloner)
 	int ret = 0;
 	u32 addr = cloner->cmd->read.offset;
 	u32 len = cloner->cmd->read.length;
+	size_t read_len = len;
 	void *buf = (void *)cloner->read_req->buf;
 	nand_info_t *nand;
 	nand = &nand_info[0];
+
+	if (nand_concat_is_managed(nand)) {
+		if (addr > nand->size || len > nand->size - addr) {
+			LOG_ERROR("%s out of range addr=0x%x len=0x%x size=0x%llx\n",
+				  __func__, addr, len,
+				  (unsigned long long)nand->size);
+			return -EINVAL;
+		}
+		ret = nand_read_skip_bad(nand, addr, &read_len, NULL,
+					 nand->size - addr, buf);
+		if (ret < 0)
+			LOG_ERROR("%s error\n", __func__);
+		return ret;
+	}
 
 	if (nand_block_isbad(nand, addr)) {
 		LOG_WARNING("Skip bad block 0x%lx\n", addr);
@@ -88,15 +116,15 @@ int sfc_nand_program(struct cloner *cloner)
 	void *databuf = (void *)cloner->write_req->buf;
 	u32 startaddr = cloner->cmd->write.partition + (cloner->cmd->write.offset);
 	char command[128];
-	volatile int pt_index = -1;
+	int pt_index = -1;
 	struct jz_sfcnand_partition *partition;
 	int ret;
 
 	static int pt_index_bak = -1;
-	static char *part_name = NULL;
 	nand_info_t *nand;
 	nand = &nand_info[0];
 	unsigned int block_size = nand->erasesize;
+	int concat = nand_concat_is_managed(nand);
         uint32_t erase_type_backup = spi_args->spi_erase;
 
 	partition = get_sfc_nand_partition(startaddr,length,&pt_index);
@@ -117,11 +145,16 @@ int sfc_nand_program(struct cloner *cloner)
 		if (pt_index != pt_index_bak) {
 			bad_len = 0;
 		}
-		startaddr = sfc_nand_skip_bad(startaddr);
+		if (concat)
+			startaddr += bad_len;
+		else
+			startaddr = sfc_nand_skip_bad(startaddr);
 		if (spi_args->spi_erase == PART_ERASE || partition->mask_flags == PART_RO) {
-			if (pt_index != pt_index_bak || (partition->manager_mode == MTD_D_MODE && !(startaddr % block_size))) {
+			if (pt_index != pt_index_bak ||
+			    (!concat && partition->manager_mode == MTD_D_MODE &&
+			     !(startaddr % block_size))) {
 				memset(command, 0 , 128);
-				if (partition->manager_mode == MTD_D_MODE)
+				if (!concat && partition->manager_mode == MTD_D_MODE)
 					sprintf(command, "nand erase 0x%x 0x%x", startaddr, ALIGN(length, block_size));
 				else
 					sprintf(command, "nand erase 0x%x 0x%x", partition->offset, partition->size);
@@ -136,7 +169,22 @@ int sfc_nand_program(struct cloner *cloner)
 			pt_index_bak = pt_index;
 		}
 		if ((startaddr + length) <= (partition->size + partition->offset)) {
-			ret = nand_write(nand, startaddr, &length, databuf);
+			size_t request_len = length;
+			size_t write_len = length;
+			size_t actual = 0;
+
+			if (concat) {
+				ret = nand_write_skip_bad(
+					nand, startaddr, &write_len, &actual,
+					partition->offset + partition->size -
+					startaddr, databuf, 0);
+				if (!ret && actual > request_len)
+					bad_len += actual - request_len;
+				length = write_len;
+			} else {
+				ret = nand_write(nand, startaddr, &length,
+						 databuf);
+			}
 			LOG_INFO("nand write to offset 0x%lx, length = 0x%lx : ", startaddr, length);
 			if (ret || (length == 0)) {
 				LOG_ERROR("ERROR\n");

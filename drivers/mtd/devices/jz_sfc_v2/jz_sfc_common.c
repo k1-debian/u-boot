@@ -23,9 +23,14 @@
 #include <malloc.h>
 
 #include <asm/arch/sfc.h>
+#ifdef CONFIG_SFC_FLASH_CONCAT
+#include "jz_sfc_concat.h"
+#endif
 
 
 //#define	SFC_REG_DEBUG
+
+static uint32_t sfc_cdt_index_limit = NOR_MAX_INDEX;
 
 #define clamp(x, low, high) (min(max(low, x), high))
 
@@ -83,7 +88,7 @@ void dump_cdt(struct sfc *sfc)
 {
 	struct sfc_cdt *cdt;
 	int i;
-	int cnt = NOR_MAX_INDEX > NAND_MAX_INDEX ? NOR_MAX_INDEX : NAND_MAX_INDEX;
+	int cnt = sfc_cdt_index_limit;
 
 	if(sfc->cdt_addr == NULL){
 		printf("%s error: sfc res not init !\n", __func__);
@@ -677,6 +682,8 @@ void write_cdt(struct sfc *sfc, struct sfc_cdt *cdt, uint16_t start_index, uint1
 	cdt_size = sizeof(struct sfc_cdt);
 
 	memcpy((void *)sfc->cdt_addr + (start_index * cdt_size), (void *)cdt + (start_index * cdt_size), cdt_num * cdt_size);
+	if ((uint32_t)end_index + 1 > sfc_cdt_index_limit)
+		sfc_cdt_index_limit = (uint32_t)end_index + 1;
 	printf("create CDT index: %d ~ %d,  index number:%d.\n", start_index, end_index, cdt_num);
 }
 
@@ -735,8 +742,12 @@ static void sfc_set_data_config(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
 	}
 }
 
-int sfc_sync_cdt(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+static int sfc_sync_cdt_one(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
 {
+	int ret;
+
+	sfc_set_length(sfc, 0);
+
 	/* 1. set index */
 	sfc_set_index(sfc, xfer->cmd_index);
 
@@ -746,7 +757,92 @@ int sfc_sync_cdt(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
 	/* 3. config data config */
 	sfc_set_data_config(sfc, xfer);
 
-	return sfc_start_transfer(sfc);
+#ifdef CONFIG_SFC_FLASH_CONCAT
+	jz_sfc_flash_concat_xfer_begin();
+#endif
+	ret = sfc_start_transfer(sfc);
+#ifdef CONFIG_SFC_FLASH_CONCAT
+	jz_sfc_flash_concat_xfer_end();
+#endif
+
+	return ret;
+}
+
+#ifdef CONFIG_SFC_FLASH_CONCAT
+static int sfc_sync_cdt_forced_one(struct sfc *sfc,
+				   struct sfc_cdt_xfer *xfer)
+{
+	struct sfc_cdt *cdt = (struct sfc_cdt *)sfc->cdt_addr;
+	uint32_t saved_link;
+	int ret;
+
+	if (!cdt || !xfer || xfer->cmd_index >= sfc_cdt_index_limit)
+		return -1;
+
+	saved_link = cdt[xfer->cmd_index].link;
+	cdt[xfer->cmd_index].link =
+		saved_link & ~SFC_FLASH_CONCAT_CDT_LINK_BIT;
+	ret = sfc_sync_cdt_one(sfc, xfer);
+	cdt[xfer->cmd_index].link = saved_link;
+
+	return ret;
+}
+
+int sfc_sync_cdt_once(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+{
+	return sfc_sync_cdt_forced_one(sfc, xfer);
+}
+
+static int sfc_sync_cdt_chain_once(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+{
+	unsigned short index;
+	unsigned short index_limit;
+
+	if (!xfer)
+		return -EINVAL;
+
+	index = xfer->cmd_index;
+	index_limit = sfc_cdt_index_limit;
+
+	if (index >= index_limit)
+		return -EINVAL;
+
+	while (1) {
+		struct sfc_cdt *cdt = (struct sfc_cdt *)sfc->cdt_addr;
+		uint32_t saved_link = cdt[index].link;
+		uint32_t linked = !!(saved_link & SFC_FLASH_CONCAT_CDT_LINK_BIT);
+		struct sfc_cdt_xfer one = *xfer;
+		uint32_t cur_len_before;
+		int ret;
+
+		one.cmd_index = index;
+		one.dataen = !!(cdt[index].xfer & TRAN_CONF0_DATEEN);
+		cur_len_before = one.config.cur_len;
+		ret = sfc_sync_cdt_forced_one(sfc, &one);
+		if (ret)
+			return ret;
+		if (one.config.cur_len > cur_len_before)
+			xfer->config.cur_len +=
+				one.config.cur_len - cur_len_before;
+		if (!linked)
+			break;
+		index++;
+		if (index >= index_limit)
+			return -EINVAL;
+	}
+
+	return 0;
+}
+#endif
+
+int sfc_sync_cdt(struct sfc *sfc, struct sfc_cdt_xfer *xfer)
+{
+#ifdef CONFIG_SFC_FLASH_CONCAT
+	if (jz_sfc_flash_concat_uses_gpio_cs())
+		return sfc_sync_cdt_chain_once(sfc, xfer);
+#endif
+
+	return sfc_sync_cdt_one(sfc, xfer);
 }
 
 static int sfc_ctl_init(struct sfc *sfc)
@@ -820,4 +916,3 @@ void sfc_nand_wp_disable(struct sfc *sfc)
 	tmp &= ~GLB_WP_EN;
 	sfc_writel(sfc, SFC_GLB, tmp);
 }
-

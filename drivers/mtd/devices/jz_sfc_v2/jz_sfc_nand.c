@@ -25,6 +25,9 @@
 #include <asm/io.h>
 #include <asm/arch/spinand.h>
 #include "jz_sfc_common.h"
+#ifdef CONFIG_SFC_NAND_CONCAT
+#include "jz_sfc_concat.h"
+#endif
 #include "./nand_device/nand_common.h"
 
 #ifdef CONFIG_BURNER
@@ -44,13 +47,51 @@ DECLARE_GLOBAL_DATA_PTR;
 static unsigned int sfc_params_addr;
 static LIST_HEAD(nand_list);
 static struct sfc_flash *flash;
-
-/*struct nand_param_from_burner nand_param_from_burner;*/
 struct jz_sfcnand_burner_param jz_sfc_nand_burner_param;
 
+struct sfc_flash *jz_sfc_nand_current_flash(void)
+{
+	return flash;
+}
+
+void jz_sfc_nand_set_current_flash(struct sfc_flash *current)
+{
+	flash = current;
+}
+
+/*struct nand_param_from_burner nand_param_from_burner;*/
+
 static int sfcnand_block_checkbad(struct mtd_info *mtd, loff_t ofs,int getchip,int allowbbt);
-static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs);
+int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs);
 static int is_readonly_partition(uint32_t offset, uint32_t size);
+
+#ifdef CONFIG_SFC_NAND_CONCAT
+static int sfcnand_runtime_param_header_valid(
+		const struct jz_sfcnand_burner_param *param)
+{
+	return param && param->magic_num == SPINAND_MAGIC_NUM &&
+		param->partition_num > 0 &&
+		param->partition_num <= PARTITION_NUM;
+}
+
+static int sfcnand_runtime_partitions_valid(
+		const struct jz_sfcnand_partition *parts, int32_t count)
+{
+	int32_t i;
+
+	if (!parts || count <= 0 || count > PARTITION_NUM)
+		return 0;
+
+	for (i = 0; i < count; i++) {
+		if (!parts[i].size ||
+		    parts[i].offset > ~(uint32_t)0 - parts[i].size)
+			return 0;
+	}
+
+	return 1;
+}
+#endif
+
 
 static struct nand_ecclayout gd5f_ecc_layout_128 = {
 	.oobavail = 0,
@@ -99,7 +140,7 @@ static int32_t jz_sfc_nand_erase_blk(struct sfc_flash *flash, uint32_t pageaddr)
 	return ret;
 }
 
-static int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
+int jz_sfc_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 {
 	//struct sfc_flash *flash = TO_SFC_FLASH(mtd);
 	uint32_t addr = (uint32_t)instr->addr;
@@ -190,6 +231,7 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 	struct sfc_cdt_xfer xfer;
 	int ret;
 	int wait_ready_times = 2;
+	unsigned short cmd_index;
 
 	while (wait_ready_times > 0) {
 		ret = ops->get_feature(flash, GET_READY_STATUS);
@@ -205,10 +247,11 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 
 	/* set Index */
 	if(nand_info->param.need_quad){
-		xfer.cmd_index = NAND_QUAD_READ_TO_CACHE;
+		cmd_index = NAND_QUAD_READ_TO_CACHE;
 	}else{
-		xfer.cmd_index = NAND_STANDARD_READ_TO_CACHE;
+		cmd_index = NAND_STANDARD_READ_TO_CACHE;
 	}
+	xfer.cmd_index = cmd_index;
 
 	/* set addr */
 	xfer.rowaddr = pageaddr;
@@ -228,16 +271,27 @@ static int32_t jz_sfc_nand_read(struct sfc_flash *flash, int32_t pageaddr, int32
 	xfer.config.ops_mode = CPU_OPS;
 	xfer.config.buf = buffer;
 
+#ifdef CONFIG_SFC_NAND_CONCAT
+	ret = jz_sfc_nand_concat_read_gpio_cache(flash, &xfer,
+						 cmd_index, ops);
+	if (ret < 0)
+		return ret;
+	if (!ret)
+		goto read_done;
+#endif
+
 	if(sfc_sync_cdt(flash->sfc, &xfer)) {
 		printf("sfc_sync_cdt error ! %s %s %d\n",__FILE__,__func__,__LINE__);
 		return -EIO;
 	}
 
+read_done:
 	/* get status to check nand ecc status */
-	return ops->get_feature(flash, GET_ECC_STATUS);
+	ret = ops->get_feature(flash, GET_ECC_STATUS);
+	return ret;
 }
 
-static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf)
+int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf)
 {
 	uint32_t pagesize = mtd->writesize;
 	uint32_t pageaddr;
@@ -274,15 +328,11 @@ static int jz_sfcnand_read(struct mtd_info *mtd, loff_t from, size_t len, size_t
 	return reterr ? reterr : (ret_eccvalue ? ret_eccvalue : ret);
 }
 
-static int jz_sfcnand_write_oob(struct mtd_info *mtd, loff_t addr, struct mtd_oob_ops *ops)
+int jz_sfcnand_write_oob_raw(struct mtd_info *mtd, loff_t addr,
+			     struct mtd_oob_ops *ops)
 {
 	uint32_t oob_addr = (uint32_t)addr;
 	int32_t ret;
-
-#ifndef CONFIG_BURNER
-	if (is_readonly_partition(oob_addr, ops->len))
-		return -EROFS;
-#endif
 
 	debug("write oob_addr %x, datalen %d ooboff %d, ooblen %d\n", oob_addr, ops->len, ops->ooboffs, ops->ooblen);
 
@@ -305,7 +355,17 @@ write_oob_exit:
 	return ret;
 }
 
-static int sfcnand_block_isbad(struct mtd_info *mtd,loff_t ofs)
+static int jz_sfcnand_write_oob(struct mtd_info *mtd, loff_t addr, struct mtd_oob_ops *ops)
+{
+#ifndef CONFIG_BURNER
+	if (is_readonly_partition((uint32_t)addr, ops->len))
+		return -EROFS;
+#endif
+
+	return jz_sfcnand_write_oob_raw(mtd, addr, ops);
+}
+
+int sfcnand_block_isbad(struct mtd_info *mtd,loff_t ofs)
 {
 	int ret;
 	ret = sfcnand_block_checkbad(mtd, ofs,1, 0);
@@ -355,7 +415,7 @@ static int jz_sfcnand_erase(struct mtd_info *mtd, struct erase_info *instr)
 	return 0;
 }
 
-static int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd_oob_ops *ops)
+int32_t jz_sfcnand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd_oob_ops *ops)
 {
 	uint32_t addr = (uint32_t)from;
 	uint32_t pageaddr = addr / mtd->writesize;
@@ -435,18 +495,14 @@ static int jz_sfcnand_block_bad_check(struct mtd_info *mtd, loff_t ofs,int getch
 	return 0;
 }
 
-static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf)
+int jz_sfcnand_write_raw(struct mtd_info *mtd, loff_t to, size_t len,
+			 size_t *retlen, const u_char *buf)
 {
 	uint32_t pagesize = mtd->writesize;
 	uint32_t pageaddr;
 	uint32_t columnaddr;
 	uint32_t wlen;
-	int32_t ret;
-
-#ifndef CONFIG_BURNER
-        if (is_readonly_partition((uint32_t)to, len))
-		return -EROFS;
-#endif
+	int32_t ret = 0;
 
         while(len) {
 		pageaddr = (uint32_t)to / pagesize;
@@ -503,6 +559,16 @@ static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t 
 	return ret;
 }
 
+static int jz_sfcnand_write(struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf)
+{
+#ifndef CONFIG_BURNER
+        if (is_readonly_partition((uint32_t)to, len))
+		return -EROFS;
+#endif
+
+	return jz_sfcnand_write_raw(mtd, to, len, retlen, buf);
+}
+
 static void mtd_sfcnand_init(struct mtd_info *mtd)
 {
 	mtd->_erase = jz_sfcnand_erase;
@@ -518,7 +584,7 @@ static void mtd_sfcnand_init(struct mtd_info *mtd)
 	mtd->_block_markbad = sfcnand_block_markbad;
 }
 
-static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
+int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 {
 	struct nand_chip *chip = mtd->priv;
 	uint8_t buf[2] = { 0, 0 };
@@ -563,19 +629,46 @@ static int jz_sfcnand_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 }
 
-static void get_partition_from_spinand(struct sfc_flash *flash)
+void jz_sfc_nand_get_partition_from_spinand(struct sfc_flash *flash)
 {
 	size_t retlen;
+	size_t len;
 #ifdef CONFIG_USE_GLOBAL_SHARED_PARAMS
 	sfc_params_addr = gd->arch.gp->sfc_params_addr;
 #else
 	sfc_params_addr = CONFIG_SPIFLASH_PART_OFFSET;
 #endif
 	jz_sfcnand_read(flash->mtd, sfc_params_addr, sizeof(struct jz_sfcnand_burner_param) - 4, &retlen, (u_char *)&jz_sfc_nand_burner_param);
+#ifdef CONFIG_SFC_NAND_CONCAT
+	if (!sfcnand_runtime_param_header_valid(
+				&jz_sfc_nand_burner_param)) {
+		printf("sfc nand partition param invalid magic=%x count=%d, use empty runtime table\n",
+		       jz_sfc_nand_burner_param.magic_num,
+		       jz_sfc_nand_burner_param.partition_num);
+		jz_sfc_nand_burner_param.partition_num = 0;
+		jz_sfc_nand_burner_param.partition = NULL;
+		return;
+	}
+#endif
 	jz_sfc_nand_burner_param.partition = malloc(sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num);
+	if (!jz_sfc_nand_burner_param.partition) {
+		jz_sfc_nand_burner_param.partition_num = 0;
+		return;
+	}
+	len = sizeof(struct jz_sfcnand_partition) *
+		jz_sfc_nand_burner_param.partition_num;
 	jz_sfcnand_read(flash->mtd, sfc_params_addr + sizeof(struct jz_sfcnand_burner_param) - 4,
-			sizeof(struct jz_sfcnand_partition) * jz_sfc_nand_burner_param.partition_num, &retlen,
-			(u_char *)jz_sfc_nand_burner_param.partition);
+			len, &retlen, (u_char *)jz_sfc_nand_burner_param.partition);
+#ifdef CONFIG_SFC_NAND_CONCAT
+	if (!sfcnand_runtime_partitions_valid(
+				jz_sfc_nand_burner_param.partition,
+				jz_sfc_nand_burner_param.partition_num)) {
+		printf("sfc nand partition table invalid, use empty runtime table\n");
+		free(jz_sfc_nand_burner_param.partition);
+		jz_sfc_nand_burner_param.partition_num = 0;
+		jz_sfc_nand_burner_param.partition = NULL;
+	}
+#endif
 #ifdef DEBUG
 	{
 		int32_t i;
@@ -589,7 +682,7 @@ static void get_partition_from_spinand(struct sfc_flash *flash)
 #endif
 }
 
-static int32_t sfc_nand_reset(void)
+int32_t sfc_nand_reset(void)
 {
 	struct sfc_cdt_xfer xfer;
 
@@ -611,7 +704,7 @@ static int32_t sfc_nand_reset(void)
 	return 0;
 }
 
-static int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_flashinfo *nand_info)
+int32_t jz_sfc_nand_try_id(struct sfc_flash *flash, struct jz_sfcnand_flashinfo *nand_info)
 {
 	struct jz_sfcnand_device *nand_device;
 	struct sfc_cdt_xfer xfer;
@@ -757,7 +850,7 @@ static int32_t sfc_nand_enable_ecc(struct sfc_flash *flash)
 	return ret;
 }
 
-static int32_t sfc_nand_dev_init(struct sfc_flash *flash)
+int32_t sfc_nand_dev_init(struct sfc_flash *flash)
 {
 	int32_t ret = 0;
 	ret = sfc_nand_clear_write_protect(flash);
@@ -772,10 +865,14 @@ static int32_t sfc_nand_dev_init(struct sfc_flash *flash)
 	return ret;
 }
 
-static inline int32_t spinand_moudle_init(void)
+int32_t spinand_moudle_init(void)
 {
 	spinand_regcall_t *call = ll_entry_start(spinand_regcall_t, flash);
+	static int initialized;
 	int ret = 0 , i, count;
+
+	if (initialized)
+		return 0;
 
 	for (i = 0, count = ll_entry_count(spinand_regcall_t, flash);
 		i < count;
@@ -786,6 +883,8 @@ static inline int32_t spinand_moudle_init(void)
 		break;
 	    }
 	}
+	if (!ret)
+		initialized = 1;
 	return ret;
 }
 
@@ -884,7 +983,44 @@ static inline void create_cdt_table(struct sfc_flash *flash, uint32_t flag)
 	//dump_cdt(flash->sfc);
 }
 
-int32_t jz_sfc_nand_init()
+#ifdef CONFIG_SFC_NAND_CONCAT
+void jz_sfc_nand_create_cdt_table(struct sfc_flash *flash, uint32_t flag)
+{
+	create_cdt_table(flash, flag);
+}
+#endif
+
+void jz_sfc_nand_setup_mtd_geometry(struct mtd_info *mtd,
+				    struct nand_chip *chip,
+				    struct jz_sfcnand_flashinfo *info)
+{
+	mtd->flags |= MTD_CAP_NANDFLASH;
+	mtd->erasesize = info->param.blocksize;
+	mtd->writesize = info->param.pagesize;
+	mtd->oobsize = info->param.oobsize;
+
+	memset(chip, 0, sizeof(*chip));
+	chip->select_chip = NULL;
+	chip->badblockbits = 8;
+	chip->scan_bbt = nand_default_bbt;
+	chip->block_bad = jz_sfcnand_block_bad_check;
+	chip->block_markbad = jz_sfcnand_block_markbad;
+	chip->ecc.layout = &gd5f_ecc_layout_128;
+	chip->bbt_erase_shift = chip->phys_erase_shift =
+		ffs(mtd->erasesize) - 1;
+	if (!(chip->options & NAND_OWN_BUFFERS))
+		chip->buffers = memalign(ARCH_DMA_MINALIGN,
+					 sizeof(*chip->buffers));
+
+	if (mtd->writesize > 512 || (chip->options & NAND_BUSWIDTH_16))
+		chip->badblockpos = NAND_LARGE_BADBLOCK_POS;
+	else
+		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
+
+	mtd->priv = chip;
+}
+
+static int32_t jz_sfc_nand_single_init(void)
 {
 	struct nand_chip *chip;
 	struct mtd_info *mtd;
@@ -998,40 +1134,16 @@ int32_t jz_sfc_nand_init()
 	}
 #else
 	mtd->writesize = flash_info->param.pagesize;
-	get_partition_from_spinand(flash);
+	jz_sfc_nand_get_partition_from_spinand(flash);
 	flash_info->partition.num_partition =jz_sfc_nand_burner_param.partition_num;
 	flash_info->partition.partition = jz_sfc_nand_burner_param.partition;
 #endif
-
 	chip = calloc(1, sizeof(struct nand_chip));
 	if (!chip) {
 		ret = -ENOMEM;
 		goto failed;
 	}
-	memset(chip,0,sizeof(struct nand_chip));
-
-	mtd->flags |= MTD_CAP_NANDFLASH;
-	mtd->erasesize = flash_info->param.blocksize;
-	mtd->writesize = flash_info->param.pagesize;
-	mtd->oobsize = flash_info->param.oobsize;
-
-	chip->select_chip = NULL;
-	chip->badblockbits = 8;
-	chip->scan_bbt = nand_default_bbt;
-	chip->block_bad = jz_sfcnand_block_bad_check;
-	chip->block_markbad = jz_sfcnand_block_markbad;
-	chip->ecc.layout= &gd5f_ecc_layout_128; // for erase ops
-	chip->bbt_erase_shift = chip->phys_erase_shift = ffs(mtd->erasesize) - 1;
-	if (!(chip->options & NAND_OWN_BUFFERS))
-		chip->buffers = memalign(ARCH_DMA_MINALIGN,sizeof(*chip->buffers));
-
-	/* Set the bad block position */
-	if (mtd->writesize > 512 || (chip->options & NAND_BUSWIDTH_16))
-		chip->badblockpos = NAND_LARGE_BADBLOCK_POS;
-	else
-		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
-
-	mtd->priv = chip;
+	jz_sfc_nand_setup_mtd_geometry(mtd, chip, flash_info);
 
 	mtd_sfcnand_init(mtd);
 	nand_register(0);
@@ -1044,12 +1156,42 @@ failed:
 	return ret;
 }
 
+int32_t jz_sfc_nand_init()
+{
+#if defined(CONFIG_SFC_NAND_CONCAT) && !defined(CONFIG_BURNER)
+	int32_t ret;
+
+	ret = jz_sfc_nand_concat_init();
+	if (!ret)
+		return 0;
+	if (ret != 1)
+		return ret;
+#endif
+	return jz_sfc_nand_single_init();
+}
+
 struct jz_sfcnand_partition *get_sfc_nand_partition(u32 startaddr,u32 length,int *pt_index)
 {
-	struct jz_sfcnand_flashinfo *nand_info = flash->flash_info;
-	int ptcount = nand_info->partition.num_partition;
-	struct jz_sfcnand_partition *partition=nand_info->partition.partition;
+	struct jz_sfcnand_flashinfo *flash_info;
+	struct jz_sfcnand_partition_param *partition_param;
+	int ptcount;
+	struct jz_sfcnand_partition *partition;
 	int i;
+
+	if (!flash || !flash->flash_info) {
+		*pt_index = -1;
+		return NULL;
+	}
+
+	flash_info = flash->flash_info;
+	partition_param = &flash_info->partition;
+	if (!partition_param->partition) {
+		*pt_index = -1;
+		return NULL;
+	}
+
+	ptcount = partition_param->num_partition;
+	partition = partition_param->partition;
 
         for(i = 0; i < ptcount; i++){
 		if(startaddr >= partition[i].offset &&
@@ -1067,23 +1209,28 @@ struct jz_sfcnand_partition *get_sfc_nand_partition(u32 startaddr,u32 length,int
 
 static int is_readonly_partition(uint32_t offset, uint32_t size)
 {
-        int index;
-        struct jz_sfcnand_partition *partition = get_sfc_nand_partition(offset, size, &index);
+	int index;
+	struct jz_sfcnand_partition *partition;
 
-        if (!partition)
-                return -EINVAL;
+	partition = get_sfc_nand_partition(offset, size, &index);
+	if (!partition)
+		return -EINVAL;
 
-        if (partition->mask_flags && (partition->mask_flags & PART_RO)) {
-                printf("\n%s partition is read-only and does not allow erase or write operation.\n", partition->name);
-                return 1;
-        }
+	if (partition->mask_flags && (partition->mask_flags & PART_RO)) {
+		printf("\n%s partition is read-only and does not allow erase or write operation.\n", partition->name);
+		return 1;
+	}
 
-        return 0;
+	return 0;
 }
 
+int jz_sfc_nand_is_readonly_partition(uint32_t offset, uint32_t size)
+{
+	return is_readonly_partition(offset, size);
+}
 
 #ifdef CONFIG_BURNER
-static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint32_t partcount, struct jz_sfcnand_partition *jz_mtd_spinand_partition)
+void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint32_t partcount, struct jz_sfcnand_partition *jz_mtd_spinand_partition)
 {
 	char mtdparts_env[X_ENV_LENGTH];
 	char command[X_COMMAND_LENGTH];
@@ -1117,38 +1264,68 @@ static void mtd_sfcnand_partition_analysis(uint32_t blk_sz, uint32_t partcount, 
 	setenv("partition", NULL);
 }
 
+int sfcnand_burner_finish_probe(struct mtd_info *mtd)
+{
+	struct nand_chip *chip;
+	int32_t ret = 0;
+
+	if (!mtd)
+		return -EINVAL;
+
+	chip = mtd->priv;
+	if (!chip || !chip->scan_bbt)
+		return -EINVAL;
+
+	chip->scan_bbt(mtd);
+	chip->options |= NAND_BBT_SCANNED;
+
+	switch (spi_args->spi_erase) {
+	case CHIP_ERASE:
+	case FORCE_ERASE:
+		ret = run_command("nand erase.chip -y", 0);
+		if (ret)
+			return ret;
+		break;
+	case FACTORY_ERASE:
+		ret = run_command("nand scrub.chip -y", 0);
+		if (ret)
+			return ret;
+		break;
+	}
+
+	if (chip->bbt)
+		free(chip->bbt);
+	chip->scan_bbt(mtd);
+	chip->options |= NAND_BBT_SCANNED;
+
+	return 0;
+}
+
 int32_t mtd_sfcnand_probe_burner()
 {
 	struct jz_sfcnand_burner_param *param = spi_args->flash_info;
 	struct mtd_info *mtd = &nand_info[0];
-	struct nand_chip *chip;
 
 	int32_t ret;
+
+#ifdef CONFIG_SFC_NAND_CONCAT
+	if (sfcnand_runtime_param_header_valid(param)) {
+		ret = sfcnand_burner_probe_runtime_concat(param);
+		if (!ret)
+			return 0;
+		if (ret != 1)
+			return ret;
+	}
+#endif
 
 	if(jz_sfc_nand_init()) {
 		printf("ERR: jz_sfc_nand_init error!\n");
 		return -EIO;
 	}
-	chip = mtd->priv;
-	chip->scan_bbt(mtd);
-	chip->options |= NAND_BBT_SCANNED;
 
-	switch(spi_args->spi_erase){
-		case CHIP_ERASE:
-		case FORCE_ERASE:
-			if((ret = run_command("nand erase.chip -y", 0)))
-				return ret;
-			break;
-		case FACTORY_ERASE:
-			if((ret = run_command("nand scrub.chip -y", 0)))
-				return ret;
-			break;
-	}
-
-	if(chip->bbt)
-		free(chip->bbt);
-	chip->scan_bbt(mtd);
-	chip->options |= NAND_BBT_SCANNED;
+	ret = sfcnand_burner_finish_probe(mtd);
+	if (ret)
+		return ret;
 	mtd_sfcnand_partition_analysis(mtd->erasesize, param->partition_num,
 			(void *)&param->partition/*This is a structure rather than a pointer in burner*/);
 	return 0;

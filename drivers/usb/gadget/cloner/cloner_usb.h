@@ -29,6 +29,7 @@ struct cloner {
 	int crc;
 	void *args;
 	int inited;
+	uint32_t info_chip_index;
 
 	/*used for mtd, ubi*/
 	int full_size;

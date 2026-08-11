@@ -5,6 +5,7 @@ static char *readbuf = NULL;
 extern struct ParameterInfo	*global_args;
 
 #ifdef CONFIG_MTD_SFCNOR
+extern int sfcnor_get_flash_id(uint32_t chip_index, uint32_t *jedec_id);
 #include "cloner_sfcnor.c"
 #endif
 #ifdef CONFIG_MTD_SPINAND
@@ -31,19 +32,16 @@ int clmd_sfc_info(struct cloner *cloner)
 		memset(global_args->data, 0, sizeof(*policy_args));
 	}
 #ifdef CONFIG_MTD_SFCNOR
-	int ret = sfc_nor_flash_init();
-	if (ret < 0) {
-		LOG_ERROR("sfc nor init failed\n");
-		return ret;
-	}
-
 	if(policy_args->use_sfc_nor){
-		id_code = get_norflash_id();
+		uint32_t nor_id = 0;
+		int ret = sfcnor_get_flash_id(cloner->info_chip_index,
+					      &nor_id);
+		id_code = ret ? ret : (int)nor_id;
 	}
 #endif
 	if(id_code < 0) {
 		LOG_ERROR("get flash id failed, %d\n", id_code);
-		id_code = 0;
+		return id_code;
 	}
 
 	memcpy(cloner->ep0req->buf, &id_code, sizeof(unsigned int));
@@ -66,6 +64,16 @@ int clmd_sfc_init(struct cloner *cloner, void *args, void *ops_data)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_SFC_FLASH_CONCAT
+	if (sfc_cs_topology_valid(&spi_args->cs_topology)) {
+		ret = jz_sfc_flash_concat_set_runtime_topology(
+			&spi_args->cs_topology);
+		if (ret) {
+			LOG_ERROR("sfc runtime cs topology error ret=%d\n", ret);
+			return ret;
+		}
+	}
+#endif
 #ifdef CONFIG_MTD_SFCNOR
 	if(policy_args->use_sfc_nor)
 		ret = norflash_get_params_from_burner();
