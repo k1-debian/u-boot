@@ -104,6 +104,7 @@
 #define CONFIG_SDHCI
 #define CONFIG_JZ_SDHCI
 #define CONFIG_GENERIC_MMC
+#define CONFIG_MMC_SDMA
 
 
 /* SFC */

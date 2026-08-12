@@ -95,6 +95,11 @@ static void jz_set_mmc_clk(int index, unsigned int clock)
 static int jz_sdhci_init(u32 regbase, int index)
 {
 	struct sdhci_host *host = NULL;
+#if defined(CONFIG_BURNER) && defined(CONFIG_X2000_V12)
+	unsigned int max_clock = (index == 0) ? 52000000 : 24000000;
+#else
+	unsigned int max_clock = 24000000;
+#endif
 
 #ifdef CONFIG_SPL_BUILD
 	host = &jz_sdhci_host;
@@ -123,7 +128,7 @@ static int jz_sdhci_init(u32 regbase, int index)
 	host->sdr_pin = CONFIG_SDHCI_SDR_PIN;
 	host->set_voltage = jz_sdhci_set_voltage;
 #endif
-	return add_sdhci(host, 24000000, 300000);
+	return add_sdhci(host, max_clock, 300000);
 }
 
 void jz_mmc_init(void)
