@@ -37,7 +37,7 @@ void sfc_nor_create_cdt_table(struct sfc_flash *flash, uint32_t flag);
 int sfc_nor_partition_erase(void);
 
 static int sfc_nor_concat_params_valid(
-		const struct burner_params *concat_params);
+		const struct spiflash_info *concat_info);
 
 int sfc_nor_concat_inject_burner_params(uint32_t offset, uint32_t len,
 					unsigned char *buf)
@@ -57,7 +57,7 @@ int sfc_nor_concat_inject_burner_params(uint32_t offset, uint32_t len,
 	    concat_params->version != NOR_CONCAT_VERSION)
 		return 0;
 
-	if (!sfc_nor_concat_params_valid(concat_params))
+	if (!sfc_nor_concat_params_valid(info))
 		return -EINVAL;
 
 	if ((int)spi_args->param_offset > 0)
@@ -644,22 +644,24 @@ static int sfc_nor_spi_info_valid(const struct spi_nor_info *info)
 }
 
 static const struct spi_nor_info *sfc_nor_concat_params_chip_info(
-		const struct burner_params *concat_params,
+		const struct spiflash_info *concat_info,
 		uint32_t chip_index, uint32_t *linear_base)
 {
+	const struct burner_params *concat_params;
 	const struct nor_concat_extension *concat;
 	const struct burner_concat_chip_info *chip;
 
-	if (!concat_params)
+	if (!concat_info)
 		return NULL;
 
+	concat_params = &concat_info->burner_params;
 	if (chip_index == 0) {
 		if (linear_base)
 			*linear_base = 0;
 		return &concat_params->spi_nor_info;
 	}
 
-	concat = &concat_params->concat;
+	concat = &concat_info->concat;
 	if (chip_index >= concat->chip_count)
 		return NULL;
 
@@ -670,20 +672,22 @@ static const struct spi_nor_info *sfc_nor_concat_params_chip_info(
 }
 
 static int sfc_nor_concat_params_valid(
-		const struct burner_params *concat_params)
+		const struct spiflash_info *concat_info)
 {
+	const struct burner_params *concat_params;
 	const struct nor_concat_extension *concat;
 	const struct spi_nor_info *info;
 	uint32_t total;
 	uint32_t i;
 
-	if (!concat_params)
+	if (!concat_info)
 		return 0;
+	concat_params = &concat_info->burner_params;
 	if (concat_params->magic != NOR_MAGIC ||
 	    concat_params->version != NOR_CONCAT_VERSION)
 		return 0;
 
-	concat = &concat_params->concat;
+	concat = &concat_info->concat;
 	if (concat->chip_count < 2 ||
 	    concat->chip_count > NOR_CONCAT_CHIP_MAX ||
 	    concat->chip_count > CONFIG_SFC_FLASH_CONCAT_MAX_CHIPS)
@@ -691,7 +695,7 @@ static int sfc_nor_concat_params_valid(
 	if (concat_params->norflash_partitions.num_partition_info > NOR_PART_NUM)
 		return 0;
 
-	info = sfc_nor_concat_params_chip_info(concat_params, 0, NULL);
+	info = sfc_nor_concat_params_chip_info(concat_info, 0, NULL);
 	if (!sfc_nor_spi_info_valid(info))
 		return 0;
 
@@ -699,7 +703,7 @@ static int sfc_nor_concat_params_valid(
 	for (i = 1; i < concat->chip_count; i++) {
 		uint32_t linear_base;
 
-		info = sfc_nor_concat_params_chip_info(concat_params, i,
+		info = sfc_nor_concat_params_chip_info(concat_info, i,
 						       &linear_base);
 		if (linear_base != total)
 			return 0;
@@ -715,15 +719,17 @@ static int sfc_nor_concat_params_valid(
 }
 
 static int sfc_nor_concat_load_partitions(
-		const struct burner_params *concat_params)
+		const struct spiflash_info *concat_info)
 {
 	struct norflash_partitions *parts = flash->norflash_partitions;
+	const struct burner_params *concat_params;
 	const struct norflash_partitions *src_parts;
 	uint32_t i;
 
-	if (!parts || !sfc_nor_concat_params_valid(concat_params))
+	if (!parts || !sfc_nor_concat_params_valid(concat_info))
 		return -EINVAL;
 
+	concat_params = &concat_info->burner_params;
 	src_parts = &concat_params->norflash_partitions;
 	memset(parts, 0, sizeof(*parts));
 	parts->num_partition_info = src_parts->num_partition_info;
@@ -735,7 +741,7 @@ static int sfc_nor_concat_load_partitions(
 
 		if (sfc_flash_concat_range_fits_u32_64(
 					src->offset, src->size,
-					concat_params->concat.total_size, &end))
+					concat_info->concat.total_size, &end))
 			return -EINVAL;
 
 		memcpy(dst->name, src->name, sizeof(dst->name));
@@ -749,18 +755,20 @@ static int sfc_nor_concat_load_partitions(
 }
 
 static int sfc_nor_concat_setup_from_params_common(
-		const struct burner_params *concat_params, int burner)
+		const struct spiflash_info *concat_info, int burner)
 {
 	const struct sfc_flash_concat_context *ctx;
+	const struct burner_params *concat_params;
 	const struct nor_concat_extension *concat;
 	uint32_t part_count;
 	uint32_t i;
 	int ret;
 
-	if (!flash || !sfc_nor_concat_params_valid(concat_params))
+	if (!flash || !sfc_nor_concat_params_valid(concat_info))
 		return -EINVAL;
 
-	concat = &concat_params->concat;
+	concat_params = &concat_info->burner_params;
+	concat = &concat_info->concat;
 	part_count = concat_params->norflash_partitions.num_partition_info;
 
 	if (jz_sfc_flash_concat_init())
@@ -796,7 +804,7 @@ static int sfc_nor_concat_setup_from_params_common(
 		uint32_t next_total = nor_concat_total_size;
 		uint32_t linear_base;
 
-		arg_info = sfc_nor_concat_params_chip_info(concat_params, i,
+		arg_info = sfc_nor_concat_params_chip_info(concat_info, i,
 							   &linear_base);
 		if (!sfc_nor_spi_info_valid(arg_info))
 			return -EINVAL;
@@ -872,7 +880,7 @@ static int sfc_nor_concat_setup_from_params_common(
 		return ret;
 	nor_concat_enabled = 1;
 
-	ret = sfc_nor_concat_load_partitions(concat_params);
+	ret = sfc_nor_concat_load_partitions(concat_info);
 	if (ret)
 		return ret;
 
@@ -924,17 +932,17 @@ static int sfc_nor_concat_chip_erase_all(void)
 }
 
 int mtd_sfcnor_probe_burner_concat(
-		const struct burner_params *concat_params)
+		const struct spiflash_info *concat_info)
 {
 	int ret;
 
-	if (!sfc_nor_concat_params_valid(concat_params))
+	if (!sfc_nor_concat_params_valid(concat_info))
 		return -EINVAL;
 
 	if (!flash && sfc_nor_flash_init())
 		return -EIO;
 
-	ret = sfc_nor_concat_setup_from_params_common(concat_params, 1);
+	ret = sfc_nor_concat_setup_from_params_common(concat_info, 1);
 	if (ret)
 		return ret;
 
@@ -962,9 +970,11 @@ int mtd_sfcnor_probe_burner_concat(
 
 #ifndef CONFIG_BURNER
 int sfc_nor_concat_load_persistent_params(
-		struct burner_params *concat_params)
+		struct spiflash_info *concat_info)
 {
-	if (!concat_params)
+	const struct burner_params *concat_params;
+
+	if (!concat_info)
 		return -EINVAL;
 
 	/*
@@ -976,25 +986,26 @@ int sfc_nor_concat_load_persistent_params(
 		return -EIO;
 
 	if (sfc_nor_read_params(sfc_params_addr,
-				(unsigned char *)concat_params,
-				sizeof(*concat_params)) !=
-	    sizeof(*concat_params))
+				(unsigned char *)concat_info,
+				sizeof(*concat_info)) !=
+	    sizeof(*concat_info))
 		return -EIO;
 
+	concat_params = &concat_info->burner_params;
 	if (concat_params->magic != NOR_MAGIC ||
 	    concat_params->version != NOR_CONCAT_VERSION)
 		return 0;
 
-	if (!sfc_nor_concat_params_valid(concat_params))
+	if (!sfc_nor_concat_params_valid(concat_info))
 		return -EINVAL;
 
 	return 1;
 }
 
 int sfc_nor_concat_setup_from_params(
-		const struct burner_params *concat_params)
+		const struct spiflash_info *concat_info)
 {
-	return sfc_nor_concat_setup_from_params_common(concat_params, 0);
+	return sfc_nor_concat_setup_from_params_common(concat_info, 0);
 }
 
 int sfc_nor_concat_setup_from_static_params(void)

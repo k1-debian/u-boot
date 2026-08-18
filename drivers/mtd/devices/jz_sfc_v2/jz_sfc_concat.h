@@ -12,7 +12,7 @@
 #endif
 
 #ifndef CONFIG_SFC_FLASH_CONCAT_MAX_CHIPS
-#define CONFIG_SFC_FLASH_CONCAT_MAX_CHIPS 4
+#define CONFIG_SFC_FLASH_CONCAT_MAX_CHIPS 3
 #endif
 
 #define SFC_FLASH_CONCAT_CDT_LINK_BIT	(1U << 31)
@@ -270,9 +270,9 @@ int nand_concat_erase_opts(nand_info_t *meminfo,
 #ifdef CONFIG_SFC_NOR_CONCAT
 int sfc_nor_concat_select_boot_chip(void);
 int sfc_nor_concat_load_persistent_params(
-		struct burner_params *concat_params);
+		struct spiflash_info *concat_info);
 int sfc_nor_concat_setup_from_params(
-		const struct burner_params *concat_params);
+		const struct spiflash_info *concat_info);
 int sfc_nor_concat_setup_from_static_params(void);
 int sfc_nor_concat_is_enabled(void);
 int sfc_nor_concat_read(unsigned int from, unsigned int len,
@@ -283,7 +283,7 @@ int sfc_nor_concat_erase(unsigned int addr, unsigned int len);
 uint32_t sfc_nor_concat_capacity(void);
 #ifdef CONFIG_BURNER
 int mtd_sfcnor_probe_burner_concat(
-		const struct burner_params *concat_params);
+		const struct spiflash_info *concat_info);
 int sfc_nor_concat_inject_burner_params(uint32_t offset, uint32_t len,
 					unsigned char *buf);
 #endif

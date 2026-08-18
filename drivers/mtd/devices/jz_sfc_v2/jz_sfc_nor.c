@@ -770,11 +770,11 @@ int sfc_nor_flash_init(void)
 	/* Note: make sure the flash parameter are on die0. */
 #ifdef CONFIG_SFC_NOR_CONCAT
 	{
-		struct burner_params concat_params;
+		struct spiflash_info concat_info;
 		int concat_ret;
 
 		concat_ret =
-			sfc_nor_concat_load_persistent_params(&concat_params);
+			sfc_nor_concat_load_persistent_params(&concat_info);
 		if (concat_ret < 0) {
 			printf("sfc nor concat read params error ret=%d\n",
 			       concat_ret);
@@ -782,7 +782,7 @@ int sfc_nor_flash_init(void)
 		}
 		if (concat_ret > 0) {
 			concat_ret =
-				sfc_nor_concat_setup_from_params(&concat_params);
+				sfc_nor_concat_setup_from_params(&concat_info);
 			return concat_ret ? -1 : 0;
 		}
 		}
@@ -1103,28 +1103,22 @@ int norflash_get_params_from_burner()
 {
 	unsigned int chip_id;
 	int ret = 0;
-	unsigned char *nor_payload;
-	struct burner_params *burner_params;
-	struct mini_spi_nor_info *mini_spi_nor_info;
+	struct spiflash_info *spiflash_info;
 
-	nor_payload = (unsigned char *)spi_args + sizeof(struct spi_param);
-	burner_params = (struct burner_params *)nor_payload;
+	spiflash_info = (struct spiflash_info *)
+		((unsigned char *)spi_args + sizeof(struct spi_param));
 
 #ifdef CONFIG_SFC_NOR_CONCAT
-	if (burner_params->magic == NOR_MAGIC &&
-	    burner_params->version == NOR_CONCAT_VERSION)
-		return mtd_sfcnor_probe_burner_concat(burner_params);
+	if (spiflash_info->burner_params.magic == NOR_MAGIC &&
+	    spiflash_info->burner_params.version == NOR_CONCAT_VERSION)
+		return mtd_sfcnor_probe_burner_concat(spiflash_info);
 #endif
 
 	chip_id = sfc_nor_read_id();
 	LOG_INFO("spi nor flash chip_id is : %x\n", chip_id);
 
-	mini_spi_nor_info = (struct mini_spi_nor_info *)
-		(nor_payload + sizeof(struct burner_params));
-	memset(&params, 0, sizeof(params));
-	memcpy(&params, burner_params, sizeof(struct burner_params));
-	memcpy(&mini_params, mini_spi_nor_info,
-	       sizeof(struct mini_spi_nor_info));
+	memcpy(&params, spiflash_info, sizeof(struct burner_params));
+	memcpy(&mini_params, &spiflash_info->mini_spi_nor_info, sizeof(struct mini_spi_nor_info));
 
 #ifdef SFC_NOR_CLONER_DEBUG
 	dump_cloner_params();

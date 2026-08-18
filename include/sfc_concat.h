@@ -31,7 +31,11 @@
 	 (((uint32_t)(func) & 0x0fU) << SFC_FLASH_CONCAT_NATIVE_FUNC_SHIFT))
 
 #ifndef SFC_CS_TOPOLOGY_MAX_CHIPS
-#define SFC_CS_TOPOLOGY_MAX_CHIPS	4
+#ifdef CONFIG_SFC_FLASH_CONCAT_MAX_CHIPS
+#define SFC_CS_TOPOLOGY_MAX_CHIPS	CONFIG_SFC_FLASH_CONCAT_MAX_CHIPS
+#else
+#define SFC_CS_TOPOLOGY_MAX_CHIPS	3
+#endif
 #endif
 
 #define SFC_CS_TOPOLOGY_MAGIC		0x53435354U /* "SCST" */
@@ -82,6 +86,7 @@ static inline int sfc_flash_concat_chip_cs_valid(
 
 	switch (cs_type) {
 	case SFC_FLASH_CONCAT_CS_NATIVE:
+		return chip->gpio_active_low <= 1;
 	case SFC_FLASH_CONCAT_CS_GPIO:
 		return chip->gpio_cs != SFC_FLASH_CONCAT_GPIO_INVALID &&
 			chip->gpio_active_low <= 1;
