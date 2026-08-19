@@ -15,9 +15,6 @@
 #define NORFLASH_PART_WO	1
 #define NORFLASH_PART_RO	2
 
-#define MTD_MODE                0x0     //use mtd mode, erase partition when write
-#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
-#define UBI_MANAGER             0x1
 
 
 #define NOR_CMD_TYPE_1        0x00010001
@@ -110,9 +107,13 @@ struct mini_spi_nor_info {
 };
 
 
-#define MTD_MODE                0x0     //use mtd mode, erase partition when write
-#define MTD_D_MODE              0x2     //use mtd dynamic mode, erase block_size when write
-#define UBI_MANAGER             0x1
+
+struct multi_die_flash {
+	uint32_t flash_id;
+	uint32_t die_num;
+	char* flash_name;
+};
+
 
 struct nor_partition {
 	char name[32];

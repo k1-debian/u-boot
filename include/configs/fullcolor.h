@@ -27,6 +27,10 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X2000_V12	/* x2000_v12 SoC */
 
+/* VDDIO_CIM/VDDIO_SD configurations (keep pre-3567cf1 default 3V3; confirm against schematic) */
+	#define CONFIG_VDD_CIM_VOLTAGE	GPIO_VOLTAGE_3V3
+	#define CONFIG_VDD_SD_VOLTAGE	GPIO_VOLTAGE_3V3
+
 
 #define CONFIG_SYS_APLL_FREQ		1200000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/

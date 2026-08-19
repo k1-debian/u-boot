@@ -182,6 +182,7 @@
 #endif
 
 /* sfc nand config */
+#define PARTITION_NUM 10
 #ifdef  CONFIG_SPL_SFC_NAND
 #define CONFIG_JZ_SFC
 #define CONFIG_SFC_NAND_INIT_RATE		100000000
@@ -270,10 +271,12 @@
 #ifdef CONFIG_JZ_MMC_MSC0
 #define CONFIG_JZ_MMC_SPLMSC 0
 #define CONFIG_JZ_MMC_MSC0_PC_4BIT 1
+#define CONFIG_GPT_TAB_BUILT_IN
 #endif
 #ifdef CONFIG_JZ_MMC_MSC1
 #define CONFIG_JZ_MMC_SPLMSC 1
 #define CONFIG_JZ_MMC_MSC1_PD 1
+#define CONFIG_GPT_TAB_BUILT_IN
 #endif
 
 /* DEBUG ETHERNET */

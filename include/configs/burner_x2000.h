@@ -42,11 +42,11 @@
 #define CONFIG_SYS_MEM_FREQ		24000000
 #else
 #define CONFIG_SYS_APLL_FREQ		600000000	/*If APLL not use mast be set 0*/
-#define CONFIG_SYS_MPLL_FREQ		300000000	/*If MPLL not use mast be set 0*/
+#define CONFIG_SYS_MPLL_FREQ		1500000000	/*If MPLL not use mast be set 0*/
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
 #define CONFIG_SYS_CPU_FREQ		600000000
-#define CONFIG_SYS_MEM_FREQ		300000000
+#define CONFIG_SYS_MEM_FREQ		(CONFIG_SYS_MPLL_FREQ / 3)
 /* #define CONFIG_SYS_MEM_FREQ		100000000 */
 #endif
 

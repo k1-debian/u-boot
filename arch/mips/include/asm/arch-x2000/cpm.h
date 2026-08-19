@@ -51,6 +51,8 @@
 #define CPM_CPSPPR		(0x38)
 #define CPM_USBPCR		(0x3C)
 #define CPM_USBRDT		(0x40)
+#define USBRDT_IDDIG_EN		(1 << 24)
+#define USBRDT_IDDIG_REG	(1 << 23)
 #define CPM_USBVBFIL		(0x44)
 #define CPM_USBPCR1		(0x48)
 #define CPM_CPPCR		(0x0C)

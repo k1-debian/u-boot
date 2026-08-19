@@ -99,6 +99,8 @@
 /* #define BOOTARGS_COMMON "console=ttyS3,115200 mem=96M@0x0 rmem=32M@0x6000000"*/
 #define CONFIG_BOOTARGS_AUTO_MODIFY	1	/*auto detect memory size, and modify bootargs for kernel.*/
 
+#define LINUX_LOGLEVEL	"loglevel=7"
+
 #if (CONFIG_BOOTARGS_AUTO_MODIFY == 1)
 	#define BOOTARGS_COMMON LINUX_LOGLEVEL " console=ttyS2,115200 "
 #else
@@ -525,7 +527,7 @@
 #else
 #define CONFIG_SPL_TEXT_BASE		0xb2401000
 #endif	/*CONFIG_SPL_NOR_SUPPORT*/
-#define CONFIG_SPL_MAX_SIZE		(18 * 1024)
+#define CONFIG_SPL_MAX_SIZE		(20 * 1024)
 
 
 
