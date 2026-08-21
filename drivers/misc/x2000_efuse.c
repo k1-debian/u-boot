@@ -732,25 +732,33 @@ static int x2000_get_segment_by_offset(unsigned int offset, struct seg_info *seg
 		unsigned int *seg_start, unsigned int *seg_bytes)
 {
 	int i;
+	int found = -1;
+	unsigned int found_start = 0;
 
 	for (i = 0; i < ARRAY_SIZE(seg_info_array); i++) {
-		unsigned int start = seg_info_array[i].word_address * 4 +
-			seg_info_array[i].begin_align;
-		unsigned int bytes = seg_info_array[i].bit_num / 8;
+		/* offset and seg_start are eFuse word addresses. */
+		unsigned int start = seg_info_array[i].word_address;
 
-		bytes += seg_info_array[i].bit_num % 8 ? 1 : 0;
-		if (offset >= start && offset < start + bytes) {
-			if (seg)
-				*seg = seg_info_array[i];
-			if (seg_start)
-				*seg_start = start;
-			if (seg_bytes)
-				*seg_bytes = bytes;
-			return 0;
+		if (offset >= start && offset < start + seg_info_array[i].word_num &&
+			(found < 0 || start > found_start)) {
+			found = i;
+			found_start = start;
 		}
 	}
 
-	return -EINVAL;
+	if (found < 0)
+		return -EINVAL;
+
+	if (seg)
+		*seg = seg_info_array[found];
+	if (seg_start)
+		*seg_start = found_start;
+	if (seg_bytes) {
+		*seg_bytes = seg_info_array[found].bit_num / 8;
+		*seg_bytes += seg_info_array[found].bit_num % 8 ? 1 : 0;
+	}
+
+	return 0;
 }
 
 int efuse_read_segment(void *buf, int length, off_t offset)
@@ -770,7 +778,11 @@ int efuse_read_segment(void *buf, int length, off_t offset)
 	if (ret)
 		return ret;
 
-	inner_offset = offset - seg_start;
+	inner_offset = (offset - seg_start) * 4;
+	if (inner_offset > seg.begin_align)
+		inner_offset -= seg.begin_align;
+	else
+		inner_offset = 0;
 	if (length > seg_bytes - inner_offset)
 		length = seg_bytes - inner_offset;
 
@@ -812,7 +824,11 @@ int efuse_write_segment(void *buf, int length, off_t offset)
 	if (ret)
 		return ret;
 
-	inner_offset = offset - seg_start;
+	inner_offset = (offset - seg_start) * 4;
+	if (inner_offset > seg.begin_align)
+		inner_offset -= seg.begin_align;
+	else
+		inner_offset = 0;
 	max_input_length = (seg_bytes - inner_offset) * 2;
 	if (length > max_input_length)
 		length = max_input_length;
