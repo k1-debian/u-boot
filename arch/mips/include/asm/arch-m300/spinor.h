@@ -11,6 +11,16 @@
 #define NOR_REVERSION_NUMBER		0
 #define NOR_VERSION             (NOR_MAJOR_VERSION_NUMBER | (NOR_MINOR_VERSION_NUMBER << 8) | (NOR_REVERSION_NUMBER << 16))
 
+#define NOR_CONCAT_MAJOR_VERSION_NUMBER  3
+#define NOR_CONCAT_MINOR_VERSION_NUMBER  0
+#define NOR_CONCAT_REVERSION_NUMBER      0
+#define NOR_CONCAT_VERSION      (NOR_CONCAT_MAJOR_VERSION_NUMBER | \
+				 (NOR_CONCAT_MINOR_VERSION_NUMBER << 8) | \
+				 (NOR_CONCAT_REVERSION_NUMBER << 16))
+
+#define NOR_CONCAT_CHIP_MAX	3
+#define NOR_PARAMS_RESERVED_SIZE	128
+
 #define NOR_PART_NUM		10
 
 #define NOR_CMD_TYPE_1        0x00010001
@@ -114,6 +124,17 @@ struct norflash_partitions {
 	uint32_t num_partition_info;
 };
 
+struct burner_concat_chip_info {
+	uint32_t linear_base;
+	struct spi_nor_info spi_nor_info;
+};
+
+struct nor_concat_extension {
+	uint32_t chip_count;
+	uint32_t total_size;
+	struct burner_concat_chip_info chip[NOR_CONCAT_CHIP_MAX - 1];
+};
+
 struct burner_params {
 	uint32_t magic;
 	uint32_t version;
@@ -131,6 +152,8 @@ struct builtin_params {
 struct spiflash_info {
 	struct burner_params burner_params;
 	struct mini_spi_nor_info mini_spi_nor_info;
+	unsigned char reserved[NOR_PARAMS_RESERVED_SIZE];
+	struct nor_concat_extension concat;
 };
 
 struct nor_block_info {

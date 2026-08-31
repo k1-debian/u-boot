@@ -112,6 +112,14 @@
 #define CONFIG_SFC_V20
 #define CONFIG_SPIFLASH_PART_OFFSET         0x5800
 
+/* Multiple chips */
+#define CONFIG_SFC_FLASH_CONCAT
+#ifdef CONFIG_SFC_FLASH_CONCAT
+#define CONFIG_MTD_CONCAT
+#define CONFIG_SFC_NOR_CONCAT
+#define CONFIG_SFC_NAND_CONCAT
+#define CONFIG_SFC_FLASH_CONCAT_MAX         3
+#endif
 
 /* Nor */
 #define CONFIG_MTD_SFCNOR
