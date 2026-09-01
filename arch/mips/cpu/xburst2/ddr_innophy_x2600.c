@@ -28,6 +28,7 @@
 #include <asm/io.h>
 #include <asm/arch/clk.h>
 
+//#define CONFIG_DDR_DRVODT_DEBUG
 
 #define DEBUG_TX_RX_TRAINING	0
 #define OPTIMIZE_TX_RX_TRAINING 0	// save training time.
@@ -50,6 +51,7 @@ static char tx_rx_left_dq[0x3f];
 static char tx_rx_right_dq[0x3f];
 #ifdef CONFIG_DDR_DRVODT_DEBUG
 unsigned int pass_count = 0;
+#define DEBUG_DRVODT_INIT_MAGIC 0x4452564fU
 #endif
 
 #ifdef  CONFIG_DWC_DEBUG
@@ -1522,6 +1524,7 @@ static void _ddrp_post_init(void)
 
 }
 #ifdef CONFIG_DDR_DRVODT_DEBUG
+
 static int do_whole_chip_test(void)
 {
 	int i = 0;
@@ -1555,6 +1558,7 @@ static int do_whole_chip_test(void)
 	return 0;
 }
 struct debug_param {
+	unsigned int init_magic;
 	unsigned int drv_value;
 	unsigned int odt_value;
 	unsigned int restart_count;
@@ -1565,18 +1569,22 @@ struct debug_param *debug_drvodt = (struct debug_param *) 0xb2400000;
 void debug_date_eye(void) {
         unsigned char default_drv = 0x14;
         unsigned char default_odt = 0x5;
-#ifdef CONFIG_BURNER
-        int x=0,y=0;
-	debug_drvodt->drv_value = 0;
-	debug_drvodt->odt_value = 0;
-	debug_drvodt->debug_value = 1;
-	for(x=0;x<32;x++){
-		for(y=0;y<32;y++){
-			debug_drvodt->date_eye[x][y]=1;
+
+	if (debug_drvodt->init_magic != DEBUG_DRVODT_INIT_MAGIC) {
+		int x = 0, y = 0;
+
+		debug_drvodt->drv_value = 0;
+		debug_drvodt->odt_value = 0;
+		debug_drvodt->restart_count = 0;
+		debug_drvodt->debug_value = 1;
+		for (x = 0; x < 32; x++) {
+			for (y = 0; y < 32; y++)
+				debug_drvodt->date_eye[x][y] = 1;
 		}
+		debug_drvodt->init_magic = DEBUG_DRVODT_INIT_MAGIC;
 	}
-#else
-        int mem_count = 2;
+
+	int mem_count = 2;
 	int restart_count_max = 2;
 	int i=0;
 	serial_debug("drv_value  is %x odt_value is %x\n",debug_drvodt->drv_value,debug_drvodt->odt_value);
@@ -1656,7 +1664,6 @@ void debug_date_eye(void) {
                         ddrp_zq_calibration(1, drvodt);
 		}
 	}
-#endif
 }
 void debug_date_eye_printf(void) {
 	int i=0;
@@ -1845,7 +1852,7 @@ struct ddrp_calib {
  * */
 struct ddrp_calib calib_val[8*8*8];
 
-static void ddrp_software_calibration(void)
+void ddrp_software_calibration(void)
 {
 
 	int x, y, z, x1, y1;

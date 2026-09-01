@@ -59,7 +59,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 	},
 
 	[2] = {
-		/*HYF4GQ4UAACEB*/
+		/*HYF4GQ4UAACBE*/
 		.pagesize = 4 * 1024,
 		.blocksize = 4 * 1024 * 64,
 		.oobsize = 256,
@@ -102,7 +102,7 @@ static struct jz_sfcnand_base_param yhy_midc9_param[] = {
 static struct device_id_struct device_id[] = {
 	DEVICE_ID_STRUCT(0x21, "HYF1GQ4UADCAE", &yhy_midc9_param[0]),
 	DEVICE_ID_STRUCT(0x52, "HYF2GQ4UADCAE", &yhy_midc9_param[1]),
-	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4UAACEB", &yhy_midc9_param[2]),
+	DEVICE_ID_STRUCT(0xD4, "HYF4GQ4UAACBE", &yhy_midc9_param[2]),
 	DEVICE_ID_STRUCT(0x2B, "HYF512NACB", &yhy_midc9_param[3]),
 };
 
