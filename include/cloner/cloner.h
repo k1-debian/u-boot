@@ -220,9 +220,7 @@ struct spi_param {
 	int reserve_space;
 	int reserve_space_protect;
 	int param_offset;
-#ifdef CONFIG_SFC_FLASH_CONCAT
 	struct sfc_cs_topology cs_topology;
-#endif
 	char* flash_info[0];
 };
 struct policy_param{
