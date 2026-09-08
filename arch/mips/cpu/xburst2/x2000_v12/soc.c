@@ -126,7 +126,7 @@ void board_init_f(ulong dummy)
 #endif
 #ifndef CONFIG_X2000_FPGA
 
-	ingenic_setup_voltage_config();
+	//ingenic_setup_voltage_config();
 
 	debug("Timer init\n");
 	timer_init();

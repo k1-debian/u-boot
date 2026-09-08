@@ -100,6 +100,7 @@ struct global_info {
 		uint32_t ddr_timing4;
 		uint32_t ddr_autosr;
 		uint32_t ddr_remap_array[5];
+		uint32_t ddr_mr2;
 	} ddr_change_param;
 
 };

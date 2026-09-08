@@ -1,6 +1,9 @@
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
+#ifdef CONFIG_BURNER
+#include "../ddr_reg_data.h"
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 #define REG32(addr) *(volatile unsigned int *)(addr)
@@ -23,6 +26,16 @@ DECLARE_GLOBAL_DATA_PTR;
 #define DDR_64M_REMMAP2	    0x0b0a0908
 #define DDR_64M_REMMAP3	    0x0f0e0100
 
+#define SOCID_V3_MASK		    0xff
+#define SOCID_DDR_DS_BIT	    8
+#define SOCID_DDR_DS_MASK	    0x7
+#define SOCID_DDR_AUTOSR_DISABLE_BIT 11
+#define DDRP_MR2_DS_BIT             5
+#define DDRP_MR2_DS_MASK	    (0x7 << DDRP_MR2_DS_BIT)
+#define DDRC_TIMING4_tXP_BIT	    4
+#define DDRC_TIMING4_tXP_MASK	    (0x7 << DDRC_TIMING4_tXP_BIT)
+#define DDRC_TIMING4_tXP_6	    (6 << DDRC_TIMING4_tXP_BIT)
+
 enum ddr_change_param {
 	REMMAP0,
 	REMMAP1,
@@ -39,6 +52,8 @@ static enum socid {
 	X1000E_NEW = 0xff09,
 	X1500_NEW = 0xff0a,
 	X1501 = 0xff05,
+	X1500_V3 = 0x0086,
+	X1000_V3 = 0x0083,
 };
 
 static struct soc_desc {
@@ -55,6 +70,8 @@ static const struct soc_desc desc[] = {
 	{X1000E_NEW,  "X1000E_NEW"},
 	{X1500_NEW,   "X1500_NEW"},
 	{X1501,       "X1501"},
+	{X1500_V3,    "X1500_V3"},
+	{X1000_V3,    "X1000_V3"},
 };
 
 
@@ -128,17 +145,55 @@ static void ddr_change_64M()
 
 }
 
+static int socid_is_v3(unsigned int socid)
+{
+	/* V3 stores the DRAM drive-strength selector in bits [10:8]. */
+	unsigned int id = socid & SOCID_V3_MASK;
+
+	return id == X1500_V3 || id == X1000_V3;
+}
+
+static void ddr_change_v3(unsigned int socid)
+{
+	unsigned int ds = (socid >> SOCID_DDR_DS_BIT) & SOCID_DDR_DS_MASK;
+	unsigned int disable_autosr =
+		(socid >> SOCID_DDR_AUTOSR_DISABLE_BIT) & 0x1;
+
+#ifdef CONFIG_BURNER
+	if (g_ddr_param) {
+		g_ddr_param->ddrp_mr2 &= ~DDRP_MR2_DS_MASK;
+		g_ddr_param->ddrp_mr2 |= ds << DDRP_MR2_DS_BIT;
+		g_ddr_param->ddrc_timing4 &= ~DDRC_TIMING4_tXP_MASK;
+		g_ddr_param->ddrc_timing4 |= DDRC_TIMING4_tXP_6;
+		g_ddr_param->ddrc_autosr = 1;
+		if (disable_autosr)
+			g_ddr_param->ddrc_autosr = 0;
+	}
+#else
+	gd->arch.gi->ddr_change_param.ddr_mr2 &= ~DDRP_MR2_DS_MASK;
+	gd->arch.gi->ddr_change_param.ddr_mr2 |= ds << DDRP_MR2_DS_BIT;
+	gd->arch.gi->ddr_change_param.ddr_timing4 &= ~DDRC_TIMING4_tXP_MASK;
+	gd->arch.gi->ddr_change_param.ddr_timing4 |= DDRC_TIMING4_tXP_6;
+	gd->arch.gi->ddr_change_param.ddr_autosr = 1;
+	if (disable_autosr)
+		gd->arch.gi->ddr_change_param.ddr_autosr = 0;
+#endif
+}
+
 int check_socid(unsigned int *ddr_id, char *chip_name)
 {
 	int i = 0;
-	unsigned int socid;
+	unsigned int socid, desc_id;
+	int is_v3;
 
 	read_socid(&socid);
 	if (ddr_id)
 		*ddr_id = socid;
+	is_v3 = socid_is_v3(socid);
+	desc_id = is_v3 ? socid & SOCID_V3_MASK : socid;
 
 	for (i = 0; i < ARRAY_SIZE(desc); i++) {
-		if (desc[i].id == socid) {
+		if (desc[i].id == desc_id) {
 
 			if (chip_name)
 				strcpy(chip_name, desc[i].chip);
@@ -154,10 +209,12 @@ int check_socid(unsigned int *ddr_id, char *chip_name)
 				gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
 			}
 
+			if (is_v3)
+				ddr_change_v3(socid);
+
 			return 0;
 		}
 	}
 
 	return -1;
 }
-
