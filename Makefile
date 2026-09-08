@@ -632,7 +632,11 @@ else
 ifdef CONFIG_SPL_AUTO_DETECT_BOOT
 		$(obj)tools/ingenic-tools/mk-gpt-xboot.sh $(obj)tools/ingenic-tools/mbr-of-gpt.bin \
 		$(obj)u-boot-with-spl.bin $(obj)tools/ingenic-tools/gpt.bin $(CONFIG_GPT_TABLE_PATH)/partitions_auto_detect_boot.tab $@
-else	#CONFIG_SPL_AUTO_DETECT_BOOT
+else
+ifdef CONFIG_OTA_ABUPDATE
+		$(obj)tools/ingenic-tools/mk-gpt-xboot.sh $(obj)tools/ingenic-tools/mbr-of-gpt.bin \
+		$(obj)u-boot-with-spl.bin $(obj)tools/ingenic-tools/gpt.bin $(CONFIG_GPT_TABLE_PATH)/partitions_mmc_ab_ota.tab $@
+else
 ifdef CONFIG_JZSD_OTA_VERSION20
 		$(obj)tools/ingenic-tools/mk-gpt-xboot.sh $(obj)tools/ingenic-tools/mbr-of-gpt.bin \
 		$(obj)u-boot-with-spl.bin $(obj)tools/ingenic-tools/gpt.bin $(CONFIG_GPT_TABLE_PATH)/partitions_mmc_ota.tab $@
@@ -640,6 +644,7 @@ else
 		$(obj)tools/ingenic-tools/mk-gpt-xboot.sh $(obj)tools/ingenic-tools/mbr-of-gpt.bin \
 		$(obj)u-boot-with-spl.bin $(obj)tools/ingenic-tools/gpt.bin $(CONFIG_GPT_TABLE_PATH)/partitions.tab $@
 endif
+endif	#CONFIG_OTA_ABUPDATE
 endif	#CONFIG_SPL_AUTO_DETECT_BOOT
 endif
 endif

@@ -263,9 +263,25 @@
 		#else
 			#undef CONFIG_SPL_BOOTARGS
 			#if defined(CONFIG_JZ_MMC_MSC0)
-				#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+				#ifdef CONFIG_OTA_ABUPDATE
+					#define CONFIG_PATA_KERNEL_NAME	"kernelA"
+					#define CONFIG_PATB_KERNEL_NAME	"kernelB"
+					#define CONFIG_SPL_BOOT_PARTITION_A	BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+					#define CONFIG_SPL_BOOT_PARTITION_B	BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk0p9 rootdelay=3 rw"
+					#define CONFIG_SPL_BOOTARGS		CONFIG_SPL_BOOT_PARTITION_A
+				#else
+					#define CONFIG_SPL_BOOTARGS	BOOTARGS_COMMON  " rootfstype=ext4 root=/dev/mmcblk0p8 rootdelay=3 rw"
+				#endif
 			#elif defined(CONFIG_JZ_MMC_MSC2)
-				#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p8 rootdelay=3 rw"
+				#ifdef CONFIG_OTA_ABUPDATE
+					#define CONFIG_PATA_KERNEL_NAME	"kernelA"
+					#define CONFIG_PATB_KERNEL_NAME	"kernelB"
+					#define CONFIG_SPL_BOOT_PARTITION_A	BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p8 rootdelay=3 rw"
+					#define CONFIG_SPL_BOOT_PARTITION_B	BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p9 rootdelay=3 rw"
+					#define CONFIG_SPL_BOOTARGS		CONFIG_SPL_BOOT_PARTITION_A
+				#else
+					#define CONFIG_SPL_BOOTARGS	 BOOTARGS_COMMON " rootfstype=ext4 root=/dev/mmcblk2p8 rootdelay=3 rw"
+				#endif
 			#endif
 			#define CONFIG_SPL_OTA_BOOTARGS    BOOTARGS_COMMON "ip=off root=/dev/ram0 rw rdinit=/linuxrc"
 		#endif

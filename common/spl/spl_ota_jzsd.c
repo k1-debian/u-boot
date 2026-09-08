@@ -23,7 +23,19 @@ struct nv_flags {
     unsigned int start;
     unsigned int finish;
     unsigned int needfullpkg;
+    unsigned int rot_angle;
+    unsigned int partition;
 };
+
+#ifdef CONFIG_OTA_ABUPDATE
+#define PARTITIONA 0
+#define PARTITIONB 0xa5
+#define SLPC_BASIC_COUNT 0xaa55aa00
+#ifdef CONFIG_OTA_ABUPDATE_ROLLBACK
+#define CHANGE_NUM 6
+#define MAX_NUM 12
+#endif
+#endif
 
 #ifdef CONFIG_SLAVE_CORE_LOAD
 #define SLAVECORE_CPU_ID 1
@@ -171,6 +183,7 @@ static void nv_read(unsigned int start, unsigned int blkcnt, unsigned int *dst)
     ota_ops->jzsd_read(start, blkcnt, dst);
 }
 
+#ifndef CONFIG_OTA_ABUPDATE
 static int get_signature(const int signature)
 {
     unsigned int flag = cpm_get_scrpad();
@@ -187,6 +200,7 @@ static int get_signature(const int signature)
 
     return 0;
 }
+#endif
 
 char* spl_jzsd_ota_load_image(void)
 {
@@ -225,6 +239,37 @@ char* spl_jzsd_ota_load_image(void)
     }
 #endif
 
+#ifdef CONFIG_OTA_ABUPDATE
+#ifdef CONFIG_OTA_ABUPDATE_ROLLBACK
+	{
+		unsigned int slpc_data = cpm_inl(CPM_SLPC);
+		if ((slpc_data >> 8) == (SLPC_BASIC_COUNT >> 8)) {
+			if ((slpc_data & 0xff) >= CHANGE_NUM) {
+				((struct nv_flags *)nvdata)->partition =
+					((struct nv_flags *)nvdata)->partition == PARTITIONA ? PARTITIONB : PARTITIONA;
+				if ((slpc_data & 0xff) >= MAX_NUM)
+					while (1) printf("Both partitions A/B failed to start!!!\n");
+			}
+			cpm_outl(++slpc_data, CPM_SLPC);
+		} else {
+			cpm_outl(SLPC_BASIC_COUNT, CPM_SLPC);
+		}
+	}
+#else
+	cpm_outl(SLPC_BASIC_COUNT, CPM_SLPC);
+#endif
+	if (((struct nv_flags *)nvdata)->partition == PARTITIONB) {
+		ret = ota_ops->jzsd_load_img_from_partition(CONFIG_PATB_KERNEL_NAME);
+		if (ret < 0) return NULL;
+		cmdargs = CONFIG_SPL_BOOT_PARTITION_B;
+		printf("The startup area for this time is partitionB !!!\n");
+	} else {
+		ret = ota_ops->jzsd_load_img_from_partition(CONFIG_PATA_KERNEL_NAME);
+		if (ret < 0) return NULL;
+		cmdargs = CONFIG_SPL_BOOT_PARTITION_A;
+		printf("The startup area for this time is partitionA !!!\n");
+	}
+#else
 	if(get_signature(RECOVERY_SIGNATURE) || (((struct nv_flags*)nvdata)->start == 0x5a5a5a5a)) {
 	    if(((struct nv_flags*)nvdata)->boot) {
 	        //printf("BOOTROOM-HELP: stage2 ota choose recovery\n");
@@ -236,6 +281,7 @@ char* spl_jzsd_ota_load_image(void)
 	} else {
 	    cmdargs = spl_jzsd_load_normal_image();
 	}
+#endif
 
     return cmdargs;
 }
