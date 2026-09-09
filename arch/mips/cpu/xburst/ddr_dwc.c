@@ -30,18 +30,26 @@
 
 #ifndef CONFIG_BURNER
 #include <generated/ddr_reg_values.h>
+
+#ifdef CONFIG_CHECK_SOCID
+#undef	DDR_CHIP_0_SIZE
 #undef	DDRC_CFG_VALUE
 #undef  DDRC_MMAP0_VALUE
 #undef	DDRC_MMAP1_VALUE
 #undef	DDRC_TIMING4_VALUE
 #undef  DDRC_AUTOSR_EN_VALUE
-#undef	DDR_CHIP_0_SIZE
+#undef	DDRP_MR2_VALUE
 #define DDRC_CFG_VALUE	(gd->arch.gi->ddr_change_param.ddr_cfg)
 #define	DDRC_MMAP0_VALUE (gd->arch.gi->ddr_change_param.ddr_mmap0)
 #define DDRC_MMAP1_VALUE (gd->arch.gi->ddr_change_param.ddr_mmap1)
 #define DDRC_TIMING4_VALUE (gd->arch.gi->ddr_change_param.ddr_timing4)
 #define DDRC_AUTOSR_EN_VALUE (gd->arch.gi->ddr_change_param.ddr_autosr)
 #define remap_array (gd->arch.gi->ddr_change_param.ddr_remap_array)
+#define DDRP_MR2_VALUE (gd->arch.gi->ddr_change_param.ddr_mr2)
+#else
+static unsigned int remap_array[] = REMMAP_ARRAY;
+#endif
+
 static unsigned int out_imp_table[] = DDRP_IMPANDCE_ARRAY;
 static unsigned int odt_imp_table[] = DDRP_ODT_IMPANDCE_ARRAY;
 static unsigned char rzq_table[] = DDRP_RZQ_TABLE;
@@ -53,14 +61,14 @@ static unsigned char rzq_table[] = DDRP_RZQ_TABLE;
 #define remap_array REMMAP_ARRAY
 #endif
 
+DECLARE_GLOBAL_DATA_PTR;
+
 /* #define CONFIG_DWC_DEBUG 1 */
 #include "ddr_debug.h"
 #define ddr_hang() do{								\
 		serial_debug("%s %d\n",__FUNCTION__,__LINE__);	\
 		hang();										\
 	}while(0)
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef  CONFIG_DWC_DEBUG
 #define FUNC_ENTER() serial_debug("%s enter.\n",__FUNCTION__);

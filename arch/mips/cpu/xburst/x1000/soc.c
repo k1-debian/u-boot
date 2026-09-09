@@ -58,7 +58,8 @@ struct global_info ginfo __attribute__ ((section(".data"))) = {
 		DDRC_MMAP1_VALUE,
 	    	DDRC_TIMING4_VALUE,
 		DDRC_AUTOSR_EN_VALUE,
-		.ddr_remap_array = REMMAP_ARRAY
+		.ddr_remap_array = REMMAP_ARRAY,
+		.ddr_mr2 = DDRP_MR2_VALUE,
 	}
 };
 #endif
