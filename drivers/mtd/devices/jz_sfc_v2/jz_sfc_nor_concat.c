@@ -15,6 +15,10 @@
 #define SFC_NOR_SR_WIP			(1U << 0)
 #define SFC_NOR_WRITE_TIMEOUT_MS	3000
 #define SFC_NOR_ERASE_TIMEOUT_MS	15000
+#define SFC_NOR_WRITE_INITIAL_DELAY_US	400
+#define SFC_NOR_WRITE_POLL_DELAY_US	50
+#define SFC_NOR_ERASE_INITIAL_DELAY_US	1000
+#define SFC_NOR_ERASE_POLL_DELAY_US	500
 
 extern struct sfc_flash *flash;
 extern struct burner_params params;
@@ -419,12 +423,17 @@ static int sfc_nor_concat_read_status(unsigned char *status)
 	return xfer.config.cur_len >= 1 ? 0 : -EIO;
 }
 
-static int sfc_nor_concat_wait_ready(unsigned int timeout_ms)
+static int sfc_nor_concat_wait_ready(unsigned int timeout_ms,
+				     unsigned int initial_delay_us,
+				     unsigned int poll_delay_us)
 {
 	ulong start = get_timer(0);
 	unsigned char status = SFC_NOR_SR_WIP;
 	unsigned int polls = 0;
 	int ret;
+
+	if (initial_delay_us)
+		udelay(initial_delay_us);
 
 	do {
 		ret = sfc_nor_concat_read_status(&status);
@@ -435,7 +444,7 @@ static int sfc_nor_concat_wait_ready(unsigned int timeout_ms)
 		if (!(status & SFC_NOR_SR_WIP))
 			return 0;
 
-		udelay(1000);
+		udelay(poll_delay_us);
 	} while (get_timer(start) <= timeout_ms);
 
 	ret = sfc_nor_concat_read_status(&status);
@@ -482,7 +491,9 @@ static int sfc_nor_concat_page_write_wait(unsigned int to, unsigned int len,
 		ret = sfc_nor_concat_check_write_len(ret, len, to);
 		if (ret)
 			return ret;
-		return sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS);
+		return sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS,
+						SFC_NOR_WRITE_INITIAL_DELAY_US,
+						SFC_NOR_WRITE_POLL_DELAY_US);
 	}
 
 	actual_len = spi_nor_info->page_size - page_offset;
@@ -490,7 +501,9 @@ static int sfc_nor_concat_page_write_wait(unsigned int to, unsigned int len,
 	ret = sfc_nor_concat_check_write_len(ret, actual_len, to);
 	if (ret)
 		return ret;
-	ret = sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS);
+	ret = sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS,
+					SFC_NOR_WRITE_INITIAL_DELAY_US,
+					SFC_NOR_WRITE_POLL_DELAY_US);
 	if (ret)
 		return ret;
 
@@ -503,7 +516,9 @@ static int sfc_nor_concat_page_write_wait(unsigned int to, unsigned int len,
 		ret = sfc_nor_concat_check_write_len(ret, actual_len, to + i);
 		if (ret)
 			return ret;
-		ret = sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS);
+		ret = sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS,
+						SFC_NOR_WRITE_INITIAL_DELAY_US,
+						SFC_NOR_WRITE_POLL_DELAY_US);
 		if (ret)
 			return ret;
 	}
@@ -528,7 +543,15 @@ static int sfc_nor_concat_prepare_profile(void *priv)
 	set_flash_timing(flash->sfc, chip->info.tCHSH, chip->info.tSLCH,
 			 chip->info.tSHSL_RD, chip->info.tSHSL_WR);
 
-	return sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS);
+	sfc_nor_get_special_ops(flash);
+	if (chip->info.chip_size > 0x1000000 &&
+	    flash->nor_flash_ops &&
+	    flash->nor_flash_ops->set_4byte_mode)
+		flash->nor_flash_ops->set_4byte_mode(flash);
+
+	return sfc_nor_concat_wait_ready(SFC_NOR_WRITE_TIMEOUT_MS,
+					 SFC_NOR_WRITE_INITIAL_DELAY_US,
+					 SFC_NOR_WRITE_POLL_DELAY_US);
 }
 
 static int sfc_nor_concat_activate(uint32_t index)
@@ -1224,7 +1247,9 @@ static int sfc_nor_concat_child_erase(struct jz_sfc_concat_mtd_child *child,
 		}
 		if (wait_ready) {
 			ret = sfc_nor_concat_wait_ready(
-					SFC_NOR_ERASE_TIMEOUT_MS);
+					SFC_NOR_ERASE_TIMEOUT_MS,
+					SFC_NOR_ERASE_INITIAL_DELAY_US,
+					SFC_NOR_ERASE_POLL_DELAY_US);
 			if (ret) {
 				instr->state = MTD_ERASE_FAILED;
 				return ret;

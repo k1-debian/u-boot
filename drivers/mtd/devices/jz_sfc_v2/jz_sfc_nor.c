@@ -260,16 +260,48 @@ unsigned int sfc_do_write(unsigned int addr, unsigned int len, unsigned char *bu
 	struct sfc_cdt_xfer xfer;
 	memset(&xfer, 0, sizeof(xfer));
 
-	/* set Index */
-	if (flash->quad_succeed) {
-		xfer.cmd_index = NOR_WRITE_QUAD_ENABLE;
-	} else {
-		xfer.cmd_index = NOR_WRITE_STANDARD_ENABLE;
-	}
-
 	/* active die */
 	if (flash->die_num > 1)
 		addr = ACTIVE_DIE(addr);
+
+#if defined(CONFIG_SFC_NOR_CONCAT) && !defined(CONFIG_SPL_BUILD)
+	if (jz_sfc_flash_concat_uses_gpio_cs()) {
+		struct sfc_cdt_xfer wr_en_xfer;
+		struct sfc_cdt_xfer data_xfer;
+
+		memset(&wr_en_xfer, 0, sizeof(wr_en_xfer));
+		wr_en_xfer.cmd_index = NOR_WRITE_ENABLE;
+		if (sfc_sync_cdt_once(flash->sfc, &wr_en_xfer)) {
+			printf("sfc write enable error ! %s %s %d\n",
+			       __FILE__, __func__, __LINE__);
+			return -EIO;
+		}
+
+		memset(&data_xfer, 0, sizeof(data_xfer));
+		data_xfer.cmd_index = flash->quad_succeed ?
+			NOR_WRITE_QUAD : NOR_WRITE_STANDARD;
+		data_xfer.columnaddr = 0;
+		data_xfer.rowaddr = addr;
+		data_xfer.dataen = ENABLE;
+		data_xfer.config.datalen = len;
+		data_xfer.config.data_dir = GLB_TRAN_DIR_WRITE;
+		data_xfer.config.ops_mode = CPU_OPS;
+		data_xfer.config.buf = buf;
+		if (sfc_sync_cdt_once(flash->sfc, &data_xfer)) {
+			printf("sfc write data error ! %s %s %d\n",
+			       __FILE__, __func__, __LINE__);
+			return -EIO;
+		}
+
+		return len;
+	}
+#endif
+
+	/* set Index */
+	if (flash->quad_succeed)
+		xfer.cmd_index = NOR_WRITE_QUAD_ENABLE;
+	else
+		xfer.cmd_index = NOR_WRITE_STANDARD_ENABLE;
 
 	/* set addr */
 	xfer.columnaddr = 0;
@@ -296,12 +328,38 @@ int sfc_do_erase(uint32_t addr)
 
 	memset(&xfer, 0, sizeof(xfer));
 
-	/* set Index */
-	xfer.cmd_index = NOR_ERASE_WRITE_ENABLE;
-
 	/* active die */
 	if (flash->die_num > 1)
 		addr = ACTIVE_DIE(addr);
+
+#if defined(CONFIG_SFC_NOR_CONCAT) && !defined(CONFIG_SPL_BUILD)
+	if (jz_sfc_flash_concat_uses_gpio_cs()) {
+		struct sfc_cdt_xfer wr_en_xfer;
+		struct sfc_cdt_xfer erase_xfer;
+
+		memset(&wr_en_xfer, 0, sizeof(wr_en_xfer));
+		wr_en_xfer.cmd_index = NOR_WRITE_ENABLE;
+		if (sfc_sync_cdt_once(flash->sfc, &wr_en_xfer)) {
+			printf("sfc erase enable error ! %s %s %d\n",
+			       __FILE__, __func__, __LINE__);
+			return -EIO;
+		}
+
+		memset(&erase_xfer, 0, sizeof(erase_xfer));
+		erase_xfer.cmd_index = NOR_ERASE;
+		erase_xfer.rowaddr = addr;
+		if (sfc_sync_cdt_once(flash->sfc, &erase_xfer)) {
+			printf("sfc erase data error ! %s %s %d\n",
+			       __FILE__, __func__, __LINE__);
+			return -EIO;
+		}
+
+		return 0;
+	}
+#endif
+
+	/* set Index */
+	xfer.cmd_index = NOR_ERASE_WRITE_ENABLE;
 
 	/* set addr */
 	xfer.rowaddr = addr;
