@@ -1,22 +1,11 @@
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
-#ifdef CONFIG_BURNER
-#include "../ddr_reg_data.h"
-#endif
+#include <asm/arch/base.h>
+#include <asm/arch/efuse.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 #define REG32(addr) *(volatile unsigned int *)(addr)
-
-#define EFUSE_CHIPID_ADDR	    0x00
-#define EFUSE_SOCID_ADDR	    0x3c
-
-#define EFUSE_CTRL	    0xb3540000
-#define EFUSE_CFG	    0xb3540004
-#define EFUSE_STATE	    0xb3540008
-#define EFUSE_DATA0	    0xb354000C
-#define EFUSE_DATA1	    0xb3540010
-#define EFUSE_DATA3	    0xb3540018
 
 #define DDR_TIMING4	    0x07230f31
 #define DDR_64M_CFG	    0x0a468a40
@@ -26,15 +15,12 @@ DECLARE_GLOBAL_DATA_PTR;
 #define DDR_64M_REMMAP2	    0x0b0a0908
 #define DDR_64M_REMMAP3	    0x0f0e0100
 
-#define SOCID_V3_MASK		    0xff
-#define SOCID_DDR_DS_BIT	    8
-#define SOCID_DDR_DS_MASK	    0x7
-#define SOCID_DDR_AUTOSR_DISABLE_BIT 11
 #define DDRP_MR2_DS_BIT             5
-#define DDRP_MR2_DS_MASK	    (0x7 << DDRP_MR2_DS_BIT)
+#define DDRP_MR2_DS_MASK           (0x7 << DDRP_MR2_DS_BIT)
 #define DDRC_TIMING4_tXP_BIT	    4
 #define DDRC_TIMING4_tXP_MASK	    (0x7 << DDRC_TIMING4_tXP_BIT)
 #define DDRC_TIMING4_tXP_6	    (6 << DDRC_TIMING4_tXP_BIT)
+#define DDRC_CFG_ODT_MASK	    (1U << 16)
 
 enum ddr_change_param {
 	REMMAP0,
@@ -43,35 +29,21 @@ enum ddr_change_param {
 	REMMAP3,
 };
 
-static enum socid {
-	X1000 = 0xff00,
-	X1000E = 0xff01,
-	X1500 = 0xff02,
-	X1500L_NEW = 0xff04,
-	X1000_NEW = 0xff08,
-	X1000E_NEW = 0xff09,
-	X1500_NEW = 0xff0a,
-	X1501 = 0xff05,
-	X1500_V3 = 0x0086,
-	X1000_V3 = 0x0083,
-};
 
 static struct soc_desc {
-	const enum socid id;
+	unsigned int id;
 	const char *chip;
 };
 
 static const struct soc_desc desc[] = {
-	{X1000,       "X1000" },
-	{X1000E,      "X1000E"},
-	{X1500,       "X1500"},
-	{X1500L_NEW,  "X1500L_NEW" },
-	{X1000_NEW,   "X1000_NEW"},
-	{X1000E_NEW,  "X1000E_NEW"},
-	{X1500_NEW,   "X1500_NEW"},
-	{X1501,       "X1501"},
-	{X1500_V3,    "X1500_V3"},
-	{X1000_V3,    "X1000_V3"},
+	{SOCID_X1000,       "X1000" },
+	{SOCID_X1000E,      "X1000E"},
+	{SOCID_X1500,       "X1500"},
+	{SOCID_X1500L,      "X1500L" },
+	{SOCID_X1000_NEW,   "X1000_NEW"},
+	{SOCID_X1000E_NEW,  "X1000E_NEW"},
+	{SOCID_X1500_NEW,   "X1500_NEW"},
+	{SOCID_X1501,       "X1501"},
 };
 
 
@@ -80,20 +52,23 @@ static void read_efuse_segment(unsigned int addr, unsigned int length, unsigned 
 	unsigned int val;
 
 	/* clear read done staus */
-	REG32(EFUSE_STATE) = 0;
-	val = addr << 21 | length << 16 | 1;
-	REG32(EFUSE_CTRL) = val;
+	REG32(EFUSE_BASE + EFUSE_STATE) = 0;
+	val = (addr - EFUSE_ROM_BASE) << EFUSE_CTRL_ADDR |
+	      length << EFUSE_CTRL_LEN | EFUSE_CTRL_RDEN;
+	REG32(EFUSE_BASE + EFUSE_CTRL) = val;
 	/* wait read done status */
-	while(!(REG32(EFUSE_STATE) & 1))
+	while(!(REG32(EFUSE_BASE + EFUSE_STATE) & EFUSE_STA_RD_DONE))
 		;
-	if(addr == EFUSE_SOCID_ADDR) {
-		buf[0] = REG32(EFUSE_DATA0) & 0xffff;
+	if(addr == EFUSE_SOCID_ADDR && length == 1) {
+		buf[0] = REG32(EFUSE_BASE + EFUSE_DATA(0)) & EFUSE_SOCID_MASK;
 	} else if(addr == EFUSE_CHIPID_ADDR) {
-		buf[0] = REG32(EFUSE_DATA1);
-		buf[1] = REG32(EFUSE_DATA3);
+		buf[0] = REG32(EFUSE_BASE + EFUSE_DATA(1));
+		buf[1] = REG32(EFUSE_BASE + EFUSE_DATA(3));
+	} else if (addr == EFUSE_TRIM1_ADDR) {
+		buf[0] = REG32(EFUSE_BASE + EFUSE_DATA(0));
 	}
 	/* clear read done staus */
-	REG32(EFUSE_STATE) = 0;
+	REG32(EFUSE_BASE + EFUSE_STATE) = 0;
 }
 
 void read_socid(unsigned int *id)
@@ -145,72 +120,57 @@ static void ddr_change_64M()
 
 }
 
-static int socid_is_v3(unsigned int socid)
+#ifdef CONFIG_DDR_EFUSE_OVERRIDES
+static void ddr_apply_efuse_overrides()
 {
-	/* V3 stores the DRAM drive-strength selector in bits [10:8]. */
-	unsigned int id = socid & SOCID_V3_MASK;
+	unsigned int trim1;
 
-	return id == X1500_V3 || id == X1000_V3;
-}
+	/* EFUSE_CTRL_LEN encodes the byte count minus one. */
+	read_efuse_segment(EFUSE_TRIM1_ADDR, 3, &trim1);
 
-static void ddr_change_v3(unsigned int socid)
-{
-	unsigned int ds = (socid >> SOCID_DDR_DS_BIT) & SOCID_DDR_DS_MASK;
-	unsigned int disable_autosr =
-		(socid >> SOCID_DDR_AUTOSR_DISABLE_BIT) & 0x1;
-
-#ifdef CONFIG_BURNER
-	if (g_ddr_param) {
-		g_ddr_param->ddrp_mr2 &= ~DDRP_MR2_DS_MASK;
-		g_ddr_param->ddrp_mr2 |= ds << DDRP_MR2_DS_BIT;
-		g_ddr_param->ddrc_timing4 &= ~DDRC_TIMING4_tXP_MASK;
-		g_ddr_param->ddrc_timing4 |= DDRC_TIMING4_tXP_6;
-		g_ddr_param->ddrc_autosr = 1;
-		if (disable_autosr)
-			g_ddr_param->ddrc_autosr = 0;
+	/* Override flags apply to every SLT version. */
+	if (trim1 & EFUSE_TRIM1_DDR_DS0_TXP_6) {
+		gd->arch.gi->ddr_change_param.ddr_mr2 &= ~DDRP_MR2_DS_MASK;
+		gd->arch.gi->ddr_change_param.ddr_timing4 &= ~DDRC_TIMING4_tXP_MASK;
+		gd->arch.gi->ddr_change_param.ddr_timing4 |= DDRC_TIMING4_tXP_6;
 	}
-#else
-	gd->arch.gi->ddr_change_param.ddr_mr2 &= ~DDRP_MR2_DS_MASK;
-	gd->arch.gi->ddr_change_param.ddr_mr2 |= ds << DDRP_MR2_DS_BIT;
-	gd->arch.gi->ddr_change_param.ddr_timing4 &= ~DDRC_TIMING4_tXP_MASK;
-	gd->arch.gi->ddr_change_param.ddr_timing4 |= DDRC_TIMING4_tXP_6;
-	gd->arch.gi->ddr_change_param.ddr_autosr = 1;
-	if (disable_autosr)
+	if (trim1 & EFUSE_TRIM1_DDR_AUTOSR_DISABLE)
 		gd->arch.gi->ddr_change_param.ddr_autosr = 0;
-#endif
+	if (trim1 & EFUSE_TRIM1_DDR_ODT_DISABLE)
+		gd->arch.gi->ddr_change_param.ddr_cfg &= ~DDRC_CFG_ODT_MASK;
 }
+#endif
 
 int check_socid(unsigned int *ddr_id, char *chip_name)
 {
 	int i = 0;
-	unsigned int socid, desc_id;
-	int is_v3;
+	unsigned int socid;
 
 	read_socid(&socid);
 	if (ddr_id)
 		*ddr_id = socid;
-	is_v3 = socid_is_v3(socid);
-	desc_id = is_v3 ? socid & SOCID_V3_MASK : socid;
 
 	for (i = 0; i < ARRAY_SIZE(desc); i++) {
-		if (desc[i].id == desc_id) {
+		if (desc[i].id == socid) {
 
 			if (chip_name)
 				strcpy(chip_name, desc[i].chip);
 
-			if (X1000_NEW == socid || X1500_NEW == socid ||
-			    X1500L_NEW == socid || X1501 == socid ||
-			    (X1500 == socid && !read_and_check_chipid())) {
+			if (SOCID_X1000_NEW == socid || SOCID_X1500_NEW == socid ||
+			    SOCID_X1500L == socid || SOCID_X1501 == socid ||
+			    (SOCID_X1500 == socid && !read_and_check_chipid())) {
 				gd->arch.gi->ddr_change_param.ddr_autosr = 1;
-			} else if (X1000E == socid || X1000E_NEW == socid) {
+			} else if (SOCID_X1000E == socid || SOCID_X1000E_NEW == socid) {
 				ddr_change_64M();
 				gd->arch.gi->ddr_change_param.ddr_autosr = 1;
-			} else if (X1000 == socid) {
+			} else if (SOCID_X1000 == socid) {
 				gd->arch.gi->ddr_change_param.ddr_timing4 = DDR_TIMING4;
 			}
 
-			if (is_v3)
-				ddr_change_v3(socid);
+#ifdef CONFIG_DDR_EFUSE_OVERRIDES
+			if (SOCID_X1000_NEW == socid || SOCID_X1500_NEW == socid)
+				ddr_apply_efuse_overrides();
+#endif
 
 			return 0;
 		}
