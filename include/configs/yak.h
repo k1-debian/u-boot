@@ -32,7 +32,16 @@
 #define CONFIG_CPU_XBURST
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1000
+
+/* define CONFIG_WDT_OPTIONS */
+/* #define CONFIG_WDT_FORCE_REBOOT */
+
+#ifdef CONFIG_WDT_FORCE_REBOOT
+#define CONFIG_SMALL_BAUDRATE_TABLE
+#endif
+
 #define CONFIG_CHECK_SOCID
+#define CONFIG_DDR_EFUSE_OVERRIDES
 
 #define CONFIG_SYS_APLL_FREQ		1008000000	/*If APLL not use mast be set 0*/
 #define CONFIG_SYS_MPLL_FREQ		600000000	/*If MPLL not use mast be set 0*/
@@ -125,6 +134,7 @@
 			/* #define	 CONFIG_BOOTARGS BOOTARGS_COMMON "ip=192.168.4.90:192.168.4.1:192.168.4.1:255.255.255.0 rootdelay=2 nfsroot=192.168.4.13:/home/nfsroot/fpga/user/bliu/boliu/only_for_test/root_ok rw" */
 			/* #define CONFIG_BOOTCOMMAND "tftpboot 0x80600000 fpga/user/bliu/x1000/uImage ;bootm 0x80600000" */
 			#define	 CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+			/* #define	 CONFIG_BOOTARGS BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=squashfs root=/dev/mtdblock2 rw" */
 			#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80800000 ;bootm 0x80800000"
 			/*#define CONFIG_BOOTCOMMAND "sfcnor read 0x40000 0x300000 0x80004000 ;go 0x80004008"*/
 		#else  /* CONFIG_SPL_SFC_NAND */
@@ -168,6 +178,7 @@
 
 #ifdef CONFIG_SPL_OS_BOOT
       #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=jffs2 root=/dev/mtdblock2 rw"
+      /* #define CONFIG_SPL_BOOTARGS         BOOTARGS_COMMON "ip=off init=/linuxrc rootfstype=squashfs root=/dev/mtdblock2 rw" */
       #ifdef CONFIG_OTA_VERSION20
              #define CONFIG_PAR_NV_NAME        "NV_RW"
              #define CONFIG_PAT_USERFS_NAME   "userfs"
@@ -546,5 +557,15 @@
 * MTD support
 */
 #define CONFIG_SYS_NAND_SELF_INIT
+
+#ifdef CONFIG_SPL_RTOS_BOOT
+
+#if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
+#define CONFIG_RTOS_OFFSET (17 * 1024 + CONFIG_SPL_PAD_TO)
+#else
+#define CONFIG_RTOS_OFFSET CONFIG_SPL_PAD_TO
+#endif
+
+#endif
 
 #endif /* __CONFIG_PHOENIX_H__ */

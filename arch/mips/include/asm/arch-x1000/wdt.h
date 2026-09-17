@@ -24,6 +24,7 @@
 
 #include <asm/arch/base.h>
 
+#define TCU_TSSR            0x2c
 #define TCU_TSCR			0x3c
 
 #define WDT_TCSR			0xc
@@ -32,6 +33,7 @@
 #define WDT_TCNT			0x8
 
 #define TSCR_WDTSC			(1 << 16)
+#define TSSR_WDTSS          (1 << 16)
 
 #define TCSR_PRESCALE_1			(0 << 3)
 #define TCSR_PRESCALE_4			(1 << 3)
@@ -46,7 +48,7 @@
 
 #define TCER_TCEN			(1 << 0)
 
-#define WDT_DIV				64
+#define WDT_DIV				1024
 #if (WDT_DIV == 1)
 #define TCSR_PRESCALE			TCSR_PRESCALE_1
 #elif (WDT_DIV == 4)

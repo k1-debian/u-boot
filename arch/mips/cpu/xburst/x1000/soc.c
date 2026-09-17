@@ -34,6 +34,10 @@
 #ifdef CONFIG_HW_WATCHDOG
 #include <watchdog.h>
 #endif
+#ifdef CONFIG_WDT_FORCE_REBOOT
+#include <asm/arch/wdt.h>
+#endif
+
 #ifdef CONFIG_AUDIO_CAL_DIV
 #include <generated/audio_div_values.h>
 #endif
@@ -95,6 +99,55 @@ static void jz_burner_boot(void)
 	}
 }
 #endif
+
+#ifdef CONFIG_WDT_FORCE_REBOOT
+
+static noinline void wdt_force_restart(unsigned int timeout_ms)
+{
+	writel(TSCR_WDTSC, TCU_BASE + TCU_TSCR);
+	writel(0, WDT_BASE + WDT_TCNT);
+	writel(timeout_ms * CONFIG_SYS_EXTAL / WDT_DIV / 1000, WDT_BASE + WDT_TDR);
+    /* 外部时钟24M  1024分频 */
+	writel(TCSR_PRESCALE | TCSR_EXT_EN, WDT_BASE + WDT_TCSR);
+	writel(0, WDT_BASE + WDT_TCER);
+	writel(TCER_TCEN, WDT_BASE + WDT_TCER);
+}
+
+static noinline void wdt_force_stop(void)
+{
+	writel(readl(WDT_BASE + WDT_TCER) & ~TCER_TCEN, WDT_BASE + WDT_TCER);
+	writel(TSSR_WDTSS, TCU_BASE + TCU_TSSR);
+}
+
+static noinline void wdt_set_scrpad(unsigned int value)
+{
+	cpm_set_scrpad(value);
+}
+
+static void wdt_boot_force_reboot(void)
+{
+#define WDT_FORCE_REBOOT_FLAG       0x5245424F
+	unsigned int scr_flag = cpm_get_scrpad();
+
+	if (scr_flag == WDT_FORCE_REBOOT_FLAG) {
+		if (cpm_inl(CPM_RSR) & CPM_RSR_WR) {
+			wdt_set_scrpad(WDT_FORCE_REBOOT_FLAG + 1);
+			wdt_force_stop();
+			return;
+		}
+	}
+/* case1：scrpad概率为FLAG && 非watchdog启动
+*  case2：首次启动
+*/
+	wdt_set_scrpad(WDT_FORCE_REBOOT_FLAG);
+	wdt_force_stop();
+	wdt_force_restart(5);
+	while (1);
+
+#undef WDT_FORCE_REBOOT_FLAG
+}
+#endif
+
 void board_init_f(ulong dummy)
 {
 	/* Set global data pointer */
@@ -133,7 +186,8 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
 #endif
-	printf("ERROR EPC %x\n", read_c0_errorepc());
+
+	printf("EPC %x\n", read_c0_errorepc());
 	printf("Reset status %x\n", *(volatile unsigned int *)0xb0000008);
 
 	debug("Timer init\n");
@@ -163,8 +217,19 @@ void board_init_f(ulong dummy)
 	debug("WATCHDOG init\n");
 	hw_watchdog_init();
 #endif
+
+#ifdef CONFIG_WDT_FORCE_REBOOT
+    printf("wdt restart 100ms. before lpddr init\n");
+	wdt_force_restart(100);
+
+#endif
+
 	debug("SDRAM init\n");
 	sdram_init();
+
+#ifdef CONFIG_WDT_FORCE_REBOOT
+	wdt_boot_force_reboot();
+#endif
 
 #ifdef CONFIG_DDR_TEST
 	ddr_basic_tests();
