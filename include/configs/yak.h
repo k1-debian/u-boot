@@ -33,7 +33,7 @@
 #define CONFIG_SYS_LITTLE_ENDIAN
 #define CONFIG_X1000
 
-/* define CONFIG_WDT_OPTIONS */
+/* Force restart the device (reinitialize DDR memory) */
 /* #define CONFIG_WDT_FORCE_REBOOT */
 
 #ifdef CONFIG_WDT_FORCE_REBOOT

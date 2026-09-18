@@ -121,7 +121,7 @@ static void ddr_change_64M()
 }
 
 #ifdef CONFIG_DDR_EFUSE_OVERRIDES
-static void ddr_apply_efuse_overrides()
+static unsigned int ddr_apply_efuse_overrides()
 {
 	unsigned int trim1;
 
@@ -138,6 +138,8 @@ static void ddr_apply_efuse_overrides()
 		gd->arch.gi->ddr_change_param.ddr_autosr = 0;
 	if (trim1 & EFUSE_TRIM1_DDR_ODT_DISABLE)
 		gd->arch.gi->ddr_change_param.ddr_cfg &= ~DDRC_CFG_ODT_MASK;
+
+    return trim1;
 }
 #endif
 
@@ -145,6 +147,7 @@ int check_socid(unsigned int *ddr_id, char *chip_name)
 {
 	int i = 0;
 	unsigned int socid;
+    unsigned int trim1 = 0;
 
 	read_socid(&socid);
 	if (ddr_id)
@@ -169,10 +172,10 @@ int check_socid(unsigned int *ddr_id, char *chip_name)
 
 #ifdef CONFIG_DDR_EFUSE_OVERRIDES
 			if (SOCID_X1000_NEW == socid || SOCID_X1500_NEW == socid)
-				ddr_apply_efuse_overrides();
+            trim1 = ddr_apply_efuse_overrides();
 #endif
 
-			return 0;
+			return (int)trim1;
 		}
 	}
 

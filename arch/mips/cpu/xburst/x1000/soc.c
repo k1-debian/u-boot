@@ -150,15 +150,17 @@ static void wdt_boot_force_reboot(void)
 
 void board_init_f(ulong dummy)
 {
+    unsigned int trim1 = -1;
 	/* Set global data pointer */
 	gd = &gdata;
+
 
 	/* Setup global info */
 #ifndef CONFIG_BURNER
 	gd->arch.gi = &ginfo;
 
 #ifdef CONFIG_CHECK_SOCID
-	if(check_socid(NULL, NULL) < 0)
+	if((trim1 = check_socid(NULL, NULL)) < 0)
 		return;
 #endif
 
@@ -185,6 +187,10 @@ void board_init_f(ulong dummy)
 
 #ifdef CONFIG_SPL_SERIAL_SUPPORT
 	preloader_console_init();
+#endif
+
+#ifdef CONFIG_CHECK_SOCID
+    printf("trim1: 0x%x\n", trim1 & 0xff);
 #endif
 
 	printf("EPC %x\n", read_c0_errorepc());
