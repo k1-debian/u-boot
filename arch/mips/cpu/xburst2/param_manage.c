@@ -1,13 +1,17 @@
 #include <config.h>
 #include <common.h>
+#if !defined(CONFIG_X3000)
 #include <ddr/ddr_common.h>
+#endif
 
 #define PI_MAGIC_GINFO   (('B' << 24) | ('D' << 16) | ('I' << 8) | ('F' << 0))
 #define PI_MAGIC_DDR     (('D' << 24) | ('D' << 16) | ('R' << 8) | 0)
 #define PI_MAGIC_DETECT  (('D' << 24) | ('E' << 16) | ('T' << 8) | ('E' << 0))
 
 DECLARE_GLOBAL_DATA_PTR;
+#if !defined(CONFIG_X3000)
 struct ddr_reg_value *g_ddr_param = 0;
+#endif
 int soc_detected = 0;
 
 struct param_info
@@ -27,7 +31,14 @@ void burner_param_info(void)
 				gd->arch.gi = (struct global_info *)&pi->data;
 				break;
 			case PI_MAGIC_DDR:
+#if !defined(CONFIG_X3000)
 				g_ddr_param = (struct ddr_reg_value *)&pi->data;
+#else
+				/*
+				 * X3000 DDR currently uses the built-in ddr_reg_values.
+				 * The burner-side PI_MAGIC_DDR format is not ready yet.
+				 */
+#endif
 				break;
 			case PI_MAGIC_DETECT:
 				soc_detected = !!pi->data;

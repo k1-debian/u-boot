@@ -42,6 +42,12 @@ DECLARE_GLOBAL_DATA_PTR;
 
 struct jz_uart *uart __attribute__ ((section(".data")));
 
+/* Keep the legacy contiguous UART layout as the default for other SoCs. */
+__weak unsigned int jz_uart_get_base(unsigned int uart_idx)
+{
+	return UART0_BASE + uart_idx * 0x1000;
+}
+
 static struct baudtoregs_t
 {
 	unsigned int baud;
@@ -90,11 +96,15 @@ static struct baudtoregs_t
 
 static int jz_serial_init(void)
 {
+	unsigned int uart_idx;
+
 #ifdef CONFIG_BURNER
-	uart = (struct jz_uart *)(UART0_BASE + gd->arch.gi->uart_idx * 0x1000);
+	uart_idx = gd->arch.gi->uart_idx;
 #else
-	uart = (struct jz_uart *)(UART0_BASE + CONFIG_SYS_UART_INDEX * 0x1000);
+	uart_idx = CONFIG_SYS_UART_INDEX;
 #endif
+
+	uart = (struct jz_uart *)jz_uart_get_base(uart_idx);
 
 	/* Disable port interrupts while changing hardware */
 	writeb(0, &uart->dlhr_ier);

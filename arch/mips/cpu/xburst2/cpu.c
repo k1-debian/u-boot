@@ -46,7 +46,7 @@ void __attribute__((weak)) _machine_restart(void)
 	writel(0, WDT_BASE + WDT_TCNT);
 	writel(time, WDT_BASE + WDT_TDR);
 	writel(TCSR_PRESCALE | TCSR_RTC_EN
-#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2600))
+#if (defined(CONFIG_X2000_V12) || defined(CONFIG_M300) || defined(CONFIG_X2100) || defined(CONFIG_X2600) || defined(CONFIG_X3000))
 			| TCSR_CLRZ
 #endif
 			, WDT_BASE + WDT_TCSR);
@@ -104,4 +104,3 @@ void flush_cache_all(void)
 		".set pop      \n\t"
 		::"r" (0xa0000000));
 }
-

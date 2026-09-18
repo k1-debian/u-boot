@@ -253,6 +253,8 @@ else ifeq ($(if $(CONFIG_X2580),y,n),y)
 	fixer_var:=spl_params_fixer_x2580.c
 else ifeq ($(if $(CONFIG_X2600),y,n),y)
 	fixer_var:=spl_params_fixer_x2600.c
+else ifeq ($(if $(CONFIG_X3000),y,n),y)
+	fixer_var:=spl_params_fixer_x3000.c
 else ifeq ($(if $(CONFIG_AD100),y,n),y)
 	fixer_var:=spl_params_fixer_ad100.c
 else

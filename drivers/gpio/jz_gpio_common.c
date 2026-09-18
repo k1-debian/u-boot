@@ -96,6 +96,10 @@
 #undef JZGPIO_GROUP_OFFSET
 #define JZGPIO_GROUP_OFFSET     (0x1000)
 #include "jz_gpio/x2600_gpio.c"
+#elif defined (CONFIG_X3000)
+#undef JZGPIO_GROUP_OFFSET
+#define JZGPIO_GROUP_OFFSET     (0x1000)
+#include "jz_gpio/x3000_gpio.c"
 #endif
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -474,7 +478,7 @@ void gpio_set_driver_strength_x2580(enum gpio_port gpio, int value, unsigned int
 }
 #endif
 
-#ifdef CONFIG_X2600
+#if defined(CONFIG_X2600) || defined(CONFIG_X3000)
 void gpio_set_driver_strength_x2600(enum gpio_port gpio, int value, unsigned int pins)
 {
     if(value & BIT(0))
@@ -499,7 +503,7 @@ void gpio_set_driver_strength(enum gpio_port gpio, int value, unsigned int pins)
 	gpio_set_driver_strength_x2000(gpio, value, pins);
 #elif defined CONFIG_X2580
 	gpio_set_driver_strength_x2580(gpio, value, pins);
-#elif defined CONFIG_X2600
+#elif defined(CONFIG_X2600) || defined(CONFIG_X3000)
 	gpio_set_driver_strength_x2600(gpio, value, pins);
 #endif
 }

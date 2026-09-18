@@ -1,0 +1,49 @@
+/*
+ * Ingenic X3000 REG_BASE definitions.
+ */
+#ifndef __X3000_BASE_H__
+#define __X3000_BASE_H__
+
+#define CPM_BASE			0xb0000000
+#define UART0_BASE			0xb0030000
+#define UART1_BASE			0xb0031000
+#define UART2_BASE			0xb0032000
+#define UART3_BASE			0xb0033000
+#define UART4_BASE			0xb0034000
+#define UART5_BASE			0xb0035000
+#define UART6_BASE			0xb0012000
+#define UART7_BASE			0xb0013000
+#define RTC_BASE			0xb0010000
+#define WDT_BASE			0xb0018000
+
+#ifdef CONFIG_SYS_UART_INDEX
+#if (CONFIG_SYS_UART_INDEX < 0) || (CONFIG_SYS_UART_INDEX > 7)
+#error "X3000 CONFIG_SYS_UART_INDEX must select UART0-UART7 (0-7)"
+#endif
+#endif
+
+#define G_OST_BASE			0xb2000000
+#define CCU_BASE			0xb2200000
+
+#define DDR_PHY_BASE			0xb3011000
+#define DDRC_APB_BASE			0xb3012000
+
+#define SFC_BASE			0xb3450000
+#define MSC0_BASE			0xb3460000
+#define MSC1_BASE			0xb3470000
+#define MSC2_BASE			0xb3480000
+#define EFUSE_BASE			0xb34e0000
+#define DDRC_BASE			0xb3012000
+#define OTG_BASE			0xb3500000
+#define USB_BASE			0xb3540000
+#define OTGPHY_BASE			0xb0078000
+#define USBPHY_BASE			0xb0078400
+
+#define GPIO_BASE			0xb3601000
+#define TCU_BASE			0xb3630000
+#define PWM_IOBASE			0xb3650000
+
+#define DDRC_APB_OFFSET			(DDRC_APB_BASE - DDRC_BASE)
+#define DDR_PHY_OFFSET			(DDR_PHY_BASE - DDRC_BASE)
+
+#endif /* __X3000_BASE_H__ */
