@@ -142,10 +142,11 @@ void jz_mmc_init(void)
 #endif
 #if defined(CONFIG_JZ_MMC_MSC2) && (!defined(CONFIG_SPL_BUILD) || defined(CONFIG_JZ_MMC_SPLMSC))
 	jz_sdhci_init(MSC2_BASE, 2);
+#if defined(CONFIG_X2000) || defined(CONFIG_M300)
 	val = readl(CPM_MSC2_CLK_R);
 	val &= ~(0x3 << 15);
 	val |= 0x3 << 15;
 	writel(val, CPM_MSC2_CLK_R);
 #endif
+#endif
 }
-

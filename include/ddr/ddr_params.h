@@ -26,6 +26,7 @@
 #include <linux/types.h>
 
 enum ddr_type{
+	DDR4,
 	DDR3,
 	LPDDR,
 	LPDDR2,
