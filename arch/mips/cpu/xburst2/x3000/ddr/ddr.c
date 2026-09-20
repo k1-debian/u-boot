@@ -135,6 +135,11 @@ void ddr_dump_all(void)
         printf("# END\n");
 }
 
+unsigned int get_ddr_size(void)
+{
+	return g_ddr_param->dram.CHIP_0_SIZE;
+}
+
 /* ============================ 总入口 ============================ */
 void sdram_init(void)
 {
