@@ -3,7 +3,7 @@
 
 #define CONFIG_ROOTFS_SQUASHFS
 #define CONFIG_ROOTFS2_SQUASHFS
-#define CONFIG_ARG_QUIET
+/* #define CONFIG_ARG_QUIET */
 #define CONFIG_SPL_SERIAL_SUPPORT
 
 #include "x3000_base_common.h"
