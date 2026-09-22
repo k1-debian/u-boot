@@ -11,6 +11,36 @@
 
 #include "ddr.h"
 
+/*
+ * ==================== 调试 dump 打印的编译期开关 ====================
+ *
+ * ⚠️ 为什么用 `#if` 而不是运行时 `if`：这些 dump 的**格式字符串**会进 .rodata，
+ *    SPL 空间紧张时必须**编译期**裁掉（运行时 if 只省时间，字符串照样占空间）。
+ *
+ * 粒度（都可以在编译选项里覆盖，例如 `-DDDRP_DBG=0`）：
+ *   DDRP_DBG         总开关（下面各分类的默认值）
+ *   DDRP_DBG_TRAIN   训练结果类 dump：write leveling / Rx-DQS / read / write training
+ *   DDRP_DBG_DRVODT  ddrp_dump_drvodt()：驱动/ODT 寄存器 + ZQ mux 快照
+ *   DDRP_DBG_ZQCALI  zqcalib 的逐项 target/result 对照表
+ *                    （⚠️ `done` / `ovf` / `OVERFLOW` / `TIMEOUT` 这些
+ *                      **结论与告警行不受本开关影响**，永远打印）
+ *
+ * 默认 **1 = 打开**（调试期方便）；SPL/量产要省空间时改成 0，
+ * 或只关某几类：`-DDDRP_DBG=1 -DDDRP_DBG_TRAIN=0`。
+ */
+#ifndef DDRP_DBG
+#define DDRP_DBG		1
+#endif
+#ifndef DDRP_DBG_TRAIN
+#define DDRP_DBG_TRAIN		DDRP_DBG
+#endif
+#ifndef DDRP_DBG_DRVODT
+#define DDRP_DBG_DRVODT		DDRP_DBG
+#endif
+#ifndef DDRP_DBG_ZQCALI
+#define DDRP_DBG_ZQCALI		DDRP_DBG
+#endif
+
 /* 从 g_ddr_param->ddrp 载入配置并写 PHY 配置寄存器（类型/通道/频率点/Vref） */
 int ddrp_load_param(void);
 
@@ -135,7 +165,18 @@ struct ddrp_rd_train_result {
 	unsigned int max_dqs;	/* DQS/DQSB 的窗口上限 */
 	unsigned int dqs;	/* DQS/DQSB 训练后的最佳点（reg_*_train_result_for_rd_base_dqs） */
 	unsigned int no_window;	/* 1 = 该 byte 找不到通过窗口
-				 *     （reg_*_change_rd_dqs_default） */
+				 *     （reg_*_change_rd_dqs_default，复位 0） */
+	/*
+	 * 窗口是否撞到延迟线边界（reg_*_{left,right}_boundary_overflow_for_rd）。
+	 *
+	 * ⚠️ 这两个标志很关键，能区分"窗口窄"和"扫描被边界截断"：
+	 *   · left  置位 = 扫描**撞到最小延迟**（结果里的 min 会是 0）——
+	 *     真实窗口的左边界在延迟线之外，`min` 不可信；
+	 *   · right 置位 = 撞到最大延迟（max 会是 0x7f）。
+	 * 任何一个置位都说明该 byte 的窗口**不完整**，训练结果不能用。
+	 */
+	unsigned int left_ovf;
+	unsigned int right_ovf;
 };
 
 /*
@@ -164,8 +205,100 @@ unsigned int ddrp_read_train_get(struct ddrp_rd_train_result *res,
  * 窗口太窄（< 1/4）说明采样裕量不足，别只看"有没有窗口"。 */
 void ddrp_dump_read_train_result(void);
 
+/* ==================== 多 rank：per-bit skew 训练与对比 ====================
+ * ⚠️ 为什么需要这一组：PHY 的 Table 47 结果寄存器**只有一份**，存的是
+ *    "刚训练完的那个 rank"的值。双 rank 板子上若先训 RANK0 再训 RANK1，
+ *    RANK0 的结果就被覆盖了 —— ddrp_read_train_get() 只能拿到最后一次的。
+ *    所以这里在**每次训练结束时立刻按 rank 抓一份快照**（ddrp_read_train()
+ *    内部自动做），再提供"按 rank 取回"和"两个 rank 对比"的接口。
+ *
+ * uboot 初始化里的典型用法：
+ *     ddrp_read_train_cache_clear();
+ *     if (ddrp_read_train_all_ranks(rank_num, 1000000u) != DDR_OK) ...
+ *     ddrp_dump_read_train_all_ranks();      // 两 rank 的逐 DQ 对比
+ */
+#define DDRP_TRAIN_MAX_RANK	2
+#define DDRP_TRAIN_MAX_BYTE	2
+
+/* 清掉所有 rank 的缓存（每一轮重新训练前调一次） */
+void ddrp_read_train_cache_clear(void);
+
+/*
+ * 把每个 rank 各训一遍并缓存结果。
+ *   nrank      要训几个 rank（1 = 只 CS0；2 = CS0 + CS1）
+ *   timeout_us 每个 rank 的超时（0 = 用默认 1s）
+ * 返回 DDR_OK；某个 rank 失败就返回它的错误码 —— 但**已成功的 rank 仍留在
+ * 缓存里**，失败时照样能 dump 出对比，便于判断是不是某个 rank 单独的走线问题。
+ */
+int ddrp_read_train_all_ranks(unsigned int nrank, uint32_t timeout_us);
+
+/*
+ * 取某个 rank 上一次训练缓存下来的结果。
+ *   rank 0/1 = CS0/CS1；byte 索引 0/1 = A_l/A_h（X3000 只有 2 个 byte）
+ *   res 至少要有 2 项，nres 是容量
+ * 返回实际填了几个 byte；该 rank 没训过或参数非法返回 0。
+ */
+unsigned int ddrp_read_train_get_rank(unsigned int rank,
+				      struct ddrp_rd_train_result *res,
+				      unsigned int nres);
+
+/*
+ * 打印两个 rank 的逐 DQ 对比，重点是**跨 rank 差异**。
+ * 差异 = |窗口中点(rank1) - 窗口中点(rank0)|；同一根 DQ 上两个 rank 的最佳点
+ * 差太多，通常说明两个 rank 的走线长度/负载不平衡，要回查 PCB，或检查 rank1
+ * 的 ODT / 驱动强度配置 —— **只看单个 rank 的窗口宽度是发现不了的**。
+ */
+void ddrp_dump_read_train_all_ranks(void);
+
+/*
+ * 读训练收尾（`ddrp_read_train()` 内部、训练完成时自动调用）：
+ *   ① **退出自动训练**（`dq_rd_train_en = 0`）；
+ *   ② 打印 DQS 的结果：min / max / best（PHY 算出的最佳点）以及
+ *      `no_window` / `left_ovf` / `right_ovf`（即结果是否可信）；
+ *   ③ 把可信的值用 **bypass** 写进 DQ/DQS 的 Rx 延迟线：
+ *      DQS/DQSB 用 best point，每根 DQ 用其通过窗口的中点；
+ *      **不可信的一律不写、保持原值**（无窗口 / min 贴 0 / max 贴 127）。
+ *
+ * 手册依据：Table 27 的第一条路径 "Register (Bypass Read Training)" ——
+ * `perdef_en` 本 IP 不支持，而"保持 dq_rd_train_en=1"会让 PHY 一直挂在训练模式。
+ */
+int ddrp_read_train_apply(unsigned int rank);
+
+/* ==================== Write Training（手册 5.4）====================
+ * 校 **Tx（写）方向**的 DQ per-bit 相位。读训练只管 Rx 方向；Tx 方向写均衡
+ * (5.2) 只定了 DQS 基准，DQ 之间的 skew 由这个训练来校。
+ *
+ * 手册 Figure 20 的流程：选 rank -> 用 write-leveling 的 DQS 相位 ->
+ * PHY 自生成 check data -> auto 模式 -> 使能 -> 等 train_all_step_done ->
+ * 退出。DDR3/DDR4/LPDDR3 走"普通读写命令"，**要求 SDRAM 已初始化、
+ * 且写均衡已跑过**（手册 5.4 明写建议先做 WL）。
+ *
+ * 结果寄存器（reg_{a,b}_{l,h}_train_{min,max}_for_dq{0..7}）**只有一份**，
+ * 双 rank 会互相覆盖 -> 函数内部按 rank 抓快照，dump 时两个 rank 一起打。
+ */
+int ddrp_write_train(unsigned int nrank, uint32_t timeout_us);
+
+/*
+ * 打印写训练结果（Tx delay line 的 pass window），按 rank 分别列。
+ * 判读同读训练：min < max（且 <= 0x3f）为有效窗口；min > max 表示
+ * 该 DQ 没有任何通过点。**必须先跑过 ddrp_write_train()**。
+ */
+void ddrp_dump_write_train_result(void);
+
+
 /* 应用协议中的驱动强度/ODT tuning（ddr_param.drvodt） */
 int ddrp_apply_drvodt(void);
+
+/*
+ * 打印"驱动/ODT 阻抗 + ZQ 状态"相关寄存器（training 前后对照用）：
+ *   · CMD/CK(0x0c8) 与 DQ(per byte) 的驱动/ODT 控制位（含换算欧姆）；
+ *   · ZQ 校准的 mux（reg_cmd_drv_zqcalib_en / reg_a_l/h_dq_{drv,odt}_zqcali_en）；
+ *   · ZQ 引擎状态（zqcali_en / pd_zqcali / hclk_zqcalib_sel）+ 四个 *_2reg 结果。
+ * ⚠️ 这些阻抗控制位是**静态配置**、训练不会改它们的值；但 mux = 1 时手册明说
+ *    "the register control is useless"（改由 ZQ 校准结果驱动）。
+ * tag 由调用方给（如 "before training" / "after zqcalib"）。
+ */
+void ddrp_dump_drvodt(const char *tag);
 
 /* 应用协议中的 PHY 引脚映射（ddr_param.pinmap，工具按 PCB 走线生成）：
  * 须在校准/训练前调用（CMD/DQ 重映射 + 读训练检查图案同步） */

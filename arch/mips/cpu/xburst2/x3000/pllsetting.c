@@ -3,8 +3,26 @@
 #include <asm/io.h>
 #include <asm/arch/cpm.h>
 #include <generated/pll_reg_values.h>
+#include "x3000_clk_values.h"
 
 #define X3000_PLL_TIMEOUT	0x10000
+
+/*
+ * ⭐ PLL/CCU 的「目标值」从**编译期宏搬到了 RAM**（2026-09-19，为 debug_stub 在线改时钟）。
+ *   初值仍取自 generated/pll_reg_values.h，**默认行为逐位不变**；
+ *   差别只是 pll_init() 现在从 g_clk_values 读 —— 于是改几个字就等于换时钟配置，
+ *   不用在 stub 里重写 PLL 锁定时序。
+ */
+struct x3000_clk_values g_clk_values = {
+	.apll = { APLL_EN_VALUE, APLL_M_VALUE, APLL_N_VALUE,
+		  APLL_OD0_VALUE, APLL_OD1_VALUE },
+	.mpll = { MPLL_EN_VALUE, MPLL_M_VALUE, MPLL_N_VALUE,
+		  MPLL_OD0_VALUE, MPLL_OD1_VALUE },
+	.epll = { EPLL_EN_VALUE, EPLL_M_VALUE, EPLL_N_VALUE,
+		  EPLL_OD0_VALUE, EPLL_OD1_VALUE },
+	.cpccr = CPCCR_TARGET_VALUE,
+	.cpccr1 = CPCCR1_TARGET_VALUE,
+};
 
 static void x3000_clk_dump(const char *stage)
 {
@@ -41,30 +59,28 @@ static void pll_set(unsigned int reg)
 {
 	unsigned int val;
 	unsigned int timeout;
+	const struct x3000_pll *p;
+
+	switch (reg) {
+	case CPM_CPAPCR:
+		p = &g_clk_values.apll;
+		break;
+	case CPM_CPMPCR:
+		p = &g_clk_values.mpll;
+		break;
+	case CPM_CPEPCR:
+		p = &g_clk_values.epll;
+		break;
+	default:
+		return;
+	}
 
 	val = cpm_inl(reg);
 	val &= ~(1 << 0);
 	cpm_outl(val, reg);
 
-	switch (reg) {
-	case CPM_CPAPCR:
-		val = (APLL_EN_VALUE << 0) | (APLL_M_VALUE << 20) |
-		      (APLL_N_VALUE << 14) | (APLL_OD1_VALUE << 11) |
-		      (APLL_OD0_VALUE << 8);
-		break;
-	case CPM_CPMPCR:
-		val = (MPLL_EN_VALUE << 0) | (MPLL_M_VALUE << 20) |
-		      (MPLL_N_VALUE << 14) | (MPLL_OD1_VALUE << 11) |
-		      (MPLL_OD0_VALUE << 8);
-		break;
-	case CPM_CPEPCR:
-		val = (EPLL_EN_VALUE << 0) | (EPLL_M_VALUE << 20) |
-		      (EPLL_N_VALUE << 14) | (EPLL_OD1_VALUE << 11) |
-		      (EPLL_OD0_VALUE << 8);
-		break;
-	default:
-		return;
-	}
+	val = (p->en << 0) | (p->m << 20) | (p->n << 14) |
+	      (p->od1 << 11) | (p->od0 << 8);
 
 	cpm_outl(val, reg);
 	timeout = X3000_PLL_TIMEOUT;
@@ -104,13 +120,13 @@ static void cpccr_safe(void)
 static void cpccr_target(void)
 {
 	/* Move AHB/PCLK away from SCLK_A before SCLK_A is switched to APLL. */
-	cpm_outl(CPCCR1_TARGET_VALUE, CPM_CPCCR1);
+	cpm_outl(g_clk_values.cpccr1, CPM_CPCCR1);
 	if (wait_cpcsr_clear(CPCSR_H0DIV_BUSY | CPCSR_H1DIV_BUSY | CPCSR_H2DIV_BUSY,
 			     CPCSR_AHB0_MUX | CPCSR_AHB1_MUX | CPCSR_AHB2_MUX,
 			     "CPCCR1 target"))
 		hang();
 
-	cpm_outl(CPCCR_TARGET_VALUE, CPM_CPCCR);
+	cpm_outl(g_clk_values.cpccr, CPM_CPCCR);
 	if (wait_cpcsr_clear(CPCSR_CDIV_BUSY | CPCSR_LEPDIV_BUSY,
 			     CPCSR_SRC_MUX | CPCSR_CPU_MUX | CPCSR_LEP_MUX,
 			     "CPCCR target"))
@@ -126,11 +142,11 @@ int pll_init(void)
 	cpccr_safe();
 	x3000_clk_dump("after safe");
 
-	if (APLL_EN_VALUE)
+	if (g_clk_values.apll.en)
 		pll_set(CPM_CPAPCR);
-	if (MPLL_EN_VALUE)
+	if (g_clk_values.mpll.en)
 		pll_set(CPM_CPMPCR);
-	if (EPLL_EN_VALUE)
+	if (g_clk_values.epll.en)
 		pll_set(CPM_CPEPCR);
 	x3000_clk_dump("after pll set");
 

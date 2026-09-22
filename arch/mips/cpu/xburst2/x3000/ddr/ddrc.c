@@ -61,6 +61,8 @@ int ddrc_dfi_init(uint32_t timeout_us)
 		waited += step_us;
 	}
 
+	/* Set DFI_INIT_START while preserving the other DFIMISC fields. */
+	ddrc_write_bits(DDRC_DFIMISC, DDRC_DFIMISC_DFI_INIT_START, 0u);
 	return (set_err(DDR_ERR_TIMEOUT), DDR_ERR_TIMEOUT);
 }
 

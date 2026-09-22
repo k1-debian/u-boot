@@ -186,6 +186,36 @@ cache_alloc_a_line:
 	li sp, 0x80001000
 #endif
 
+	/*
+	 * ⭐ **清 BSS —— 在跳进 C 之前**（用户 2026-09-22）。
+	 *
+	 * 原来这一段在 `soc.c: board_init_f()` 的**最后**（清完就 `board_init_r()`），
+	 * 代价是：`board_init_f()` 里那一大段 C（gpio/uart/timer/pll/ddr + 两阶段
+	 * debug_stub）跑的时候 `.bss` 里还是**上电残留**，谁忘了自己初始化 static
+	 * 就会中招 —— 2026-09-22 真板就是 `debug_stub.c` 的 `s_host_seen` 非 0，
+	 * 导致阶段 2 无条件进入。也是因为"清得晚"，`soc.c` 里 `gdata` / `ginfo`
+	 * 只能手工 `__attribute__((section(".data")))` 躲开那一次 memset。
+	 *
+	 * ⚠️ 位置**不能**提前到上面 `.data` 搬移之前：`u-boot-nor-spl.lds` 里
+	 *    `.bss` 的 VMA 紧跟在 `.data`(0x80000000) 之后 ⇒ 先搬 data 再清 bss。
+	 * ⚠️ `soc.c` 末尾那次 memset **暂时保留**（清两遍是幂等的，而且"进
+	 *    `board_init_r()` 前 BSS 一定是干净的"这条老保证不变）；要删它请单独
+	 *    一笔改，别和这里混在一起。
+	 */
+	.extern __bss_start
+	.extern __bss_end
+	la	t0, __bss_start
+	la	t1, __bss_end
+	beq	t0, t1, .Lbss_done
+	nop
+.Lbss_loop:
+	sw	zero, 0(t0)
+	addiu	t0, t0, 4
+	bne	t0, t1, .Lbss_loop
+	nop
+.Lbss_done:
+	sync
+
 	j board_init_f
 	nop
 

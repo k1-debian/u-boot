@@ -78,8 +78,9 @@ static void ddr_enable_read_access(void)
 
 static void ddr_init_rx_dq_delay(void)
 {
+
 	if (g_ddr_param && g_ddr_param->h.type == DDR4)
-		ddrp_set_rx_delay_rank(0u, 20u, 20u, 127u, 127u);
+		ddrp_set_rx_delay_rank(0u, 40u, 40u, 120u, 120u);
 	else
 		ddrp_set_rx_delay_rank(0u, 14u, 14u, 8u, 8u);
 }
@@ -150,7 +151,7 @@ void sdram_init(void)
 
 	clk_set_rate(DDR, g_ddr_param->h.freq / 2); // set dfi1x_clk freq 1:2
 
-        dump_region("CPM", CPM_BASE, DDR_DUMP_CPM_SIZE);
+//        dump_region("CPM", CPM_BASE, DDR_DUMP_CPM_SIZE);
 
 	/* Step 1: 提供稳定的 pclk 和 dfi_clk1x_in，完成 SoC 级前置。 */
 	/* Step 2: 同时拉低 PHY 的 presetn 和 system_rstn，并保持至少 100ns。 */
@@ -164,7 +165,7 @@ void sdram_init(void)
 
 	/* Step 4: PHY 内部 soft reset。 */
 	ddrp_reset();
-        
+
 	/* Step 4（续）：配置 DDRC/PHY 静态寄存器。 */
 	ddrc_load_param();
 	ddrp_load_param();
@@ -189,10 +190,56 @@ void sdram_init(void)
 
 	ddrp_enable_training_reg_update();
 
+	/* Step 8：1. 先设置工具设定的ODT， 2. 进入正常读写前完成 PHY 驱动/ODT tuning。 */
+	/* 先修改电气特性，再做后面的DQS Training. */
+	ddrp_apply_drvodt();
+	ddrp_zqcalib(timeout);
+
 	/* Step 9：执行 PHY 训练（当前代码位置早于 SDRAM 初始化）。 */
-	//ddrp_write_leveling(timeout);
 	ddrp_rx_dqs_calib(timeout);
+
+	/*
+         * 9d. Read training：per-bit DQ 相位。PHY 用 MPR/MPC 自己扫窗口，
+         *     并把最优相位**自动应用**，软件不必再写（Table 47 的 min/max
+         *     读出来只用于判断裕量）。每个 rank 各跑一次，结果按 rank 缓存。
+         */
+#if 1
+	// 使用固定的delay值， 或者 先校准再设置值，依赖pinmap， 不通用。
 	ddr_init_rx_dq_delay();
+#else
+        ddrp_read_train_cache_clear();
+        ddrp_read_train_all_ranks(g_ddr_param->ddrp.rank_num ?
+                                  g_ddr_param->ddrp.rank_num : 1u, timeout);
+        ddrp_dump_read_train_all_ranks();
+
+#endif
+
+#if 0
+	ddrp_write_leveling(timeout);
+        /*
+         * 9e. Write training：**Tx（写）方向**的 per-bit DQ 相位（手册 5.4）。
+         *
+         * 它和 9d 不重复：9d 校的是 PHY **Rx** 方向；Tx 方向只有 9c 写均衡
+         * 定了 DQS 的基准相位，**DQ 之间的 per-bit skew 没人校**。手册 5.4：
+         *   "the PHY will adjust the per-bit phase tuning to change the delay
+         *    of the TX DQ to find the optimal position (The DQS will keep to
+         *    the phase found by the write-leveling when it's enabled)"
+         *
+         * ⚠ 顺序不能提前：本函数把 reg_wr_train_dqs_default_bypass 设为 0，
+         *    即**用写均衡(9c)的结果作 DQS 基准**；而且 DDR3/DDR4/LPDDR3 的
+         *    写训练走"普通读写命令"，所以 SDRAM 初始化(Step 8)也必须先完成。
+         *
+         * 结果寄存器只有一份、双 rank 会互相覆盖，ddrp_write_train() 内部
+         * 已按 rank 抓快照，ddrp_dump_write_train_result() 并列打出。
+         *
+         * 要临时旁路（例如怀疑它导致启动异常），注释掉下面两行即可 ——
+         * 旁路后 Tx per-bit 相位回落到写均衡/复位默认值。
+         */
+        ddrp_write_train(g_ddr_param->ddrp.rank_num ?
+                         g_ddr_param->ddrp.rank_num : 1u, timeout);
+        ddrp_dump_write_train_result();
+
+#endif
 
 	ddrc_enable_ports();
 
@@ -204,8 +251,6 @@ void sdram_init(void)
 
 	/* Step 9（续）：完成 PHY ZQ 校准。 */
 	//ddrp_zqcalib(timeout);
-	/* Step 10：进入正常读写前完成 PHY 驱动/ODT tuning。 */
-	//ddrp_apply_drvodt();
 
 }
 

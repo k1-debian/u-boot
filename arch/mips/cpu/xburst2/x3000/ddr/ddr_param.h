@@ -36,13 +36,68 @@ struct ddr_param_header {
 };
 
 /* ============================ PHY 模拟 tuning（板级调优） ============================ */
-/* 驱动强度 / ODT：byte0..3 = A_l/A_h/B_l/B_h */
+/*
+ * 驱动强度 / ODT（byte0..3 = A_l/A_h/B_l/B_h）。
+ *
+ * ⭐ **一律用欧姆(Ω)填，不是 5 位控制位** —— 界面/参数里不再出现控制位数，
+ *    避免"到底该填哪个"的混淆。合法档位（PHY Table 22，DDR4）：
+ *        23 25 26 27 28 30 32 34 36 38 41 45 49 55 60 68
+ *        79 90 108 135 178 270 535
+ *    填 0 = 保持 PHY 复位默认（驱动跳过不写）。
+ *    驱动侧用 Table 22 反查出 5 位控制位再写寄存器；填了非档位值时
+ *    取**最接近的**档位，并在日志里提示实际用了多少。
+ *
+ * ⚠️ 三类寄存器是**互相独立**的（手册 Table 21 原文把 CMD 明确写成
+ *    "CMD **except for CK**"，CK 另外一组；DQ 又是第三组）：
+ *      DQ  : reg_{a,b}_{l,h}_abut{pr,nr}compdq / abutodt{pu,pd}dq   0x204/0x304
+ *      CMD : reg_cmd_abut{pr,nr}comp_reg        （除 CK）            0x0c8[20:16]/[28:24]
+ *      CK  : reg_cmd_abut{pr,nr}comp_ck0_reg    （**独立**）        0x0c8[ 4: 0]/[12: 8]
+ *    ODT 只有 DQ 有 —— CMD/CK 没有 ODT 寄存器，别照搬。
+ */
 struct ddr_drvodt_config {
-	unsigned int use_drvodt_config;	/* 0: 驱动默认值，1: 使用本结构体 */
-	unsigned int drv_pu[4];		/* byte0..3 驱动 pull-up（ddrp_regs.h: *abutprcompdq） */
-	unsigned int drv_pd[4];		/* byte0..3 驱动 pull-down（*abutnrcompdq） */
-	unsigned int odt_pu[4];		/* byte0..3 ODT pull-up（*abutodtpudq） */
-	unsigned int odt_pd[4];		/* byte0..3 ODT pull-down（*abutodtpddq） */
+	unsigned int use_drvodt_config;	/* 0: 全部用 PHY 默认, 1: 使用本结构体 */
+
+	/*
+	 * ============ ① 寄存器值（5 位控制位）—— 启动时的**快路径** ============
+	 *
+	 * **工具（ddr_creater）已按界面上选的欧姆值查 Table 22 换算好**，
+	 * 直接填这里的控制位；驱动 ddrp_apply_drvodt() 原样 writel，**零计算**。
+	 *
+	 * 为什么这么分：欧姆->控制位是张 32 项的查表 + 最近值搜索，放启动路径里
+	 * 虽然也能跑（代码在 ddrp.c 里也保留了这条路径），但没必要 ——
+	 * "填什么阻抗"是**离线定死**的板级参数，在生成期算完更合适。
+	 * 控制位 = 0 表示该项不配置（保持 PHY 复位默认）。
+	 */
+	unsigned int drv_pu[4];		/* DQ byte0..3 驱动 PU（*abutprcompdq）  */
+	unsigned int drv_pd[4];		/* DQ byte0..3 驱动 PD（*abutnrcompdq）  */
+	unsigned int odt_pu[4];		/* DQ byte0..3 ODT  PU（*abutodtpudq）   */
+	unsigned int odt_pd[4];		/* DQ byte0..3 ODT  PD（*abutodtpddq）   */
+
+	unsigned int cmd_drv_pu;	/* CMD(除CK) PU  reg_cmd_abutprcomp_reg   0x0c8[20:16] */
+	unsigned int cmd_drv_pd;	/* CMD(除CK) PD  reg_cmd_abutnrcomp_reg   0x0c8[28:24] */
+	unsigned int ck_drv_pu;		/* CK PU（**独立**）reg_cmd_abutprcomp_ck0_reg 0x0c8[4:0]  */
+	unsigned int ck_drv_pd;		/* CK PD（**独立**）reg_cmd_abutnrcomp_ck0_reg 0x0c8[12:8] */
+
+	/*
+	 * ============ ② 欧姆值（Ω）—— 参考/备选路径 ============
+	 *
+	 * 工具生成时会**同时**填这两组（欧姆方便人读、控制位给机器用）。
+	 * 驱动侧逻辑：**控制位非 0 就用控制位**（快路径）；控制位为 0 而欧姆
+	 * 非 0 时才现场查表换算（备用路径，见 ddrp.c 的 drvodt_write_ohm_pair）。
+	 * 这样"生成器换算"和"驱动自己换算"两种用法都能工作，互不冲突。
+	 *
+	 * 合法档位（PHY Table 22，DDR4）：
+	 *   23 25 26 27 28 30 32 34 36 38 41 45 49 55 60 68
+	 *   79 90 108 135 178 270 535
+	 */
+	unsigned int dq_drv_pu_ohm[4];
+	unsigned int dq_drv_pd_ohm[4];
+	unsigned int dq_odt_pu_ohm[4];
+	unsigned int dq_odt_pd_ohm[4];
+	unsigned int cmd_drv_pu_ohm;
+	unsigned int cmd_drv_pd_ohm;
+	unsigned int ck_drv_pu_ohm;
+	unsigned int ck_drv_pd_ohm;
 };
 
 /* ==================== Rx-DQS Gating 手动（bypass）配置 ====================
@@ -54,23 +109,25 @@ struct ddr_drvodt_config {
  * 单位相同：cyc_dly -> cycsel（1x）、oph_dly -> ophsel（0.5UI）、
  * dll_dly -> dllsel（4UI/256，即 delay line）。
  *
- * 注：lane 0..3 = A_l/A_h/B_l/B_h；rank 0..1 = RANK0/RANK1
- *     （寄存器里是 rxmen0 / rxmen1，两者**各自独立**）。
+ * 注：数组维度是 **[byte][rank]**。
+ *     byte 0..1 = 低/高 byte = A_l/A_h（X3000 最大 16bit，就这两个；
+ *     组 2/3 = B_l/B_h 是另一组 16bit 通道 byte2/byte3，**不引出，别用**）。
+ *     rank 0..1 = CS0/CS1（寄存器里是 rxmen0 / rxmen1，两者独立）。
  */
 struct ddr_dqs_bypass_config {
 	unsigned int use_dqs_bypass;	/* 0: 用自动校准结果，1: 用手填值 */
 	unsigned int calib_mode_sel;	/* 1 = Read Preamble（仅 DDR4），0 = Normal Read */
 	unsigned int freq_choose_wr_t;	/* reg_freq_choose_wr_t，选频率点 */
-	unsigned int cyc_dly[4][2];	/* [lane][rank] 1x     延迟，3 位 */
-	unsigned int oph_dly[4][2];	/* [lane][rank] 0.5UI  延迟，3 位 */
-	unsigned int dll_dly[4][2];	/* [lane][rank] 4UI/256 延迟，5 位 */
+	unsigned int cyc_dly[2][2];	/* [byte][rank] 1x     延迟，3 位 */
+	unsigned int oph_dly[2][2];	/* [byte][rank] 0.5UI  延迟，3 位 */
+	unsigned int dll_dly[2][2];	/* [byte][rank] 4UI/256 延迟，5 位 */
 };
 
 /* per-bit skew（训练后回写 / 手工调优） */
 struct ddr_deskew_config {
 	unsigned int use_deskew;	/* 0: 不使用，1: 使用 */
 	unsigned int dqs_skew[8];	/* 每 DQS Tx/Rx skew */
-	unsigned int dq_skew[4][8];	/* [byte][dq0..7] per-bit skew */
+	unsigned int dq_skew[2][8];	/* [byte][dq0..7] per-bit skew */
 };
 
 /* ==================== PHY 引脚映射（板级 PCB 走线，工具生成） ====================
@@ -98,16 +155,12 @@ struct ddr_pinmap_config {
 					 * dfi 数据 byte -> PHY 顶层 A/B byte（跨 byte 任意组合）
 					 * 默认一一映射（值 = 索引）
 					 * 注意：cat_wrap 必须与本字段同值（手册 4.3.3 Note） */
-	unsigned int dq_bit_wrap[4][8];	/* byte 内 DQ 位映射（4-bit/个）：DDRP_{a/b}_{l/h}_DQ{0..7}_BIT_WRAP_SEL
+	unsigned int dq_bit_wrap[2][8];	/* byte 内 DQ 位映射（4-bit/个）：
+					 * [0]=A_l、[1]=A_h（= DDRP_A_{L,H}_DQ{0..7}_BIT_WRAP_SEL）
 					 * 值域 0..7 = SDRAM DQ0..7（不能跨 byte）
 					 * 注意：DM 不能与 DQ 交换映射（手册 4.3.4 Caution） */
-	unsigned int dm_bit_wrap[4];	/* byte 内 DM 映射：DDRP_{a/b}_{l/h}_DM_BIT_WRAP_SEL */
-	unsigned int cat_wrap[4];	/* CA 位映射：DDRP_{a/b}_{l/h}_CAT_WRAP_SEL */
-	unsigned int rdtrain_check_wrap[4][2]; /* 读训练检查图案（8-bit/个）：
-					 * DDRP_{a/b}_{l/h}_RDTRAIN_CHECK_WRAP{0,1}
-					 * DQ 顺序改变后必须同步（手册 4.3.1 注） */
-	unsigned int rdtrain_check_value_en; /* RDTRAIN 图案使能：DDRP_RD_TRAIN_CHECK_VALUE_EN（0x0a4, 3）
-					 * 置 1 才使用 rdtrain_check_wrap（手册 4.3.1：配图案须同时置位） */
+	unsigned int dm_bit_wrap[2];	/* byte 内 DM 映射：[0]=A_l、[1]=A_h */
+	unsigned int cat_wrap[2];	/* CA 位映射：[0]=A_l、[1]=A_h（LPDDR4 专用） */
 };
 
 /* ============================ DDRC 配置（工具生成） ============================ */
@@ -158,7 +211,7 @@ struct ddr_ddrp_config {
 	unsigned int AL_VALUE;		/* ddrp 0x008 整值：AL_FRE_OP0..3（4 频率点） */
 	unsigned int CL_VALUE;		/* ddrp 0x00c 整值：CL_FRE_OP0..3 */
 	unsigned int CWL_VALUE;		/* ddrp 0x010 整值：CWL_FRE_OP0..3 */
-	unsigned int VREF_VALUE[4];	/* 每 byte Vref margsel（0 表示保持默认） */
+	unsigned int VREF_VALUE[2];	/* 每 byte Vref margsel（0 表示保持默认） */
 };
 
 /* ============================ 颗粒 / 板级（工具生成） ============================ */

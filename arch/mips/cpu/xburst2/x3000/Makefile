@@ -16,6 +16,7 @@ $(shell mkdir -p $(obj)ddr)
 COBJS-y += ddr/ddr.o
 COBJS-y += ddr/ddrc.o
 COBJS-y += ddr/ddrp.o
+COBJS-$(CONFIG_DDR_DEBUG_STUB) += ddr/debug_stub.o
 endif
 
 COBJS-$(CONFIG_DDR_TEST) += ../ddr_test.o

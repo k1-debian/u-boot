@@ -15,7 +15,7 @@
 #include "x3000_ddr.h"
 
 #define CONFIG_SYS_APLL_FREQ		800000000
-#define CONFIG_SYS_MPLL_FREQ		800000000
+#define CONFIG_SYS_MPLL_FREQ		1200000000
 #define CONFIG_SYS_EPLL_FREQ		300000000
 #define CONFIG_CPU_SEL_PLL		APLL
 #define CONFIG_DDR_SEL_PLL		MPLL
@@ -109,6 +109,7 @@
 #endif
 
 #if defined(CONFIG_SPL_SFC_NOR) || defined(CONFIG_SPL_SFC_NAND)
+#define DDRP_DBG	0
 #define CONFIG_SPL_SFC_SUPPORT
 #define CONFIG_SPL_VERSION		1
 #define CONFIG_SFC_V20
@@ -156,8 +157,8 @@
 #define CONFIG_SYS_NAND_SELF_INIT
 #endif
 
-#define CONFIG_SPL_PAD_TO		0x6000
-#define CONFIG_SPL_MAX_SIZE		0x5800
+#define CONFIG_SPL_PAD_TO		0x7000
+#define CONFIG_SPL_MAX_SIZE		0x7000
 #define CONFIG_UBOOT_OFFSET		CONFIG_SPL_PAD_TO
 
 /* GPIO */
@@ -177,6 +178,7 @@
 #define CONFIG_CMD_MEMORY
 #define CONFIG_CMD_MISC
 #define CONFIG_CMD_RUN
+/*
 #define CONFIG_CMD_SOURCE
 #define CONFIG_CMD_GETTIME
 #define CONFIG_CMD_GPIO
@@ -184,6 +186,7 @@
 #define CONFIG_EFI_PARTITION
 #define CONFIG_DOS_PARTITION
 #define CONFIG_LZO
+*/
 #define CONFIG_RBTREE
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
@@ -243,13 +246,25 @@
 #define CONFIG_SPL_START_S_PATH		"$(CPUDIR)/$(SOC)"
 #define CONFIG_SPL_LDSCRIPT		"$(CPUDIR)/$(SOC)/u-boot-spl.lds"
 #define CONFIG_SPL_BOARD_INIT
+
+/*
+ * DDR/时钟在线调试 stub（**默认关闭**）
+ *
+ * 打开后：SPL 在 UART/供电初始化之后等上位机（WebSocket->电源控制板->UART）
+ * 下发参数（DDR 参数 ddr_param / PLL 时钟 x3000_clk_values），支持在线改值、
+ * 触发 sdram_init() 与内存自检，并把结果回报 —— 用于参数自动化遍历的验证工装。
+ * 等不到上位机时自行超时并照默认参数正常启动，不会变砖。
+ * 实现：arch/mips/cpu/xburst2/x3000/ddr/debug_stub.c
+ * 说明：ds_x3000/docs/plans/2026-09-19-debug-stub-ddr-sweep-design.md
+ */
+/*#define CONFIG_DDR_DEBUG_STUB*/
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_GPIO_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT
 #define CONFIG_SPL_TEXT_BASE		0x80001000
 
 #if defined(CONFIG_SPL_MMC_SUPPORT) || defined(CONFIG_SPL_JZMMC_SUPPORT)
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	82
+#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	((17*1024 + CONFIG_UBOOT_OFFSET) / 512)
 #ifdef CONFIG_SPL_JZMMC_SUPPORT
 #define CONFIG_SPL_JZSDHCI
 #endif
